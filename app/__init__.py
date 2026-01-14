@@ -8,8 +8,14 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object("config.Config")
 
+    # Banco
     db.init_app(app)
 
+    # ✅ Cria as tabelas automaticamente (necessário no Render Free sem Shell)
+    with app.app_context():
+        db.create_all()
+
+    # Rotas (Blueprints)
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
     app.register_blueprint(main_bp)
