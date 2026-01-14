@@ -1,0 +1,68 @@
+{% extends "layout.html" %}
+{% block title %}COMBATE RASANTE - Aplicação Aérea de Alta Precisão{% endblock %}
+
+{% block content %}
+
+<!-- HERO PRINCIPAL -->
+<section class="section hero">
+  <div class="container hero-overlay">
+    <div class="hero-grid">
+      <div class="hero-main">
+        <div class="hero-badge">
+          Aplicação aérea com precisão, segurança e tecnologia.
+        </div>
+        <h1 class="hero-title">
+          Aplicação aérea de alta precisão para o agronegócio.
+        </h1>
+        <p class="hero-subtitle">
+          A COMBATE RASANTE alia experiência operacional, planejamento técnico
+          e tecnologia embarcada para entregar resultados consistentes em cada aplicação.
+        </p>
+        <div class="hero-actions">
+          <a href="{{ url_for('main.contato') }}" class="btn btn-primary">
+            Solicitar orçamento
+          </a>
+          <a href="{{ url_for('main.servicos') }}" class="btn btn-ghost">
+            Ver serviços
+          </a>
+        </div>
+      </div>
+
+      <aside class="hero-side-card">
+        <h2 class="hero-side-title">Monitoramento e relatórios</h2>
+        <p class="hero-side-text">
+          Relatórios detalhados de aplicação, condições climáticas e mapas de
+          cobertura, para uma gestão completa das operações.
+        </p>
+        <ul class="hero-side-list">
+          <li>Faixas com GPS de alta precisão</li>
+          <li>Indicadores de área aplicada</li>
+          <li>Dados prontos para auditoria</li>
+        </ul>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- SEÇÃO "PRONTO PARA AUMENTAR A PRODUTIVIDADE" COMO BALÃO -->
+<section class="section section-cta">
+  <div class="container">
+    <div class="cta-bubble">
+      <h2>Pronto para aumentar a produtividade da sua lavoura?</h2>
+      <p>
+        Fale com a COMBATE RASANTE Aviação Agrícola e descubra como nossa equipe
+        pode apoiar o manejo do seu canavial.
+      </p>
+      <div class="cta-actions">
+        <a href="{{ url_for('main.contato') }}" class="btn btn-primary">
+          Solicitar contato
+        </a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-ghost cta-secondary-btn">
+          Área do cliente
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

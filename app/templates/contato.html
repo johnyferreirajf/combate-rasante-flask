@@ -1,0 +1,117 @@
+{% extends "layout.html" %}
+{% block title %}COMBATE RASANTE - Contato{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container contato-grid">
+    <div>
+      <header class="section-header">
+        <h1>Entre em contato</h1>
+        <p>
+          Fale com a equipe da COMBATE RASANTE Aviação Agrícola para solicitar orçamento,
+          tirar dúvidas ou agendar uma visita.
+        </p>
+      </header>
+
+      <form method="post" class="form">
+        <div class="form-group">
+          <label for="name">Nome</label>
+          <input id="name" name="name" type="text" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input id="email" name="email" type="email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Telefone</label>
+          <input id="phone" name="phone" type="text">
+        </div>
+
+        <div class="form-group">
+          <label for="message">Mensagem</label>
+          <textarea id="message" name="message" rows="4" required></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Enviar mensagem</button>
+      </form>
+    </div>
+
+    <aside class="contato-info">
+      <div class="contato-card">
+        <h3>Contato direto</h3>
+        <p>
+          <strong>Telefones:</strong><br>
+          (64) 99983-6005<br>
+          (64) 99221-7002
+        </p>
+        <p>
+          <strong>E-mail comercial:</strong><br>
+          weikren@combateaviacao.com.br
+        </p>
+      </div>
+
+      <!-- ✅ NOVO CARD: Redes sociais (padrão igual aos outros) -->
+      <div class="contato-card social-card">
+        <h3>Redes sociais</h3>
+
+        <div class="social-links">
+          <a class="social-link" href="https://wa.me/5564999836005" target="_blank" rel="noopener">
+            <span class="social-ico">📱</span>
+            <span class="social-text">
+              <strong>WhatsApp</strong>
+              <small>Falar agora</small>
+            </span>
+          </a>
+
+          <a class="social-link" href="https://www.instagram.com/combaterasante/" target="_blank" rel="noopener">
+            <span class="social-ico">📸</span>
+            <span class="social-text">
+              <strong>Instagram</strong>
+              <small>@combaterasante</small>
+            </span>
+          </a>
+
+          <a class="social-link" href="https://www.facebook.com/combaterasante" target="_blank" rel="noopener">
+            <span class="social-ico">👤</span>
+            <span class="social-text">
+              <strong>Facebook</strong>
+              <small>/combaterasante</small>
+            </span>
+          </a>
+        </div>
+      </div>
+
+      <div class="contato-card">
+        <h3>Endereços</h3>
+        <p>
+          <strong>Matriz:</strong><br>
+          ROD GO 320 KM 82 - Vicentinópolis/GO<br>
+          Saída Joviânia<br>
+          CEP 75.555-000
+        </p>
+        <p>
+          <strong>Filial:</strong><br>
+          Aeroporto Municipal de Ituiutaba/MG<br>
+          Hangar 10
+        </p>
+      </div>
+
+      <div class="contato-card">
+        <h3>Localização</h3>
+        <div class="map-embed">
+          <iframe
+            title="Localização COMBATE RASANTE Aviação Agrícola"
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15199.085401923181!2d-49.79746820944201!3d-17.75540959201344!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94a00f693169efb7%3A0xa933c2a5eda882cd!2sCombate!5e0!3m2!1spt-BR!2sbr!4v1768397951739!5m2!1spt-BR!2sbr" width="600" height="450"
+            style="border:0;"
+            allowfullscreen
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade">
+          </iframe>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+{% endblock %}

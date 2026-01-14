@@ -1,0 +1,62 @@
+<footer class="footer">
+  <div class="container footer-grid">
+    <div>
+      <div class="footer-logo">
+        <div class="footer-logo-icon">✈</div>
+        <div>
+          <div class="footer-logo-title">COMBATE RASANTE</div>
+          <div class="footer-logo-subtitle">Aviação Agrícola</div>
+        </div>
+      </div>
+<p class="footer-text">
+  Empresa especializada em aplicação aérea de defensivos agrícolas,
+  oferecendo soluções seguras, eficientes e tecnicamente planejadas
+  para o produtor rural.
+</p>
+    </div>
+
+    <div>
+      <h3 class="footer-heading">Contato</h3>
+      <ul class="footer-list">
+        <li>
+          <span class="footer-label">Telefone:</span>
+          (64) 99983-6005 / (64) 99221-7002
+        </li>
+        <li>
+          <span class="footer-label">E-mail:</span>
+          weikren@combateaviacao.com.br
+        </li>
+        <li>
+          <span class="footer-label">Matriz:</span>
+          ROD GO 320 KM 82 - Vicentinópolis/GO, Saída Joviânia. CEP 75.555-000
+        </li>
+        <li>
+          <span class="footer-label">Filial:</span>
+          Aeroporto Municipal de Ituiutaba/MG - Hangar 10
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 class="footer-heading">Links Rápidos</h3>
+      <ul class="footer-list">
+        <li><a href="{{ url_for('main.index') }}#servicos">Serviços</a></li>
+        <li><a href="{{ url_for('main.index') }}#tecnologia">Tecnologia</a></li>
+        <li><a href="{{ url_for('auth.login') }}">Área do Cliente</a></li>
+        <li><a href="{{ url_for('main.contato') }}">Contato</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 class="footer-heading">Clientes</h3>
+      <p class="footer-text">
+        Acesse o painel exclusivo para acompanhar relatórios de aplicação,
+        mapas e indicadores da sua lavoura.
+      </p>
+      <a href="{{ url_for('auth.login') }}" class="footer-cta">Acessar Painel</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© {{ 2025 }} COMBATE RASANTE Aviação Agrícola. Todos os direitos reservados.</span>
+  </div>
+</footer>
