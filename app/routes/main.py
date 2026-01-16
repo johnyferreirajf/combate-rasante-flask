@@ -57,14 +57,11 @@ def nome_mes(dt):
 
 def carregar_painel_arquivos_por_pastas(user_id):
     """
-    Lê as fotos organizadas assim:
+    Estrutura:
     static/fotos_clientes/<user_id>/<Tema>/<Safra>/<Mes>/<Data>/arquivos...
 
-    Retorna:
-    painel[tema_display][safra][mes] = [
-      {"date": "YYYY-MM-DD", "photos": [{"name":..., "url":...}, ...]},
-      ...
-    ]
+    Exibição:
+    Tema (bonito) -> Safra (bonita) -> Mês -> Data
     """
 
     base_dir = os.path.join(current_app.static_folder, "fotos_clientes", str(user_id))
@@ -73,7 +70,7 @@ def carregar_painel_arquivos_por_pastas(user_id):
     if not os.path.exists(base_dir):
         return painel
 
-    # ✅ Nome bonito para o Tema (pasta -> nome exibido)
+    # ✅ Nome bonito do tema (pasta -> display)
     TEMA_DISPLAY = {
         "AplicacaoAerea": "Aplicação Aérea",
         "AplicacaoTerrestre": "Aplicação Terrestre",
@@ -98,37 +95,53 @@ def carregar_painel_arquivos_por_pastas(user_id):
         "Dezembro": 12,
     }
 
-    # Tema (pastas)
+    def safra_display(nome_pasta_safra: str) -> str:
+        """
+        Pasta: "Safra 2025-2026"
+        Exibe: "Safra 2025/2026"
+        """
+        if nome_pasta_safra.lower().startswith("safra "):
+            return nome_pasta_safra.replace("-", "/")
+        return nome_pasta_safra
+
+    def safra_sort_key(nome_pasta_safra: str):
+        """
+        Ordenar Safra 2025-2026 > Safra 2024-2025...
+        """
+        try:
+            s = nome_pasta_safra.lower().replace("safra", "").strip()
+            # "2025-2026"
+            a, b = s.split("-")
+            return int(a), int(b)
+        except Exception:
+            return (0, 0)
+
+    # Temas (pastas)
     temas = sorted(
         [t for t in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, t))]
     )
 
     for tema in temas:
         tema_path = os.path.join(base_dir, tema)
+        tema_display = TEMA_DISPLAY.get(tema, tema)
 
-        tema_display = TEMA_DISPLAY.get(tema, tema)  # fallback: usa o nome da pasta
-
-        # Safra
-        safras = sorted(
-            [s for s in os.listdir(tema_path) if os.path.isdir(os.path.join(tema_path, s))],
-            reverse=True
-        )
+        # Safras (pastas) -> ordena por ano inicial
+        safras = [s for s in os.listdir(tema_path) if os.path.isdir(os.path.join(tema_path, s))]
+        safras = sorted(safras, key=safra_sort_key, reverse=True)
 
         for safra in safras:
             safra_path = os.path.join(tema_path, safra)
 
-            # Meses (ordenados corretamente)
+            # Meses
             meses = [m for m in os.listdir(safra_path) if os.path.isdir(os.path.join(safra_path, m))]
             meses = sorted(meses, key=lambda m: ORDEM_MESES.get(m, 999))
 
             for mes in meses:
                 mes_path = os.path.join(safra_path, mes)
 
-                # Datas (mais recente primeiro)
-                datas = sorted(
-                    [d for d in os.listdir(mes_path) if os.path.isdir(os.path.join(mes_path, d))],
-                    reverse=True
-                )
+                # Datas
+                datas = [d for d in os.listdir(mes_path) if os.path.isdir(os.path.join(mes_path, d))]
+                datas = sorted(datas, reverse=True)
 
                 for data in datas:
                     data_path = os.path.join(mes_path, data)
@@ -136,12 +149,12 @@ def carregar_painel_arquivos_por_pastas(user_id):
                     fotos = []
                     for f in sorted(os.listdir(data_path)):
                         if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
-                            # Aqui o URL usa o nome REAL da pasta do tema (não o display)
                             url = f"/static/fotos_clientes/{user_id}/{tema}/{safra}/{mes}/{data}/{f}"
                             fotos.append({"name": f, "url": url})
 
                     if fotos:
-                        painel[tema_display][safra][mes].append({
+                        # ✅ agora salva safra com nome BONITO na exibição
+                        painel[tema_display][safra_display(safra)][mes].append({
                             "date": data,
                             "photos": fotos
                         })
