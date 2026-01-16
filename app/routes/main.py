@@ -61,7 +61,7 @@ def carregar_painel_arquivos_por_pastas(user_id):
     static/fotos_clientes/<user_id>/<Tema>/<Safra>/<Mes>/<Data>/arquivos...
 
     Retorna:
-    painel[tema][safra][mes] = [
+    painel[tema_display][safra][mes] = [
       {"date": "YYYY-MM-DD", "photos": [{"name":..., "url":...}, ...]},
       ...
     ]
@@ -73,7 +73,32 @@ def carregar_painel_arquivos_por_pastas(user_id):
     if not os.path.exists(base_dir):
         return painel
 
-    # Tema
+    # ✅ Nome bonito para o Tema (pasta -> nome exibido)
+    TEMA_DISPLAY = {
+        "AplicacaoAerea": "Aplicação Aérea",
+        "AplicacaoTerrestre": "Aplicação Terrestre",
+        "FalhaPlantio": "Falha de Plantio",
+        "Sobreposicao": "Sobreposição",
+        "Efetividade": "Efetividade",
+    }
+
+    # ✅ Ordem correta dos meses
+    ORDEM_MESES = {
+        "Janeiro": 1,
+        "Fevereiro": 2,
+        "Março": 3,
+        "Abril": 4,
+        "Maio": 5,
+        "Junho": 6,
+        "Julho": 7,
+        "Agosto": 8,
+        "Setembro": 9,
+        "Outubro": 10,
+        "Novembro": 11,
+        "Dezembro": 12,
+    }
+
+    # Tema (pastas)
     temas = sorted(
         [t for t in os.listdir(base_dir) if os.path.isdir(os.path.join(base_dir, t))]
     )
@@ -81,23 +106,25 @@ def carregar_painel_arquivos_por_pastas(user_id):
     for tema in temas:
         tema_path = os.path.join(base_dir, tema)
 
+        tema_display = TEMA_DISPLAY.get(tema, tema)  # fallback: usa o nome da pasta
+
         # Safra
         safras = sorted(
-            [s for s in os.listdir(tema_path) if os.path.isdir(os.path.join(tema_path, s))]
+            [s for s in os.listdir(tema_path) if os.path.isdir(os.path.join(tema_path, s))],
+            reverse=True
         )
 
         for safra in safras:
             safra_path = os.path.join(tema_path, safra)
 
-            # Mês
-            meses = sorted(
-                [m for m in os.listdir(safra_path) if os.path.isdir(os.path.join(safra_path, m))]
-            )
+            # Meses (ordenados corretamente)
+            meses = [m for m in os.listdir(safra_path) if os.path.isdir(os.path.join(safra_path, m))]
+            meses = sorted(meses, key=lambda m: ORDEM_MESES.get(m, 999))
 
             for mes in meses:
                 mes_path = os.path.join(safra_path, mes)
 
-                # Datas
+                # Datas (mais recente primeiro)
                 datas = sorted(
                     [d for d in os.listdir(mes_path) if os.path.isdir(os.path.join(mes_path, d))],
                     reverse=True
@@ -109,17 +136,17 @@ def carregar_painel_arquivos_por_pastas(user_id):
                     fotos = []
                     for f in sorted(os.listdir(data_path)):
                         if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp")):
+                            # Aqui o URL usa o nome REAL da pasta do tema (não o display)
                             url = f"/static/fotos_clientes/{user_id}/{tema}/{safra}/{mes}/{data}/{f}"
                             fotos.append({"name": f, "url": url})
 
                     if fotos:
-                        painel[tema][safra][mes].append({
+                        painel[tema_display][safra][mes].append({
                             "date": data,
                             "photos": fotos
                         })
 
     return painel
-
 
 # =========================
 # Rotas públicas do site
