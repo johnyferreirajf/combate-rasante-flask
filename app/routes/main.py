@@ -276,3 +276,11 @@ def painel():
         aplicacoes_recentes=aplicacoes_recentes,
         painel=painel,
     )
+
+painel = carregar_painel_arquivos_por_pastas(current_user.id)
+
+return render_template(
+    "dashboard.html",
+    user=current_user,
+    painel=painel
+)

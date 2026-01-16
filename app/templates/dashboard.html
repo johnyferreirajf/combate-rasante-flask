@@ -9,10 +9,10 @@
     padding-bottom: 5rem;
   }
 
-  /* Card principal */
+  /* CARD DE BOAS VINDAS */
   .section-dashboard .dashboard-info-card {
     max-width: 820px;
-    margin: 0 auto 2.2rem auto;
+    margin: 0 auto 2rem auto;
     padding: 1.8rem 2.4rem;
     border-radius: 22px;
     background: rgba(0, 200, 120, 0.35);
@@ -41,141 +41,209 @@
     line-height: 1.4;
   }
 
-  footer,
-  .site-footer,
-  .footer-wrapper {
-    background: rgba(5, 22, 45, 0.45);
+  /* Fundo branco contornado p/ visibilidade */
+  .analises-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
   }
 
-  /* Accordion (Tema / Safra / Mês) */
-  .acc-level {
-    margin: 14px 0;
-    border-radius: 18px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.30);
-    background: rgba(255, 255, 255, 0.10);
+  .tema-block {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.38);
+    border-radius: 20px;
+    padding: 18px 18px 6px 18px;
+    margin-bottom: 18px;
     backdrop-filter: blur(10px);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.35);
   }
 
-  .acc-title {
-    list-style: none;
-    cursor: pointer;
-    padding: 14px 16px;
+  .tema-title {
+    font-size: 1.35rem;
     font-weight: 800;
-    color: rgba(255, 255, 255, 0.92);
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    text-shadow: 0 2px 8px rgba(0,0,0,.35);
+    color: rgba(255,255,255,0.95);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.45);
+    margin: 0 0 12px 0;
   }
 
-  .acc-title::-webkit-details-marker { display: none; }
-
-  .acc-title::before {
-    content: "▸";
-    display: inline-block;
-    transition: transform .2s ease;
-    margin-right: 6px;
-  }
-
-  details[open] > summary.acc-title::before {
-    transform: rotate(90deg);
-  }
-
-  .acc-count {
-    margin-left: auto;
-    font-weight: 700;
-    opacity: 0.85;
-  }
-
-  .acc-content {
-    padding: 14px 14px 18px 14px;
-  }
-
-  .acc-safra { margin: 12px 12px; }
-  .acc-mes { margin: 10px 12px; }
-
-  /* Bloco da análise (data) */
-  .analise-section {
-    margin: 16px 0 22px 0;
+  .safra-block {
+    margin: 0 0 12px 0;
     border-radius: 18px;
-    border: 2px solid rgba(255,255,255,0.65); /* contorno branco */
-    background: rgba(0, 0, 0, 0.22);
-    backdrop-filter: blur(10px);
     overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.25);
   }
 
-  .analise-header {
+  .safra-header {
+    padding: 12px 14px;
+    font-weight: 700;
+    color: rgba(255,255,255,0.95);
+    background: rgba(0, 200, 120, 0.35);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .safra-header small {
+    font-weight: 600;
+    opacity: 0.9;
+  }
+
+  /* mês dobrável */
+  details.mes-block {
+    background: rgba(255,255,255,0.10);
+    border-top: 1px solid rgba(255,255,255,0.18);
+    padding: 10px 12px 14px 12px;
+  }
+
+  details.mes-block > summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 800;
+    font-size: 1.02rem;
+    color: rgba(255,255,255,0.96);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    padding: 6px 2px;
+  }
+
+  details.mes-block > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mes-badge {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(0,0,0,0.18);
+    border: 1px solid rgba(255,255,255,0.20);
+  }
+
+  /* cards de data */
+  .data-card {
+    margin-top: 12px;
+    background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 18px;
+    padding: 12px 12px 14px 12px;
+    backdrop-filter: blur(10px);
+  }
+
+  .data-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.08);
-    border-bottom: 1px solid rgba(255,255,255,0.20);
+    margin-bottom: 10px;
   }
 
-  .analise-header h3 {
+  .data-header h3 {
     margin: 0;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 900;
     color: rgba(255,255,255,0.95);
-    text-shadow: 0 2px 8px rgba(0,0,0,.35);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.45);
   }
 
-  .badge {
-    padding: 6px 10px;
+  .data-count {
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 10px;
     border-radius: 999px;
-    font-weight: 800;
-    font-size: 0.85rem;
-    background: rgba(255,255,255,0.16);
-    border: 1px solid rgba(255,255,255,0.28);
-    color: rgba(255,255,255,0.92);
+    background: rgba(0,0,0,0.18);
+    border: 1px solid rgba(255,255,255,0.20);
+    color: rgba(255,255,255,0.9);
   }
 
-  /* Grid de imagens */
   .analise-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 14px;
-    padding: 14px 16px 18px 16px;
+    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 
   .analise-card {
-    border-radius: 16px;
+    border-radius: 18px;
     overflow: hidden;
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.18);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.30);
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    transition: transform .15s ease;
+    cursor: pointer;
+  }
+
+  .analise-card:hover {
+    transform: translateY(-2px);
   }
 
   .analise-img img {
     width: 100%;
-    height: 190px;
+    height: 160px;
     object-fit: cover;
     display: block;
-    cursor: pointer;
-    transition: transform .15s ease;
-  }
-
-  .analise-img img:hover {
-    transform: scale(1.02);
   }
 
   .analise-footer {
     padding: 10px 12px;
     font-weight: 700;
-    color: rgba(255,255,255,0.90);
-    font-size: 0.92rem;
-    background: rgba(0,0,0,0.18);
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.92);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.35);
+  }
+
+  /* modal imagem */
+  .img-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+  }
+  .img-modal.show {
+    display: block;
+  }
+  .img-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+  }
+  .img-modal-photo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 95vw;
+    max-height: 92vh;
+    border-radius: 16px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+    background: white;
+  }
+  .img-modal-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 2;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.12);
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+  }
+
+  footer,
+  .site-footer,
+  .footer-wrapper {
+    background: rgba(5, 22, 45, 0.45);
   }
 </style>
-
 
 <section class="section section-dashboard">
   <div class="container">
 
-    <!-- CARD PRINCIPAL -->
+    <!-- BOAS VINDAS -->
     <div class="dashboard-info-card">
       <h1>
         Bem-vindo,
@@ -191,82 +259,100 @@
       {% endif %}
     </div>
 
-
-    <!-- LISTAGEM ORGANIZADA: TEMA -> SAFRA -> MÊS -> DATA -->
     {% if painel %}
       <div class="analises-wrap">
 
+        {# === TEMA === #}
         {% for tema, safras in painel.items() %}
-          <details class="acc-level acc-tema" open>
-            <summary class="acc-title">
-              Tema: <strong>{{ tema }}</strong>
-            </summary>
+          <div class="tema-block">
+            <div class="tema-title">{{ tema }}</div>
 
+            {# === SAFRA === #}
             {% for safra, meses in safras.items() %}
-              <details class="acc-level acc-safra">
-                <summary class="acc-title">
-                  <strong>{{ safra }}</strong>
-                </summary>
+              <div class="safra-block">
+                <div class="safra-header">
+                  <span>{{ safra }}</span>
+                  <small>Organizado por mês</small>
+                </div>
 
-                {% for mes, analises in meses.items() %}
-                  <details class="acc-level acc-mes" open>
-                    <summary class="acc-title">
-                      {{ mes }}
-                      <span class="acc-count">({{ analises|length }} análises)</span>
+                {# === MES === #}
+                {% for mes, datas in meses.items() %}
+                  <details class="mes-block" open>
+                    <summary>
+                      <span>{{ mes }}</span>
+                      <span class="mes-badge">{{ datas|length }} dia(s)</span>
                     </summary>
 
-                    <div class="acc-content">
-                      {% for item in analises %}
-                        <section class="analise-section">
-                          <div class="analise-header">
-                            <h3>{{ tema }} — {{ item.date }}</h3>
-                            <span class="badge">{{ item.photos|length }} arquivo(s)</span>
-                          </div>
+                    {# === DATA === #}
+                    {% for item in datas %}
+                      <div class="data-card">
+                        <div class="data-header">
+                          <h3>{{ item.date }}</h3>
+                          <span class="data-count">{{ item.photos|length }} arquivo(s)</span>
+                        </div>
 
-                          <div class="analise-grid">
-                            {% for photo in item.photos %}
-                              <article class="analise-card">
-                                <div class="analise-img">
-                                  <img
-                                    src="{{ photo.url }}"
-                                    alt="{{ photo.name }}"
-                                    class="js-open-image"
-                                    data-full="{{ photo.url }}"
-                                  >
-                                </div>
-                                <div class="analise-footer">
-                                  {{ photo.name }}
-                                </div>
-                              </article>
-                            {% endfor %}
-                          </div>
-                        </section>
-                      {% endfor %}
-                    </div>
-
+                        <div class="analise-grid">
+                          {% for photo in item.photos %}
+                            <article class="analise-card js-open-image" data-full="{{ photo.url }}">
+                              <div class="analise-img">
+                                <img src="{{ photo.url }}" alt="{{ photo.name }}">
+                              </div>
+                              <div class="analise-footer">{{ photo.name }}</div>
+                            </article>
+                          {% endfor %}
+                        </div>
+                      </div>
+                    {% endfor %}
                   </details>
                 {% endfor %}
-
-              </details>
+              </div>
             {% endfor %}
-
-          </details>
+          </div>
         {% endfor %}
-
       </div>
     {% endif %}
 
   </div>
 </section>
 
-
-<!-- MODAL DA FOTO EM TAMANHO REAL -->
+<!-- Modal imagem -->
 <div id="imgModal" class="img-modal" aria-hidden="true">
   <div class="img-modal-backdrop"></div>
   <button type="button" class="img-modal-close" aria-label="Fechar">✕</button>
   <img id="imgModalPhoto" class="img-modal-photo" alt="">
 </div>
 
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+  // abrir modal ao clicar em miniatura
+  const modal = document.getElementById("imgModal");
+  const modalImg = document.getElementById("imgModalPhoto");
+  const closeBtn = document.querySelector(".img-modal-close");
+  const backdrop = document.querySelector(".img-modal-backdrop");
+
+  document.addEventListener("click", (e) => {
+    const card = e.target.closest(".js-open-image");
+    if (!card) return;
+
+    const full = card.getAttribute("data-full");
+    if (!full) return;
+
+    modalImg.src = full;
+    modal.classList.add("show");
+    modal.setAttribute("aria-hidden", "false");
+  });
+
+  function closeModal(){
+    modal.classList.remove("show");
+    modal.setAttribute("aria-hidden", "true");
+    modalImg.src = "";
+  }
+
+  closeBtn.addEventListener("click", closeModal);
+  backdrop.addEventListener("click", closeModal);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
+  });
+</script>
 
 {% endblock %}
