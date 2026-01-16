@@ -14,14 +14,16 @@ from flask import (
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
-# O blueprint com o NOME que o app espera: main_bp
+from app import db
+from app.models import Photo
+
+
 main_bp = Blueprint("main", __name__)
 
 
 # =========================
 # Rotas públicas do site
 # =========================
-
 @main_bp.route("/")
 def index():
     return render_template("home.html")
@@ -47,110 +49,102 @@ def contato():
 
 
 # =========================
-# Helpers (Painel)
-# =========================
-
-def _is_image_file(filename: str) -> bool:
-    allowed = current_app.config.get(
-        "ALLOWED_IMAGE_EXTENSIONS", {"jpg", "jpeg", "png", "webp"}
-    )
-    ext = filename.rsplit(".", 1)[-1].lower()
-    return ext in allowed
-
-
-def _safe_int(val: str):
-    try:
-        return int(val)
-    except Exception:
-        return 999999
-
-
-def load_photos_hierarchy(user_id: int):
-    """
-    Lê o padrão de pastas:
-      app/static/fotos_clientes/<user_id>/<TEMA>/<SAFRA>/<MES>/<DIA>/<arquivos>
-
-    Retorna um dicionário:
-      data[tema][safra][mes][dia] = [ {name, url}... ]
-    """
-    data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
-
-    base_root = os.path.join(current_app.static_folder, "fotos_clientes", str(user_id))
-    if not os.path.isdir(base_root):
-        return data  # vazio
-
-    # Tema
-    for tema in sorted(os.listdir(base_root)):
-        tema_path = os.path.join(base_root, tema)
-        if not os.path.isdir(tema_path):
-            continue
-
-        # Safra
-        for safra in sorted(os.listdir(tema_path)):
-            safra_path = os.path.join(tema_path, safra)
-            if not os.path.isdir(safra_path):
-                continue
-
-            # Mês
-            for mes in sorted(os.listdir(safra_path)):
-                mes_path = os.path.join(safra_path, mes)
-                if not os.path.isdir(mes_path):
-                    continue
-
-                # Dia
-                dias = [d for d in os.listdir(mes_path) if os.path.isdir(os.path.join(mes_path, d))]
-                dias_sorted = sorted(dias, key=_safe_int)
-
-                for dia in dias_sorted:
-                    dia_path = os.path.join(mes_path, dia)
-
-                    # arquivos de imagem dentro do dia
-                    files = []
-                    for fname in sorted(os.listdir(dia_path)):
-                        fpath = os.path.join(dia_path, fname)
-                        if os.path.isfile(fpath) and _is_image_file(fname):
-                            rel = f"fotos_clientes/{user_id}/{tema}/{safra}/{mes}/{dia}/{fname}"
-                            files.append({
-                                "name": os.path.splitext(fname)[0],
-                                "url": url_for("static", filename=rel),
-                            })
-
-                    if files:
-                        data[tema][safra][mes][dia] = files
-
-    return data
-
-
-def count_all_photos(data_hierarchy) -> int:
-    total = 0
-    for tema, safra_dict in data_hierarchy.items():
-        for safra, mes_dict in safra_dict.items():
-            for mes, dia_dict in mes_dict.items():
-                for dia, photos in dia_dict.items():
-                    total += len(photos)
-    return total
-
-
-# =========================
 # Painel / Área do cliente
 # =========================
-
 @main_bp.route("/painel", methods=["GET", "POST"])
 @login_required
 def painel():
     """
     Painel do cliente:
-      - exibição de fotos agrupadas por TEMA / SAFRA / MÊS / DIA
-      - (upload pode ser feito depois com um form específico)
+      - Exibe as análises do usuário por pastas:
+        TEMA -> SAFRA -> MÊS -> DIA -> FOTOS
+      Caminho:
+        app/static/fotos_clientes/<user_id>/<tema>/<safra>/<mes>/<dia>/arquivos
     """
 
-    # ✅ Carrega as fotos no novo padrão de pastas
-    photos_tree = load_photos_hierarchy(current_user.id)
-    total_photos = count_all_photos(photos_tree)
+    # ----- Pasta raíz do cliente -----
+    client_root = os.path.join(
+        current_app.static_folder,
+        "fotos_clientes",
+        str(current_user.id)
+    )
+
+    allowed_ext = {"jpg", "jpeg", "png", "webp"}  # ✅ pega .jpeg sim
+
+    # Estrutura final:
+    # {
+    #   "AplicacaoAerea": {
+    #       "Safra 2025-2026": {
+    #           "Janeiro": {
+    #               "15": [ {name,url}, ... ]
+    #           }
+    #       }
+    #   }
+    # }
+    tree = {}
+
+    if os.path.isdir(client_root):
+        temas = sorted(
+            [d for d in os.listdir(client_root) if os.path.isdir(os.path.join(client_root, d))],
+            key=lambda x: x.lower()
+        )
+
+        for tema in temas:
+            tema_path = os.path.join(client_root, tema)
+
+            safras = sorted(
+                [d for d in os.listdir(tema_path) if os.path.isdir(os.path.join(tema_path, d))],
+                key=lambda x: x.lower()
+            )
+
+            for safra in safras:
+                safra_path = os.path.join(tema_path, safra)
+
+                meses = sorted(
+                    [d for d in os.listdir(safra_path) if os.path.isdir(os.path.join(safra_path, d))],
+                    key=lambda x: x.lower()
+                )
+
+                for mes in meses:
+                    mes_path = os.path.join(safra_path, mes)
+
+                    dias = sorted(
+                        [d for d in os.listdir(mes_path) if os.path.isdir(os.path.join(mes_path, d))],
+                        key=lambda x: x.lower()
+                    )
+
+                    for dia in dias:
+                        dia_path = os.path.join(mes_path, dia)
+
+                        files = []
+                        for f in sorted(os.listdir(dia_path), key=lambda x: x.lower()):
+                            full = os.path.join(dia_path, f)
+                            if not os.path.isfile(full):
+                                continue
+
+                            ext = f.rsplit(".", 1)[-1].lower()
+                            if ext not in allowed_ext:
+                                continue
+
+                            rel_path = os.path.relpath(full, current_app.static_folder).replace("\\", "/")
+                            files.append({
+                                "name": f,
+                                "url": url_for("static", filename=rel_path)
+                            })
+
+                        if files:
+                            tree.setdefault(tema, {}).setdefault(safra, {}).setdefault(mes, {})[dia] = files
+
+    # Um "nome bonito" para o tema (opcional)
+    tema_labels = {
+        "AplicacaoAerea": "Aplicação Aérea",
+        "AplicacaoTerrestre": "Aplicação Terrestre",
+        "Drone": "Drone",
+    }
 
     return render_template(
         "dashboard.html",
         user=current_user,
-        photos_tree=photos_tree,
-        total_photos=total_photos,
+        tree=tree,
+        tema_labels=tema_labels
     )

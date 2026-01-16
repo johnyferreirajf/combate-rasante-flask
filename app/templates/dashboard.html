@@ -4,14 +4,14 @@
 {% block content %}
 
 <style>
-  .section-dashboard {
+  .section-dashboard{
     padding-top: 7rem;
     padding-bottom: 5rem;
   }
 
-  .section-dashboard .dashboard-info-card {
-    max-width: 920px;
-    margin: 0 auto 2.2rem auto;
+  .dashboard-info-card{
+    max-width: 900px;
+    margin: 0 auto 2rem auto;
     padding: 1.8rem 2.4rem;
     border-radius: 22px;
     background: rgba(0, 200, 120, 0.35);
@@ -21,179 +21,153 @@
     color: #042b18;
   }
 
-  .section-dashboard .dashboard-info-card h1 {
+  .dashboard-info-card h1{
     margin: 0 0 0.6rem 0;
     font-size: 1.6rem;
     color: #02140b;
   }
 
-  .section-dashboard .dashboard-info-card h2 {
+  .dashboard-info-card h2{
     margin: 0 0 0.5rem 0;
     font-size: 1.1rem;
-    font-weight: 700;
+    font-weight: 600;
     color: #02140b;
   }
 
-  .section-dashboard .dashboard-info-card p {
+  .dashboard-info-card p{
     margin: 0;
     font-size: 0.95rem;
     line-height: 1.4;
   }
 
-  /* Container geral das análises */
-  .analises-wrap {
-    max-width: 1200px;
+  /* Contorno branco pra melhorar visibilidade */
+  .panel-wrap{
+    max-width: 1150px;
     margin: 0 auto;
-  }
-
-  /* Fundo branco contornado para destacar tudo */
-  .panel-surface {
-    background: rgba(255,255,255,0.14);
-    border: 1px solid rgba(255,255,255,0.55);
-    border-radius: 22px;
     padding: 18px;
-    box-shadow: 0 18px 40px rgba(0,0,0,0.35);
-    backdrop-filter: blur(6px);
-  }
-
-  /* Accordion */
-  details.accord {
+    border-radius: 22px;
+    border: 2px solid rgba(255,255,255,0.65);
     background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.30);
-    border-radius: 18px;
-    padding: 12px 14px;
-    margin-bottom: 12px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 18px 42px rgba(0,0,0,0.35);
   }
 
-  details.accord summary {
-    cursor: pointer;
-    list-style: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    font-weight: 800;
-    color: #ffffff;
-    user-select: none;
-  }
-
-  details.accord summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .sum-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  .badge-count {
-    font-size: 12px;
-    font-weight: 700;
-    padding: 6px 10px;
-    border-radius: 999px;
-    background: rgba(0,0,0,0.30);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: rgba(255,255,255,0.95);
-  }
-
-  .level-title {
-    font-size: 16px;
-    letter-spacing: 0.2px;
-  }
-
-  .subblock {
-    margin-top: 12px;
-    padding-left: 8px;
-  }
-
-  /* Grid das fotos */
-  .analise-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    margin-top: 12px;
-  }
-
-  @media (max-width: 980px) {
-    .analise-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  .analise-card {
+  .grp{
+    margin-bottom: 14px;
     border-radius: 18px;
     overflow: hidden;
-    background: rgba(0,0,0,0.25);
-    border: 1px solid rgba(255,255,255,0.22);
+    border: 1px solid rgba(255,255,255,0.30);
+    background: rgba(0,0,0,0.10);
   }
 
-  .analise-img {
-    width: 100%;
-    background: rgba(255,255,255,0.06);
-  }
-
-  .analise-img img {
-    width: 100%;
-    height: auto;
-    display: block;
-    cursor: zoom-in;
-  }
-
-  .analise-footer {
-    padding: 10px 12px;
-    display: flex;
+  details summary{
+    cursor: pointer;
+    padding: 12px 14px;
+    font-weight: 800;
+    color: #fff;
+    list-style: none;
+    display:flex;
+    align-items:center;
     justify-content: space-between;
     gap: 10px;
   }
 
-  .analise-name {
-    color: rgba(255,255,255,0.95);
-    font-weight: 700;
-    font-size: 13px;
+  details summary::-webkit-details-marker{
+    display:none;
   }
 
-  /* Modal (imagem grande) */
-  .img-modal {
+  .badge{
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 800;
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+  }
+
+  .inner{
+    padding: 12px 14px 18px 14px;
+  }
+
+  .day-title{
+    font-size: 15px;
+    font-weight: 900;
+    color: #ffffff;
+    margin: 10px 0 10px 0;
+    opacity: .95;
+  }
+
+  .grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+  }
+
+  .card{
+    border-radius: 18px;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.22);
+    overflow:hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+  }
+
+  .card img{
+    width: 100%;
+    height: 170px;
+    object-fit: cover;
+    display:block;
+    cursor: pointer;
+  }
+
+  .card .foot{
+    padding: 10px 12px;
+    color: #fff;
+    font-size: 13px;
+    opacity: .95;
+  }
+
+  /* Modal da imagem */
+  .img-modal{
     position: fixed;
     inset: 0;
     display: none;
     z-index: 9999;
   }
+  .img-modal.active{ display: block; }
 
-  .img-modal.active {
-    display: block;
-  }
-
-  .img-modal-backdrop {
-    position: absolute;
-    inset: 0;
+  .img-modal-backdrop{
+    position:absolute;
+    inset:0;
     background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
   }
 
-  .img-modal-close {
-    position: absolute;
-    right: 18px;
-    top: 18px;
-    z-index: 2;
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.22);
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 12px;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-  }
-
-  .img-modal-photo {
-    position: absolute;
-    inset: 0;
-    margin: auto;
+  .img-modal-photo{
+    position:absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
     max-width: 92vw;
-    max-height: 92vh;
+    max-height: 88vh;
     border-radius: 14px;
-    box-shadow: 0 25px 70px rgba(0,0,0,0.45);
-    z-index: 2;
+    border: 2px solid rgba(255,255,255,0.35);
+    box-shadow: 0 30px 70px rgba(0,0,0,0.6);
+    background: #111;
+  }
+
+  .img-modal-close{
+    position:absolute;
+    top: 16px;
+    right: 18px;
+    border: none;
+    background: rgba(255,255,255,0.15);
+    color:#fff;
+    font-size: 20px;
+    border-radius: 12px;
+    padding: 10px 14px;
+    cursor:pointer;
+    border: 1px solid rgba(255,255,255,0.25);
   }
 </style>
 
@@ -206,7 +180,7 @@
         {{ (current_user.name if current_user and current_user.name else current_user.email) }}
       </h1>
 
-      {% if total_photos == 0 %}
+      {% if not tree %}
         <h2>Nenhuma análise de aplicação cadastrada ainda</h2>
         <p>
           Aqui você acompanha os registros das aplicações em formato de galeria de fotos.
@@ -215,111 +189,78 @@
       {% endif %}
     </div>
 
-    {% if total_photos > 0 %}
-      <div class="analises-wrap">
-        <div class="panel-surface">
+    {% if tree %}
+    <div class="panel-wrap">
 
-          <!-- TEMA -->
-          {% for tema, safra_dict in photos_tree.items() %}
-            <details class="accord" open>
-              <summary>
-                <div class="sum-left">
-                  <span class="level-title">Tema: {{ tema }}</span>
-                </div>
-                <span class="badge-count">
-                  {{
-                    safra_dict | length
-                  }}
-                  safra(s)
-                </span>
-              </summary>
+      <!-- Nível 1: Tema -->
+      {% for tema, safras in tree.items() %}
+        <details class="grp" open>
+          <summary>
+            <span>📌 {{ tema_labels.get(tema, tema) }}</span>
+            <span class="badge">{{ safras|length }} safra(s)</span>
+          </summary>
 
-              <div class="subblock">
+          <div class="inner">
 
-                <!-- SAFRA -->
-                {% for safra, mes_dict in safra_dict.items() %}
-                  <details class="accord">
-                    <summary>
-                      <div class="sum-left">
-                        <span class="level-title">Safra: {{ safra }}</span>
-                      </div>
-                      <span class="badge-count">
-                        {{ mes_dict | length }} mês(es)
-                      </span>
-                    </summary>
+            <!-- Nível 2: Safra -->
+            {% for safra, meses in safras.items() %}
+              <details class="grp">
+                <summary>
+                  <span>🌾 {{ safra }}</span>
+                  <span class="badge">{{ meses|length }} mês(es)</span>
+                </summary>
 
-                    <div class="subblock">
+                <div class="inner">
 
-                      <!-- MÊS -->
-                      {% for mes, dia_dict in mes_dict.items() %}
-                        <details class="accord">
-                          <summary>
-                            <div class="sum-left">
-                              <span class="level-title">{{ mes }}</span>
-                            </div>
-                            <span class="badge-count">
-                              {{ dia_dict | length }} dia(s)
-                            </span>
-                          </summary>
+                  <!-- Nível 3: Mês -->
+                  {% for mes, dias in meses.items() %}
+                    <details class="grp">
+                      <summary>
+                        <span>📅 {{ mes }}</span>
+                        <span class="badge">{{ dias|length }} dia(s)</span>
+                      </summary>
 
-                          <div class="subblock">
+                      <div class="inner">
 
-                            <!-- DIA -->
-                            {% for dia, photos in dia_dict.items() %}
-                              <details class="accord">
-                                <summary>
-                                  <div class="sum-left">
-                                    <span class="level-title">
-                                      Análise de Aplicação Aérea — Dia {{ dia }}
-                                    </span>
-                                  </div>
-                                  <span class="badge-count">
-                                    {{ photos|length }} arquivo(s)
-                                  </span>
-                                </summary>
+                        <!-- Nível 4: Dia -->
+                        {% for dia, fotos in dias.items() %}
+                          <div class="day-title">📍 Dia {{ dia }} <span class="badge">{{ fotos|length }} arquivo(s)</span></div>
 
-                                <div class="subblock">
-                                  <div class="analise-grid">
-                                    {% for photo in photos %}
-                                      <article class="analise-card">
-                                        <div class="analise-img">
-                                          <img
-                                            src="{{ photo.url }}"
-                                            alt="{{ photo.name }}"
-                                            class="js-open-image"
-                                            data-full="{{ photo.url }}"
-                                          >
-                                        </div>
-                                        <div class="analise-footer">
-                                          <div class="analise-name">{{ photo.name }}</div>
-                                        </div>
-                                      </article>
-                                    {% endfor %}
-                                  </div>
-                                </div>
-
-                              </details>
+                          <div class="grid">
+                            {% for foto in fotos %}
+                              <div class="card">
+                                <img
+                                  src="{{ foto.url }}"
+                                  alt="{{ foto.name }}"
+                                  class="js-open-image"
+                                  data-full="{{ foto.url }}"
+                                >
+                                <div class="foot">{{ foto.name }}</div>
+                              </div>
                             {% endfor %}
-
                           </div>
-                        </details>
-                      {% endfor %}
 
-                    </div>
-                  </details>
-                {% endfor %}
+                        {% endfor %}
 
-              </div>
-            </details>
-          {% endfor %}
+                      </div>
+                    </details>
+                  {% endfor %}
 
-        </div>
-      </div>
+                </div>
+              </details>
+            {% endfor %}
+
+          </div>
+        </details>
+      {% endfor %}
+
+    </div>
     {% endif %}
 
   </div>
 </section>
 
+<!-- MODAL -->
 <div id="imgModal" class="img-modal" aria-hidden="true">
   <div class="img-modal-backdrop"></div>
   <button type="button" class="img-modal-close" aria-label="Fechar">✕</button>
@@ -327,11 +268,15 @@
 </div>
 
 <script>
-  // Modal para abrir imagem no tamanho grande
   const modal = document.getElementById("imgModal");
-  const modalPhoto = document.getElementById("imgModalPhoto");
-  const closeBtn = modal.querySelector(".img-modal-close");
   const backdrop = modal.querySelector(".img-modal-backdrop");
+  const closeBtn = modal.querySelector(".img-modal-close");
+  const modalPhoto = document.getElementById("imgModalPhoto");
+
+  function closeModal(){
+    modal.classList.remove("active");
+    modalPhoto.src = "";
+  }
 
   document.addEventListener("click", (e) => {
     const img = e.target.closest(".js-open-image");
@@ -341,11 +286,6 @@
     modalPhoto.src = full;
     modal.classList.add("active");
   });
-
-  function closeModal(){
-    modal.classList.remove("active");
-    modalPhoto.src = "";
-  }
 
   closeBtn.addEventListener("click", closeModal);
   backdrop.addEventListener("click", closeModal);
