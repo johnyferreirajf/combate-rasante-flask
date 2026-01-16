@@ -14,13 +14,14 @@ from flask import (
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
-
+# O blueprint com o NOME que o app espera: main_bp
 main_bp = Blueprint("main", __name__)
 
 
 # =========================
 # Rotas públicas do site
 # =========================
+
 @main_bp.route("/")
 def index():
     return render_template("home.html")
@@ -41,140 +42,115 @@ def contato():
     if request.method == "POST":
         flash("Mensagem recebida! Em breve entraremos em contato.", "success")
         return redirect(url_for("main.contato"))
+
     return render_template("contato.html")
+
+
+# =========================
+# Helpers (Painel)
+# =========================
+
+def _is_image_file(filename: str) -> bool:
+    allowed = current_app.config.get(
+        "ALLOWED_IMAGE_EXTENSIONS", {"jpg", "jpeg", "png", "webp"}
+    )
+    ext = filename.rsplit(".", 1)[-1].lower()
+    return ext in allowed
+
+
+def _safe_int(val: str):
+    try:
+        return int(val)
+    except Exception:
+        return 999999
+
+
+def load_photos_hierarchy(user_id: int):
+    """
+    Lê o padrão de pastas:
+      app/static/fotos_clientes/<user_id>/<TEMA>/<SAFRA>/<MES>/<DIA>/<arquivos>
+
+    Retorna um dicionário:
+      data[tema][safra][mes][dia] = [ {name, url}... ]
+    """
+    data = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+
+    base_root = os.path.join(current_app.static_folder, "fotos_clientes", str(user_id))
+    if not os.path.isdir(base_root):
+        return data  # vazio
+
+    # Tema
+    for tema in sorted(os.listdir(base_root)):
+        tema_path = os.path.join(base_root, tema)
+        if not os.path.isdir(tema_path):
+            continue
+
+        # Safra
+        for safra in sorted(os.listdir(tema_path)):
+            safra_path = os.path.join(tema_path, safra)
+            if not os.path.isdir(safra_path):
+                continue
+
+            # Mês
+            for mes in sorted(os.listdir(safra_path)):
+                mes_path = os.path.join(safra_path, mes)
+                if not os.path.isdir(mes_path):
+                    continue
+
+                # Dia
+                dias = [d for d in os.listdir(mes_path) if os.path.isdir(os.path.join(mes_path, d))]
+                dias_sorted = sorted(dias, key=_safe_int)
+
+                for dia in dias_sorted:
+                    dia_path = os.path.join(mes_path, dia)
+
+                    # arquivos de imagem dentro do dia
+                    files = []
+                    for fname in sorted(os.listdir(dia_path)):
+                        fpath = os.path.join(dia_path, fname)
+                        if os.path.isfile(fpath) and _is_image_file(fname):
+                            rel = f"fotos_clientes/{user_id}/{tema}/{safra}/{mes}/{dia}/{fname}"
+                            files.append({
+                                "name": os.path.splitext(fname)[0],
+                                "url": url_for("static", filename=rel),
+                            })
+
+                    if files:
+                        data[tema][safra][mes][dia] = files
+
+    return data
+
+
+def count_all_photos(data_hierarchy) -> int:
+    total = 0
+    for tema, safra_dict in data_hierarchy.items():
+        for safra, mes_dict in safra_dict.items():
+            for mes, dia_dict in mes_dict.items():
+                for dia, photos in dia_dict.items():
+                    total += len(photos)
+    return total
 
 
 # =========================
 # Painel / Área do cliente
 # =========================
-def _is_image(filename: str) -> bool:
-    ext = filename.rsplit(".", 1)[-1].lower()
-    allowed = current_app.config.get("ALLOWED_IMAGE_EXTENSIONS", {"jpg", "jpeg", "png", "webp"})
-    return ext in allowed
-
-
-def _scan_client_photos(user_id: int):
-    """
-    Lê imagens do caminho:
-      app/static/fotos_clientes/<user_id>/Safra.../Mes.../Data.../imagens
-
-    Retorna estrutura:
-      themes -> safra -> mes -> data -> [fotos]
-    """
-    photos_root = os.path.join(current_app.static_folder, "fotos_clientes", str(user_id))
-
-    themes = {
-        "Análise de Aplicação Aérea": defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    }
-
-    if not os.path.isdir(photos_root):
-        return themes
-
-    # Safras
-    for safra_name in sorted(os.listdir(photos_root)):
-        safra_path = os.path.join(photos_root, safra_name)
-        if not os.path.isdir(safra_path):
-            continue
-
-        # Meses
-        for mes_name in sorted(os.listdir(safra_path)):
-            mes_path = os.path.join(safra_path, mes_name)
-            if not os.path.isdir(mes_path):
-                continue
-
-            # Datas
-            for data_name in sorted(os.listdir(mes_path), reverse=True):
-                data_path = os.path.join(mes_path, data_name)
-                if not os.path.isdir(data_path):
-                    continue
-
-                # Fotos dentro da data
-                files = sorted(os.listdir(data_path))
-                for f in files:
-                    if not _is_image(f):
-                        continue
-
-                    rel_url = f"fotos_clientes/{user_id}/{safra_name}/{mes_name}/{data_name}/{f}"
-                    photo = {
-                        "name": os.path.splitext(f)[0],
-                        "url": url_for("static", filename=rel_url),
-                    }
-                    themes["Análise de Aplicação Aérea"][safra_name][mes_name][data_name].append(photo)
-
-    return themes
-
 
 @main_bp.route("/painel", methods=["GET", "POST"])
 @login_required
 def painel():
     """
     Painel do cliente:
-      - (opcional) upload de fotos
-      - exibição organizada por Tema -> Safra -> Mês -> Data
+      - exibição de fotos agrupadas por TEMA / SAFRA / MÊS / DIA
+      - (upload pode ser feito depois com um form específico)
     """
 
-    # ---------- Upload (opcional) ----------
-    if request.method == "POST":
-        file = request.files.get("image")
-        if not file or file.filename == "":
-            flash("Selecione uma imagem para enviar.", "error")
-            return redirect(url_for("main.painel"))
-
-        if not _is_image(file.filename):
-            flash("Formato de imagem não permitido.", "error")
-            return redirect(url_for("main.painel"))
-
-        # Você pode mudar isso depois:
-        safra_name = request.form.get("safra", "Safra 2025-2026").strip() or "Safra 2025-2026"
-        mes_name = request.form.get("mes", "").strip()
-
-        # Se não vier mês, gera automático: "01 - Janeiro"
-        if not mes_name:
-            meses = [
-                "01 - Janeiro","02 - Fevereiro","03 - Março","04 - Abril","05 - Maio","06 - Junho",
-                "07 - Julho","08 - Agosto","09 - Setembro","10 - Outubro","11 - Novembro","12 - Dezembro"
-            ]
-            mes_name = meses[datetime.utcnow().month - 1]
-
-        data_name = request.form.get("data", "").strip()
-        if not data_name:
-            data_name = datetime.utcnow().strftime("%Y-%m-%d")
-
-        base_path = os.path.join(
-            current_app.static_folder,
-            "fotos_clientes",
-            str(current_user.id),
-            safra_name,
-            mes_name,
-            data_name,
-        )
-        os.makedirs(base_path, exist_ok=True)
-
-        safe_name = secure_filename(file.filename)
-        filename = f"{int(datetime.utcnow().timestamp())}_{safe_name}"
-        filepath = os.path.join(base_path, filename)
-
-        file.save(filepath)
-
-        flash("Foto enviada com sucesso.", "success")
-        return redirect(url_for("main.painel"))
-
-    # ---------- Montar painel ----------
-    themes = _scan_client_photos(current_user.id)
-
-    # Se tem algo dentro ou está vazio
-    has_any = False
-    for theme_name, safras in themes.items():
-        for safra, meses in safras.items():
-            for mes, datas in meses.items():
-                for data, fotos in datas.items():
-                    if fotos:
-                        has_any = True
-                        break
+    # ✅ Carrega as fotos no novo padrão de pastas
+    photos_tree = load_photos_hierarchy(current_user.id)
+    total_photos = count_all_photos(photos_tree)
 
     return render_template(
         "dashboard.html",
         user=current_user,
-        themes=themes,
-        has_any=has_any,
+        photos_tree=photos_tree,
+        total_photos=total_photos,
     )
