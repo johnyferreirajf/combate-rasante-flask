@@ -1,41 +1,42 @@
+import os
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
-
+from .extensions import db
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, instance_relative_config=True)
+
+    # ✅ garante a pasta instance/
+    os.makedirs(app.instance_path, exist_ok=True)
+
+    # ✅ carrega config.py (se você usa)
     app.config.from_object("config.Config")
 
-    # Banco
+    # ✅ banco no Render (se tiver postgres)
+    db_url = os.environ.get("DATABASE_URL")
+
+    # Render às vezes vem com postgres:// e precisa ser postgresql://
+    if db_url and db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+    # ✅ se não tiver DATABASE_URL, usa SQLite na pasta instance/
+    sqlite_db_path = os.path.join(app.instance_path, "app.db")
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url or f"sqlite:///{sqlite_db_path}"
+
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
     db.init_app(app)
 
-    # Importa modelos antes de criar tabelas (necessário para db.create_all enxergar tudo)
-    from app import models  # noqa: F401
-
-    # Cria as tabelas automaticamente
+    # ✅ IMPORTANTE: importar models antes do create_all
     with app.app_context():
+        from app.models.employee import Employee
+        from app.models.employee_file import EmployeeFile
+        # (se tiver outros models, pode importar aqui também)
         db.create_all()
 
-    # Blueprints
+    # seus blueprints
     from app.routes.main import main_bp
-    from app.routes.auth import auth_bp
     from app.routes.employee import employee_bp
-
     app.register_blueprint(main_bp)
-    app.register_blueprint(auth_bp)
     app.register_blueprint(employee_bp)
-
-    # Context: current_user (cliente)
-    from app.utils.security import get_current_user, get_current_employee
-
-    @app.context_processor
-    def inject_user():
-        return {
-            "current_user": get_current_user(),
-            "user": get_current_user(),
-            "current_employee": get_current_employee(),
-        }
 
     return app
