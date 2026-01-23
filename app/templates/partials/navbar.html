@@ -1,0 +1,29 @@
+<header class="navbar">
+  <div class="container navbar-inner">
+    <a href="{{ url_for('main.index') }}" class="navbar-logo">
+      <img
+        src="{{ url_for('static', filename='img/hero-combate.jpeg') }}"
+        alt="COMBATE RASANTE Aviação Agrícola"
+        class="navbar-logo-img"
+      >
+    </a>
+
+    <button class="navbar-toggle" id="navbar-toggle" aria-label="Abrir menu">
+      ☰
+    </button>
+
+    <nav class="navbar-menu" id="navbar-menu">
+      <a href="{{ url_for('main.index') }}" class="navbar-link">Início</a>
+      <a href="{{ url_for('main.index') }}#servicos" class="navbar-link">Serviços</a>
+      <a href="{{ url_for('main.index') }}#tecnologia" class="navbar-link">Tecnologia</a>
+      <a href="{{ url_for('main.contato') }}" class="navbar-link">Contato</a>
+
+      {% if session.get('user_id') %}
+        <a href="{{ url_for('main.painel') }}" class="navbar-button">Painel</a>
+        <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-link-secondary">Sair</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}" class="navbar-button">Área do Cliente</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>

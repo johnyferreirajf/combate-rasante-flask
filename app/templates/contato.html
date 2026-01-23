@@ -1,0 +1,119 @@
+{% extends "layout.html" %}
+
+{% block title %}Contato - COMBATE RASANTE{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+    <h1 class="section-title">Entre em contato</h1>
+    <p class="section-subtitle">
+      Fale com a equipe da COMBATE RASANTE Aviação Agrícola para solicitar orçamento,
+      tirar dúvidas ou agendar uma visita.
+    </p>
+
+    <div class="contact-grid">
+      <!-- FORM -->
+      <div class="card glass-card">
+        <form method="POST" action="{{ url_for('main.solicitar_orcamento') }}" class="form">
+          <div class="form-group">
+            <label for="nome">Nome</label>
+            <input id="nome" name="nome" class="form-control" placeholder="Seu nome" required />
+          </div>
+
+          <div class="form-group">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" class="form-control" placeholder="seuemail@exemplo.com" required />
+          </div>
+
+          <div class="form-group">
+            <label for="telefone">Telefone</label>
+            <input id="telefone" name="telefone" class="form-control" placeholder="(64) 99983-6005" />
+          </div>
+
+          <div class="form-group">
+            <label for="mensagem">Mensagem</label>
+            <textarea id="mensagem" name="mensagem" class="form-control" placeholder="Escreva sua mensagem" rows="6" required></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-full">Enviar mensagem</button>
+        </form>
+      </div>
+
+      <!-- LADO DIREITO -->
+      <div class="contact-side">
+
+        <div class="card glass-card contact-card">
+          <h3>Contato direto</h3>
+          <div class="contact-lines">
+            <div><strong>Telefones:</strong><br>(64) 99983-6005</div>
+            <div style="margin-top:10px;"><strong>E-mail comercial:</strong><br>weikren@combateaviacao.com.br</div>
+          </div>
+        </div>
+
+        <div class="card glass-card contact-card">
+          <h3>Redes sociais</h3>
+
+          <a class="social-item" href="https://wa.me/5564999836005" target="_blank" rel="noopener">
+            <span class="social-ico">
+              <img src="{{ url_for('static', filename='img/social/whatsapp.png') }}" alt="WhatsApp">
+            </span>
+            <div class="social-txt">
+              <div class="social-title">WhatsApp</div>
+              <div class="social-sub">Falar agora</div>
+            </div>
+          </a>
+
+          <a class="social-item" href="https://instagram.com/combaterasante" target="_blank" rel="noopener">
+            <span class="social-ico">
+              <img src="{{ url_for('static', filename='img/social/instagram.png') }}" alt="Instagram">
+            </span>
+            <div class="social-txt">
+              <div class="social-title">Instagram</div>
+              <div class="social-sub">@combaterasante</div>
+            </div>
+          </a>
+
+          <a class="social-item" href="https://facebook.com/combaterasante" target="_blank" rel="noopener">
+            <span class="social-ico">
+              <img src="{{ url_for('static', filename='img/social/facebook.png') }}" alt="Facebook">
+            </span>
+            <div class="social-txt">
+              <div class="social-title">Facebook</div>
+              <div class="social-sub">/combaterasante</div>
+            </div>
+          </a>
+        </div>
+
+        <div class="card glass-card contact-card">
+          <h3>Endereços</h3>
+          <div class="contact-lines">
+            <div>
+              <strong>Matriz:</strong><br>
+              ROD GO 320 KM 82 - Vicentinópolis/GO<br>
+              Saída Joviânia<br>
+              CEP 75.555-000
+            </div>
+
+            <div style="margin-top:12px;">
+              <strong>Filial:</strong><br>
+              Aeroporto Municipal de Ituiutaba/MG<br>
+              Hangar 10
+            </div>
+          </div>
+        </div>
+
+        <div class="card glass-card contact-card">
+          <h3>Localização</h3>
+          <div class="map-embed">
+            <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15199.26687885818!2d-49.783491!3d-17.753273!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94a00f693169efb7%3A0xa933c2a5eda882cd!2sCombate!5e0!3m2!1spt-BR!2sbr!4v1769115219891!5m2!1spt-BR!2sbr"
+              width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

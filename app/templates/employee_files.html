@@ -1,0 +1,150 @@
+{% extends "layout.html" %}
+{% block title %}COMBATE RASANTE - Arquivos Internos{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container">
+
+    <div class="section-header" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+      <div>
+        <h1 style="margin-bottom:6px;">Arquivos de trabalho - Combate Rasante</h1>
+        <p style="margin:0; opacity:.9;">
+          Bem-vindo, <strong>{{ employee.name }}</strong>
+          <span style="opacity:.75;">({{ employee.username }})</span>
+        </p>
+      </div></div>
+
+    <!-- Breadcrumb -->
+    <div style="margin: 10px 0 18px 0;">
+      <span class="home-stream-pill" style="margin-bottom:0;">
+        Pasta atual:
+        {% if current_path %}
+          <a href="{{ url_for('employee.files') }}" style="color:#fff; text-decoration:none; margin-left:6px;">/</a>
+          {% for c in crumbs %}
+            <span style="opacity:.7;">›</span>
+            <a href="{{ url_for('employee.files', path=c.path) }}" style="color:#fff; text-decoration:none;">
+              {{ c.name }}
+            </a>
+          {% endfor %}
+        {% else %}
+          <strong style="color:#fff; margin-left:6px;">/ (raiz)</strong>
+        {% endif %}
+      </span>
+    </div>
+
+    <div class="grid-2" style="align-items:start;">
+      <!-- COLUNA ESQUERDA: PASTAS -->
+      <div class="card">
+        <h2 style="margin-top:0;">Pastas</h2>
+
+        <form method="post" action="{{ url_for('employee.mkdir') }}" class="form-vertical" style="margin-bottom:18px;">
+          <input type="hidden" name="path" value="{{ current_path }}">
+          <label>Criar nova pasta</label>
+          <div style="display:flex; gap:10px; align-items:center;">
+            <input type="text" name="name" placeholder="Ex: Relatórios" required style="flex:1;">
+            <button class="btn-primary" type="submit">Criar</button>
+          </div>
+        </form>
+
+        {% if folders %}
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            {% for f in folders %}
+              <div class="file-item" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                <a href="{{ url_for('employee.files', path=(current_path ~ '/' ~ f)|trim('/')) }}" style="text-decoration:none; color:#fff;">
+                  📁 <strong>{{ f }}</strong>
+                </a>
+
+                <div style="display:flex; gap:8px; align-items:center;">
+                  <!-- Renomear pasta -->
+                  <form method="post" action="{{ url_for('employee.rename_folder') }}" style="display:flex; gap:6px; align-items:center;">
+                    <input type="hidden" name="path" value="{{ current_path }}">
+                    <input type="hidden" name="old_name" value="{{ f }}">
+                    <input type="text" name="new_name" placeholder="Renomear" style="width:140px;">
+                    <button class="btn-secondary" type="submit">OK</button>
+                  </form>
+
+                  <!-- Excluir pasta -->
+                  <form method="post" action="{{ url_for('employee.delete_folder') }}">
+                    <input type="hidden" name="path" value="{{ current_path }}">
+                    <input type="hidden" name="name" value="{{ f }}">
+                    <button class="btn-danger" type="submit" onclick="return confirm('Excluir a pasta e tudo dentro dela?');">
+                      Excluir
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="opacity:.8;">Nenhuma pasta aqui ainda.</p>
+        {% endif %}
+      </div>
+
+      <!-- COLUNA DIREITA: ARQUIVOS -->
+      <div class="card">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <h2 style="margin-top:0;">Arquivos</h2>
+
+          <!-- Upload -->
+          <form method="post" action="{{ url_for('employee.upload') }}" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="hidden" name="path" value="{{ current_path }}">
+            <input type="file" name="file" required>
+            <button class="btn-primary" type="submit">Enviar</button>
+          </form>
+        </div>
+
+        <div style="margin-top:12px; opacity:.8;">
+          Aqui todos os funcionários podem enviar e acessar arquivos dessa pasta.
+        </div>
+
+        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.12); margin:16px 0;">
+
+        {% if items %}
+          <div class="file-list">
+            {% for item in items %}
+              <div class="file-item" style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+                <div style="min-width:240px; flex:1;">
+                  <div style="font-weight:900; font-size:16px;">
+                    {{ item.title or item.original_filename }}
+                  </div>
+                  <div style="opacity:.75; font-size:13px;">
+                    Enviado por <strong>{{ item.uploader.name }}</strong> • {{ item.uploaded_at.strftime("%d/%m/%Y %H:%M") }}
+                  </div>
+                  {% if item.description %}
+                    <div style="opacity:.8; margin-top:6px;">
+                      {{ item.description }}
+                    </div>
+                  {% endif %}
+                </div>
+
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                  <a class="btn-secondary" href="{{ url_for('employee.download', file_id=item.id) }}">Baixar</a>
+
+                  <!-- Renomear (nome exibido) -->
+                  <form method="post" action="{{ url_for('employee.rename_file', file_id=item.id) }}" style="display:flex; gap:6px; align-items:center;">
+                    <input type="hidden" name="path" value="{{ current_path }}">
+                    <input type="text" name="new_title" placeholder="Renomear (título)" style="width:170px;">
+                    <button class="btn-secondary" type="submit">OK</button>
+                  </form>
+
+                  <!-- Excluir -->
+                  <form method="post" action="{{ url_for('employee.delete_file', file_id=item.id) }}">
+                    <input type="hidden" name="path" value="{{ current_path }}">
+                    <button class="btn-danger" type="submit" onclick="return confirm('Excluir este arquivo?');">
+                      Excluir
+                    </button>
+                  </form>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="opacity:.85;">Nenhum arquivo enviado nesta pasta ainda.</p>
+        {% endif %}
+
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

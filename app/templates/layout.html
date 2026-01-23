@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}COMBATE RASANTE{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/main.css') }}"
+    >
+  </head>
+  <body>
+    <!-- Navbar -->
+    <header class="navbar">
+      <div class="container navbar-inner">
+        <a href="{{ url_for('main.index') }}" class="navbar-logo">
+          <img
+            src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+            alt="COMBATE RASANTE"
+            class="navbar-logo-img"
+            onerror="this.style.display='none';"
+          >
+          <div class="navbar-logo-text">
+            <span class="navbar-logo-title">COMBATE RASANTE</span>
+            <span class="navbar-logo-subtitle">Aviação Agrícola</span>
+          </div>
+        </a>
+
+        <nav class="navbar-links" id="navbarLinks">
+          <a href="{{ url_for('main.index') }}" class="navbar-link">Início</a>
+          <a href="{{ url_for('main.servicos') }}" class="navbar-link">Serviços</a>
+          <a href="{{ url_for('main.tecnologia') }}" class="navbar-link">Tecnologia</a>
+          <a href="{{ url_for('main.contato') }}" class="navbar-link">Contato</a>
+
+          {# -------------------------
+             BOTÕES DINÂMICOS
+          -------------------------- #}
+          {% if session.get('employee_id') %}
+            <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">
+              Sair do painel
+            </a>
+          {% elif session.get('user_id') %}
+            <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">
+              Painel
+            </a>
+            <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button">
+              Sair do painel
+            </a>
+          {% else %}
+            <a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">
+              Área do Cliente
+            </a>
+            <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button">
+              Área de Funcionários
+            </a>
+          {% endif %}
+
+        </nav>
+
+
+        <button class="navbar-toggle" type="button" onclick="toggleNavbar()">
+          &#9776;
+        </button>
+      </div>
+    </header>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-container">
+          {% for category, message in messages %}
+            <div class="flash-message {% if category == 'success' %}flash-success{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Conteúdo principal -->
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container footer-grid">
+        <div>
+          <div class="footer-logo">
+            <img
+              src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+              alt="COMBATE RASANTE"
+              class="footer-logo-img"
+              onerror="this.style.display='none';"
+            >
+            <div>
+              <div class="footer-logo-title">COMBATE RASANTE</div>
+              <div class="footer-logo-subtitle">Aviação Agrícola</div>
+            </div>
+          </div>
+          <p class="footer-text">
+            Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Contatos</h3>
+          <ul class="footer-list">
+            <li><span class="footer-label">Telefone:</span> 64 99983-6005 / 64 99221-7002</li>
+            <li><span class="footer-label">E-mail:</span> weikren@combateaviacao.com.br</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Matriz</h3>
+          <ul class="footer-list">
+            <li>Rod. GO 320, Km 82 – Vicentinópolis/GO</li>
+            <li>Saída para Joviânia – CEP 75.555-000</li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 class="footer-heading">Filial</h3>
+          <ul class="footer-list">
+            <li>Aeroporto Municipal de Ituiutaba/MG</li>
+            <li>Hangar 10</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        © 2026 COMBATE RASANTE Aviação Agrícola. Todos os direitos reservados.
+      </div>
+    </footer>
+
+    <script>
+      function toggleNavbar() {
+        const nav = document.getElementById("navbarLinks");
+        if (!nav) return;
+        if (nav.style.display === "flex") {
+          nav.style.display = "none";
+        } else {
+          nav.style.display = "flex";
+        }
+      }
+    </script>
+  </body>
+</html>

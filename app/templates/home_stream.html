@@ -1,0 +1,39 @@
+{% extends "layout.html" %}
+{% block title %}COMBATE RASANTE - Central de Atividades{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home_stream.css') }}">
+
+<section class="home-stream-hero">
+  <div class="home-stream-overlay"></div>
+
+  <div class="home-stream-container"><!-- TÍTULO / SUBTÍTULO (mantém o que você já ajustou no CSS) -->
+    <h1 class="home-stream-title">COMBATE RASANTE</h1>
+    <p class="home-stream-subtitle">
+      Aplicação Aérea de <span class="alta-precisao">Alta Precisão</span>
+    </p>
+
+    <div class="home-stream-pill">
+      Central de Atividades
+    </div>
+
+
+    <!-- CARROSSEL 3 CARDS (estilo Netflix) -->
+    <div class="stream-carousel" aria-label="Carrossel de seções">
+      <button class="stream-arrow stream-prev" type="button" aria-label="Anterior">‹</button>
+
+      <div class="stream-track" id="streamTrack">
+        <!-- Os cards são renderizados via JS -->
+      </div>
+
+      <button class="stream-arrow stream-next" type="button" aria-label="Próximo">›</button>
+    </div>
+
+    <div class="stream-dots" id="streamDots" aria-hidden="true"></div>
+
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
+{% endblock %}

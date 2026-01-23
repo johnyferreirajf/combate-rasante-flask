@@ -1,0 +1,215 @@
+{% extends "layout.html" %}
+{% block title %}COMBATE RASANTE - Aviação Agrícola{% endblock %}
+
+{% block content %}
+
+<section class="netflix-hero">
+  <div class="netflix-hero-overlay"></div>
+
+  <div class="container netflix-hero-content">
+    <div class="hero-left">
+      <h1>COMBATE RASANTE</h1>
+      <p>
+        Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
+        Acompanhe relatórios, mapas e histórico das operações no painel do cliente.
+      </p>
+
+      <div class="hero-actions">
+        <a href="{{ url_for('auth.login') }}" class="btn-hero primary">
+          Acessar Painel
+        </a>
+        <a href="{{ url_for('main.servicos') }}" class="btn-hero secondary">
+          Ver Serviços
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-mini-cards">
+        <div class="mini-card">
+          <div class="mini-card-title">Novidade</div>
+          <div class="mini-card-text">Painel com análises organizadas por Safra/Mês/Dia</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-title">Tecnologia</div>
+          <div class="mini-card-text">Mapas, indicadores e rastreabilidade por talhão</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-title">Agilidade</div>
+          <div class="mini-card-text">Histórico operacional sempre disponível ao cliente</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="netflix-section">
+  <div class="container">
+
+    <!-- ======= NOVIDADES ======= -->
+    <div class="row-header">
+      <h2>Novidades</h2>
+      <a class="row-link" href="{{ url_for('main.tecnologia') }}">Ver mais</a>
+    </div>
+
+    <div class="row-stream" data-row="novidades">
+      <button class="row-btn left" aria-label="voltar">‹</button>
+
+      <div class="row-track">
+        <article class="card-netflix">
+          <div class="card-top">
+            <span class="badge">Novo</span>
+            <h3>Dashboard Premium</h3>
+          </div>
+          <p>Organização por Tema → Safra → Mês → Dia</p>
+          <div class="card-actions">
+            <a href="{{ url_for('auth.login') }}" class="card-btn">Abrir</a>
+          </div>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top">
+            <span class="badge">Info</span>
+            <h3>Indicadores</h3>
+          </div>
+          <p>Cobertura, área aplicada e histórico por operação</p>
+          <div class="card-actions">
+            <a href="{{ url_for('main.tecnologia') }}" class="card-btn">Ver</a>
+          </div>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top">
+            <span class="badge">Novo</span>
+            <h3>Área do Cliente</h3>
+          </div>
+          <p>Relatórios e arquivos sempre disponíveis</p>
+          <div class="card-actions">
+            <a href="{{ url_for('auth.login') }}" class="card-btn">Entrar</a>
+          </div>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top">
+            <span class="badge">Feature</span>
+            <h3>Mapas</h3>
+          </div>
+          <p>Mapas de aplicação e controle operacional</p>
+          <div class="card-actions">
+            <a href="{{ url_for('main.tecnologia') }}" class="card-btn">Ver</a>
+          </div>
+        </article>
+      </div>
+
+      <button class="row-btn right" aria-label="avançar">›</button>
+    </div>
+
+    <!-- ======= EQUIPES ======= -->
+    <div class="row-header">
+      <h2>Equipes</h2>
+      <a class="row-link" href="{{ url_for('main.servicos') }}">Ver mais</a>
+    </div>
+
+    <div class="row-netflix" data-row="equipes">
+      <button class="row-btn left" aria-label="voltar">‹</button>
+
+      <div class="row-track">
+        <article class="card-netflix card-image">
+          <h3>Operação Aérea</h3>
+          <p>Pilotos e equipe de apoio</p>
+        </article>
+
+        <article class="card-netflix card-image">
+          <h3>Planejamento</h3>
+          <p>Estratégia e logística</p>
+        </article>
+
+        <article class="card-netflix card-image">
+          <h3>Controle de Faixa</h3>
+          <p>Precisão e uniformidade</p>
+        </article>
+
+        <article class="card-netflix card-image">
+          <h3>Monitoramento</h3>
+          <p>Indicadores e relatórios</p>
+        </article>
+      </div>
+
+      <button class="row-btn right" aria-label="avançar">›</button>
+    </div>
+
+    <!-- ======= ATIVIDADES ======= -->
+    <div class="row-header">
+      <h2>Atividades</h2>
+      <a class="row-link" href="{{ url_for('main.servicos') }}">Ver mais</a>
+    </div>
+
+    <div class="row-netflix" data-row="atividades">
+      <button class="row-btn left" aria-label="voltar">‹</button>
+
+      <div class="row-track">
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Ativo</span><h3>Pulverização</h3></div>
+          <p>Aplicação precisa e segura</p>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Ativo</span><h3>Mapeamento</h3></div>
+          <p>Rastreio e relatórios por área</p>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Ativo</span><h3>Relatórios</h3></div>
+          <p>Resultados para tomada de decisão</p>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Ativo</span><h3>Histórico</h3></div>
+          <p>Arquivos organizados por safra</p>
+        </article>
+      </div>
+
+      <button class="row-btn right" aria-label="avançar">›</button>
+    </div>
+
+    <!-- ======= CLIENTES ======= -->
+    <div class="row-header">
+      <h2>Clientes</h2>
+      <a class="row-link" href="{{ url_for('main.contato') }}">Fale conosco</a>
+    </div>
+
+    <div class="row-netflix" data-row="clientes">
+      <button class="row-btn left" aria-label="voltar">‹</button>
+
+      <div class="row-track">
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Cana</span><h3>Usinas</h3></div>
+          <p>Operações com histórico e rastreabilidade</p>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Grãos</span><h3>Fazendas</h3></div>
+          <p>Aplicação com controle de faixa</p>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Premium</span><h3>Painel</h3></div>
+          <p>Arquivos e análises organizadas</p>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Parceiros</span><h3>Consultorias</h3></div>
+          <p>Relatórios para tomada de decisão</p>
+        </article>
+      </div>
+
+      <button class="row-btn right" aria-label="avançar">›</button>
+    </div>
+
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
+
+
+{% endblock %}

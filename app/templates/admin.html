@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block title %}COMBATE RASANTE - Administração{% endblock %}
+
+{% block content %}
+<section class="section">
+  <div class="container admin-layout">
+    <div class="admin-panel">
+      <h1>Administração</h1>
+      <p>Criação de novos clientes para acesso ao painel.</p>
+
+      <div class="admin-info">
+        <p><strong>Logado como:</strong> {{ current_user.email }}</p>
+        <p>Somente o administrador configurado pode acessar esta página.</p>
+      </div>
+
+<div class="form-group">
+  <label for="name">Nome do cliente</label>
+  <input id="name" name="name" type="text" required>
+</div>
+
+
+      <form method="post" class="form">
+        <div class="form-group">
+          <label for="email">E-mail do cliente</label>
+          <input id="email" name="email" type="email" required>
+        </div>
+        <div class="form-group">
+          <label for="password">Senha</label>
+          <input id="password" name="password" type="password" minlength="6" required>
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Confirmar senha</label>
+          <input id="confirm_password" name="confirm_password" type="password" minlength="6" required>
+        </div>
+        <button type="submit" class="btn btn-primary full-width">Criar cliente</button>
+      </form>
+    </div>
+
+    <aside class="admin-side">
+      <h2>Boas práticas</h2>
+      <ul>
+        <li>Utilize e-mails válidos e de responsáveis pela fazenda.</li>
+        <li>Envie a senha ao cliente por um canal seguro.</li>
+        <li>Recomende a troca da senha no primeiro acesso.</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+{% endblock %}
