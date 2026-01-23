@@ -18,3 +18,4 @@ instance/
 
 # Logs
 *.log
+app/app.db
