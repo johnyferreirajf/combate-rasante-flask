@@ -3,8 +3,18 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.db-journal
+
+# Virtual env
 .venv/
-__pycache__/
-*.pyc
+venv/
+
+# Banco local (SQLite)
 instance/
+*.db
+*.db-journal
+
+# Variáveis de ambiente
+.env
+
+# Logs
+*.log
