@@ -1,41 +1,90 @@
-# Combate Rasante (Flask)
+# COMBATE RASANTE Aviação Agrícola - Flask
 
-Projeto Flask pronto para subir no GitHub e fazer deploy no Render.
+Este projeto é a versão em Flask + HTML/CSS/JS puro da aplicação original em React (Lovable),
+para o site **COMBATE RASANTE Aviação Agrícola**.
 
-## Estrutura (principal)
-- `app/` -> aplicação Flask (factory + blueprints)
-- `wsgi.py` -> entrypoint para Gunicorn/Render
-- `requirements.txt` -> dependências (inclui `gunicorn` e `psycopg2-binary`)
-- `Procfile` -> comando web padrão (compatível com Render/Heroku)
-- `render.yaml` -> configuração opcional (Infra as Code) para Render
-- `instance/` -> **não** vai para o Git (SQLite/uploads) — criado automaticamente em runtime
+## Estrutura
 
-## Rodar local (Windows / CMD)
-```bat
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-set FLASK_ENV=development
-python run.py
+```
+combate_rasante_flask/
+  app/
+    __init__.py
+    config.py
+    models/
+      __init__.py
+      user.py
+    routes/
+      __init__.py
+      main.py
+      auth.py
+    utils/
+      __init__.py
+      security.py
+    templates/
+      layout.html
+      home.html
+      contato.html
+      login.html
+      dashboard.html
+      admin.html
+      not_found.html
+      partials/
+        navbar.html
+        footer.html
+    static/
+      css/
+        main.css
+      js/
+        main.js
+      img/
+        hero-aviation.jpg
+        aircraft-fleet.jpg
+        technology-gps.jpg
+        sugarcane-field.jpg
+  run.py
+  requirements.txt
+  .env.example
 ```
 
-Acesse: http://127.0.0.1:5000
+## Como rodar
 
-## Deploy no Render (Web Service)
-1. Suba este repositório para o GitHub (sem `.venv/`, sem `.git/` dentro do ZIP, sem banco).
-2. No Render: **New > Web Service > Connect GitHub repo**
-3. Configure:
-   - **Environment**: Python
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn wsgi:app`
-4. Em **Environment Variables**, adicione:
-   - `SECRET_KEY` (qualquer string forte)
-   - (Opcional) `DATABASE_URL` se você for usar Postgres no Render
+1. Crie e ative um ambiente virtual (opcional, mas recomendado):
 
-### Postgres no Render
-Se você criar um banco Postgres no Render, copie a connection string para `DATABASE_URL`.
-Este projeto já faz o ajuste automático de `postgres://` -> `postgresql://` quando necessário.
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # Linux/macOS
+   .venv\Scripts\activate   # Windows
+   ```
 
-## Observações importantes
-- O SQLite dentro de `instance/` funciona para testes, mas no Render ele é **efêmero** (reinícios podem perder dados).
-- Para produção, prefira Postgres (Render Database) com `DATABASE_URL`.
+2. Instale as dependências:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Crie o arquivo `.env` com base no `.env.example` e ajuste os valores.
+
+4. Inicialize o banco de dados:
+
+   ```bash
+   flask --app run db init
+   flask --app run db migrate -m "create users table"
+   flask --app run db upgrade
+   ```
+
+   Opcionalmente, crie manualmente um usuário administrador no banco, definindo `is_admin = True`
+   e o e-mail igual ao `ADMIN_EMAIL` configurado.
+
+5. Execute a aplicação:
+
+   ```bash
+   flask --app run run
+   ```
+
+   A aplicação estará disponível em `http://127.0.0.1:5000`.
+
+## Observações
+
+- Todo o CSS e JS estão em arquivos externos, sem scripts inline, permitindo uso de CSP estrita.
+- A autenticação foi reimplementada em Flask com SQLite/SQLAlchemy, inspirada no fluxo original com Supabase.
+- O painel do cliente usa dados estáticos de exemplo; é possível integrar com seu banco real no futuro.
