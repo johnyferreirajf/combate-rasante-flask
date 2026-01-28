@@ -1,21 +1,29 @@
-# Python cache
+# Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
 *.pyd
+*.pyo
 
 # Virtual env
 .venv/
 venv/
+ENV/
+env/
 
-# Banco local (SQLite)
+# Flask / instance (SQLite, uploads, secrets)
 instance/
 *.db
-*.db-journal
+*.sqlite
+*.sqlite3
 
-# Variáveis de ambiente
+# Environment variables
 .env
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
 
 # Logs
 *.log
-app/app.db

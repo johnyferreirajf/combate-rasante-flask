@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: combate-rasante
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.2
+      - key: SECRET_KEY
+        generateValue: true
+      # If you create a Render Postgres database, add DATABASE_URL as a connection string env var.
