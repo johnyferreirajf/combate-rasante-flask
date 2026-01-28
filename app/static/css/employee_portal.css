@@ -292,3 +292,73 @@ body{
   .sp-row{grid-template-columns: 1.5fr .7fr .7fr; }
   .sp-col-mod, .sp-col-actions{display:none;}
 }
+
+/* ===== Mobile improvements ===== */
+.sp-crumb-link{
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+}
+.sp-crumb-link:hover{ text-decoration: underline; color: var(--text); }
+
+.sp-thumb{
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 1px solid var(--stroke2);
+}
+
+@media (max-width: 980px){
+  html, body { overflow-x: hidden; }
+
+  .sp-main{ padding: 14px !important; }
+
+  .sp-topbar{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .sp-actions{
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .sp-search input{
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .sp-btn{ width: 100%; }
+
+  /* Turn table rows into cards */
+  .sp-row.sp-row-head{ display: none !important; }
+
+  .sp-row.sp-row-item{
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+
+  .sp-col-type,
+  .sp-col-size,
+  .sp-col-mod,
+  .sp-col-actions{
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .sp-col-type::before{ content:"Tipo"; color: var(--muted); font-size: 12px; }
+  .sp-col-size::before{ content:"Tamanho"; color: var(--muted); font-size: 12px; }
+  .sp-col-mod::before{ content:"Modificado"; color: var(--muted); font-size: 12px; }
+  .sp-col-actions::before{ content:"Ações"; color: var(--muted); font-size: 12px; }
+
+  .sp-modal-card{
+    width: calc(100vw - 24px) !important;
+    max-width: calc(100vw - 24px) !important;
+    margin: 12px !important;
+  }
+  .sp-modal-img{ max-height: 70vh !important; }
+}

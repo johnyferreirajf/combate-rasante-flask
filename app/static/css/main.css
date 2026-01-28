@@ -1699,3 +1699,10 @@ a {
   border-color: rgba(220, 53, 69, 0.55);
   background: rgba(220, 53, 69, 0.30);
 }
+
+
+/* Responsive media */
+img, video {
+  max-width: 100%;
+  height: auto;
+}
