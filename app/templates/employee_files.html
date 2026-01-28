@@ -1,150 +1,203 @@
 {% extends "layout.html" %}
-{% block title %}COMBATE RASANTE - Arquivos Internos{% endblock %}
+{% block title %}COMBATE RASANTE - Área de Funcionários{% endblock %}
 
 {% block content %}
-<section class="section">
-  <div class="container">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/employee_portal.css') }}">
 
-    <div class="section-header" style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
-      <div>
-        <h1 style="margin-bottom:6px;">Arquivos de trabalho - Combate Rasante</h1>
-        <p style="margin:0; opacity:.9;">
-          Bem-vindo, <strong>{{ employee.name }}</strong>
-          <span style="opacity:.75;">({{ employee.username }})</span>
-        </p>
-      </div></div>
+<div class="sp-page">
+  <div class="sp-wrap">
+    <!-- Sidebar -->
+    <aside class="sp-sidebar">
+      <div class="sp-brand">
+        <div class="sp-logo">CR</div>
+        <div>
+          <div class="sp-title">Área de Funcionários</div>
+          <div class="sp-subtitle">Documentos e arquivos</div>
+        </div>
+      </div>
 
-    <!-- Breadcrumb -->
-    <div style="margin: 10px 0 18px 0;">
-      <span class="home-stream-pill" style="margin-bottom:0;">
-        Pasta atual:
-        {% if current_path %}
-          <a href="{{ url_for('employee.files') }}" style="color:#fff; text-decoration:none; margin-left:6px;">/</a>
+      <nav class="sp-nav">
+        <a class="sp-nav-item active" href="{{ url_for('employee.files') }}">Documentos</a>
+        <a class="sp-nav-item" href="{{ url_for('employee.logout') }}">Sair</a>
+      </nav>
+
+      <div class="sp-sidebar-footer">
+        <div class="sp-user">
+          <div class="sp-user-avatar">{{ (employee.name or "F")[:1]|upper }}</div>
+          <div class="sp-user-meta">
+            <div class="sp-user-name">{{ employee.name }}</div>
+            <div class="sp-user-role">{{ employee.username }}</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="sp-main">
+      <!-- Topbar -->
+      <div class="sp-topbar">
+        <div class="sp-breadcrumbs" aria-label="breadcrumb">
+          <a class="sp-crumb-link" href="{{ url_for('employee.files') }}">Documentos</a>
           {% for c in crumbs %}
-            <span style="opacity:.7;">›</span>
-            <a href="{{ url_for('employee.files', path=c.path) }}" style="color:#fff; text-decoration:none;">
-              {{ c.name }}
-            </a>
+            <span class="sp-sep">/</span>
+            <a class="sp-crumb-link" href="{{ url_for('employee.files', path=c.path) }}">{{ c.name }}</a>
           {% endfor %}
-        {% else %}
-          <strong style="color:#fff; margin-left:6px;">/ (raiz)</strong>
-        {% endif %}
-      </span>
-    </div>
-
-    <div class="grid-2" style="align-items:start;">
-      <!-- COLUNA ESQUERDA: PASTAS -->
-      <div class="card">
-        <h2 style="margin-top:0;">Pastas</h2>
-
-        <form method="post" action="{{ url_for('employee.mkdir') }}" class="form-vertical" style="margin-bottom:18px;">
-          <input type="hidden" name="path" value="{{ current_path }}">
-          <label>Criar nova pasta</label>
-          <div style="display:flex; gap:10px; align-items:center;">
-            <input type="text" name="name" placeholder="Ex: Relatórios" required style="flex:1;">
-            <button class="btn-primary" type="submit">Criar</button>
-          </div>
-        </form>
-
-        {% if folders %}
-          <div style="display:flex; flex-direction:column; gap:10px;">
-            {% for f in folders %}
-              <div class="file-item" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-                <a href="{{ url_for('employee.files', path=(current_path ~ '/' ~ f)|trim('/')) }}" style="text-decoration:none; color:#fff;">
-                  📁 <strong>{{ f }}</strong>
-                </a>
-
-                <div style="display:flex; gap:8px; align-items:center;">
-                  <!-- Renomear pasta -->
-                  <form method="post" action="{{ url_for('employee.rename_folder') }}" style="display:flex; gap:6px; align-items:center;">
-                    <input type="hidden" name="path" value="{{ current_path }}">
-                    <input type="hidden" name="old_name" value="{{ f }}">
-                    <input type="text" name="new_name" placeholder="Renomear" style="width:140px;">
-                    <button class="btn-secondary" type="submit">OK</button>
-                  </form>
-
-                  <!-- Excluir pasta -->
-                  <form method="post" action="{{ url_for('employee.delete_folder') }}">
-                    <input type="hidden" name="path" value="{{ current_path }}">
-                    <input type="hidden" name="name" value="{{ f }}">
-                    <button class="btn-danger" type="submit" onclick="return confirm('Excluir a pasta e tudo dentro dela?');">
-                      Excluir
-                    </button>
-                  </form>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <p style="opacity:.8;">Nenhuma pasta aqui ainda.</p>
-        {% endif %}
-      </div>
-
-      <!-- COLUNA DIREITA: ARQUIVOS -->
-      <div class="card">
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-          <h2 style="margin-top:0;">Arquivos</h2>
-
-          <!-- Upload -->
-          <form method="post" action="{{ url_for('employee.upload') }}" enctype="multipart/form-data" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <input type="hidden" name="path" value="{{ current_path }}">
-            <input type="file" name="file" required>
-            <button class="btn-primary" type="submit">Enviar</button>
-          </form>
         </div>
 
-        <div style="margin-top:12px; opacity:.8;">
-          Aqui todos os funcionários podem enviar e acessar arquivos dessa pasta.
+        <div class="sp-actions">
+          <div class="sp-search">
+            <input id="spSearch" type="text" placeholder="Pesquisar..." autocomplete="off">
+          </div>
+
+          <button class="sp-btn sp-btn-secondary" type="button" data-modal-open="modalFolder">
+            + Nova pasta
+          </button>
+
+          <button class="sp-btn sp-btn-primary" type="button" data-modal-open="modalUpload">
+            ⬆ Upload
+          </button>
+        </div>
+      </div>
+
+      <!-- Header -->
+      <div class="sp-list-head">
+        <div class="sp-list-title">
+          <h2>Arquivos</h2>
+          <div class="sp-muted">{{ items|length }} itens</div>
         </div>
 
-        <hr style="border:0; border-top:1px solid rgba(255,255,255,0.12); margin:16px 0;">
-
-        {% if items %}
-          <div class="file-list">
-            {% for item in items %}
-              <div class="file-item" style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
-                <div style="min-width:240px; flex:1;">
-                  <div style="font-weight:900; font-size:16px;">
-                    {{ item.title or item.original_filename }}
-                  </div>
-                  <div style="opacity:.75; font-size:13px;">
-                    Enviado por <strong>{{ item.uploader.name }}</strong> • {{ item.uploaded_at.strftime("%d/%m/%Y %H:%M") }}
-                  </div>
-                  {% if item.description %}
-                    <div style="opacity:.8; margin-top:6px;">
-                      {{ item.description }}
-                    </div>
-                  {% endif %}
-                </div>
-
-                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
-                  <a class="btn-secondary" href="{{ url_for('employee.download', file_id=item.id) }}">Baixar</a>
-
-                  <!-- Renomear (nome exibido) -->
-                  <form method="post" action="{{ url_for('employee.rename_file', file_id=item.id) }}" style="display:flex; gap:6px; align-items:center;">
-                    <input type="hidden" name="path" value="{{ current_path }}">
-                    <input type="text" name="new_title" placeholder="Renomear (título)" style="width:170px;">
-                    <button class="btn-secondary" type="submit">OK</button>
-                  </form>
-
-                  <!-- Excluir -->
-                  <form method="post" action="{{ url_for('employee.delete_file', file_id=item.id) }}">
-                    <input type="hidden" name="path" value="{{ current_path }}">
-                    <button class="btn-danger" type="submit" onclick="return confirm('Excluir este arquivo?');">
-                      Excluir
-                    </button>
-                  </form>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <p style="opacity:.85;">Nenhum arquivo enviado nesta pasta ainda.</p>
-        {% endif %}
-
+        <div class="sp-sort">
+          <label class="sp-muted">Ordenar:</label>
+          <select id="spSort">
+            <option value="name">Nome</option>
+            <option value="type">Tipo</option>
+            <option value="size">Tamanho</option>
+            <option value="modified">Modificado</option>
+          </select>
+        </div>
       </div>
-    </div>
 
+      <!-- Table -->
+      <div class="sp-table" role="table">
+        <div class="sp-row sp-row-head" role="row">
+          <div class="sp-col-name" role="columnheader">Nome</div>
+          <div class="sp-col-type" role="columnheader">Tipo</div>
+          <div class="sp-col-size" role="columnheader">Tamanho</div>
+          <div class="sp-col-mod" role="columnheader">Modificado</div>
+          <div class="sp-col-actions" role="columnheader">Ações</div>
+        </div>
+
+        <div id="spRows">
+          {% for it in items %}
+          <div class="sp-row sp-row-item"
+               role="row"
+               data-name="{{ it.display|lower }}"
+               data-type="{{ it.type|lower }}"
+               data-size="{{ it.size_bytes or 0 }}"
+               data-modified="{{ it.modified_ts or 0 }}"
+               data-folder="{{ 1 if it.is_folder else 0 }}">
+            <div class="sp-col-name" role="cell">
+              <div class="sp-name">
+                <span class="sp-icon {{ 'folder' if it.is_folder else 'file' }}"></span>
+                {% if it.is_folder %}
+                  <a class="sp-link" href="{{ it.href }}">{{ it.display }}</a>
+                {% else %}
+                  <span class="sp-text" title="{{ it.name }}">{{ it.display }}</span>
+                {% endif %}
+              </div>
+              {% if not it.is_folder and it.description %}
+                <div class="sp-desc">{{ it.description }}</div>
+              {% endif %}
+            </div>
+
+            <div class="sp-col-type" role="cell"><span class="sp-pill">{{ it.type }}</span></div>
+            <div class="sp-col-size" role="cell"><span class="sp-muted">{{ it.size_human }}</span></div>
+            <div class="sp-col-mod" role="cell"><span class="sp-muted">{{ it.modified_human }}</span></div>
+
+            <div class="sp-col-actions" role="cell">
+              {% if it.is_folder %}
+                <a class="sp-action" href="{{ it.href }}">Abrir</a>
+              {% else %}
+                <a class="sp-action" href="{{ it.download_href }}">Baixar</a>
+
+                <form class="sp-action-form" method="post" action="{{ it.rename_href }}" data-rename-form>
+                  <input type="hidden" name="path" value="{{ current_path }}">
+                  <input type="hidden" name="new_title" value="">
+                  <button class="sp-action" type="button" data-rename-btn data-current="{{ it.display }}">Renomear</button>
+                </form>
+
+                <form class="sp-action-form" method="post" action="{{ it.delete_href }}" data-delete-form>
+                  <input type="hidden" name="path" value="{{ current_path }}">
+                  <button class="sp-action danger" type="button" data-delete-btn>Excluir</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div id="spEmpty" class="sp-empty" style="display:none;">Nenhum item encontrado.</div>
+    </main>
   </div>
-</section>
+</div>
+
+<!-- Modal: Nova pasta -->
+<div class="sp-modal" id="modalFolder" aria-hidden="true">
+  <div class="sp-modal-backdrop" data-modal-close></div>
+  <div class="sp-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalFolderTitle">
+    <div class="sp-modal-head">
+      <div>
+        <div class="sp-modal-title" id="modalFolderTitle">Criar nova pasta</div>
+        <div class="sp-muted">Pasta será criada dentro do caminho atual.</div>
+      </div>
+      <button class="sp-icon-btn" type="button" data-modal-close>✕</button>
+    </div>
+
+    <form method="post" action="{{ url_for('employee.mkdir') }}" class="sp-form">
+      <input type="hidden" name="path" value="{{ current_path }}">
+      <label class="sp-label">Nome da pasta</label>
+      <input class="sp-input" type="text" name="name" placeholder="Ex: Relatórios" required>
+
+      <div class="sp-form-actions">
+        <button class="sp-btn sp-btn-secondary" type="button" data-modal-close>Cancelar</button>
+        <button class="sp-btn sp-btn-primary" type="submit">Criar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Upload -->
+<div class="sp-modal" id="modalUpload" aria-hidden="true">
+  <div class="sp-modal-backdrop" data-modal-close></div>
+  <div class="sp-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalUploadTitle">
+    <div class="sp-modal-head">
+      <div>
+        <div class="sp-modal-title" id="modalUploadTitle">Enviar arquivo</div>
+        <div class="sp-muted">O arquivo ficará disponível para a equipe.</div>
+      </div>
+      <button class="sp-icon-btn" type="button" data-modal-close>✕</button>
+    </div>
+
+    <form method="post" action="{{ url_for('employee.upload') }}" enctype="multipart/form-data" class="sp-form">
+      <input type="hidden" name="path" value="{{ current_path }}">
+
+      <label class="sp-label">Arquivo</label>
+      <input class="sp-input" type="file" name="file" required>
+
+      <label class="sp-label">Nome exibido (opcional)</label>
+      <input class="sp-input" type="text" name="title" placeholder="Ex: Relatório semanal">
+
+      <label class="sp-label">Descrição (opcional)</label>
+      <textarea class="sp-textarea" name="description" rows="3" placeholder="Observações..."></textarea>
+
+      <div class="sp-form-actions">
+        <button class="sp-btn sp-btn-secondary" type="button" data-modal-close>Cancelar</button>
+        <button class="sp-btn sp-btn-primary" type="submit">Enviar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/employee_portal.js') }}"></script>
 {% endblock %}

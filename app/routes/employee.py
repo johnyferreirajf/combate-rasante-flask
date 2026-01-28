@@ -124,11 +124,11 @@ def files():
     relpath = request.args.get("path", "")  # pasta atual
     relpath = _clean_relpath(relpath)
 
-    # filesystem
+    # filesystem (subpastas)
     folders, _ = _list_folder(relpath)
 
     # arquivos cadastrados no banco por "pasta" (guardamos o relpath em category)
-    items = (
+    db_items = (
         EmployeeFile.query.filter_by(category=relpath)
         .order_by(EmployeeFile.uploaded_at.desc())
         .all()
@@ -143,13 +143,65 @@ def files():
             acc.append(p)
             crumbs.append({"name": p, "path": "/".join(acc)})
 
+    # monta lista única (pastas + arquivos) em estilo "explorador"
+    view_items = []
+
+    # Pastas
+    for folder in folders:
+        folder_rel = f"{relpath}/{folder}".strip("/")
+        view_items.append(
+            {
+                "name": folder,
+                "display": folder,
+                "is_folder": True,
+                "type": "Pasta",
+                "size_bytes": None,
+                "size_human": "-",
+                "modified_ts": None,
+                "modified_human": "-",
+                "href": url_for("employee.files", path=folder_rel),
+                "download_href": None,
+                "file_id": None,
+            }
+        )
+
+    # Arquivos (do banco)
+    for item in db_items:
+        abs_file = _safe_abs_path(item.stored_filename)
+        size_bytes = os.path.getsize(abs_file) if os.path.exists(abs_file) else None
+        mtime = os.path.getmtime(abs_file) if os.path.exists(abs_file) else None
+
+        display = item.title or item.original_filename
+        ext = ""
+        if "." in item.original_filename:
+            ext = item.original_filename.rsplit(".", 1)[1].upper()
+
+        view_items.append(
+            {
+                "name": item.original_filename,
+                "display": display,
+                "is_folder": False,
+                "type": ext or "Arquivo",
+                "size_bytes": size_bytes,
+                "size_human": _human_size(size_bytes) if size_bytes is not None else "-",
+                "modified_ts": int(mtime) if mtime else int(item.uploaded_at.timestamp()) if item.uploaded_at else 0,
+                "modified_human": item.uploaded_at.strftime("%d/%m/%Y %H:%M") if item.uploaded_at else "-",
+                "href": None,
+                "download_href": url_for("employee.download", file_id=item.id),
+                "delete_href": url_for("employee.delete_file", file_id=item.id),
+                "rename_href": url_for("employee.rename_file", file_id=item.id),
+                "file_id": item.id,
+                "uploader_name": item.uploader.name if item.uploader else "-",
+                "description": item.description or "",
+            }
+        )
+
     return render_template(
         "employee_files.html",
         employee=current_employee,
         current_path=relpath,
-        folders=folders,
-        items=items,
         crumbs=crumbs,
+        items=view_items,
     )
 
 
