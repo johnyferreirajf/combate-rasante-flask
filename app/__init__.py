@@ -31,17 +31,18 @@ def create_app():
     with app.app_context():
         db.create_all()
 
+        # Admin cliente padrão
         if not User.query.filter_by(email="admin@teste.com").first():
-         admin_user = User(
-  	 name="Admin",
-  	 email="admin@teste.com",
-  	 password_hash=generate_password_hash("123456"),
-  	 is_admin=True,
-	)
-
+            admin_user = User(
+                name="Admin",
+                email="admin@teste.com",
+                password_hash=generate_password_hash("123456"),
+                is_admin=True,
+            )
             db.session.add(admin_user)
             db.session.commit()
 
+        # Admin funcionário padrão
         if not Employee.query.filter_by(username="admin123").first():
             admin_employee = Employee(
                 username="admin123",
