@@ -32,10 +32,13 @@ def create_app():
         db.create_all()
 
         if not User.query.filter_by(email="admin@teste.com").first():
-            admin_user = User(
-                email="admin@teste.com",
-                password_hash=generate_password_hash("123456"),
-            )
+         admin_user = User(
+  	 name="Admin",
+  	 email="admin@teste.com",
+  	 password_hash=generate_password_hash("123456"),
+  	 is_admin=True,
+	)
+
             db.session.add(admin_user)
             db.session.commit()
 
