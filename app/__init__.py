@@ -45,9 +45,12 @@ def create_app():
         # Admin funcionário padrão
         if not Employee.query.filter_by(username="admin123").first():
             admin_employee = Employee(
-                username="admin123",
-                password_hash=generate_password_hash("123456"),
-            )
+   		 name="Admin",
+   		 username="admin123",
+   		 password_hash=generate_password_hash("123456"),
+  		 is_admin=True,
+		)
+
             db.session.add(admin_employee)
             db.session.commit()
 
