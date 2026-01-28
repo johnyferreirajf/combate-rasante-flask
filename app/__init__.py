@@ -1,6 +1,9 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash
+from app.models.user import User
+from app.models.employee import Employee
 
 db = SQLAlchemy()
 
@@ -23,8 +26,30 @@ def create_app():
     from app import models  # noqa: F401
 
     # Cria as tabelas automaticamente
-    with app.app_context():
-        db.create_all()
+with app.app_context():
+    db.create_all()
+
+    # =========================
+    # CRIA USUÁRIO ADMIN PADRÃO (se não existir)
+    # =========================
+    if not User.query.filter_by(email="admin@teste.com").first():
+        admin_user = User(
+            email="admin@teste.com",
+            password_hash=generate_password_hash("123456")
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+
+    # =========================
+    # CRIA FUNCIONÁRIO ADMIN PADRÃO (se não existir)
+    # =========================
+    if not Employee.query.filter_by(username="admin123").first():
+        admin_employee = Employee(
+            username="admin123",
+            password_hash=generate_password_hash("123456")
+        )
+        db.session.add(admin_employee)
+        db.session.commit()
 
     # Blueprints
     from app.routes.main import main_bp
