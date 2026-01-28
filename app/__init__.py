@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
@@ -5,13 +6,20 @@ db = SQLAlchemy()
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, instance_relative_config=True)
     app.config.from_object("config.Config")
+
+    # ✅ garante BASE_DIR/instance (mesmo caminho usado no config.py da raiz)
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    os.makedirs(os.path.join(project_root, "instance"), exist_ok=True)
+
+    # (opcional, pode manter) garante também a instance do Flask
+    os.makedirs(app.instance_path, exist_ok=True)
 
     # Banco
     db.init_app(app)
 
-    # Importa modelos antes de criar tabelas (necessário para db.create_all enxergar tudo)
+    # Importa modelos antes de criar tabelas
     from app import models  # noqa: F401
 
     # Cria as tabelas automaticamente

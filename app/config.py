@@ -19,3 +19,18 @@ class Config:
 
     # Email que vai RECEBER os contatos
     MAIL_RECEIVER = os.getenv("MAIL_RECEIVER", "johnyferreira.jf@gmail.com")
+
+    # =========================
+    # Database
+    # =========================
+    # Se você criar um Postgres no Render, coloque a DATABASE_URL nas env vars.
+    # Se não tiver, cai automaticamente pro SQLite dentro de /instance/app.db
+    DATABASE_URL = os.getenv("DATABASE_URL")
+
+    if DATABASE_URL:
+        SQLALCHEMY_DATABASE_URI = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    else:
+        # cria um caminho relativo ao projeto (funciona no Render)
+        SQLALCHEMY_DATABASE_URI = "sqlite:///instance/app.db"
+
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
