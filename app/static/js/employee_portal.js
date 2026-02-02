@@ -103,4 +103,29 @@
 
   applySort();
   applyFilter();
+
+
+  // Rename folder prompt
+  document.querySelectorAll("[data-rename-folder-btn]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const form = btn.closest("form[data-rename-folder-form]");
+      if (!form) return;
+      const current = btn.getAttribute("data-current") || "";
+      const nv = window.prompt("Novo nome da pasta:", current);
+      if (!nv) return;
+      form.querySelector("input[name='new_name']").value = nv.trim();
+      form.submit();
+    });
+  });
+
+  // Delete folder confirm
+  document.querySelectorAll("[data-delete-folder-btn]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const form = btn.closest("form[data-delete-folder-form]");
+      if (!form) return;
+      const ok = window.confirm("Excluir esta pasta e todo o conteúdo?");
+      if (!ok) return;
+      form.submit();
+    });
+  });
 })();

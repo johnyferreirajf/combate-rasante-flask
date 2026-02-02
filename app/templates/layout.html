@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>{% block title %}COMBATE RASANTE{% endblock %}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/main.css') }}"
@@ -35,10 +35,13 @@
           {# -------------------------
              BOTÕES DINÂMICOS
           -------------------------- #}
-          {% if session.get('employee_id') %}
-            <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">
-              Sair do painel
-            </a>
+         {% if session.get('employee_id') %}
+  		<a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">
+  		  Painel do Funcionário
+ 		 </a>
+  		<a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">
+   		 Sair do painel
+  		</a>
           {% elif session.get('user_id') %}
             <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">
               Painel

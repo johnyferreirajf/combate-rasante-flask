@@ -28,6 +28,7 @@ class Config:
         "ppt", "pptx",
         "zip", "rar",
         "txt",
+        "kml", "kmz",
     }
 
     # limite de upload (global)

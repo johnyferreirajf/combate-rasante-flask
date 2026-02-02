@@ -98,11 +98,29 @@
                data-folder="{{ 1 if it.is_folder else 0 }}">
             <div class="sp-col-name" role="cell">
               <div class="sp-name">
-                <span class="sp-icon {{ 'folder' if it.is_folder else 'file' }}"></span>
+                {% set ext = (it.type|lower) if it.type is defined else '' %}
+                {% if it.is_folder %}
+                  {% set icon = 'icons/folder.svg' %}
+                {% elif ext in ['png','jpg','jpeg','gif','webp','bmp','svg'] %}
+                  {% set icon = 'icons/image.svg' %}
+                {% elif ext == 'pdf' %}
+                  {% set icon = 'icons/pdf.svg' %}
+                {% elif ext in ['kml','kmz'] %}
+                  {% set icon = 'icons/kml.svg' %}
+                {% else %}
+                  {% set icon = 'icons/file.svg' %}
+                {% endif %}
+                <img class="sp-ico" src="{{ url_for('static', filename=icon) }}" alt="">
                 {% if it.is_folder %}
                   <a class="sp-link" href="{{ it.href }}">{{ it.display }}</a>
                 {% else %}
-                  <span class="sp-text" title="{{ it.name }}">{{ it.display }}</span>
+                  <a class="sp-link file-preview-link"
+                     href="{{ url_for('employee.preview', file_id=it.file_id) }}"
+                     data-name="{{ it.display }}"
+                     data-filename="{{ it.name }}"
+                     data-ext="{{ it.type|lower }}">
+                    {{ it.display }}
+                  </a>
                 {% endif %}
               </div>
               {% if not it.is_folder and it.description %}
@@ -117,6 +135,20 @@
             <div class="sp-col-actions" role="cell">
               {% if it.is_folder %}
                 <a class="sp-action" href="{{ it.href }}">Abrir</a>
+                <a class="sp-action" href="{{ it.download_href }}">Baixar</a>
+
+                <form class="sp-action-form" method="post" action="{{ it.rename_folder_href }}" data-rename-folder-form>
+                  <input type="hidden" name="path" value="{{ current_path }}">
+                  <input type="hidden" name="old_name" value="{{ it.display }}">
+                  <input type="hidden" name="new_name" value="">
+                  <button class="sp-action" type="button" data-rename-folder-btn data-current="{{ it.display }}">Renomear</button>
+                </form>
+
+                <form class="sp-action-form" method="post" action="{{ it.delete_folder_href }}" data-delete-folder-form>
+                  <input type="hidden" name="path" value="{{ current_path }}">
+                  <input type="hidden" name="name" value="{{ it.display }}">
+                  <button class="sp-action danger" type="button" data-delete-folder-btn>Excluir</button>
+                </form>
               {% else %}
                 <a class="sp-action" href="{{ it.download_href }}">Baixar</a>
 
@@ -198,6 +230,113 @@
     </form>
   </div>
 </div>
+
+
+<!-- Modal: Pré-visualização de arquivo -->
+<div id="previewModal" style="
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.60);
+  z-index:9999; align-items:center; justify-content:center; padding:20px;">
+  <div style="
+    width:min(1100px, 96vw); height:min(740px, 88vh);
+    background:rgba(255,255,255,.10); backdrop-filter: blur(10px);
+    border-radius:18px; overflow:hidden; border:1px solid rgba(255,255,255,.25);
+    display:flex; flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:space-between;
+      padding:12px 14px; color:#fff; font-weight:700; gap:10px;">
+      <div id="previewTitle" style="min-width:0; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+      <a id="previewOpenNewTab" href="#" target="_blank" rel="noopener" style="
+        color:#fff; text-decoration:none; background:rgba(255,255,255,.15);
+        padding:8px 10px; border-radius:10px; font-weight:600;">
+        Abrir em nova aba ↗
+      </a>
+      <button id="closePreview" type="button" style="
+        background:rgba(255,255,255,.15); color:#fff; border:none;
+        padding:8px 10px; border-radius:10px; cursor:pointer; font-weight:700;">
+        Fechar ✕
+      </button>
+    </div>
+
+    <div id="previewBody" style="flex:1; background:rgba(0,0,0,.22);">
+      <!-- conteúdo entra aqui -->
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const modal = document.getElementById("previewModal");
+  const body = document.getElementById("previewBody");
+  const title = document.getElementById("previewTitle");
+  const closeBtn = document.getElementById("closePreview");
+  const openNewTab = document.getElementById("previewOpenNewTab");
+
+  function openModal() { modal.style.display = "flex"; }
+  function closeModal() {
+    modal.style.display = "none";
+    body.innerHTML = "";
+    title.textContent = "";
+    openNewTab.href = "#";
+  }
+
+  closeBtn.addEventListener("click", closeModal);
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+
+  function extOf(filename) {
+    const parts = (filename || "").toLowerCase().split(".");
+    return parts.length > 1 ? parts.pop() : "";
+  }
+  function isImage(ext) { return ["png","jpg","jpeg","gif","webp","bmp","svg"].includes(ext); }
+  function isPdf(ext) { return ext === "pdf"; }
+
+  // Delegação: funciona mesmo se a lista atualizar
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest(".file-preview-link");
+    if (!a) return;
+
+    // se o usuário clicou com Ctrl/Command/Mouse middle, deixa abrir em nova aba
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
+
+    e.preventDefault();
+
+    const url = a.getAttribute("href");
+    const displayName = a.dataset.name || a.textContent.trim() || "Arquivo";
+    const filename = a.dataset.filename || displayName;
+    const extHint = (a.dataset.ext || "").toLowerCase();
+    const ext = extHint || extOf(filename);
+
+    title.textContent = displayName;
+    openNewTab.href = url;
+
+    if (isImage(ext)) {
+      body.innerHTML = `
+        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+          <img src="${url}" alt="${displayName}" style="max-width:100%; max-height:100%; object-fit:contain;">
+        </div>`;
+      openModal();
+      return;
+    }
+
+    if (isPdf(ext)) {
+      body.innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:0;"></iframe>`;
+      openModal();
+      return;
+    }
+
+    // Outros tipos: tenta abrir em iframe (alguns browsers suportam), senão o usuário tem a opção de nova aba/baixar
+    body.innerHTML = `
+      <div style="padding:16px; color:#fff; line-height:1.4;">
+        <p style="margin:0 0 10px 0;">
+          Este tipo de arquivo pode não ter pré-visualização embutida.
+        </p>
+        <p style="margin:0;">
+          Tente <strong>Abrir em nova aba</strong>. Se não abrir, use o botão <strong>Baixar</strong> na lista.
+        </p>
+      </div>`;
+    openModal();
+  });
+})();
+</script>
 
 <script src="{{ url_for('static', filename='js/employee_portal.js') }}"></script>
 {% endblock %}

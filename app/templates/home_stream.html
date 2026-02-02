@@ -3,6 +3,13 @@
 
 {% block content %}
 
+<!-- Intro vídeo (5s) -->
+<div id="intro-video" aria-hidden="true">
+  <video id="introVideoEl" autoplay muted playsinline preload="auto">
+    <source src="{{ url_for('static', filename='video/intro.mp4') }}" type="video/mp4">
+  </video>
+</div>
+
 <link rel="stylesheet" href="{{ url_for('static', filename='css/home_stream.css') }}">
 
 <section class="home-stream-hero">
@@ -36,4 +43,46 @@
 </section>
 
 <script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
+
+<script>
+(function () {
+  const INTRO_KEY = "cr_intro_shown";
+
+  const wrap = document.getElementById("intro-video");
+  const vid = document.getElementById("introVideoEl");
+  if (!wrap || !vid) return;
+
+  // ✅ Se já mostrou nesta sessão, não exibe de novo
+  if (sessionStorage.getItem(INTRO_KEY) === "1") {
+    wrap.remove();
+    return;
+  }
+
+  // ✅ Marca como já mostrado
+  sessionStorage.setItem(INTRO_KEY, "1");
+
+  // trava scroll
+  document.documentElement.classList.add("intro-lock");
+  document.body.classList.add("intro-lock");
+
+  let done = false;
+  function finish() {
+    if (done) return;
+    done = true;
+
+    wrap.classList.add("hide");
+    document.documentElement.classList.remove("intro-lock");
+    document.body.classList.remove("intro-lock");
+
+    // remove do DOM após o fade
+    setTimeout(() => {
+      wrap.remove();
+    }, 900);
+  }
+
+  // some após 5s ou quando o vídeo acabar
+  setTimeout(finish, 5000);
+  vid.addEventListener("ended", finish);
+})();
+</script>
 {% endblock %}

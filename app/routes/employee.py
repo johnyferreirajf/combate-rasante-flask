@@ -1,17 +1,21 @@
 import os
+import zipfile
 import uuid
 import shutil
+import mimetypes
 from werkzeug.utils import secure_filename
 
 from flask import (
     Blueprint,
     render_template,
     request,
+    abort,
     redirect,
     url_for,
     flash,
     session,
     current_app,
+    send_file,
     send_from_directory,
 )
 
@@ -19,6 +23,14 @@ from app import db
 from app.models import Employee, EmployeeFile
 from app.utils.security import employee_login_required, get_current_employee
 
+def _human_size(size_bytes):
+    if size_bytes is None:
+        return "-"
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_bytes < 1024:
+            return f"{size_bytes:.1f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.1f} PB"
 
 employee_bp = Blueprint("employee", __name__, url_prefix="/funcionarios")
 
@@ -160,7 +172,9 @@ def files():
                 "modified_ts": None,
                 "modified_human": "-",
                 "href": url_for("employee.files", path=folder_rel),
-                "download_href": None,
+                "download_href": url_for("employee.download_folder", folder=folder_rel),
+                "rename_folder_href": url_for("employee.rename_folder"),
+                "delete_folder_href": url_for("employee.delete_folder"),
                 "file_id": None,
             }
         )
@@ -394,3 +408,56 @@ def download(file_id: int):
         as_attachment=True,
         download_name=item.original_filename,
     )
+
+
+@employee_bp.route("/download_folder")
+@employee_login_required
+def download_folder():
+    """Baixa uma pasta como .zip (download)."""
+    import tempfile
+    base_rel = _clean_relpath(request.args.get("folder", ""))
+    if not base_rel:
+        abort(400)
+
+    folder_abs = _safe_abs_path(base_rel)
+    if not os.path.isdir(folder_abs):
+        abort(404)
+
+    # Cria zip temporário
+    tmpdir = tempfile.mkdtemp(prefix="cr_folder_")
+    zip_name = secure_filename(os.path.basename(base_rel) or "pasta") + ".zip"
+    zip_path = os.path.join(tmpdir, zip_name)
+
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(folder_abs):
+            for fn in files:
+                abs_fp = os.path.join(root, fn)
+                rel_fp = os.path.relpath(abs_fp, os.path.dirname(folder_abs))
+                zf.write(abs_fp, rel_fp)
+
+    return send_file(zip_path, as_attachment=True, download_name=zip_name)
+
+
+
+@employee_bp.route("/preview/<int:file_id>")
+@employee_login_required
+def preview(file_id: int):
+    """Pré-visualização inline (sem download) para imagens/PDF e outros tipos suportados."""
+    # Garante mimetype correto para KML/KMZ
+    mimetypes.add_type("application/vnd.google-earth.kml+xml", ".kml")
+    mimetypes.add_type("application/vnd.google-earth.kmz", ".kmz")
+    item = EmployeeFile.query.get_or_404(file_id)
+
+    # Caminho absoluto seguro do arquivo no disco
+    abs_path = _safe_abs_path(item.stored_filename)
+    if not os.path.isfile(abs_path):
+        abort(404)
+
+    guessed_mime, _ = mimetypes.guess_type(item.original_filename or item.stored_filename)
+    mimetype = guessed_mime or "application/octet-stream"
+
+    resp = send_file(abs_path, mimetype=mimetype, as_attachment=False)
+
+    filename = item.original_filename or os.path.basename(item.stored_filename)
+    resp.headers["Content-Disposition"] = f'inline; filename="{filename}"'
+    return resp

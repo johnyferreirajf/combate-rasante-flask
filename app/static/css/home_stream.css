@@ -90,12 +90,12 @@
 
 /* CARD (quadrado) */
 .stream-tile{
-  flex: 0 0 calc((100% - 36px) / 3); /* 3 cards com 2 gaps de 18px */
-  aspect-ratio: 1 / 1;
+  flex: 0 0 calc((100% - 36px) / 3);
+  aspect-ratio: 10 / 5.5; /* ✅ 30% menor na altura */
   scroll-snap-align: start;
 
   border-radius: 22px;
-  padding: 18px 18px;
+  padding: 14px 16px;  /* ✅ opcional */
   text-align: left;
 
   background: rgba(10, 12, 16, 0.55);
@@ -111,6 +111,7 @@
 
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
+
 
 .stream-tile::before{
   content:"";
@@ -253,4 +254,44 @@
 
 .alta-precisao{
   -webkit-text-stroke: 2px rgba(0,0,0,0.28);
+}
+
+/* =======================================================
+   INTRO VÍDEO (5s) – ENTRADA DO SITE
+   ======================================================= */
+
+html.intro-lock,
+body.intro-lock{
+  overflow: hidden;
+}
+
+#intro-video{
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #000;
+  opacity: 1;
+
+  /* Usa unidades modernas de viewport (evita corte em mobile / barras) */
+  height: 100svh;
+  width: 100%;
+}
+
+#intro-video video{
+  width: 100%;
+  height: 100%;
+  display: block;
+
+  /* ✅ Mostra o vídeo inteiro (sem cortar) */
+  object-fit: cover;
+  object-position: center;
+
+  /* evita borda branca em alguns browsers */
+  background: #000;
+}
+
+#intro-video.hide{
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
 }
