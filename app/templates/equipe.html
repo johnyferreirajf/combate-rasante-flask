@@ -1,16 +1,16 @@
 {% extends "layout.html" %}
 
+{% block title %}Equipe - COMBATE RASANTE{% endblock %}
+
 {% block content %}
 <section class="team-hero">
   <div class="team-bubbles" aria-hidden="true">
-    <span class="bubble b1"></span>
-    <span class="bubble b2"></span>
-    <span class="bubble b3"></span>
-    <span class="bubble b4"></span>
-    <span class="bubble b5"></span>
-    <span class="bubble b6"></span>
-    <span class="bubble b7"></span>
-    <span class="bubble b8"></span>
+    <span class="team-bubble b1"></span>
+    <span class="team-bubble b2"></span>
+    <span class="team-bubble b3"></span>
+    <span class="team-bubble b4"></span>
+    <span class="team-bubble b5"></span>
+    <span class="team-bubble b6"></span>
   </div>
 
   <div class="team-wrap">
@@ -22,7 +22,7 @@
       </p>
     </header>
 
-    <!-- Diretor -->
+    <!-- Diretoria -->
     <div class="team-section">
       <div class="team-section-title">
         <h2>Diretoria</h2>
@@ -32,14 +32,14 @@
       <div class="team-grid team-grid-feature">
         <article class="team-card team-card-feature">
           <div class="team-card-top">
-            <div class="avatar">W</div>
+            <div class="team-avatar">W</div>
             <div class="team-card-meta">
               <h3 class="team-name">Weikren</h3>
-              <div class="team-role">
-                <span class="badge badge-gold">Diretor de Operações</span>
-                <span class="chip">Gestão</span>
-                <span class="chip">Relacionamento</span>
-                <span class="chip">Segurança Operacional</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-gold">Diretor de Operações</span>
+                <span class="team-chip">Gestão</span>
+                <span class="team-chip">Relacionamento</span>
+                <span class="team-chip">Segurança Operacional</span>
               </div>
             </div>
           </div>
@@ -48,16 +48,16 @@
             Responsável pela gestão das operações aéreas, padronização de processos, planejamento e relacionamento com clientes.
           </p>
 
-          <div class="team-card-footer">
-            <span class="pill">Alta Precisão</span>
-            <span class="pill">Conformidade</span>
-            <span class="pill">Eficiência</span>
+          <div class="team-footer-tags">
+            <span class="team-pill">Alta Precisão</span>
+            <span class="team-pill">Conformidade</span>
+            <span class="team-pill">Eficiência</span>
           </div>
         </article>
       </div>
     </div>
 
-    <!-- Coordenadores / Pilotos -->
+    <!-- Coordenação & Pilotos -->
     <div class="team-section">
       <div class="team-section-title">
         <h2>Coordenação &amp; Pilotos</h2>
@@ -67,13 +67,13 @@
       <div class="team-grid">
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">C1</div>
+            <div class="team-avatar">C1</div>
             <div class="team-card-meta">
               <h3 class="team-name">Coordenador / Piloto 01</h3>
-              <div class="team-role">
-                <span class="badge badge-green">Coordenador / Piloto</span>
-                <span class="chip">Planejamento</span>
-                <span class="chip">Briefing</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-green">Coordenador / Piloto</span>
+                <span class="team-chip">Planejamento</span>
+                <span class="team-chip">Briefing</span>
               </div>
             </div>
           </div>
@@ -82,13 +82,13 @@
 
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">C2</div>
+            <div class="team-avatar">C2</div>
             <div class="team-card-meta">
               <h3 class="team-name">Coordenador / Piloto 02</h3>
-              <div class="team-role">
-                <span class="badge badge-green">Coordenador / Piloto</span>
-                <span class="chip">Execução</span>
-                <span class="chip">Qualidade</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-green">Coordenador / Piloto</span>
+                <span class="team-chip">Execução</span>
+                <span class="team-chip">Qualidade</span>
               </div>
             </div>
           </div>
@@ -97,7 +97,7 @@
       </div>
     </div>
 
-    <!-- Pilotos agrícolas -->
+    <!-- Pilotos Agrícolas -->
     <div class="team-section">
       <div class="team-section-title">
         <h2>Pilotos Agrícolas</h2>
@@ -107,13 +107,13 @@
       <div class="team-grid team-grid-5">
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">P1</div>
+            <div class="team-avatar">P1</div>
             <div class="team-card-meta">
               <h3 class="team-name">Piloto Agrícola 01</h3>
-              <div class="team-role">
-                <span class="badge badge-blue">Aplicação Aérea</span>
-                <span class="chip">Precisão</span>
-                <span class="chip">Segurança</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
+                <span class="team-chip">Precisão</span>
+                <span class="team-chip">Segurança</span>
               </div>
             </div>
           </div>
@@ -122,13 +122,13 @@
 
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">P2</div>
+            <div class="team-avatar">P2</div>
             <div class="team-card-meta">
               <h3 class="team-name">Piloto Agrícola 02</h3>
-              <div class="team-role">
-                <span class="badge badge-blue">Aplicação Aérea</span>
-                <span class="chip">Eficiência</span>
-                <span class="chip">Conformidade</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
+                <span class="team-chip">Eficiência</span>
+                <span class="team-chip">Conformidade</span>
               </div>
             </div>
           </div>
@@ -137,13 +137,13 @@
 
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">P3</div>
+            <div class="team-avatar">P3</div>
             <div class="team-card-meta">
               <h3 class="team-name">Piloto Agrícola 03</h3>
-              <div class="team-role">
-                <span class="badge badge-blue">Aplicação Aérea</span>
-                <span class="chip">Qualidade</span>
-                <span class="chip">Rotas</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
+                <span class="team-chip">Qualidade</span>
+                <span class="team-chip">Rotas</span>
               </div>
             </div>
           </div>
@@ -152,13 +152,13 @@
 
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">P4</div>
+            <div class="team-avatar">P4</div>
             <div class="team-card-meta">
               <h3 class="team-name">Piloto Agrícola 04</h3>
-              <div class="team-role">
-                <span class="badge badge-blue">Aplicação Aérea</span>
-                <span class="chip">Performance</span>
-                <span class="chip">Segurança</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
+                <span class="team-chip">Performance</span>
+                <span class="team-chip">Segurança</span>
               </div>
             </div>
           </div>
@@ -167,13 +167,13 @@
 
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">P5</div>
+            <div class="team-avatar">P5</div>
             <div class="team-card-meta">
               <h3 class="team-name">Piloto Agrícola 05</h3>
-              <div class="team-role">
-                <span class="badge badge-blue">Aplicação Aérea</span>
-                <span class="chip">Cobertura</span>
-                <span class="chip">Precisão</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
+                <span class="team-chip">Cobertura</span>
+                <span class="team-chip">Precisão</span>
               </div>
             </div>
           </div>
@@ -182,7 +182,7 @@
       </div>
     </div>
 
-    <!-- Tecnologia / Analista -->
+    <!-- Analista -->
     <div class="team-section">
       <div class="team-section-title">
         <h2>Tecnologia &amp; Análise</h2>
@@ -192,20 +192,18 @@
       <div class="team-grid">
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">A</div>
+            <div class="team-avatar">A</div>
             <div class="team-card-meta">
               <h3 class="team-name">Analista</h3>
-              <div class="team-role">
-                <span class="badge badge-purple">Análise Operacional</span>
-                <span class="chip">Mapas</span>
-                <span class="chip">Relatórios</span>
-                <span class="chip">Indicadores</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-purple">Análise Operacional</span>
+                <span class="team-chip">Mapas</span>
+                <span class="team-chip">Relatórios</span>
+                <span class="team-chip">Indicadores</span>
               </div>
             </div>
           </div>
-          <p class="team-desc">
-            Responsável por análises, relatórios, mapas e acompanhamento de indicadores para melhorar desempenho e qualidade.
-          </p>
+          <p class="team-desc">Responsável por análises, relatórios, mapas e indicadores para melhorar desempenho e qualidade.</p>
         </article>
       </div>
     </div>
@@ -220,23 +218,22 @@
       <div class="team-grid">
         <article class="team-card">
           <div class="team-card-top">
-            <div class="avatar">C</div>
+            <div class="team-avatar">C</div>
             <div class="team-card-meta">
               <h3 class="team-name">Comercial</h3>
-              <div class="team-role">
-                <span class="badge badge-orange">Atendimento &amp; Negócios</span>
-                <span class="chip">Propostas</span>
-                <span class="chip">Contratos</span>
-                <span class="chip">Pós-venda</span>
+              <div class="team-tags">
+                <span class="team-badge team-badge-orange">Atendimento &amp; Negócios</span>
+                <span class="team-chip">Propostas</span>
+                <span class="team-chip">Contratos</span>
+                <span class="team-chip">Pós-venda</span>
               </div>
             </div>
           </div>
-          <p class="team-desc">
-            Atendimento ao cliente, propostas, negociação e acompanhamento para garantir agilidade e clareza no serviço.
-          </p>
+          <p class="team-desc">Atendimento, propostas e acompanhamento para garantir agilidade e clareza no serviço.</p>
         </article>
       </div>
     </div>
+
   </div>
 </section>
 {% endblock %}
