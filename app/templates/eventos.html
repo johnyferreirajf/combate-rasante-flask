@@ -1,16 +1,38 @@
 {% extends "layout.html" %}
 {% block title %}Eventos - COMBATE RASANTE{% endblock %}
-{% block content %}
-<section class="section">
-  <div class="container">
-    <h1 class="section-title">Eventos</h1>
-    <p class="section-subtitle">Dias de campo, treinamentos e novidades.</p>
 
-    <div class="card glass-card" style="text-align:left">
-      <p style="margin:0; color: rgba(255,255,255,0.85);">
-        Página em construção ✅<br>
-        Em breve, esta área terá conteúdos, registros e atualizações em tempo real.
+{% block content %}
+<section class="section" id="eventos">
+  <div class="container">
+    <header class="section-header">
+      <h2>Eventos</h2>
+      <p>
+        Página pronta para divulgar <strong>dias de campo, treinamentos e comunicados</strong>.
+        Você só substitui as informações.
       </p>
+    </header>
+
+    <div class="cards-grid">
+      <article class="card">
+        <h3>Dia de Campo (exemplo)</h3>
+        <p><strong>Data:</strong> 00/00/2026</p>
+        <p><strong>Local:</strong> (Fazenda / Município)</p>
+        <p><strong>Tema:</strong> (ex: Tecnologia de aplicação aérea e redução de sobreposição)</p>
+      </article>
+
+      <article class="card">
+        <h3>Treinamento (exemplo)</h3>
+        <p><strong>Data:</strong> 00/00/2026</p>
+        <p><strong>Público:</strong> Equipe / Clientes / Parceiros</p>
+        <p><strong>Conteúdo:</strong> (ex: boas práticas, segurança, condições climáticas)</p>
+      </article>
+
+      <article class="card">
+        <h3>Comunicado (exemplo)</h3>
+        <p>
+          Use este card para avisos: janela climática, agenda de operação, novas tecnologias, etc.
+        </p>
+      </article>
     </div>
   </div>
 </section>
