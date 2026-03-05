@@ -1,16 +1,38 @@
 {% extends "layout.html" %}
 {% block title %}Clientes - COMBATE RASANTE{% endblock %}
-{% block content %}
-<section class="section">
-  <div class="container">
-    <h1 class="section-title">Clientes</h1>
-    <p class="section-subtitle">Atendimento, histórico, relatórios e painéis.</p>
 
-    <div class="card glass-card" style="text-align:left">
-      <p style="margin:0; color: rgba(255,255,255,0.85);">
-        Página em construção ✅<br>
-        Em breve, esta área terá conteúdos, registros e atualizações em tempo real.
+{% block content %}
+<section class="section" id="clientes">
+  <div class="container">
+    <header class="section-header">
+      <h2>Clientes</h2>
+      <p>
+        Página pronta para apresentar <strong>clientes atendidos</strong> ou
+        deixar como vitrine (depois você decide se mostra nomes ou só regiões).
       </p>
+    </header>
+
+    <div class="cards-grid">
+      <article class="card">
+        <h3>Cliente 01 (exemplo)</h3>
+        <p><strong>Região:</strong> (ex: Sul Goiano)</p>
+        <p><strong>Cultura:</strong> (ex: Cana / Soja / Milho)</p>
+        <p><strong>Serviços:</strong> (ex: Pulverização aérea + relatórios)</p>
+      </article>
+
+      <article class="card">
+        <h3>Cliente 02 (exemplo)</h3>
+        <p><strong>Região:</strong> (ex: Triângulo Mineiro)</p>
+        <p><strong>Cultura:</strong> (ex: Cana)</p>
+        <p><strong>Serviços:</strong> (ex: Controle de faixa e rastreabilidade)</p>
+      </article>
+
+      <article class="card">
+        <h3>Quer ser atendido?</h3>
+        <p>Use este espaço como CTA para captação.</p>
+        <p><strong>Telefone:</strong> 64 99983-6005 / 64 99221-7002</p>
+        <p><strong>E-mail:</strong> weikren@combateaviacao.com.br</p>
+      </article>
     </div>
   </div>
 </section>
