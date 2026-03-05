@@ -1,16 +1,38 @@
 {% extends "layout.html" %}
 {% block title %}Atividades - COMBATE RASANTE{% endblock %}
-{% block content %}
-<section class="section">
-  <div class="container">
-    <h1 class="section-title">Atividades</h1>
-    <p class="section-subtitle">Operações em campo, agenda e atualizações.</p>
 
-    <div class="card glass-card" style="text-align:left">
-      <p style="margin:0; color: rgba(255,255,255,0.85);">
-        Página em construção ✅<br>
-        Em breve, esta área terá conteúdos, registros e atualizações em tempo real.
+{% block content %}
+<section class="section" id="atividades">
+  <div class="container">
+    <header class="section-header">
+      <h2>Atividades</h2>
+      <p>
+        Página pronta para organizar <strong>operações, relatórios, status e atualizações</strong>.
+        Depois você substitui pelos dados reais.
       </p>
+    </header>
+
+    <div class="cards-grid">
+      <article class="card">
+        <h3>Status Operacional (exemplo)</h3>
+        <p><strong>Hoje:</strong> Operações programadas / em execução / concluídas</p>
+        <p><strong>Condições:</strong> vento, umidade, janela de aplicação</p>
+        <p><strong>Observação:</strong> (anotações rápidas)</p>
+      </article>
+
+      <article class="card">
+        <h3>Relatórios Recentes (exemplo)</h3>
+        <p>• Relatório de aplicação — (data) — (cliente)</p>
+        <p>• Mapa de cobertura — (data) — (área)</p>
+        <p>• Indicadores — (semana) — (resumo)</p>
+      </article>
+
+      <article class="card">
+        <h3>Próximas Ações (exemplo)</h3>
+        <p>• Revisão de aeronave (data)</p>
+        <p>• Treinamento interno (data)</p>
+        <p>• Reunião com cliente (data)</p>
+      </article>
     </div>
   </div>
 </section>
