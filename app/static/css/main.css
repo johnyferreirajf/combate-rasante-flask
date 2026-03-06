@@ -30,13 +30,22 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   color: var(--color-text);
 
-  /* FOTO DE FUNDO GERAL */
   background-image: url("/static/img/hero-combate.jpeg");
   background-size: cover;
   background-position: center center;
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
 
+@media (max-width: 768px){
+  html,
+  body{
+    background-size: contain;
+    background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
+    background-color: #000;
+  }
 }
 
 img {
