@@ -3,7 +3,6 @@
 
 {% block content %}
 
-<!-- Intro vídeo (5s) -->
 <div id="intro-video" aria-hidden="true">
   <video id="introVideoEl" autoplay muted playsinline preload="auto">
     <source src="{{ url_for('static', filename='video/intro.mp4') }}" type="video/mp4">
@@ -15,7 +14,7 @@
 <section class="home-stream-hero">
   <div class="home-stream-overlay"></div>
 
-  <div class="home-stream-container"><!-- TÍTULO / SUBTÍTULO (mantém o que você já ajustou no CSS) -->
+  <div class="home-stream-container">
     <h1 class="home-stream-title">COMBATE RASANTE</h1>
     <p class="home-stream-subtitle">
       Aplicação Aérea de <span class="alta-precisao">Alta Precisão</span>
@@ -25,20 +24,16 @@
       Central de Atividades
     </div>
 
-
-    <!-- CARROSSEL 3 CARDS (estilo Netflix) -->
     <div class="stream-carousel" aria-label="Carrossel de seções">
       <button class="stream-arrow stream-prev" type="button" aria-label="Anterior">‹</button>
 
       <div class="stream-track" id="streamTrack">
-        <!-- Os cards são renderizados via JS -->
       </div>
 
       <button class="stream-arrow stream-next" type="button" aria-label="Próximo">›</button>
     </div>
 
     <div class="stream-dots" id="streamDots" aria-hidden="true"></div>
-
   </div>
 </section>
 
@@ -52,20 +47,18 @@
   const vid = document.getElementById("introVideoEl");
   if (!wrap || !vid) return;
 
-  // ✅ Se já mostrou nesta sessão, não exibe de novo
   if (sessionStorage.getItem(INTRO_KEY) === "1") {
     wrap.remove();
     return;
   }
 
-  // ✅ Marca como já mostrado
   sessionStorage.setItem(INTRO_KEY, "1");
 
-  // trava scroll
   document.documentElement.classList.add("intro-lock");
   document.body.classList.add("intro-lock");
 
   let done = false;
+
   function finish() {
     if (done) return;
     done = true;
@@ -74,71 +67,13 @@
     document.documentElement.classList.remove("intro-lock");
     document.body.classList.remove("intro-lock");
 
-    // remove do DOM após o fade
     setTimeout(() => {
       wrap.remove();
     }, 900);
   }
 
-  // some após 5s ou quando o vídeo acabar
   setTimeout(finish, 5000);
   vid.addEventListener("ended", finish);
-  /* =========================================
-   HOME STREAM MOBILE
-========================================= */
-
-@media (max-width: 768px){
-
-  .home-stream-hero{
-    min-height: auto;
-    padding-top: 95px;
-    padding-bottom: 32px;
-  }
-
-  .home-stream-container{
-    padding: 0 14px;
-  }
-
-  .home-stream-title{
-    font-size: 48px;
-    line-height: 0.98;
-    letter-spacing: 0.5px;
-  }
-
-  .home-stream-subtitle{
-    font-size: 20px;
-    line-height: 1.18;
-    margin-bottom: 24px;
-  }
-
-  .stream-track{
-    gap: 14px;
-    padding: 8px 2px 14px 2px;
-  }
-
-  .stream-tile{
-    flex: 0 0 88%;
-    aspect-ratio: auto;
-    min-height: 220px;
-    padding: 14px;
-  }
-
-  .tile-title{
-    font-size: 20px;
-  }
-
-  .tile-desc{
-    font-size: 13px;
-  }
-
-  .tile-list{
-    font-size: 12px;
-  }
-
-  .stream-arrow{
-    display: none;
-  }
-}
 })();
 </script>
 {% endblock %}
