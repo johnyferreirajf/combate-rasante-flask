@@ -83,6 +83,62 @@
   // some após 5s ou quando o vídeo acabar
   setTimeout(finish, 5000);
   vid.addEventListener("ended", finish);
+  /* =========================================
+   HOME STREAM MOBILE
+========================================= */
+
+@media (max-width: 768px){
+
+  .home-stream-hero{
+    min-height: auto;
+    padding-top: 95px;
+    padding-bottom: 32px;
+  }
+
+  .home-stream-container{
+    padding: 0 14px;
+  }
+
+  .home-stream-title{
+    font-size: 48px;
+    line-height: 0.98;
+    letter-spacing: 0.5px;
+  }
+
+  .home-stream-subtitle{
+    font-size: 20px;
+    line-height: 1.18;
+    margin-bottom: 24px;
+  }
+
+  .stream-track{
+    gap: 14px;
+    padding: 8px 2px 14px 2px;
+  }
+
+  .stream-tile{
+    flex: 0 0 88%;
+    aspect-ratio: auto;
+    min-height: 220px;
+    padding: 14px;
+  }
+
+  .tile-title{
+    font-size: 20px;
+  }
+
+  .tile-desc{
+    font-size: 13px;
+  }
+
+  .tile-list{
+    font-size: 12px;
+  }
+
+  .stream-arrow{
+    display: none;
+  }
+}
 })();
 </script>
 {% endblock %}
