@@ -150,16 +150,22 @@
       </div>
     </footer>
 
-    <script>
-      function toggleNavbar() {
-        const nav = document.getElementById("navbarLinks");
-        if (!nav) return;
-        if (nav.style.display === "flex") {
-          nav.style.display = "none";
-        } else {
-          nav.style.display = "flex";
-        }
-      }
-    </script>
+<script>
+  function toggleNavbar() {
+    const nav = document.getElementById("navbarLinks");
+    if (!nav) return;
+    nav.classList.toggle("mobile-open");
+  }
+
+  window.addEventListener("resize", function () {
+    const nav = document.getElementById("navbarLinks");
+    if (!nav) return;
+
+    if (window.innerWidth > 960) {
+      nav.classList.remove("mobile-open");
+      nav.style.display = "";
+    }
+  });
+</script>
   </body>
 </html>
