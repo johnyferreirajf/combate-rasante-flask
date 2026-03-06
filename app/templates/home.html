@@ -46,13 +46,12 @@
 <section class="netflix-section">
   <div class="container">
 
-    <!-- ======= NOVIDADES ======= -->
     <div class="row-header">
       <h2>Novidades</h2>
       <a class="row-link" href="{{ url_for('main.tecnologia') }}">Ver mais</a>
     </div>
 
-    <div class="row-stream" data-row="novidades">
+    <div class="row-netflix" data-row="novidades">
       <button class="row-btn left" aria-label="voltar">‹</button>
 
       <div class="row-track">
@@ -104,7 +103,6 @@
       <button class="row-btn right" aria-label="avançar">›</button>
     </div>
 
-    <!-- ======= EQUIPES ======= -->
     <div class="row-header">
       <h2>Equipes</h2>
       <a class="row-link" href="{{ url_for('main.servicos') }}">Ver mais</a>
@@ -138,7 +136,6 @@
       <button class="row-btn right" aria-label="avançar">›</button>
     </div>
 
-    <!-- ======= ATIVIDADES ======= -->
     <div class="row-header">
       <h2>Atividades</h2>
       <a class="row-link" href="{{ url_for('main.servicos') }}">Ver mais</a>
@@ -172,7 +169,6 @@
       <button class="row-btn right" aria-label="avançar">›</button>
     </div>
 
-    <!-- ======= CLIENTES ======= -->
     <div class="row-header">
       <h2>Clientes</h2>
       <a class="row-link" href="{{ url_for('main.contato') }}">Fale conosco</a>
@@ -210,6 +206,5 @@
 </section>
 
 <script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
-
 
 {% endblock %}
