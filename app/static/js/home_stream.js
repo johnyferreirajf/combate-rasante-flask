@@ -44,13 +44,11 @@
 
   const track = document.getElementById("streamTrack");
   const dotsWrap = document.getElementById("streamDots");
-
   const prevBtn = document.querySelector(".stream-prev");
   const nextBtn = document.querySelector(".stream-next");
 
   if (!track) return;
 
-  // Render cards
   track.innerHTML = tiles.map(t => `
     <a class="stream-tile" href="${t.url}">
       <div class="tile-top">
@@ -68,23 +66,22 @@
     </a>
   `).join("");
 
-  // Dots (um por card "página" no desktop: 3 por vez)
-  function getTilesPerView(){
+  function getTilesPerView() {
     const w = window.innerWidth;
     if (w <= 640) return 1;
     if (w <= 980) return 2;
     return 3;
   }
 
-  function getPageCount(){
+  function getPageCount() {
     const per = getTilesPerView();
     return Math.max(1, Math.ceil(tiles.length / per));
   }
 
-  function buildDots(){
+  function buildDots() {
     const pages = getPageCount();
     dotsWrap.innerHTML = "";
-    for (let i = 0; i < pages; i++){
+    for (let i = 0; i < pages; i++) {
       const d = document.createElement("span");
       d.className = "dot" + (i === 0 ? " dot-active" : "");
       d.dataset.page = String(i);
@@ -92,7 +89,7 @@
     }
   }
 
-  function setActiveDot(page){
+  function setActiveDot(page) {
     const all = dotsWrap.querySelectorAll(".dot");
     all.forEach((d, idx) => {
       if (idx === page) d.classList.add("dot-active");
@@ -100,8 +97,7 @@
     });
   }
 
-  // Scroll helpers
-  function getStep(){
+  function getStep() {
     const tile = track.querySelector(".stream-tile");
     if (!tile) return track.clientWidth;
     const style = window.getComputedStyle(track);
@@ -109,15 +105,14 @@
     return tile.getBoundingClientRect().width + gap;
   }
 
-    // Track page based on scrollLeft
-  function getCurrentPage(){
+  function getCurrentPage() {
     const per = getTilesPerView();
     const step = getStep();
     const page = Math.round(track.scrollLeft / (step * per));
     return Math.max(0, Math.min(getPageCount() - 1, page));
   }
 
-  function goToPage(page){
+  function goToPage(page) {
     const per = getTilesPerView();
     const step = getStep();
     const max = track.scrollWidth - track.clientWidth;
@@ -126,70 +121,56 @@
     window.setTimeout(() => setActiveDot(getCurrentPage()), 350);
   }
 
-  // Loop infinito (Netflix style) baseado em páginas
-  function nextPage(){
+  function nextPage() {
     const current = getCurrentPage();
     const total = getPageCount();
-    if (current >= total - 1){
+    if (current >= total - 1) {
       goToPage(0);
     } else {
       goToPage(current + 1);
     }
   }
 
-  function prevPage(){
+  function prevPage() {
     const current = getCurrentPage();
     const total = getPageCount();
-    if (current <= 0){
+    if (current <= 0) {
       goToPage(total - 1);
     } else {
       goToPage(current - 1);
     }
   }
 
-  // Buttons
-  prevBtn?.addEventListener("click", () => nextPage());
-  nextBtn?.addEventListener("click", () => prevPage());
+  prevBtn?.addEventListener("click", prevPage);
+  nextBtn?.addEventListener("click", nextPage);
 
-  // Dots click
   dotsWrap.addEventListener("click", (e) => {
     const dot = e.target.closest(".dot");
     if (!dot) return;
     const page = parseInt(dot.dataset.page, 10) || 0;
-    const per = getTilesPerView();
-    const step = getStep();
-    track.scrollTo({ left: page * per * step, behavior: "smooth" });
+    goToPage(page);
   });
 
-  // Autoplay Netflix style
   let timer = null;
 
-  function startAuto(){
+  function startAuto() {
     stopAuto();
     timer = setInterval(() => {
-      const per = getTilesPerView();
-      const step = getStep();
-      const maxScroll = track.scrollWidth - track.clientWidth;
-      const nextLeft = Math.min(track.scrollLeft + per * step, maxScroll);
-
-      if (Math.abs(track.scrollLeft - maxScroll) < 5) {
-        track.scrollTo({ left: 0, behavior: "smooth" });
-      } else {
-        track.scrollTo({ left: nextLeft, behavior: "smooth" });
-      }
+      nextPage();
     }, 5500);
   }
 
-  function stopAuto(){
+  function stopAuto() {
     if (timer) clearInterval(timer);
     timer = null;
   }
 
   track.addEventListener("mouseenter", stopAuto);
   track.addEventListener("mouseleave", startAuto);
+  track.addEventListener("touchstart", stopAuto, { passive: true });
+  track.addEventListener("touchend", startAuto, { passive: true });
 
-  // Update dots on scroll
-  let raf=null;
+  let raf = null;
   track.addEventListener("scroll", () => {
     if (raf) cancelAnimationFrame(raf);
     raf = requestAnimationFrame(() => setActiveDot(getCurrentPage()));
@@ -200,7 +181,6 @@
     setActiveDot(getCurrentPage());
   });
 
-  // Init
   buildDots();
   startAuto();
 })();
