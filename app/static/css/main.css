@@ -1927,3 +1927,218 @@ a {
   .team-grid-5{ grid-template-columns: 1fr; }
   .team-avatar{ width: 50px; height: 50px; }
 }
+/* =========================================
+   RESPONSIVIDADE GLOBAL MOBILE
+========================================= */
+
+@media (max-width: 768px){
+
+  html, body{
+    overflow-x: hidden;
+  }
+
+  .container{
+    padding: 0 16px;
+  }
+
+  main{
+    overflow-x: hidden;
+  }
+
+  /* NAVBAR */
+  .navbar-inner{
+    height: auto;
+    min-height: 72px;
+    padding: 10px 0;
+  }
+
+  .navbar-logo{
+    gap: 10px;
+    max-width: 70%;
+  }
+
+  .navbar-logo-img{
+    height: 2rem;
+  }
+
+  .navbar-logo-title{
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+  }
+
+  .navbar-logo-subtitle{
+    font-size: 0.78rem;
+  }
+
+  .navbar-toggle{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #062014;
+  }
+
+  .navbar-links{
+    display: none;
+    position: absolute;
+    top: 76px;
+    left: 12px;
+    right: 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px;
+    border-radius: 20px;
+    background: rgba(0, 200, 120, 0.22);
+    border: 1px solid rgba(255,255,255,0.30);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+    z-index: 99;
+  }
+
+  .navbar-link,
+  .navbar-button{
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* SECTION HEADERS */
+  .section-header h1,
+  .section-header h2{
+    font-size: 1.8rem;
+    line-height: 1.15;
+  }
+
+  .section-header p{
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+
+  /* HERO GERAL */
+  .hero{
+    min-height: auto;
+    padding: 2rem 0 2.5rem;
+  }
+
+  .hero-grid{
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+
+  .hero-main{
+    max-width: 100%;
+  }
+
+  .hero-title{
+    font-size: 2rem;
+    line-height: 1.08;
+  }
+
+  .hero-subtitle{
+    font-size: 0.98rem;
+    line-height: 1.55;
+  }
+
+  .hero-actions{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions .btn,
+  .hero-actions .btn-hero{
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* CARDS GERAIS */
+  .card,
+  .contato-card,
+  .tech-bubble,
+  .cta-bubble,
+  .login-info-card,
+  .dashboard-welcome-card{
+    padding: 1.15rem 1.1rem;
+    border-radius: 18px;
+  }
+
+  .cards-grid,
+  .services-grid,
+  .tech-grid,
+  .contato-grid,
+  .contact-grid,
+  .grid-2,
+  .footer-grid{
+    grid-template-columns: 1fr !important;
+  }
+
+  /* FOOTER */
+  .footer-grid{
+    gap: 1.4rem;
+    padding: 2rem 0 1.4rem;
+  }
+
+  /* EQUIPE */
+  .team-hero{
+    padding: 32px 14px 30px;
+    min-height: auto;
+  }
+
+  .team-header h1{
+    font-size: 2rem;
+    line-height: 1.08;
+  }
+
+  .team-header p{
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+
+  .team-grid,
+  .team-grid-5,
+  .team-grid-feature{
+    grid-template-columns: 1fr !important;
+  }
+
+  .team-card{
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .team-card-top{
+    align-items: flex-start;
+  }
+
+  .team-avatar{
+    width: 46px;
+    height: 46px;
+    font-size: 0.95rem;
+  }
+
+  .team-name{
+    font-size: 1.05rem;
+  }
+
+  .team-badge,
+  .team-chip,
+  .team-pill{
+    font-size: 11px;
+    padding: 6px 9px;
+  }
+
+  /* CONTATO / MAPA */
+  .map-embed iframe{
+    height: 240px;
+  }
+
+  /* TÍTULOS AUXILIARES */
+  .section-title{
+    font-size: 1.8rem;
+    line-height: 1.15;
+  }
+
+  .section-subtitle{
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+}
