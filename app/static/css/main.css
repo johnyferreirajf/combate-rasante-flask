@@ -863,35 +863,100 @@ a {
    RESPONSIVIDADE
    ======================================================= */
 
-@media (max-width: 960px) {
-  .hero-grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 2rem;
+@media (max-width: 768px){
+
+  .navbar{
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    background: rgba(0, 200, 120, 0.88);
+    backdrop-filter: blur(14px);
   }
 
-  .contato-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .navbar-inner{
+    position: relative;
+    min-height: 78px;
+    padding: 10px 0;
   }
 
-  .auth-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .navbar-logo{
+    max-width: calc(100% - 72px);
+    gap: 10px;
   }
 
-  .services-grid,
-  .tech-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .navbar-logo-img{
+    height: 2.2rem;
   }
 
-  .footer-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .navbar-logo-title{
+    font-size: 0.78rem;
+    line-height: 1.1;
   }
 
-  .navbar-links {
-    display: none;
+  .navbar-logo-subtitle{
+    font-size: 0.72rem;
+    line-height: 1.1;
   }
 
-  .navbar-toggle {
+  .navbar-toggle{
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    font-size: 34px;
+    color: #041b12;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.14);
+  }
+
+  .navbar-links{
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    left: 0;
+    right: 0;
+
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+
+    padding: 18px;
+    border-radius: 24px;
+
+    background: rgba(8, 18, 14, 0.92);
+    border: 1px solid rgba(255,255,255,0.14);
+    backdrop-filter: blur(16px);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.40);
+
+    z-index: 300;
+  }
+
+  .navbar-links.mobile-open{
+    display: flex !important;
+  }
+
+  .navbar-link{
+    width: 100%;
+    text-align: center;
+    font-size: 1.15rem;
+    padding: 12px 14px;
+    border-radius: 16px;
+    color: #ffffff;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .navbar-link:hover{
+    background: rgba(255,255,255,0.12);
+    color: #ffffff;
+  }
+
+  .navbar-button{
+    width: 100%;
+    justify-content: center;
+    font-size: 1.1rem;
+    padding: 14px 16px;
+    border-radius: 18px;
   }
 }
 
