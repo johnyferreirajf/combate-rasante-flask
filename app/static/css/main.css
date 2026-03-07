@@ -2590,3 +2590,63 @@ a {
     display: none;
   }
 }
+@media (max-width: 768px){
+
+  .netflix-hero{
+    padding-top: 28px;
+    padding-bottom: 26px;
+    min-height: auto;
+  }
+
+  .netflix-hero-content{
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .hero-left h1{
+    font-size: 2rem;
+    line-height: 1.02;
+    text-align: center;
+  }
+
+  .hero-left p{
+    font-size: 0.95rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .hero-actions{
+    flex-direction: column;
+    gap: 0.7rem;
+  }
+
+  .btn-hero{
+    width: 100%;
+  }
+
+  .hero-right{
+    display: none;
+  }
+
+  .netflix-section{
+    padding-top: 1.2rem;
+  }
+
+  .row-header{
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    margin-top: 1.2rem;
+  }
+
+  .card-netflix{
+    min-width: 88%;
+    max-width: 88%;
+    min-height: 180px;
+    height: auto;
+  }
+
+  .row-btn{
+    display: none;
+  }
+}
