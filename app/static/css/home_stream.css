@@ -251,7 +251,7 @@ body.intro-lock{
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
   object-position: center;
   background: #000;
 }
@@ -295,82 +295,82 @@ body.intro-lock{
 
   .home-stream-hero{
     min-height: auto;
-    padding-top: 18px;
-    padding-bottom: 24px;
+    padding-top: 10px;
+    padding-bottom: 22px;
   }
 
   .home-stream-container{
-    padding: 0 14px;
+    padding: 0 12px;
   }
 
   .home-stream-title{
-    font-size: 42px;
-    line-height: 0.98;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
+    font-size: 34px;
+    line-height: 1;
+    letter-spacing: 0.3px;
+    margin: 0 0 6px 0;
   }
 
   .home-stream-subtitle{
-    font-size: 18px;
-    line-height: 1.18;
-    margin-bottom: 18px;
+    font-size: 16px;
+    line-height: 1.15;
+    margin: 0 auto 14px auto;
   }
 
   .home-stream-pill{
-    margin-bottom: 18px;
-    font-size: 13px;
-    padding: 9px 16px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    padding: 8px 14px;
   }
 
   .stream-track{
-    gap: 14px;
-    padding: 8px 2px 14px 2px;
+    gap: 12px;
+    padding: 6px 2px 12px 2px;
   }
 
   .stream-tile{
     flex: 0 0 88%;
+    min-height: 185px;
     aspect-ratio: auto;
-    min-height: 205px;
     padding: 14px;
   }
 
   .tile-icon{
-    width: 42px;
-    height: 42px;
+    width: 40px;
+    height: 40px;
     margin-bottom: 10px;
     font-size: 16px;
   }
 
   .tile-title{
-    font-size: 18px;
+    font-size: 17px;
+    margin-bottom: 6px;
   }
 
   .tile-desc{
-    font-size: 13px;
-    margin-bottom: 10px;
+    font-size: 12px;
+    margin-bottom: 8px;
   }
 
   .tile-list{
-    font-size: 12px;
+    font-size: 11px;
     padding-left: 16px;
+  }
+
+  .tile-list li{
+    margin: 4px 0;
   }
 
   .stream-arrow{
     display: none;
   }
-}
 
-@media (max-width: 480px){
-  .home-stream-title{
-    font-size: 34px;
+  .stream-dots{
+    margin-top: 8px;
+    gap: 8px;
   }
 
-  .home-stream-subtitle{
-    font-size: 16px;
-  }
-
-  .stream-tile{
-    flex: 0 0 92%;
-    min-height: 195px;
+  .dot{
+    width: 9px;
+    height: 9px;
   }
 }
