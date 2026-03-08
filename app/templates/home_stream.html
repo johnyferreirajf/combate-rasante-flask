@@ -2,7 +2,6 @@
 {% block title %}COMBATE RASANTE - Central de Atividades{% endblock %}
 
 {% block content %}
-
 <div id="intro-video" aria-hidden="true">
   <video id="introVideoEl" autoplay muted playsinline preload="auto">
     <source src="{{ url_for('static', filename='video/intro.mp4') }}" type="video/mp4">
@@ -20,16 +19,11 @@
       Aplicação Aérea de <span class="alta-precisao">Alta Precisão</span>
     </p>
 
-    <div class="home-stream-pill">
-      Central de Atividades
-    </div>
+    <div class="home-stream-pill">Central de Atividades</div>
 
     <div class="stream-carousel" aria-label="Carrossel de seções">
       <button class="stream-arrow stream-prev" type="button" aria-label="Anterior">‹</button>
-
-      <div class="stream-track" id="streamTrack">
-      </div>
-
+      <div class="stream-track" id="streamTrack"></div>
       <button class="stream-arrow stream-next" type="button" aria-label="Próximo">›</button>
     </div>
 
@@ -38,41 +32,36 @@
 </section>
 
 <script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
-
 <script>
 (function () {
   const INTRO_KEY = "cr_intro_shown";
-
   const wrap = document.getElementById("intro-video");
   const vid = document.getElementById("introVideoEl");
   if (!wrap || !vid) return;
 
-  if (sessionStorage.getItem(INTRO_KEY) === "1") {
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (isMobile || reduceMotion || sessionStorage.getItem(INTRO_KEY) === "1") {
     wrap.remove();
     return;
   }
 
   sessionStorage.setItem(INTRO_KEY, "1");
-
   document.documentElement.classList.add("intro-lock");
   document.body.classList.add("intro-lock");
 
   let done = false;
-
   function finish() {
     if (done) return;
     done = true;
-
     wrap.classList.add("hide");
     document.documentElement.classList.remove("intro-lock");
     document.body.classList.remove("intro-lock");
-
-    setTimeout(() => {
-      wrap.remove();
-    }, 900);
+    setTimeout(() => wrap.remove(), 900);
   }
 
-  setTimeout(finish, 5000);
+  setTimeout(finish, 4500);
   vid.addEventListener("ended", finish);
 })();
 </script>
