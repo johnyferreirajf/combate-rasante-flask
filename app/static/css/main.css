@@ -1745,16 +1745,16 @@ a {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px){
   html,
-  body {
-    overflow-x: hidden;
+  body{
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
     background-attachment: scroll;
     background-color: #000;
   }
+}
 
   .container {
     padding: 0 16px;
