@@ -2068,3 +2068,42 @@ a {
     height: 50px;
   }
 }
+@media (max-width: 768px){
+
+  .footer{
+    margin-top: 2rem;
+  }
+
+  .footer-grid{
+    grid-template-columns: 1fr !important;
+    gap: 1.2rem;
+    padding: 1.6rem 0 1.2rem;
+  }
+
+  .footer-logo{
+    align-items: center;
+  }
+
+  .footer-logo-img{
+    height: 2.6rem;
+  }
+
+  .footer-logo-title{
+    font-size: 0.9rem;
+  }
+
+  .footer-logo-subtitle{
+    font-size: 0.78rem;
+  }
+
+  .footer-text,
+  .footer-list{
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .footer-bottom{
+    font-size: 0.74rem;
+    padding: 0.85rem 0.6rem;
+  }
+}
