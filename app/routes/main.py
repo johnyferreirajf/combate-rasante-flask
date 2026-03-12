@@ -7,7 +7,6 @@ from app.utils.security import login_required, get_current_user
 from app import db
 from app.models import ContactMessage
 
-# ✅ Blueprint TEM que vir antes das rotas
 main_bp = Blueprint("main", __name__)
 
 
@@ -17,6 +16,11 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
+    return render_template("home.html")
+
+
+@main_bp.route("/central")
+def central():
     return render_template("home_stream.html")
 
 
@@ -35,7 +39,6 @@ def contato():
     return render_template("contato.html")
 
 
-# ✅ FORM envia para cá (POST)
 @main_bp.route("/solicitar-orcamento", methods=["POST"])
 def solicitar_orcamento():
     nome = (request.form.get("nome") or "").strip()
@@ -71,11 +74,7 @@ def _is_image_file(filename: str) -> bool:
 def _build_tree_for_dashboard(base_dir: str):
     """
     Estrutura esperada:
-
     app/static/fotos_clientes/<USER_ID>/<TEMA>/<SAFRA>/<MES>/<DIA>/<ARQUIVO>
-
-    Exemplo:
-    fotos_clientes/1/AplicacaoAerea/Safra2025-2026/Janeiro/14/analise_01.jpeg
     """
 
     tree = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
@@ -130,10 +129,7 @@ def _build_tree_for_dashboard(base_dir: str):
 @login_required
 def painel():
     user = get_current_user()
-
-    # Raiz das fotos (dentro de app/static)
     photos_root = os.path.join(current_app.static_folder, "fotos_clientes", str(user.id))
-
     tree = _build_tree_for_dashboard(photos_root)
 
     tema_labels = {
@@ -157,11 +153,9 @@ def atividades():
     return render_template("atividades.html")
 
 
-
 @main_bp.route("/clientes")
 def clientes():
     return render_template("clientes.html")
-
 
 
 @main_bp.route("/parcerias")
@@ -169,14 +163,11 @@ def parcerias():
     return render_template("parcerias.html")
 
 
-
 @main_bp.route("/equipe")
 def equipe():
     return render_template("equipe.html")
 
 
-
 @main_bp.route("/eventos")
 def eventos():
     return render_template("eventos.html")
-
