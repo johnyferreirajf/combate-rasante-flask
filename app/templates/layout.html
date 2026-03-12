@@ -26,7 +26,7 @@
 <body class="{% block body_class %}{% endblock %}">
   <header class="navbar">
     <div class="container navbar-inner">
-      <a href="{{ url_for('main.index') }}" class="navbar-logo" aria-label="Ir para a página inicial">
+      <a href="{{ url_for('main.index') }}" class="navbar-logo">
         <img
           src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
           alt="COMBATE RASANTE"
@@ -72,15 +72,7 @@
         {% endif %}
       </nav>
 
-      <button
-        class="navbar-toggle"
-        id="navbarToggle"
-        type="button"
-        onclick="toggleNavbar()"
-        aria-label="Abrir menu"
-        aria-controls="navbarLinks"
-        aria-expanded="false"
-      >
+      <button class="navbar-toggle" type="button" onclick="toggleNavbar()" aria-label="Abrir menu">
         ☰
       </button>
     </div>
@@ -158,43 +150,22 @@
   </footer>
 
   <script>
-    function toggleNavbar(forceOpen) {
+    function toggleNavbar() {
       const nav = document.getElementById("navbarLinks");
-      const toggle = document.getElementById("navbarToggle");
       if (!nav) return;
-
-      const willOpen = typeof forceOpen === "boolean"
-        ? forceOpen
-        : !nav.classList.contains("mobile-open");
-
-      nav.classList.toggle("mobile-open", willOpen);
-
-      if (toggle) {
-        toggle.setAttribute("aria-expanded", willOpen ? "true" : "false");
-      }
+      nav.classList.toggle("mobile-open");
     }
 
-    document.addEventListener("click", function (event) {
-      const nav = document.getElementById("navbarLinks");
-      const toggle = document.getElementById("navbarToggle");
-      if (!nav || !toggle) return;
-      if (window.innerWidth > 768) return;
-
-      const clickedInsideMenu = nav.contains(event.target);
-      const clickedToggle = toggle.contains(event.target);
-
-      if (!clickedInsideMenu && !clickedToggle) {
-        toggleNavbar(false);
-      }
-    });
-
     window.addEventListener("resize", function () {
+      const nav = document.getElementById("navbarLinks");
+      if (!nav) return;
+
       if (window.innerWidth > 768) {
-        toggleNavbar(false);
+        nav.classList.remove("mobile-open");
       }
     });
   </script>
 
-  {% block extra_scripts %}{% endblock %}
+  {% block extra_js %}{% endblock %}
 </body>
 </html>
