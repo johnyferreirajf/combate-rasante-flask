@@ -38,7 +38,7 @@ body {
 @media (max-width:768px){
 
   body{
-    background-image: url("/static/img/hero-mobile.jpg");
+    background-image: url("/static/img/hero-mobile.png");
     background-size: cover;
     background-position: center top;
   }
