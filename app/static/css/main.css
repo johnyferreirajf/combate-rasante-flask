@@ -20,7 +20,16 @@
   box-sizing: border-box;
 }
 
-html,
+/* CORRIGIDO: html e body separados para scroll funcionar corretamente */
+html {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  overflow-x: hidden;
+  /* CORRIGIDO: overflow-y auto garante que a página role */
+  overflow-y: auto;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -131,6 +140,7 @@ a {
   top: 0;
   z-index: 200;
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   background: rgba(0, 200, 120, 0.35);
   border-bottom: 1px solid rgba(255, 255, 255, 0.5);
 }
@@ -139,6 +149,8 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  /* CORRIGIDO: gap entre logo e links, e position relative para o menu mobile */
+  gap: 12px;
   height: 4.25rem;
   position: relative;
 }
@@ -147,45 +159,63 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
+  /* CORRIGIDO: flex-shrink 0 para o logo não encolher */
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .navbar-logo-img {
   height: 2.4rem;
+  width: auto;
   border-radius: 0.35rem;
   box-shadow: 0 8px 20px rgba(15, 23, 42, 0.35);
+  flex-shrink: 0;
 }
 
 .navbar-logo-text {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .navbar-logo-title {
   font-weight: 700;
   letter-spacing: 0.08em;
   font-size: 0.9rem;
+  /* CORRIGIDO: cor branca para ser legível sobre o fundo verde */
+  color: #ffffff;
+  white-space: nowrap;
 }
 
 .navbar-logo-subtitle {
-  color: #042b18;
+  /* CORRIGIDO: cor legível no fundo verde */
+  color: #d1fae5;
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 
 .navbar-links {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 8px 12px;
+  gap: 4px;
+  padding: 6px 10px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.35);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  flex-shrink: 0;
 }
 
 .navbar-link {
-  padding: 8px 12px;
+  padding: 7px 11px;
   border-radius: 999px;
   text-decoration: none;
   font-weight: 600;
+  font-size: 0.88rem;
+  color: #ffffff;
+  white-space: nowrap;
+  transition: background 0.15s ease;
 }
 
 .navbar-link:hover {
@@ -199,12 +229,13 @@ a {
 
 .navbar-button {
   background: linear-gradient(to right, #22c55e, #16a34a);
-  color: #f9fafb;
+  color: #f9fafb !important;
   border-radius: 999px;
   padding: 0.55rem 1.3rem;
   font-size: 0.88rem;
   font-weight: 600;
   box-shadow: 0 10px 25px rgba(22, 163, 74, 0.35);
+  white-space: nowrap;
 }
 
 .navbar-button:hover {
@@ -213,13 +244,13 @@ a {
 }
 
 .navbar-button-outline {
-  background: rgba(255,255,255,0.10);
-  border: 1px solid rgba(255,255,255,0.22);
-  box-shadow: none;
+  background: rgba(255,255,255,0.10) !important;
+  border: 1px solid rgba(255,255,255,0.22) !important;
+  box-shadow: none !important;
 }
 
 .navbar-button-outline:hover {
-  box-shadow: 0 10px 25px rgba(0,0,0,0.18);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.18) !important;
 }
 
 .navbar-toggle {
@@ -228,6 +259,7 @@ a {
   background: none;
   padding: 0.25rem;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* =======================================================
@@ -320,6 +352,7 @@ a {
   border: 1px solid rgba(22, 163, 74, 0.8);
   box-shadow: var(--shadow-soft);
   backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .hero-side-card,
@@ -485,6 +518,7 @@ a {
 
 .footer-logo-img {
   height: 3rem;
+  width: auto;
 }
 
 .footer-logo-title {
@@ -1300,6 +1334,8 @@ a {
   html,
   body {
     overflow-x: hidden;
+    /* CORRIGIDO: mantém scroll vertical funcionando */
+    overflow-y: auto;
     background: linear-gradient(180deg, #06130d 0%, #081812 100%);
   }
 
@@ -1314,6 +1350,7 @@ a {
   .navbar {
     background: rgba(0, 200, 120, 0.88);
     backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
 
   .navbar-inner {
@@ -1348,10 +1385,12 @@ a {
     justify-content: center;
     width: 42px;
     height: 42px;
-    font-size: 30px;
-    color: #041b12;
+    font-size: 28px;
+    /* CORRIGIDO: cor branca visível */
+    color: #ffffff;
     border-radius: 10px;
     background: rgba(255,255,255,0.14);
+    border: 1px solid rgba(255,255,255,0.22);
   }
 
   .navbar-links {
@@ -1365,10 +1404,11 @@ a {
     gap: 10px;
     padding: 14px;
     border-radius: 18px;
-    background: rgba(8, 18, 14, 0.96);
+    background: rgba(8, 18, 14, 0.97);
     border: 1px solid rgba(255,255,255,0.14);
     backdrop-filter: blur(16px);
-    box-shadow: 0 24px 60px rgba(0,0,0,0.40);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.50);
     z-index: 300;
   }
 
@@ -1397,6 +1437,7 @@ a {
     font-size: 0.95rem;
     padding: 11px 14px;
     border-radius: 16px;
+    text-align: center;
   }
 
   .section,
@@ -1875,8 +1916,10 @@ body.home-page .footer {
   font-weight: 800;
 }
 
+/* CORRIGIDO: position relative + overflow hidden para os botões não causarem scroll horizontal */
 .row-netflix {
   position: relative;
+  overflow: hidden;
 }
 
 .row-track {
@@ -1887,7 +1930,14 @@ body.home-page .footer {
   overflow-x: auto;
   scroll-behavior: smooth;
   scrollbar-width: none;
-  padding: 0.15rem 0 0.55rem;
+  padding: 0.15rem 0 0.75rem;
+  /* CORRIGIDO: scroll snapping para o carrossel travar nos cards */
+  scroll-snap-type: x mandatory;
+  cursor: grab;
+}
+
+.row-track:active {
+  cursor: grabbing;
 }
 
 .row-track::-webkit-scrollbar {
@@ -1899,6 +1949,8 @@ body.home-page .footer {
   border-radius: 24px;
   padding: 1.25rem 1.15rem;
   color: #ffffff;
+  /* CORRIGIDO: scroll snap nos cards */
+  scroll-snap-align: start;
 }
 
 .card-top {
@@ -1954,28 +2006,39 @@ body.home-page .footer {
   font-weight: 800;
 }
 
+/* CORRIGIDO: botões posicionados dentro do container sem vazar */
 .row-btn {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-55%);
   z-index: 3;
   width: 42px;
   height: 42px;
-  border: 0;
+  border: 1px solid rgba(255,255,255,0.16);
   border-radius: 999px;
-  background: rgba(3, 16, 11, 0.86);
+  background: rgba(3, 16, 11, 0.88);
   color: #ffffff;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
+  line-height: 1;
   cursor: pointer;
   box-shadow: 0 12px 26px rgba(0,0,0,0.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.row-btn:hover {
+  background: rgba(22,163,74,0.75);
+  transform: translateY(-55%) scale(1.06);
 }
 
 .row-btn.left {
-  left: -14px;
+  left: 6px;
 }
 
 .row-btn.right {
-  right: -14px;
+  right: 6px;
 }
 
 @media (max-width: 980px) {
@@ -1994,11 +2057,11 @@ body.home-page .footer {
   }
 
   .row-btn.left {
-    left: -8px;
+    left: 4px;
   }
 
   .row-btn.right {
-    right: -8px;
+    right: 4px;
   }
 }
 
@@ -2035,8 +2098,9 @@ body.home-page .footer {
     align-items: flex-start;
   }
 
+  /* CORRIGIDO: no mobile mostra 1.15 cards para indicar que há mais */
   .row-track {
-    grid-auto-columns: calc((100% - 0.7rem) / 2);
+    grid-auto-columns: calc((100% - 0.7rem) / 1.15);
     gap: 0.7rem;
   }
 
@@ -2083,7 +2147,7 @@ body.home-page .footer {
 
 @media (max-width: 520px) {
   .row-track {
-    grid-auto-columns: calc((100% - 0.55rem) / 2);
+    grid-auto-columns: calc((100% - 0.55rem) / 1.1);
     gap: 0.55rem;
   }
 
