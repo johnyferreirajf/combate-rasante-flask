@@ -7,7 +7,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Aplicação aérea agrícola com precisão, tecnologia e segurança. Combate Rasante Aviação Agrícola.">
 
-  <!-- Open Graph -->
   <meta property="og:title" content="Combate Rasante Aviação Agrícola">
   <meta property="og:description" content="Aplicação aérea de alta precisão com tecnologia e segurança para o agronegócio.">
   <meta property="og:image" content="https://combaterasante.onrender.com/static/img/og-combaterasante.png">
@@ -15,17 +14,17 @@
   <meta property="og:type" content="website">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-
   <meta name="twitter:card" content="summary_large_image">
 
   <link rel="preload" href="{{ url_for('static', filename='img/logo-combate.jpeg') }}" as="image">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block extra_head %}{% endblock %}
 </head>
 
 <body>
   <header class="navbar">
     <div class="container navbar-inner">
-      <a href="{{ url_for('main.index') }}" class="navbar-logo">
+      <a href="{{ url_for('main.index') }}" class="navbar-logo" aria-label="Página inicial Combate Rasante">
         <img
           src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
           alt="COMBATE RASANTE"
@@ -39,6 +38,17 @@
         </div>
       </a>
 
+      <button
+        class="navbar-toggle"
+        type="button"
+        onclick="toggleNavbar()"
+        aria-label="Abrir menu"
+        aria-controls="navbarLinks"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
+
       <nav class="navbar-links" id="navbarLinks">
         <a href="{{ url_for('main.index') }}" class="navbar-link">Início</a>
         <a href="{{ url_for('main.servicos') }}" class="navbar-link">Serviços</a>
@@ -46,34 +56,16 @@
         <a href="{{ url_for('main.contato') }}" class="navbar-link">Contato</a>
 
         {% if session.get('employee_id') %}
-          <a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">
-            Painel do Funcionário
-          </a>
-          <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">
-            Sair do painel
-          </a>
-
+          <a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">Painel do Funcionário</a>
+          <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button navbar-button-outline">Sair do painel</a>
         {% elif session.get('user_id') %}
-          <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">
-            Painel
-          </a>
-          <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button">
-            Sair
-          </a>
-
+          <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">Painel</a>
+          <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button navbar-button-outline">Sair</a>
         {% else %}
-          <a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">
-            Área do Cliente
-          </a>
-          <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button">
-            Funcionários
-          </a>
+          <a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">Área do Cliente</a>
+          <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button navbar-button-outline">Funcionários</a>
         {% endif %}
       </nav>
-
-      <button class="navbar-toggle" type="button" onclick="toggleNavbar()" aria-label="Abrir menu">
-        ☰
-      </button>
     </div>
   </header>
 
@@ -81,7 +73,7 @@
     {% if messages %}
       <div class="flash-container">
         {% for category, message in messages %}
-          <div class="flash-message {% if category == 'success' %}flash-success{% endif %}">
+          <div class="flash-message {% if category == 'success' %}flash-success{% else %}flash-error{% endif %}">
             {{ message }}
           </div>
         {% endfor %}
@@ -95,7 +87,7 @@
 
   <footer class="footer">
     <div class="container footer-grid">
-      <div>
+      <div class="footer-brand">
         <div class="footer-logo">
           <img
             src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
@@ -118,9 +110,9 @@
       <div>
         <h3 class="footer-heading">Contatos</h3>
         <ul class="footer-list">
-          <li><strong>Telefone:</strong> 64 99983-6005</li>
-          <li><strong>Telefone:</strong> 64 99221-7002</li>
-          <li><strong>Email:</strong> weikren@combateaviacao.com.br</li>
+          <li>64 99983-6005</li>
+          <li>64 99221-7002</li>
+          <li>weikren@combateaviacao.com.br</li>
         </ul>
       </div>
 
@@ -143,26 +135,45 @@
       </div>
     </div>
 
-    <div class="footer-bottom">
-      © 2026 COMBATE RASANTE
-    </div>
+    <div class="footer-bottom">© 2026 COMBATE RASANTE</div>
   </footer>
 
   <script>
     function toggleNavbar() {
       const nav = document.getElementById("navbarLinks");
-      if (!nav) return;
+      const button = document.querySelector(".navbar-toggle");
+      if (!nav || !button) return;
+
       nav.classList.toggle("mobile-open");
+      const expanded = nav.classList.contains("mobile-open");
+      button.setAttribute("aria-expanded", expanded ? "true" : "false");
     }
 
     window.addEventListener("resize", function () {
       const nav = document.getElementById("navbarLinks");
-      if (!nav) return;
+      const button = document.querySelector(".navbar-toggle");
+      if (!nav || !button) return;
 
-      if (window.innerWidth > 768) {
+      if (window.innerWidth > 900) {
         nav.classList.remove("mobile-open");
+        button.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      const nav = document.getElementById("navbarLinks");
+      const button = document.querySelector(".navbar-toggle");
+      const header = document.querySelector(".navbar-inner");
+      if (!nav || !button || !header) return;
+
+      if (window.innerWidth > 900) return;
+
+      if (!header.contains(event.target)) {
+        nav.classList.remove("mobile-open");
+        button.setAttribute("aria-expanded", "false");
       }
     });
   </script>
+  {% block extra_scripts %}{% endblock %}
 </body>
 </html>
