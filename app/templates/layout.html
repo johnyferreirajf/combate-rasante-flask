@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <title>{% block title %}COMBATE RASANTE{% endblock %}</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Aplicação aérea agrícola com precisão, tecnologia e segurança. Combate Rasante Aviação Agrícola.">
 
   <!-- Open Graph -->
@@ -93,37 +93,60 @@
     {% block content %}{% endblock %}
   </main>
 
- <footer class="footer">
-  <div class="container footer-grid footer-grid-compact">
-    <div>
-      <div class="footer-logo">
-        <img
-          src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
-          alt="COMBATE RASANTE"
-          class="footer-logo-img"
-          loading="lazy"
-          onerror="this.style.display='none';"
-        >
-        <div>
-          <div class="footer-logo-title">COMBATE RASANTE</div>
-          <div class="footer-logo-subtitle">Aviação Agrícola</div>
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="footer-logo">
+          <img
+            src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+            alt="COMBATE RASANTE"
+            class="footer-logo-img"
+            loading="lazy"
+            onerror="this.style.display='none';"
+          >
+          <div>
+            <div class="footer-logo-title">COMBATE RASANTE</div>
+            <div class="footer-logo-subtitle">Aviação Agrícola</div>
+          </div>
         </div>
+
+        <p class="footer-text">
+          Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="footer-heading">Contatos</h3>
+        <ul class="footer-list">
+          <li><strong>Telefone:</strong> 64 99983-6005</li>
+          <li><strong>Telefone:</strong> 64 99221-7002</li>
+          <li><strong>Email:</strong> weikren@combateaviacao.com.br</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-heading">Matriz</h3>
+        <ul class="footer-list">
+          <li>Rod. GO 320, Km 82</li>
+          <li>Vicentinópolis / GO</li>
+          <li>CEP 75.555-000</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-heading">Filial</h3>
+        <ul class="footer-list">
+          <li>Aeroporto Municipal</li>
+          <li>Ituiutaba / MG</li>
+          <li>Hangar 10</li>
+        </ul>
       </div>
     </div>
 
-    <div>
-      <ul class="footer-list footer-list-compact">
-        <li>64 99983-6005 | 64 99221-7002</li>
-        <li>weikren@combateaviacao.com.br</li>
-        <li>Vicentinópolis/GO • Ituiutaba/MG</li>
-      </ul>
+    <div class="footer-bottom">
+      © 2026 COMBATE RASANTE
     </div>
-  </div>
-
-  <div class="footer-bottom">
-    © 2026 COMBATE RASANTE Aviação Agrícola
-  </div>
-</footer>
+  </footer>
 
   <script>
     function toggleNavbar() {
