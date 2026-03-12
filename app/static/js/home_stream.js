@@ -66,12 +66,12 @@
     </a>
   `).join("");
 
-  function getTilesPerView() {
-    const w = window.innerWidth;
-    if (w <= 768) return 1;
-    if (w <= 980) return 2;
-    return 3;
-  }
+function getTilesPerView() {
+  const w = window.innerWidth;
+  if (w <= 768) return 2;
+  if (w <= 980) return 2;
+  return 3;
+}
 
   function getPageCount() {
     const per = getTilesPerView();
