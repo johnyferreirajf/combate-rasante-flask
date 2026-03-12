@@ -28,7 +28,7 @@
       <div class="hero-mini-cards">
         <div class="mini-card">
           <div class="mini-card-title">Novidade</div>
-          <div class="mini-card-text">Painel com análises organizadas por Safra/Mês/Dia</div>
+          <div class="mini-card-text">Painel com análises organizadas por Safra, Mês e Dia</div>
         </div>
         <div class="mini-card">
           <div class="mini-card-title">Tecnologia</div>
@@ -52,7 +52,7 @@
     </div>
 
     <div class="row-netflix" data-row="novidades">
-      <button class="row-btn left" aria-label="voltar">‹</button>
+      <button class="row-btn left" aria-label="Voltar">‹</button>
 
       <div class="row-track">
         <article class="card-netflix">
@@ -60,7 +60,7 @@
             <span class="badge">Novo</span>
             <h3>Dashboard Premium</h3>
           </div>
-          <p>Organização por Tema → Safra → Mês → Dia</p>
+          <p>Organização por tema, safra, mês e dia.</p>
           <div class="card-actions">
             <a href="{{ url_for('auth.login') }}" class="card-btn">Abrir</a>
           </div>
@@ -71,7 +71,7 @@
             <span class="badge">Info</span>
             <h3>Indicadores</h3>
           </div>
-          <p>Cobertura, área aplicada e histórico por operação</p>
+          <p>Cobertura, área aplicada e histórico por operação.</p>
           <div class="card-actions">
             <a href="{{ url_for('main.tecnologia') }}" class="card-btn">Ver</a>
           </div>
@@ -82,7 +82,7 @@
             <span class="badge">Novo</span>
             <h3>Área do Cliente</h3>
           </div>
-          <p>Relatórios e arquivos sempre disponíveis</p>
+          <p>Relatórios e arquivos sempre disponíveis.</p>
           <div class="card-actions">
             <a href="{{ url_for('auth.login') }}" class="card-btn">Entrar</a>
           </div>
@@ -93,14 +93,14 @@
             <span class="badge">Feature</span>
             <h3>Mapas</h3>
           </div>
-          <p>Mapas de aplicação e controle operacional</p>
+          <p>Mapas de aplicação e controle operacional.</p>
           <div class="card-actions">
             <a href="{{ url_for('main.tecnologia') }}" class="card-btn">Ver</a>
           </div>
         </article>
       </div>
 
-      <button class="row-btn right" aria-label="avançar">›</button>
+      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
 
     <div class="row-header">
@@ -109,31 +109,31 @@
     </div>
 
     <div class="row-netflix" data-row="equipes">
-      <button class="row-btn left" aria-label="voltar">‹</button>
+      <button class="row-btn left" aria-label="Voltar">‹</button>
 
       <div class="row-track">
         <article class="card-netflix card-image">
           <h3>Operação Aérea</h3>
-          <p>Pilotos e equipe de apoio</p>
+          <p>Pilotos e equipe de apoio.</p>
         </article>
 
         <article class="card-netflix card-image">
           <h3>Planejamento</h3>
-          <p>Estratégia e logística</p>
+          <p>Estratégia e logística.</p>
         </article>
 
         <article class="card-netflix card-image">
           <h3>Controle de Faixa</h3>
-          <p>Precisão e uniformidade</p>
+          <p>Precisão e uniformidade.</p>
         </article>
 
         <article class="card-netflix card-image">
           <h3>Monitoramento</h3>
-          <p>Indicadores e relatórios</p>
+          <p>Indicadores e relatórios.</p>
         </article>
       </div>
 
-      <button class="row-btn right" aria-label="avançar">›</button>
+      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
 
     <div class="row-header">
@@ -142,31 +142,43 @@
     </div>
 
     <div class="row-netflix" data-row="atividades">
-      <button class="row-btn left" aria-label="voltar">‹</button>
+      <button class="row-btn left" aria-label="Voltar">‹</button>
 
       <div class="row-track">
         <article class="card-netflix">
-          <div class="card-top"><span class="badge">Ativo</span><h3>Pulverização</h3></div>
-          <p>Aplicação precisa e segura</p>
+          <div class="card-top">
+            <span class="badge">Ativo</span>
+            <h3>Pulverização</h3>
+          </div>
+          <p>Aplicação precisa e segura.</p>
         </article>
 
         <article class="card-netflix">
-          <div class="card-top"><span class="badge">Ativo</span><h3>Mapeamento</h3></div>
-          <p>Rastreio e relatórios por área</p>
+          <div class="card-top">
+            <span class="badge">Ativo</span>
+            <h3>Mapeamento</h3>
+          </div>
+          <p>Rastreio e relatórios por área.</p>
         </article>
 
         <article class="card-netflix">
-          <div class="card-top"><span class="badge">Ativo</span><h3>Relatórios</h3></div>
-          <p>Resultados para tomada de decisão</p>
+          <div class="card-top">
+            <span class="badge">Ativo</span>
+            <h3>Relatórios</h3>
+          </div>
+          <p>Resultados para tomada de decisão.</p>
         </article>
 
         <article class="card-netflix">
-          <div class="card-top"><span class="badge">Ativo</span><h3>Histórico</h3></div>
-          <p>Arquivos organizados por safra</p>
+          <div class="card-top">
+            <span class="badge">Ativo</span>
+            <h3>Histórico</h3>
+          </div>
+          <p>Arquivos organizados por safra.</p>
         </article>
       </div>
 
-      <button class="row-btn right" aria-label="avançar">›</button>
+      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
 
     <div class="row-header">
@@ -175,36 +187,46 @@
     </div>
 
     <div class="row-netflix" data-row="clientes">
-      <button class="row-btn left" aria-label="voltar">‹</button>
+      <button class="row-btn left" aria-label="Voltar">‹</button>
 
       <div class="row-track">
         <article class="card-netflix">
-          <div class="card-top"><span class="badge">Cana</span><h3>Usinas</h3></div>
-          <p>Operações com histórico e rastreabilidade</p>
+          <div class="card-top">
+            <span class="badge">Cana</span>
+            <h3>Usinas</h3>
+          </div>
+          <p>Operações com histórico e rastreabilidade.</p>
         </article>
 
         <article class="card-netflix">
-          <div class="card-top"><span class="badge">Grãos</span><h3>Fazendas</h3></div>
-          <p>Aplicação com controle de faixa</p>
+          <div class="card-top">
+            <span class="badge">Grãos</span>
+            <h3>Fazendas</h3>
+          </div>
+          <p>Aplicação com controle de faixa.</p>
         </article>
 
         <article class="card-netflix">
-          <div class="card-top"><span class="badge">Premium</span><h3>Painel</h3></div>
-          <p>Arquivos e análises organizadas</p>
+          <div class="card-top">
+            <span class="badge">Premium</span>
+            <h3>Painel</h3>
+          </div>
+          <p>Arquivos e análises organizadas.</p>
         </article>
 
         <article class="card-netflix">
-          <div class="card-top"><span class="badge">Parceiros</span><h3>Consultorias</h3></div>
-          <p>Relatórios para tomada de decisão</p>
+          <div class="card-top">
+            <span class="badge">Parceiros</span>
+            <h3>Consultorias</h3>
+          </div>
+          <p>Relatórios para tomada de decisão.</p>
         </article>
       </div>
 
-      <button class="row-btn right" aria-label="avançar">›</button>
+      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
 
   </div>
 </section>
-
-<script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
 
 {% endblock %}
