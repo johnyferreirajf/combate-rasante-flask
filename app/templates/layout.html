@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <title>{% block title %}COMBATE RASANTE{% endblock %}</title>
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- CORRIGIDO: viewport-fit=cover para iOS e initial-scale correto -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Aplicação aérea agrícola com precisão, tecnologia e segurança. Combate Rasante Aviação Agrícola.">
 
   <!-- Open Graph -->
@@ -20,11 +21,18 @@
 
   <link rel="preload" href="{{ url_for('static', filename='img/logo-combate.jpeg') }}" as="image">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+  <!-- CORRIGIDO: garante scroll vertical em qualquer situação -->
+  <style>
+    html, body { overflow-y: auto !important; overflow-x: hidden !important; }
+  </style>
+
   {% block extra_head %}{% endblock %}
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
-  <header class="navbar">
+  <!-- CORRIGIDO: position sticky e z-index explícitos no header -->
+  <header class="navbar" style="position:sticky;top:0;z-index:200;">
     <div class="container navbar-inner">
       <a href="{{ url_for('main.index') }}" class="navbar-logo">
         <img
@@ -40,6 +48,16 @@
         </div>
       </a>
 
+      <!-- CORRIGIDO: toggle antes do nav para ordem correta no DOM mobile -->
+      <button
+        class="navbar-toggle"
+        type="button"
+        onclick="toggleNavbar()"
+        aria-label="Abrir menu"
+        aria-controls="navbarLinks"
+        aria-expanded="false"
+      >☰</button>
+
       <nav class="navbar-links" id="navbarLinks">
         <a href="{{ url_for('main.index') }}" class="navbar-link">Início</a>
         <a href="{{ url_for('main.servicos') }}" class="navbar-link">Serviços</a>
@@ -50,7 +68,7 @@
           <a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">
             Painel do Funcionário
           </a>
-          <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">
+          <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button navbar-button-outline">
             Sair do painel
           </a>
 
@@ -58,7 +76,7 @@
           <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">
             Painel
           </a>
-          <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button">
+          <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button navbar-button-outline">
             Sair
           </a>
 
@@ -66,15 +84,11 @@
           <a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">
             Área do Cliente
           </a>
-          <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button">
+          <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button navbar-button-outline">
             Funcionários
           </a>
         {% endif %}
       </nav>
-
-      <button class="navbar-toggle" type="button" onclick="toggleNavbar()" aria-label="Abrir menu">
-        ☰
-      </button>
     </div>
   </header>
 
@@ -90,7 +104,8 @@
     {% endif %}
   {% endwith %}
 
-  <main>
+  <!-- CORRIGIDO: min-height garante que a página sempre tenha altura suficiente para rolar -->
+  <main style="min-height:60vh;position:relative;z-index:1;">
     {% block content %}{% endblock %}
   </main>
 
@@ -151,17 +166,35 @@
 
   <script>
     function toggleNavbar() {
-      const nav = document.getElementById("navbarLinks");
-      if (!nav) return;
+      var nav = document.getElementById("navbarLinks");
+      var btn = document.querySelector(".navbar-toggle");
+      if (!nav || !btn) return;
       nav.classList.toggle("mobile-open");
+      var isOpen = nav.classList.contains("mobile-open");
+      btn.setAttribute("aria-expanded", isOpen ? "true" : "false");
     }
 
+    /* Fecha o menu ao redimensionar para desktop */
     window.addEventListener("resize", function () {
-      const nav = document.getElementById("navbarLinks");
-      if (!nav) return;
-
+      var nav = document.getElementById("navbarLinks");
+      var btn = document.querySelector(".navbar-toggle");
+      if (!nav || !btn) return;
       if (window.innerWidth > 768) {
         nav.classList.remove("mobile-open");
+        btn.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    /* CORRIGIDO: fecha o menu ao clicar fora dele */
+    document.addEventListener("click", function (e) {
+      var nav = document.getElementById("navbarLinks");
+      var btn = document.querySelector(".navbar-toggle");
+      var header = document.querySelector(".navbar-inner");
+      if (!nav || !btn || !header) return;
+      if (window.innerWidth > 768) return;
+      if (!header.contains(e.target)) {
+        nav.classList.remove("mobile-open");
+        btn.setAttribute("aria-expanded", "false");
       }
     });
   </script>
