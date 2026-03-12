@@ -34,17 +34,6 @@ body {
   background-attachment: fixed;
 }
 
-/* MOBILE */
-@media (max-width:768px){
-  body{
-    background-image: url("/static/img/hero-mobile.png");
-    background-size: cover;
-    background-position: center top;
-    background-repeat: no-repeat;
-    background-attachment: scroll;
-  }
-}
-
 img {
   max-width: 100%;
   display: block;
@@ -1003,7 +992,9 @@ a {
   margin-top: 6px;
 }
 
-.muted { opacity: 0.75; }
+.muted {
+  opacity: 0.75;
+}
 
 .chip {
   display: inline-flex;
@@ -1046,7 +1037,9 @@ a {
   margin-top: 6px;
 }
 
-.full-width { width: 100%; }
+.full-width {
+  width: 100%;
+}
 
 .btn-danger {
   display: inline-flex;
@@ -1106,7 +1099,9 @@ a {
   text-shadow: 0 2px 10px rgba(0,0,0,0.18);
 }
 
-.team-section { margin-top: 34px; }
+.team-section {
+  margin-top: 34px;
+}
 
 .team-section-title {
   display: flex;
@@ -1136,8 +1131,13 @@ a {
   gap: 16px;
 }
 
-.team-grid-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.team-grid-feature { grid-template-columns: 1fr; }
+.team-grid-5 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.team-grid-feature {
+  grid-template-columns: 1fr;
+}
 
 .team-card {
   position: relative;
@@ -1160,7 +1160,9 @@ a {
   pointer-events:none;
 }
 
-.team-card-feature { padding: 18px 20px; }
+.team-card-feature {
+  padding: 18px 20px;
+}
 
 .team-card-top {
   display: flex;
@@ -1184,7 +1186,9 @@ a {
   flex: 0 0 auto;
 }
 
-.team-card-meta { min-width: 0; }
+.team-card-meta {
+  min-width: 0;
+}
 
 .team-name {
   margin: 0;
@@ -1299,6 +1303,7 @@ a {
   html,
   body {
     overflow-x: hidden;
+    background-image: url("/static/img/hero-mobile.png");
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
@@ -1464,7 +1469,7 @@ a {
   .cta-bubble,
   .login-info-card,
   .dashboard-welcome-card {
-    padding: 1rem 1rem;
+    padding: 1rem;
     border-radius: 18px;
   }
 
