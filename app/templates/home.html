@@ -7,8 +7,8 @@
 <section class="netflix-hero home-hero">
   <div class="netflix-hero-overlay"></div>
 
-  <div class="container netflix-hero-content">
-    <div class="hero-left">
+  <div class="container netflix-hero-content hero-single-column">
+    <div class="hero-left hero-left-clean">
       <span class="hero-eyebrow">Tecnologia, precisão e rastreabilidade</span>
       <h1>COMBATE<br>RASANTE</h1>
       <p>
@@ -19,38 +19,6 @@
       <div class="hero-actions">
         <a href="{{ url_for('auth.login') }}" class="btn-hero primary">Acessar Painel</a>
         <a href="{{ url_for('main.servicos') }}" class="btn-hero secondary">Ver Serviços</a>
-      </div>
-    </div>
-
-    <div class="hero-right">
-      <div class="hero-mini-cards">
-        <div class="mini-card">
-          <div class="mini-card-title">Novidade</div>
-          <div class="mini-card-text">Painel organizado por Safra, Mês e Dia</div>
-        </div>
-        <div class="mini-card">
-          <div class="mini-card-title">Tecnologia</div>
-          <div class="mini-card-text">Mapas, indicadores e rastreabilidade por talhão</div>
-        </div>
-        <div class="mini-card">
-          <div class="mini-card-title">Agilidade</div>
-          <div class="mini-card-text">Histórico operacional sempre disponível ao cliente</div>
-        </div>
-      </div>
-
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <strong>24h</strong>
-          <span>Acesso ao painel</span>
-        </div>
-        <div class="hero-stat">
-          <strong>100%</strong>
-          <span>Histórico organizado</span>
-        </div>
-        <div class="hero-stat">
-          <strong>+Tech</strong>
-          <span>Gestão operacional</span>
-        </div>
       </div>
     </div>
   </div>
@@ -65,7 +33,7 @@
     </div>
 
     <div class="row-netflix" data-row="novidades">
-      <button class="row-btn left" type="button" aria-label="Voltar">‹</button>
+      <button class="row-btn left" aria-label="Voltar">‹</button>
       <div class="row-track">
         <article class="card-netflix">
           <div class="card-top">
@@ -103,7 +71,7 @@
           <div class="card-actions"><a href="{{ url_for('main.tecnologia') }}" class="card-btn">Ver</a></div>
         </article>
       </div>
-      <button class="row-btn right" type="button" aria-label="Avançar">›</button>
+      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
 
     <div class="row-header">
@@ -112,7 +80,7 @@
     </div>
 
     <div class="row-netflix" data-row="equipes">
-      <button class="row-btn left" type="button" aria-label="Voltar">‹</button>
+      <button class="row-btn left" aria-label="Voltar">‹</button>
       <div class="row-track">
         <article class="card-netflix card-image">
           <div class="card-top"><span class="badge">Equipe</span><h3>Operação Aérea</h3></div>
@@ -131,7 +99,7 @@
           <p>Indicadores e relatórios para apoiar decisões operacionais.</p>
         </article>
       </div>
-      <button class="row-btn right" type="button" aria-label="Avançar">›</button>
+      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
 
     <div class="row-header">
@@ -140,7 +108,7 @@
     </div>
 
     <div class="row-netflix" data-row="atividades">
-      <button class="row-btn left" type="button" aria-label="Voltar">‹</button>
+      <button class="row-btn left" aria-label="Voltar">‹</button>
       <div class="row-track">
         <article class="card-netflix">
           <div class="card-top"><span class="badge">Ativo</span><h3>Pulverização</h3></div>
@@ -159,7 +127,7 @@
           <p>Arquivos e registros por safra com acesso rápido no painel.</p>
         </article>
       </div>
-      <button class="row-btn right" type="button" aria-label="Avançar">›</button>
+      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
 
     <div class="row-header">
@@ -168,7 +136,7 @@
     </div>
 
     <div class="row-netflix" data-row="clientes">
-      <button class="row-btn left" type="button" aria-label="Voltar">‹</button>
+      <button class="row-btn left" aria-label="Voltar">‹</button>
       <div class="row-track">
         <article class="card-netflix">
           <div class="card-top"><span class="badge">Cana</span><h3>Usinas</h3></div>
@@ -187,7 +155,7 @@
           <p>Informações consolidadas para apoiar decisões técnicas e operacionais.</p>
         </article>
       </div>
-      <button class="row-btn right" type="button" aria-label="Avançar">›</button>
+      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
 
   </div>
@@ -198,85 +166,63 @@
 {% block extra_js %}
 <script>
 (function () {
-  var rows = document.querySelectorAll('.row-netflix');
+  const rows = document.querySelectorAll('.row-netflix');
   if (!rows.length) return;
 
   function getStep(track) {
-    var card = track.querySelector('.card-netflix');
+    const card = track.querySelector('.card-netflix');
     if (!card) return track.clientWidth;
-    var style = window.getComputedStyle(track);
-    var gap = parseFloat(style.columnGap || style.gap || '0') || 0;
+    const style = window.getComputedStyle(track);
+    const gap = parseFloat(style.gap || style.columnGap || '0') || 0;
     return card.getBoundingClientRect().width + gap;
   }
 
-  rows.forEach(function (row) {
-    var track = row.querySelector('.row-track');
-    var prev  = row.querySelector('.row-btn.left');
-    var next  = row.querySelector('.row-btn.right');
+  function getCardsPerView() {
+    const w = window.innerWidth;
+    if (w <= 640) return 2;
+    if (w <= 980) return 3;
+    return 4;
+  }
+
+  rows.forEach((row) => {
+    const track = row.querySelector('.row-track');
+    const prev = row.querySelector('.row-btn.left');
+    const next = row.querySelector('.row-btn.right');
     if (!track) return;
 
-    /* Botões de navegação */
-    if (prev) {
-      prev.addEventListener('click', function () {
-        track.scrollBy({ left: -getStep(track), behavior: 'smooth' });
-      });
-    }
-    if (next) {
-      next.addEventListener('click', function () {
-        track.scrollBy({ left: getStep(track), behavior: 'smooth' });
-      });
-    }
+    const scrollByCards = (direction = 1) => {
+      const amount = getStep(track) * getCardsPerView() * direction;
+      track.scrollBy({ left: amount, behavior: 'smooth' });
+    };
 
-    /* CORRIGIDO: arrasto com mouse no desktop */
-    var dragging = false;
-    var startX = 0;
-    var scrollStart = 0;
+    prev?.addEventListener('click', () => scrollByCards(-1));
+    next?.addEventListener('click', () => scrollByCards(1));
 
-    track.addEventListener('mousedown', function (e) {
-      dragging = true;
-      startX = e.clientX;
-      scrollStart = track.scrollLeft;
-      track.style.scrollBehavior = 'auto';
-      e.preventDefault();
-    });
-
-    document.addEventListener('mousemove', function (e) {
-      if (!dragging) return;
-      track.scrollLeft = scrollStart - (e.clientX - startX);
-    });
-
-    document.addEventListener('mouseup', function () {
-      if (dragging) {
-        dragging = false;
-        track.style.scrollBehavior = 'smooth';
-      }
-    });
-
-    /* Auto-play apenas em desktop */
-    var auto = null;
-
-    function startAuto() {
+    let auto = null;
+    const start = () => {
       if (window.innerWidth <= 980) return;
-      stopAuto();
-      auto = setInterval(function () {
-        var maxScroll = track.scrollWidth - track.clientWidth;
-        if (track.scrollLeft >= maxScroll - 10) {
+      stop();
+      auto = setInterval(() => {
+        const maxScroll = track.scrollWidth - track.clientWidth;
+        const nearEnd = track.scrollLeft >= maxScroll - 10;
+        if (nearEnd) {
           track.scrollTo({ left: 0, behavior: 'smooth' });
         } else {
-          track.scrollBy({ left: getStep(track), behavior: 'smooth' });
+          scrollByCards(1);
         }
       }, 4500);
-    }
+    };
 
-    function stopAuto() {
-      if (auto) { clearInterval(auto); auto = null; }
-    }
+    const stop = () => {
+      if (auto) clearInterval(auto);
+      auto = null;
+    };
 
-    row.addEventListener('mouseenter', stopAuto);
-    row.addEventListener('mouseleave', startAuto);
-    row.addEventListener('touchstart', stopAuto, { passive: true });
-    window.addEventListener('resize', startAuto);
-    startAuto();
+    row.addEventListener('mouseenter', stop);
+    row.addEventListener('mouseleave', start);
+    row.addEventListener('touchstart', stop, { passive: true });
+    window.addEventListener('resize', start);
+    start();
   });
 })();
 </script>
