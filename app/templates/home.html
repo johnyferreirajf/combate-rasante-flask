@@ -1,798 +1,261 @@
 {% extends "layout.html" %}
 {% block title %}COMBATE RASANTE - Aviação Agrícola{% endblock %}
-
-{% block extra_head %}
-<style>
-  .home-page {
-    background: transparent;
-  }
-
-  .home-hero {
-    position: relative;
-    min-height: clamp(520px, 86vh, 820px);
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    isolation: isolate;
-  }
-
-  .home-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: url("{{ url_for('static', filename='img/hero-combate.jpeg') }}");
-    background-size: cover;
-    background-position: center center;
-    transform: scale(1.02);
-    z-index: -2;
-  }
-
-  .home-hero::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(90deg, rgba(4, 12, 9, 0.84) 0%, rgba(5, 16, 11, 0.58) 38%, rgba(7, 20, 14, 0.36) 60%, rgba(6, 16, 12, 0.58) 100%),
-      linear-gradient(180deg, rgba(5, 18, 13, 0.18) 0%, rgba(5, 18, 13, 0.48) 100%);
-    z-index: -1;
-  }
-
-  .home-hero-content {
-    width: 100%;
-    padding: 56px 0 48px;
-  }
-
-  .home-hero-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-    gap: 32px;
-    align-items: center;
-  }
-
-  .home-hero-copy {
-    max-width: 690px;
-  }
-
-  .home-kicker {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
-    padding: 8px 14px;
-    border-radius: 999px;
-    background: rgba(31, 196, 102, 0.18);
-    border: 1px solid rgba(31, 196, 102, 0.28);
-    color: #d8ffe8;
-    font-size: 13px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .home-hero h1 {
-    margin: 0 0 18px;
-    font-size: clamp(42px, 5.6vw, 78px);
-    line-height: 0.95;
-    letter-spacing: -0.045em;
-    color: #ffffff;
-    text-shadow: 0 8px 32px rgba(0, 0, 0, 0.32);
-  }
-
-  .home-hero p {
-    margin: 0;
-    max-width: 640px;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: clamp(18px, 1.5vw, 24px);
-    line-height: 1.6;
-    text-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
-  }
-
-  .home-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 28px;
-  }
-
-  .home-btn,
-  .home-btn-secondary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 50px;
-    padding: 14px 22px;
-    border-radius: 999px;
-    font-weight: 800;
-    font-size: 15px;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-  }
-
-  .home-btn {
-    background: linear-gradient(135deg, #22cf6e, #14964b);
-    color: #ffffff;
-    box-shadow: 0 14px 28px rgba(18, 129, 66, 0.34);
-  }
-
-  .home-btn-secondary {
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.16);
-  }
-
-  .home-btn:hover,
-  .home-btn-secondary:hover {
-    transform: translateY(-1px);
-  }
-
-  .home-hero-side {
-    display: grid;
-    gap: 14px;
-  }
-
-  .hero-mini-card {
-    padding: 18px 18px 16px;
-    border-radius: 22px;
-    background: rgba(7, 24, 17, 0.68);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-
-  .hero-mini-label {
-    margin-bottom: 8px;
-    color: #85f3b2;
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .hero-mini-title {
-    margin: 0 0 6px;
-    color: #ffffff;
-    font-size: 18px;
-    font-weight: 800;
-  }
-
-  .hero-mini-card p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.82);
-    font-size: 14px;
-    line-height: 1.55;
-  }
-
-  .home-stats {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 18px;
-  }
-
-  .home-stat {
-    padding: 14px;
-    border-radius: 18px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    text-align: center;
-  }
-
-  .home-stat strong {
-    display: block;
-    color: #ffffff;
-    font-size: 24px;
-    line-height: 1;
-    margin-bottom: 6px;
-  }
-
-  .home-stat span {
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 12px;
-  }
-
-  .home-section {
-    padding: 34px 0 0;
-  }
-
-  .home-row-wrap {
-    margin-top: 18px;
-  }
-
-  .home-row-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .home-row-header h2 {
-    margin: 0;
-    font-size: clamp(24px, 2.2vw, 34px);
-    color: #ffffff;
-  }
-
-  .home-row-link {
-    color: #9af6c0;
-    font-size: 14px;
-    font-weight: 800;
-  }
-
-  .carousel {
-    position: relative;
-  }
-
-  .carousel-track {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: calc((100% - 36px) / 4);
-    gap: 12px;
-    overflow-x: auto;
-    padding: 6px 2px 10px;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    scroll-behavior: smooth;
-  }
-
-  .carousel-track::-webkit-scrollbar {
-    display: none;
-  }
-
-  .carousel-btn {
-    position: absolute;
-    top: calc(50% - 18px);
-    transform: translateY(-50%);
-    z-index: 3;
-    width: 42px;
-    height: 42px;
-    border: 0;
-    border-radius: 999px;
-    background: rgba(5, 22, 15, 0.82);
-    color: #ffffff;
-    font-size: 26px;
-    cursor: pointer;
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.22);
-  }
-
-  .carousel-btn.left {
-    left: -12px;
-  }
-
-  .carousel-btn.right {
-    right: -12px;
-  }
-
-  .home-card {
-    min-height: 210px;
-    padding: 18px;
-    border-radius: 22px;
-    background: linear-gradient(180deg, rgba(15, 48, 34, 0.92), rgba(8, 24, 18, 0.95));
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
-    scroll-snap-align: start;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-  }
-
-  .home-card-top {
-    display: grid;
-    gap: 12px;
-  }
-
-  .home-badge {
-    display: inline-flex;
-    align-items: center;
-    width: fit-content;
-    padding: 7px 10px;
-    border-radius: 999px;
-    background: rgba(31, 196, 102, 0.16);
-    border: 1px solid rgba(31, 196, 102, 0.22);
-    color: #b5ffd1;
-    font-size: 12px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .home-card h3 {
-    margin: 0;
-    color: #ffffff;
-    font-size: 21px;
-    line-height: 1.15;
-  }
-
-  .home-card p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.78);
-    font-size: 14px;
-    line-height: 1.55;
-  }
-
-  .home-card-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: fit-content;
-    min-height: 40px;
-    margin-top: 18px;
-    padding: 10px 14px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffffff;
-    font-size: 14px;
-    font-weight: 800;
-  }
-
-  .home-card-action:hover {
-    background: rgba(255, 255, 255, 0.16);
-  }
-
-  .home-bottom-space {
-    height: 28px;
-  }
-
-  @media (max-width: 1100px) {
-    .home-hero-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .home-hero-copy {
-      max-width: 760px;
-    }
-
-    .carousel-track {
-      grid-auto-columns: calc((100% - 24px) / 3);
-    }
-  }
-
-  @media (max-width: 820px) {
-    .home-hero {
-      min-height: auto;
-      padding: 12px 0 18px;
-    }
-
-    .home-hero::before {
-      background-position: center center;
-      transform: none;
-    }
-
-    .home-hero::after {
-      background:
-        linear-gradient(180deg, rgba(6, 18, 13, 0.48) 0%, rgba(6, 18, 13, 0.68) 28%, rgba(6, 18, 13, 0.86) 100%);
-    }
-
-    .home-hero-content {
-      padding: 24px 0 20px;
-    }
-
-    .home-kicker {
-      margin-bottom: 12px;
-      font-size: 11px;
-      padding: 7px 10px;
-    }
-
-    .home-hero h1 {
-      font-size: clamp(30px, 10vw, 52px);
-      text-align: center;
-    }
-
-    .home-hero p {
-      font-size: 15px;
-      line-height: 1.6;
-      text-align: center;
-      max-width: none;
-    }
-
-    .home-actions {
-      justify-content: center;
-      margin-top: 20px;
-    }
-
-    .home-btn,
-    .home-btn-secondary {
-      min-height: 46px;
-      padding: 12px 16px;
-      font-size: 14px;
-      flex: 1 1 180px;
-    }
-
-    .home-hero-side {
-      gap: 10px;
-    }
-
-    .hero-mini-card {
-      padding: 14px 14px 13px;
-      border-radius: 18px;
-    }
-
-    .hero-mini-title {
-      font-size: 16px;
-    }
-
-    .hero-mini-card p {
-      font-size: 13px;
-    }
-
-    .home-stats {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .home-stat {
-      padding: 10px 8px;
-      border-radius: 14px;
-    }
-
-    .home-stat strong {
-      font-size: 18px;
-    }
-
-    .home-stat span {
-      font-size: 11px;
-      line-height: 1.2;
-    }
-
-    .home-section {
-      padding-top: 22px;
-    }
-
-    .home-row-header {
-      margin-bottom: 10px;
-    }
-
-    .home-row-header h2 {
-      font-size: 22px;
-    }
-
-    .home-row-link {
-      font-size: 13px;
-    }
-
-    .carousel-track {
-      grid-auto-columns: calc((100% - 12px) / 2.15);
-      gap: 8px;
-      padding-bottom: 6px;
-    }
-
-    .carousel-btn {
-      display: none;
-    }
-
-    .home-card {
-      min-height: 160px;
-      padding: 14px;
-      border-radius: 18px;
-    }
-
-    .home-card h3 {
-      font-size: 17px;
-    }
-
-    .home-card p {
-      font-size: 13px;
-    }
-
-    .home-card-action {
-      min-height: 36px;
-      margin-top: 14px;
-      padding: 8px 12px;
-      font-size: 13px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .home-hero-content {
-      padding: 18px 0 16px;
-    }
-
-    .home-hero h1 {
-      font-size: 28px;
-      line-height: 1;
-    }
-
-    .home-hero p {
-      font-size: 14px;
-    }
-
-    .home-actions {
-      gap: 10px;
-    }
-
-    .home-btn,
-    .home-btn-secondary {
-      width: 100%;
-      flex: 1 1 100%;
-    }
-
-    .hero-mini-card {
-      padding: 12px;
-    }
-
-    .home-stats {
-      gap: 6px;
-    }
-
-    .carousel-track {
-      grid-auto-columns: calc((100% - 10px) / 2.1);
-      gap: 6px;
-    }
-
-    .home-card {
-      min-height: 146px;
-      padding: 12px;
-    }
-  }
-</style>
-{% endblock %}
+{% block body_class %}home-page{% endblock %}
 
 {% block content %}
-<div class="home-page">
-  <section class="home-hero">
-    <div class="container home-hero-content">
-      <div class="home-hero-grid">
-        <div class="home-hero-copy">
-          <div class="home-kicker">Tecnologia, precisão e rastreabilidade</div>
-          <h1>COMBATE RASANTE</h1>
-          <p>
-            Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
-            Acompanhe relatórios, mapas e histórico das operações no painel do cliente.
-          </p>
 
-          <div class="home-actions">
-            <a href="{{ url_for('auth.login') }}" class="home-btn">Acessar Painel</a>
-            <a href="{{ url_for('main.servicos') }}" class="home-btn-secondary">Ver Serviços</a>
-          </div>
+<section class="netflix-hero home-hero">
+  <div class="netflix-hero-overlay"></div>
+
+  <div class="container netflix-hero-content">
+    <div class="hero-left">
+      <span class="hero-eyebrow">Tecnologia, precisão e rastreabilidade</span>
+      <h1>COMBATE<br>RASANTE</h1>
+      <p>
+        Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
+        Acompanhe relatórios, mapas e histórico das operações no painel do cliente.
+      </p>
+
+      <div class="hero-actions">
+        <a href="{{ url_for('auth.login') }}" class="btn-hero primary">Acessar Painel</a>
+        <a href="{{ url_for('main.servicos') }}" class="btn-hero secondary">Ver Serviços</a>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="hero-mini-cards">
+        <div class="mini-card">
+          <div class="mini-card-title">Novidade</div>
+          <div class="mini-card-text">Painel organizado por Safra, Mês e Dia</div>
         </div>
+        <div class="mini-card">
+          <div class="mini-card-title">Tecnologia</div>
+          <div class="mini-card-text">Mapas, indicadores e rastreabilidade por talhão</div>
+        </div>
+        <div class="mini-card">
+          <div class="mini-card-title">Agilidade</div>
+          <div class="mini-card-text">Histórico operacional sempre disponível ao cliente</div>
+        </div>
+      </div>
 
-        <div class="home-hero-side">
-          <div class="hero-mini-card">
-            <div class="hero-mini-label">Novidade</div>
-            <h2 class="hero-mini-title">Painel organizado por Safra, Mês e Dia</h2>
-            <p>Visualização simples para acompanhar histórico, relatórios e arquivos operacionais.</p>
-          </div>
-
-          <div class="hero-mini-card">
-            <div class="hero-mini-label">Tecnologia</div>
-            <h2 class="hero-mini-title">Mapas, indicadores e rastreabilidade</h2>
-            <p>Controle por talhão, leitura visual rápida e informações acessíveis ao cliente.</p>
-          </div>
-
-          <div class="home-stats">
-            <div class="home-stat">
-              <strong>24h</strong>
-              <span>Acesso ao painel</span>
-            </div>
-            <div class="home-stat">
-              <strong>100%</strong>
-              <span>Histórico organizado</span>
-            </div>
-            <div class="home-stat">
-              <strong>+Tech</strong>
-              <span>Gestão operacional</span>
-            </div>
-          </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <strong>24h</strong>
+          <span>Acesso ao painel</span>
+        </div>
+        <div class="hero-stat">
+          <strong>100%</strong>
+          <span>Histórico organizado</span>
+        </div>
+        <div class="hero-stat">
+          <strong>+Tech</strong>
+          <span>Gestão operacional</span>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="home-section">
-    <div class="container">
-      <div class="home-row-wrap">
-        <div class="home-row-header">
-          <h2>Novidades</h2>
-          <a class="home-row-link" href="{{ url_for('main.tecnologia') }}">Ver mais</a>
-        </div>
+<section class="netflix-section home-content-section">
+  <div class="container">
 
-        <div class="carousel" data-carousel>
-          <button class="carousel-btn left" type="button" aria-label="Voltar">‹</button>
-          <div class="carousel-track">
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Novo</span>
-                <h3>Dashboard Premium</h3>
-                <p>Organização por tema, safra, mês e dia para consulta mais rápida.</p>
-              </div>
-              <a href="{{ url_for('auth.login') }}" class="home-card-action">Abrir</a>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Info</span>
-                <h3>Indicadores</h3>
-                <p>Cobertura, área aplicada e histórico operacional em um só lugar.</p>
-              </div>
-              <a href="{{ url_for('main.tecnologia') }}" class="home-card-action">Ver</a>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Novo</span>
-                <h3>Área do Cliente</h3>
-                <p>Relatórios, imagens e arquivos disponíveis com mais praticidade.</p>
-              </div>
-              <a href="{{ url_for('auth.login') }}" class="home-card-action">Entrar</a>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Feature</span>
-                <h3>Mapas</h3>
-                <p>Mapas de aplicação e controle operacional com leitura simples.</p>
-              </div>
-              <a href="{{ url_for('main.tecnologia') }}" class="home-card-action">Ver</a>
-            </article>
-          </div>
-          <button class="carousel-btn right" type="button" aria-label="Avançar">›</button>
-        </div>
-      </div>
-
-      <div class="home-row-wrap">
-        <div class="home-row-header">
-          <h2>Equipes</h2>
-          <a class="home-row-link" href="{{ url_for('main.servicos') }}">Ver mais</a>
-        </div>
-
-        <div class="carousel" data-carousel>
-          <button class="carousel-btn left" type="button" aria-label="Voltar">‹</button>
-          <div class="carousel-track">
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Equipe</span>
-                <h3>Operação Aérea</h3>
-                <p>Pilotos e apoio operacional com foco em segurança e desempenho.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Equipe</span>
-                <h3>Planejamento</h3>
-                <p>Estratégia, logística e organização da operação de ponta a ponta.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Equipe</span>
-                <h3>Controle de Faixa</h3>
-                <p>Precisão, uniformidade e acompanhamento visual das atividades.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Equipe</span>
-                <h3>Monitoramento</h3>
-                <p>Indicadores e relatórios para apoiar decisões operacionais.</p>
-              </div>
-            </article>
-          </div>
-          <button class="carousel-btn right" type="button" aria-label="Avançar">›</button>
-        </div>
-      </div>
-
-      <div class="home-row-wrap">
-        <div class="home-row-header">
-          <h2>Atividades</h2>
-          <a class="home-row-link" href="{{ url_for('main.servicos') }}">Ver mais</a>
-        </div>
-
-        <div class="carousel" data-carousel>
-          <button class="carousel-btn left" type="button" aria-label="Voltar">‹</button>
-          <div class="carousel-track">
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Ativo</span>
-                <h3>Pulverização</h3>
-                <p>Aplicação precisa, segura e organizada por histórico operacional.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Ativo</span>
-                <h3>Mapeamento</h3>
-                <p>Rastreio visual e relatórios por área para melhor acompanhamento.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Ativo</span>
-                <h3>Relatórios</h3>
-                <p>Dados organizados para apoiar a tomada de decisão do cliente.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Ativo</span>
-                <h3>Histórico</h3>
-                <p>Arquivos e registros por safra com acesso rápido no painel.</p>
-              </div>
-            </article>
-          </div>
-          <button class="carousel-btn right" type="button" aria-label="Avançar">›</button>
-        </div>
-      </div>
-
-      <div class="home-row-wrap">
-        <div class="home-row-header">
-          <h2>Clientes</h2>
-          <a class="home-row-link" href="{{ url_for('main.contato') }}">Fale conosco</a>
-        </div>
-
-        <div class="carousel" data-carousel>
-          <button class="carousel-btn left" type="button" aria-label="Voltar">‹</button>
-          <div class="carousel-track">
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Cana</span>
-                <h3>Usinas</h3>
-                <p>Operações com rastreabilidade e histórico acessível ao cliente.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Grãos</span>
-                <h3>Fazendas</h3>
-                <p>Controle operacional com foco em precisão de aplicação.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Premium</span>
-                <h3>Painel</h3>
-                <p>Arquivos, imagens e análises organizadas para consulta rápida.</p>
-              </div>
-            </article>
-
-            <article class="home-card">
-              <div class="home-card-top">
-                <span class="home-badge">Parceiros</span>
-                <h3>Consultorias</h3>
-                <p>Informações consolidadas para apoiar decisões técnicas e operacionais.</p>
-              </div>
-            </article>
-          </div>
-          <button class="carousel-btn right" type="button" aria-label="Avançar">›</button>
-        </div>
-      </div>
-
-      <div class="home-bottom-space"></div>
+    <div class="row-header">
+      <h2>Novidades</h2>
+      <a class="row-link" href="{{ url_for('main.tecnologia') }}">Ver mais</a>
     </div>
-  </section>
-</div>
+
+    <div class="row-netflix" data-row="novidades">
+      <button class="row-btn left" aria-label="Voltar">‹</button>
+      <div class="row-track">
+        <article class="card-netflix">
+          <div class="card-top">
+            <span class="badge">Novo</span>
+            <h3>Dashboard Premium</h3>
+          </div>
+          <p>Organização por tema, safra, mês e dia para consulta mais rápida.</p>
+          <div class="card-actions"><a href="{{ url_for('auth.login') }}" class="card-btn">Abrir</a></div>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top">
+            <span class="badge">Info</span>
+            <h3>Indicadores</h3>
+          </div>
+          <p>Cobertura, área aplicada e histórico operacional em um só lugar.</p>
+          <div class="card-actions"><a href="{{ url_for('main.tecnologia') }}" class="card-btn">Ver</a></div>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top">
+            <span class="badge">Novo</span>
+            <h3>Área do Cliente</h3>
+          </div>
+          <p>Relatórios, imagens e arquivos disponíveis com mais praticidade.</p>
+          <div class="card-actions"><a href="{{ url_for('auth.login') }}" class="card-btn">Entrar</a></div>
+        </article>
+
+        <article class="card-netflix">
+          <div class="card-top">
+            <span class="badge">Feature</span>
+            <h3>Mapas</h3>
+          </div>
+          <p>Mapas de aplicação e controle operacional com leitura simples.</p>
+          <div class="card-actions"><a href="{{ url_for('main.tecnologia') }}" class="card-btn">Ver</a></div>
+        </article>
+      </div>
+      <button class="row-btn right" aria-label="Avançar">›</button>
+    </div>
+
+    <div class="row-header">
+      <h2>Equipes</h2>
+      <a class="row-link" href="{{ url_for('main.servicos') }}">Ver mais</a>
+    </div>
+
+    <div class="row-netflix" data-row="equipes">
+      <button class="row-btn left" aria-label="Voltar">‹</button>
+      <div class="row-track">
+        <article class="card-netflix card-image">
+          <div class="card-top"><span class="badge">Equipe</span><h3>Operação Aérea</h3></div>
+          <p>Pilotos e apoio operacional com foco em segurança e desempenho.</p>
+        </article>
+        <article class="card-netflix card-image">
+          <div class="card-top"><span class="badge">Equipe</span><h3>Planejamento</h3></div>
+          <p>Estratégia, logística e organização da operação de ponta a ponta.</p>
+        </article>
+        <article class="card-netflix card-image">
+          <div class="card-top"><span class="badge">Equipe</span><h3>Controle de Faixa</h3></div>
+          <p>Precisão, uniformidade e acompanhamento visual das atividades.</p>
+        </article>
+        <article class="card-netflix card-image">
+          <div class="card-top"><span class="badge">Equipe</span><h3>Monitoramento</h3></div>
+          <p>Indicadores e relatórios para apoiar decisões operacionais.</p>
+        </article>
+      </div>
+      <button class="row-btn right" aria-label="Avançar">›</button>
+    </div>
+
+    <div class="row-header">
+      <h2>Atividades</h2>
+      <a class="row-link" href="{{ url_for('main.servicos') }}">Ver mais</a>
+    </div>
+
+    <div class="row-netflix" data-row="atividades">
+      <button class="row-btn left" aria-label="Voltar">‹</button>
+      <div class="row-track">
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Ativo</span><h3>Pulverização</h3></div>
+          <p>Aplicação precisa, segura e organizada por histórico operacional.</p>
+        </article>
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Ativo</span><h3>Mapeamento</h3></div>
+          <p>Rastreio visual e relatórios por área para melhor acompanhamento.</p>
+        </article>
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Ativo</span><h3>Relatórios</h3></div>
+          <p>Dados organizados para apoiar a tomada de decisão do cliente.</p>
+        </article>
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Ativo</span><h3>Histórico</h3></div>
+          <p>Arquivos e registros por safra com acesso rápido no painel.</p>
+        </article>
+      </div>
+      <button class="row-btn right" aria-label="Avançar">›</button>
+    </div>
+
+    <div class="row-header">
+      <h2>Clientes</h2>
+      <a class="row-link" href="{{ url_for('main.contato') }}">Fale conosco</a>
+    </div>
+
+    <div class="row-netflix" data-row="clientes">
+      <button class="row-btn left" aria-label="Voltar">‹</button>
+      <div class="row-track">
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Cana</span><h3>Usinas</h3></div>
+          <p>Operações com rastreabilidade e histórico acessível ao cliente.</p>
+        </article>
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Grãos</span><h3>Fazendas</h3></div>
+          <p>Controle operacional com foco em precisão de aplicação.</p>
+        </article>
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Premium</span><h3>Painel</h3></div>
+          <p>Arquivos, imagens e análises organizadas para consulta rápida.</p>
+        </article>
+        <article class="card-netflix">
+          <div class="card-top"><span class="badge">Parceiros</span><h3>Consultorias</h3></div>
+          <p>Informações consolidadas para apoiar decisões técnicas e operacionais.</p>
+        </article>
+      </div>
+      <button class="row-btn right" aria-label="Avançar">›</button>
+    </div>
+
+  </div>
+</section>
+
 {% endblock %}
 
-{% block extra_scripts %}
+{% block extra_js %}
 <script>
-  document.querySelectorAll('[data-carousel]').forEach(function (carousel) {
-    const track = carousel.querySelector('.carousel-track');
-    const prev = carousel.querySelector('.carousel-btn.left');
-    const next = carousel.querySelector('.carousel-btn.right');
+(function () {
+  const rows = document.querySelectorAll('.row-netflix');
+  if (!rows.length) return;
 
-    if (!track || !prev || !next) return;
+  function getStep(track) {
+    const card = track.querySelector('.card-netflix');
+    if (!card) return track.clientWidth;
+    const style = window.getComputedStyle(track);
+    const gap = parseFloat(style.gap || style.columnGap || '0') || 0;
+    return card.getBoundingClientRect().width + gap;
+  }
 
-    function getStep() {
-      const firstCard = track.querySelector('.home-card');
-      if (!firstCard) return 320;
-      const gap = parseFloat(window.getComputedStyle(track).columnGap || window.getComputedStyle(track).gap || 12);
-      return firstCard.getBoundingClientRect().width + gap;
-    }
+  function getCardsPerView() {
+    const w = window.innerWidth;
+    if (w <= 640) return 2;
+    if (w <= 980) return 3;
+    return 4;
+  }
 
-    prev.addEventListener('click', function () {
-      track.scrollBy({ left: -getStep(), behavior: 'smooth' });
-    });
+  rows.forEach((row) => {
+    const track = row.querySelector('.row-track');
+    const prev = row.querySelector('.row-btn.left');
+    const next = row.querySelector('.row-btn.right');
+    if (!track) return;
 
-    next.addEventListener('click', function () {
-      track.scrollBy({ left: getStep(), behavior: 'smooth' });
-    });
+    const scrollByCards = (direction = 1) => {
+      const amount = getStep(track) * getCardsPerView() * direction;
+      track.scrollBy({ left: amount, behavior: 'smooth' });
+    };
+
+    prev?.addEventListener('click', () => scrollByCards(-1));
+    next?.addEventListener('click', () => scrollByCards(1));
+
+    let auto = null;
+    const start = () => {
+      if (window.innerWidth <= 980) return;
+      stop();
+      auto = setInterval(() => {
+        const maxScroll = track.scrollWidth - track.clientWidth;
+        const nearEnd = track.scrollLeft >= maxScroll - 10;
+        if (nearEnd) {
+          track.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          scrollByCards(1);
+        }
+      }, 4500);
+    };
+
+    const stop = () => {
+      if (auto) clearInterval(auto);
+      auto = null;
+    };
+
+    row.addEventListener('mouseenter', stop);
+    row.addEventListener('mouseleave', start);
+    row.addEventListener('touchstart', stop, { passive: true });
+    window.addEventListener('resize', start);
+    start();
   });
+})();
 </script>
 {% endblock %}
