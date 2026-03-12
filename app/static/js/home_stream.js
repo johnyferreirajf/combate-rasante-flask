@@ -49,7 +49,7 @@
 
   if (!track || !dotsWrap) return;
 
-  track.innerHTML = tiles.map(t => `
+  track.innerHTML = tiles.map((t) => `
     <a class="stream-tile" href="${t.url}">
       <div class="tile-top">
         <span class="tile-badge">${t.badge}</span>
@@ -61,17 +61,17 @@
       <p class="tile-desc">${t.desc}</p>
 
       <ul class="tile-list">
-        ${t.items.map(i => `<li>${i}</li>`).join("")}
+        ${t.items.map((i) => `<li>${i}</li>`).join("")}
       </ul>
     </a>
   `).join("");
 
-function getTilesPerView() {
-  const w = window.innerWidth;
-  if (w <= 768) return 2;
-  if (w <= 980) return 2;
-  return 3;
-}
+  function getTilesPerView() {
+    const w = window.innerWidth;
+    if (w <= 768) return 2;
+    if (w <= 980) return 2;
+    return 3;
+  }
 
   function getPageCount() {
     const per = getTilesPerView();
@@ -145,7 +145,7 @@ function getTilesPerView() {
   let timer = null;
 
   function startAuto() {
-    if (window.innerWidth <= 768) return;
+    if (window.innerWidth <= 980) return;
     stopAuto();
     timer = setInterval(nextPage, 5500);
   }
@@ -168,7 +168,7 @@ function getTilesPerView() {
   window.addEventListener("resize", () => {
     buildDots();
     setActiveDot(getCurrentPage());
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 980) {
       stopAuto();
     } else {
       startAuto();
