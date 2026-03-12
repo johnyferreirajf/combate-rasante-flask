@@ -294,15 +294,15 @@ body.intro-lock{
   }
 
   .stream-track{
-    gap: 10px;
+    gap: 8px;
     padding: 4px 2px 10px 2px;
   }
 
   .stream-tile{
-    flex: 0 0 78vw;
-    min-height: 132px;
-    padding: 11px;
-    border-radius: 18px;
+    flex: 0 0 calc((100% - 8px) / 2.15);
+    min-height: 118px;
+    padding: 9px;
+    border-radius: 16px;
   }
 
   .tile-top{
@@ -315,25 +315,25 @@ body.intro-lock{
   }
 
   .tile-icon{
-    width: 32px;
-    height: 32px;
-    font-size: 13px;
-    margin-bottom: 8px;
-  }
-
-  .tile-title{
-    font-size: 13px;
-    margin-bottom: 4px;
-  }
-
-  .tile-desc{
-    font-size: 11px;
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
     margin-bottom: 6px;
   }
 
+  .tile-title{
+    font-size: 11px;
+    margin-bottom: 3px;
+  }
+
+  .tile-desc{
+    font-size: 9.5px;
+    margin-bottom: 4px;
+  }
+
   .tile-list{
-    font-size: 10px;
-    padding-left: 15px;
+    font-size: 9px;
+    padding-left: 13px;
   }
 
   .tile-list li{
@@ -348,8 +348,9 @@ body.intro-lock{
 @media (max-width: 480px){
   .home-stream-title{ font-size: 20px; }
   .home-stream-subtitle{ font-size: 12px; }
+
   .stream-tile{
-    flex: 0 0 80vw;
-    min-height: 126px;
+    flex: 0 0 calc((100% - 8px) / 2.08);
+    min-height: 112px;
   }
 }
