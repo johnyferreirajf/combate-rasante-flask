@@ -2,6 +2,7 @@
 {% block title %}COMBATE RASANTE - Central de Atividades{% endblock %}
 
 {% block content %}
+
 <div id="intro-video" aria-hidden="true">
   <video id="introVideoEl" autoplay muted playsinline preload="auto">
     <source src="{{ url_for('static', filename='video/intro.mp4') }}" type="video/mp4">
@@ -32,6 +33,7 @@
 </section>
 
 <script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
+
 <script>
 (function () {
   const INTRO_KEY = "cr_intro_shown";
@@ -52,6 +54,7 @@
   document.body.classList.add("intro-lock");
 
   let done = false;
+
   function finish() {
     if (done) return;
     done = true;
@@ -65,4 +68,5 @@
   vid.addEventListener("ended", finish);
 })();
 </script>
+
 {% endblock %}
