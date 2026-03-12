@@ -1,202 +1,168 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+  <meta charset="utf-8">
+  <title>{% block title %}COMBATE RASANTE{% endblock %}</title>
 
-<meta charset="utf-8">
-<title>{% block title %}COMBATE RASANTE{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="Aplicação aérea agrícola com precisão, tecnologia e segurança. Combate Rasante Aviação Agrícola.">
 
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <!-- Open Graph -->
+  <meta property="og:title" content="Combate Rasante Aviação Agrícola">
+  <meta property="og:description" content="Aplicação aérea de alta precisão com tecnologia e segurança para o agronegócio.">
+  <meta property="og:image" content="https://combaterasante.onrender.com/static/img/og-combaterasante.png">
+  <meta property="og:url" content="https://combaterasante.onrender.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
 
-<meta name="description" content="Aplicação aérea agrícola com precisão, tecnologia e segurança. Combate Rasante Aviação Agrícola.">
+  <meta name="twitter:card" content="summary_large_image">
 
-<!-- Open Graph -->
-<meta property="og:title" content="Combate Rasante Aviação Agrícola">
-<meta property="og:description" content="Aplicação aérea de alta precisão com tecnologia e segurança para o agronegócio.">
-<meta property="og:image" content="https://combaterasante.onrender.com/static/img/og-combaterasante.png">
-<meta property="og:url" content="https://combaterasante.onrender.com/">
-<meta property="og:type" content="website">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-
-<meta name="twitter:card" content="summary_large_image">
-
-<link rel="preload" href="{{ url_for('static', filename='img/logo-combate.jpeg') }}" as="image">
-
-<link rel="stylesheet"
-href="{{ url_for('static', filename='css/main.css') }}">
-
+  <link rel="preload" href="{{ url_for('static', filename='img/logo-combate.jpeg') }}" as="image">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 
 <body>
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="{{ url_for('main.index') }}" class="navbar-logo">
+        <img
+          src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+          alt="COMBATE RASANTE"
+          class="navbar-logo-img"
+          loading="eager"
+          onerror="this.style.display='none';"
+        >
+        <div class="navbar-logo-text">
+          <span class="navbar-logo-title">COMBATE RASANTE</span>
+          <span class="navbar-logo-subtitle">Aviação Agrícola</span>
+        </div>
+      </a>
 
-<header class="navbar">
+      <nav class="navbar-links" id="navbarLinks">
+        <a href="{{ url_for('main.index') }}" class="navbar-link">Início</a>
+        <a href="{{ url_for('main.servicos') }}" class="navbar-link">Serviços</a>
+        <a href="{{ url_for('main.tecnologia') }}" class="navbar-link">Tecnologia</a>
+        <a href="{{ url_for('main.contato') }}" class="navbar-link">Contato</a>
 
-<div class="container navbar-inner">
+        {% if session.get('employee_id') %}
+          <a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">
+            Painel do Funcionário
+          </a>
+          <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">
+            Sair do painel
+          </a>
 
-<a href="{{ url_for('main.index') }}" class="navbar-logo">
+        {% elif session.get('user_id') %}
+          <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">
+            Painel
+          </a>
+          <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button">
+            Sair
+          </a>
 
-<img
-src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
-alt="COMBATE RASANTE"
-class="navbar-logo-img"
-loading="eager"
-onerror="this.style.display='none';">
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">
+            Área do Cliente
+          </a>
+          <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button">
+            Funcionários
+          </a>
+        {% endif %}
+      </nav>
 
-<div class="navbar-logo-text">
-<span class="navbar-logo-title">COMBATE RASANTE</span>
-<span class="navbar-logo-subtitle">Aviação Agrícola</span>
-</div>
+      <button class="navbar-toggle" type="button" onclick="toggleNavbar()" aria-label="Abrir menu">
+        ☰
+      </button>
+    </div>
+  </header>
 
-</a>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="flash-message {% if category == 'success' %}flash-success{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
-<nav class="navbar-links" id="navbarLinks">
+  <main>
+    {% block content %}{% endblock %}
+  </main>
 
-<a href="{{ url_for('main.index') }}" class="navbar-link">Início</a>
-<a href="{{ url_for('main.servicos') }}" class="navbar-link">Serviços</a>
-<a href="{{ url_for('main.tecnologia') }}" class="navbar-link">Tecnologia</a>
-<a href="{{ url_for('main.contato') }}" class="navbar-link">Contato</a>
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div>
+        <div class="footer-logo">
+          <img
+            src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+            alt="COMBATE RASANTE"
+            class="footer-logo-img"
+            loading="lazy"
+            onerror="this.style.display='none';"
+          >
+          <div>
+            <div class="footer-logo-title">COMBATE RASANTE</div>
+            <div class="footer-logo-subtitle">Aviação Agrícola</div>
+          </div>
+        </div>
 
-{% if session.get('employee_id') %}
+        <p class="footer-text">
+          Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
+        </p>
+      </div>
 
-<a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">
-Painel do Funcionário
-</a>
+      <div>
+        <h3 class="footer-heading">Contatos</h3>
+        <ul class="footer-list">
+          <li><strong>Telefone:</strong> 64 99983-6005</li>
+          <li><strong>Telefone:</strong> 64 99221-7002</li>
+          <li><strong>Email:</strong> weikren@combateaviacao.com.br</li>
+        </ul>
+      </div>
 
-<a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">
-Sair do painel
-</a>
+      <div>
+        <h3 class="footer-heading">Matriz</h3>
+        <ul class="footer-list">
+          <li>Rod. GO 320, Km 82</li>
+          <li>Vicentinópolis / GO</li>
+          <li>CEP 75.555-000</li>
+        </ul>
+      </div>
 
-{% elif session.get('user_id') %}
+      <div>
+        <h3 class="footer-heading">Filial</h3>
+        <ul class="footer-list">
+          <li>Aeroporto Municipal</li>
+          <li>Ituiutaba / MG</li>
+          <li>Hangar 10</li>
+        </ul>
+      </div>
+    </div>
 
-<a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">
-Painel
-</a>
+    <div class="footer-bottom">
+      © 2026 COMBATE RASANTE Aviação Agrícola
+    </div>
+  </footer>
 
-<a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button">
-Sair
-</a>
+  <script>
+    function toggleNavbar() {
+      const nav = document.getElementById("navbarLinks");
+      if (!nav) return;
+      nav.classList.toggle("mobile-open");
+    }
 
-{% else %}
+    window.addEventListener("resize", function () {
+      const nav = document.getElementById("navbarLinks");
+      if (!nav) return;
 
-<a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">
-Área do Cliente
-</a>
-
-<a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button">
-Funcionários
-</a>
-
-{% endif %}
-
-</nav>
-
-<button class="navbar-toggle" onclick="toggleNavbar()" aria-label="Menu">
-☰
-</button>
-
-</div>
-</header>
-
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="flash-container">
-{% for category, message in messages %}
-<div class="flash-message {% if category == 'success' %}flash-success{% endif %}">
-{{ message }}
-</div>
-{% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-
-<main>
-{% block content %}{% endblock %}
-</main>
-
-<footer class="footer">
-
-<div class="container footer-grid">
-
-<div>
-<div class="footer-logo">
-
-<img
-src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
-alt="COMBATE RASANTE"
-class="footer-logo-img"
-loading="lazy"
-onerror="this.style.display='none';">
-
-<div>
-<div class="footer-logo-title">COMBATE RASANTE</div>
-<div class="footer-logo-subtitle">Aviação Agrícola</div>
-</div>
-
-</div>
-
-<p class="footer-text">
-Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
-</p>
-</div>
-
-<div>
-<h3 class="footer-heading">Contatos</h3>
-<ul class="footer-list">
-<li><strong>Telefone:</strong> 64 99983-6005</li>
-<li><strong>Telefone:</strong> 64 99221-7002</li>
-<li><strong>Email:</strong> weikren@combateaviacao.com.br</li>
-</ul>
-</div>
-
-<div>
-<h3 class="footer-heading">Matriz</h3>
-<ul class="footer-list">
-<li>Rod. GO 320, Km 82</li>
-<li>Vicentinópolis / GO</li>
-<li>CEP 75555-000</li>
-</ul>
-</div>
-
-<div>
-<h3 class="footer-heading">Filial</h3>
-<ul class="footer-list">
-<li>Aeroporto Municipal</li>
-<li>Ituiutaba / MG</li>
-<li>Hangar 10</li>
-</ul>
-</div>
-
-</div>
-
-<div class="footer-bottom">
-© 2026 COMBATE RASANTE Aviação Agrícola
-</div>
-
-</footer>
-
-<script>
-
-function toggleNavbar(){
-
-const nav = document.getElementById("navbarLinks")
-
-if(!nav) return
-
-nav.classList.toggle("mobile-open")
-
-}
-
-window.addEventListener("resize", function(){
-
-const nav = document.getElementById("navbarLinks")
-
-if(window.innerWidth > 768){
-nav.classList.remove("mobile-open")
-}
-
-})
-
-</script>
-
+      if (window.innerWidth > 768) {
+        nav.classList.remove("mobile-open");
+      }
+    });
+  </script>
 </body>
 </html>
