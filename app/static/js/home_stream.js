@@ -47,7 +47,7 @@
   const prevBtn = document.querySelector(".stream-prev");
   const nextBtn = document.querySelector(".stream-next");
 
-  if (!track) return;
+  if (!track || !dotsWrap) return;
 
   track.innerHTML = tiles.map(t => `
     <a class="stream-tile" href="${t.url}">
@@ -68,7 +68,7 @@
 
   function getTilesPerView() {
     const w = window.innerWidth;
-    if (w <= 640) return 1;
+    if (w <= 768) return 1;
     if (w <= 980) return 2;
     return 3;
   }
@@ -92,8 +92,7 @@
   function setActiveDot(page) {
     const all = dotsWrap.querySelectorAll(".dot");
     all.forEach((d, idx) => {
-      if (idx === page) d.classList.add("dot-active");
-      else d.classList.remove("dot-active");
+      d.classList.toggle("dot-active", idx === page);
     });
   }
 
@@ -118,27 +117,19 @@
     const max = track.scrollWidth - track.clientWidth;
     const target = Math.max(0, Math.min(max, page * per * step));
     track.scrollTo({ left: target, behavior: "smooth" });
-    window.setTimeout(() => setActiveDot(getCurrentPage()), 350);
+    window.setTimeout(() => setActiveDot(getCurrentPage()), 300);
   }
 
   function nextPage() {
     const current = getCurrentPage();
     const total = getPageCount();
-    if (current >= total - 1) {
-      goToPage(0);
-    } else {
-      goToPage(current + 1);
-    }
+    goToPage(current >= total - 1 ? 0 : current + 1);
   }
 
   function prevPage() {
     const current = getCurrentPage();
     const total = getPageCount();
-    if (current <= 0) {
-      goToPage(total - 1);
-    } else {
-      goToPage(current - 1);
-    }
+    goToPage(current <= 0 ? total - 1 : current - 1);
   }
 
   prevBtn?.addEventListener("click", prevPage);
@@ -154,10 +145,9 @@
   let timer = null;
 
   function startAuto() {
+    if (window.innerWidth <= 768) return;
     stopAuto();
-    timer = setInterval(() => {
-      nextPage();
-    }, 5500);
+    timer = setInterval(nextPage, 5500);
   }
 
   function stopAuto() {
@@ -168,7 +158,6 @@
   track.addEventListener("mouseenter", stopAuto);
   track.addEventListener("mouseleave", startAuto);
   track.addEventListener("touchstart", stopAuto, { passive: true });
-  track.addEventListener("touchend", startAuto, { passive: true });
 
   let raf = null;
   track.addEventListener("scroll", () => {
@@ -179,8 +168,14 @@
   window.addEventListener("resize", () => {
     buildDots();
     setActiveDot(getCurrentPage());
+    if (window.innerWidth <= 768) {
+      stopAuto();
+    } else {
+      startAuto();
+    }
   });
 
   buildDots();
+  setActiveDot(0);
   startAuto();
 })();
