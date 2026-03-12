@@ -36,13 +36,15 @@ body {
 
 /* MOBILE */
 @media (max-width:768px){
-
   body{
     background-image: url("/static/img/hero-mobile.png");
     background-size: cover;
     background-position: center top;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
   }
-   
+}
+
 img {
   max-width: 100%;
   display: block;
@@ -1650,30 +1652,4 @@ a {
     width: 46px;
     height: 46px;
   }
-}
-@media (max-width:768px){
-
-  .footer{
-    margin-top:20px;
-  }
-
-  .footer-grid{
-    grid-template-columns:1fr;
-    gap:12px;
-    padding:20px 0;
-  }
-
-  .footer-logo-img{
-    height:32px;
-  }
-
-  .footer-text,
-  .footer-list{
-    font-size:13px;
-  }
-
-  .footer-bottom{
-    font-size:11px;
-  }
-
 }
