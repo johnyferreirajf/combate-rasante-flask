@@ -2,18 +2,18 @@
 {% block title %}Contato - COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="section section-contact-page">
+<section class="section">
   <div class="container">
-    <div class="section-header contact-page-header">
-      <h1>Entre em contato</h1>
-      <p>
+    <div class="page-balloon section-intro-bubble">
+      <h1 class="section-title">Entre em contato</h1>
+      <p class="section-subtitle">
         Fale com a equipe da COMBATE RASANTE Aviação Agrícola para solicitar orçamento,
         tirar dúvidas ou agendar uma visita.
       </p>
     </div>
 
     <div class="contact-grid">
-      <div class="card glass-card contact-soft-card">
+      <div class="card glass-card">
         <form method="POST" action="{{ url_for('main.solicitar_orcamento') }}" class="form">
           <div class="form-group">
             <label for="nome">Nome</label>
@@ -40,7 +40,7 @@
       </div>
 
       <div class="contact-side">
-        <div class="card glass-card contact-soft-card">
+        <div class="card glass-card contact-card">
           <h3>Contato direto</h3>
           <div class="contact-lines">
             <div><strong>Telefones:</strong><br>(64) 99983-6005<br>(64) 99221-7002</div>
@@ -48,7 +48,7 @@
           </div>
         </div>
 
-        <div class="card glass-card contact-soft-card">
+        <div class="card glass-card contact-card">
           <h3>Redes sociais</h3>
 
           <a class="social-item" href="https://wa.me/5564999836005" target="_blank" rel="noopener">
@@ -72,14 +72,12 @@
           </a>
         </div>
 
-        <div class="card glass-card contact-soft-card">
+        <div class="card glass-card contact-card">
           <h3>Endereços</h3>
           <div class="contact-lines">
             <div>
               <strong>Matriz:</strong><br>
-              ROD GO 320 KM 82 - Vicentinópolis/GO<br>
-              Saída Joviânia<br>
-              CEP 75.555-000
+              ROD GO 320 KM 82 - Vicentinópolis/GO
             </div>
             <div style="margin-top:12px;">
               <strong>Filial:</strong><br>
