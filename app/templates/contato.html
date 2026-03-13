@@ -3,16 +3,17 @@
 {% block title %}Contato - COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="section">
+<section class="section section-contact-page">
   <div class="container">
-    <h1 class="section-title">Entre em contato</h1>
-    <p class="section-subtitle">
-      Fale com a equipe da COMBATE RASANTE Aviação Agrícola para solicitar orçamento,
-      tirar dúvidas ou agendar uma visita.
-    </p>
+    <div class="section-header contact-page-header">
+      <h1>Entre em contato</h1>
+      <p>
+        Fale com a equipe da COMBATE RASANTE Aviação Agrícola para solicitar orçamento,
+        tirar dúvidas ou agendar uma visita.
+      </p>
+    </div>
 
     <div class="contact-grid">
-      <!-- FORM -->
       <div class="card glass-card">
         <form method="POST" action="{{ url_for('main.solicitar_orcamento') }}" class="form">
           <div class="form-group">
@@ -39,13 +40,11 @@
         </form>
       </div>
 
-      <!-- LADO DIREITO -->
       <div class="contact-side">
-
         <div class="card glass-card contact-card">
           <h3>Contato direto</h3>
           <div class="contact-lines">
-            <div><strong>Telefones:</strong><br>(64) 99983-6005</div>
+            <div><strong>Telefones:</strong><br>(64) 99983-6005<br>(64) 99221-7002</div>
             <div style="margin-top:10px;"><strong>E-mail comercial:</strong><br>weikren@combateaviacao.com.br</div>
           </div>
         </div>
@@ -110,10 +109,8 @@
               referrerpolicy="no-referrer-when-downgrade"></iframe>
           </div>
         </div>
-
       </div>
     </div>
-
   </div>
 </section>
 {% endblock %}
