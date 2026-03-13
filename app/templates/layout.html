@@ -18,10 +18,9 @@
 
   <link rel="preload" href="{{ url_for('static', filename='img/logo-combate.jpeg') }}" as="image">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-  {% block extra_head %}{% endblock %}
 </head>
 
-<body class="{% block body_class %}{% endblock %}">
+<body>
   <header class="navbar">
     <div class="container navbar-inner">
       <a href="{{ url_for('main.index') }}" class="navbar-logo">
@@ -45,28 +44,16 @@
         <a href="{{ url_for('main.contato') }}" class="navbar-link">Contato</a>
 
         {% if session.get('employee_id') %}
-          <a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">
-            Painel do Funcionário
-          </a>
-          <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button navbar-button-outline">
-            Sair do painel
-          </a>
+          <a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">Painel do Funcionário</a>
+          <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">Sair do painel</a>
 
         {% elif session.get('user_id') %}
-          <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">
-            Painel
-          </a>
-          <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button navbar-button-outline">
-            Sair
-          </a>
+          <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">Painel</a>
+          <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button">Sair</a>
 
         {% else %}
-          <a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">
-            Área do Cliente
-          </a>
-          <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button navbar-button-outline">
-            Funcionários
-          </a>
+          <a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">Área do Cliente</a>
+          <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button">Funcionários</a>
         {% endif %}
       </nav>
 
@@ -142,25 +129,43 @@
       </div>
     </div>
 
-    <div class="footer-bottom">© 2026 COMBATE RASANTE</div>
+    <div class="footer-bottom">
+      © 2026 COMBATE RASANTE Aviação Agrícola
+    </div>
   </footer>
 
   <script>
     function toggleNavbar() {
-      const nav = document.getElementById('navbarLinks');
+      const nav = document.getElementById("navbarLinks");
       if (!nav) return;
-      nav.classList.toggle('mobile-open');
+      nav.classList.toggle("mobile-open");
     }
 
-    window.addEventListener('resize', function () {
-      const nav = document.getElementById('navbarLinks');
+    window.addEventListener("resize", function () {
+      const nav = document.getElementById("navbarLinks");
       if (!nav) return;
-      if (window.innerWidth > 980) {
-        nav.classList.remove('mobile-open');
+      if (window.innerWidth > 768) nav.classList.remove("mobile-open");
+    });
+
+    document.addEventListener("click", function (event) {
+      const nav = document.getElementById("navbarLinks");
+      const toggle = document.querySelector(".navbar-toggle");
+      if (!nav || !toggle) return;
+
+      const clickedInsideNav = nav.contains(event.target);
+      const clickedToggle = toggle.contains(event.target);
+
+      if (!clickedInsideNav && !clickedToggle) {
+        nav.classList.remove("mobile-open");
       }
     });
-  </script>
 
-  {% block extra_js %}{% endblock %}
+    document.querySelectorAll("#navbarLinks a").forEach(function (link) {
+      link.addEventListener("click", function () {
+        const nav = document.getElementById("navbarLinks");
+        if (nav && window.innerWidth <= 768) nav.classList.remove("mobile-open");
+      });
+    });
+  </script>
 </body>
 </html>
