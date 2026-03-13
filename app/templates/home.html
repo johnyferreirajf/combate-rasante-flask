@@ -79,10 +79,7 @@
     }
 
     function scrollTrack(direction) {
-      track.scrollBy({
-        left: getStep() * direction,
-        behavior: "smooth"
-      });
+      track.scrollBy({ left: getStep() * direction, behavior: "smooth" });
     }
 
     if (prev) prev.addEventListener("click", function (e) {
