@@ -1,5 +1,4 @@
 {% extends "layout.html" %}
-
 {% block title %}Contato - COMBATE RASANTE{% endblock %}
 
 {% block content %}
@@ -14,7 +13,7 @@
     </div>
 
     <div class="contact-grid">
-      <div class="card glass-card">
+      <div class="card glass-card contact-soft-card">
         <form method="POST" action="{{ url_for('main.solicitar_orcamento') }}" class="form">
           <div class="form-group">
             <label for="nome">Nome</label>
@@ -41,7 +40,7 @@
       </div>
 
       <div class="contact-side">
-        <div class="card glass-card contact-card">
+        <div class="card glass-card contact-soft-card">
           <h3>Contato direto</h3>
           <div class="contact-lines">
             <div><strong>Telefones:</strong><br>(64) 99983-6005<br>(64) 99221-7002</div>
@@ -49,7 +48,7 @@
           </div>
         </div>
 
-        <div class="card glass-card contact-card">
+        <div class="card glass-card contact-soft-card">
           <h3>Redes sociais</h3>
 
           <a class="social-item" href="https://wa.me/5564999836005" target="_blank" rel="noopener">
@@ -71,19 +70,9 @@
               <div class="social-sub">@combaterasante</div>
             </div>
           </a>
-
-          <a class="social-item" href="https://facebook.com/combaterasante" target="_blank" rel="noopener">
-            <span class="social-ico">
-              <img src="{{ url_for('static', filename='img/social/facebook.png') }}" alt="Facebook">
-            </span>
-            <div class="social-txt">
-              <div class="social-title">Facebook</div>
-              <div class="social-sub">/combaterasante</div>
-            </div>
-          </a>
         </div>
 
-        <div class="card glass-card contact-card">
+        <div class="card glass-card contact-soft-card">
           <h3>Endereços</h3>
           <div class="contact-lines">
             <div>
@@ -92,21 +81,11 @@
               Saída Joviânia<br>
               CEP 75.555-000
             </div>
-
             <div style="margin-top:12px;">
               <strong>Filial:</strong><br>
               Aeroporto Municipal de Ituiutaba/MG<br>
               Hangar 10
             </div>
-          </div>
-        </div>
-
-        <div class="card glass-card contact-card">
-          <h3>Localização</h3>
-          <div class="map-embed">
-            <iframe src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d15199.26687885818!2d-49.783491!3d-17.753273!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94a00f693169efb7%3A0xa933c2a5eda882cd!2sCombate!5e0!3m2!1spt-BR!2sbr!4v1769115219891!5m2!1spt-BR!2sbr"
-              width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"
-              referrerpolicy="no-referrer-when-downgrade"></iframe>
           </div>
         </div>
       </div>
