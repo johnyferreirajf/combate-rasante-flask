@@ -1,128 +1,99 @@
 {% extends "layout.html" %}
 {% block title %}COMBATE RASANTE - Aviação Agrícola{% endblock %}
-{% block body_class %}home-page{% endblock %}
 
 {% block content %}
-<section class="netflix-hero home-hero">
-  <div class="netflix-hero-overlay"></div>
+<div class="home-landing">
+  <section class="home-hero">
+    <div class="container home-hero-container">
+      <div class="home-hero-copy">
+        <h1>COMBATE<br>RASANTE</h1>
+        <p>
+          Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
+          Acompanhe relatórios, mapas e histórico das operações no painel do cliente.
+        </p>
 
-  <div class="container netflix-hero-content hero-single-column">
-    <div class="hero-left hero-left-wide">
-      <span class="hero-eyebrow">Tecnologia, precisão e rastreabilidade</span>
-      <h1>COMBATE<br>RASANTE</h1>
-      <p>
-        Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
-        Acompanhe relatórios, mapas e histórico das operações no painel do cliente.
-      </p>
-
-      <div class="hero-actions">
-        <a href="{{ url_for('auth.login') }}" class="btn-hero primary">Acessar Painel</a>
-        <a href="{{ url_for('main.servicos') }}" class="btn-hero secondary">Ver Serviços</a>
+        <div class="home-hero-actions">
+          <a href="{{ url_for('main.contato') }}" class="btn-hero primary">Contato</a>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<section class="netflix-section home-content-section unified-home-section">
-  <div class="container">
-    <div class="row-header single-row-header">
-      <h2>Áreas</h2>
-      <span class="row-link muted-link">Deslize para ver</span>
-    </div>
+  <section class="home-carousel-section">
+    <div class="container">
+      <div class="home-single-carousel" data-home-carousel>
+        <button class="home-carousel-btn left" type="button" aria-label="Voltar">&#8249;</button>
 
-    <div class="row-netflix single-home-carousel" data-row="areas-principais">
-      <button class="row-btn left" aria-label="Voltar">‹</button>
-
-      <div class="row-track">
-        <article class="card-netflix category-card">
-          <div class="card-top">
-            <span class="badge">Novidades</span>
+        <div class="home-carousel-track" data-home-track>
+          <article class="home-feature-card">
+            <span class="home-feature-badge">NOVIDADES</span>
             <h3>Novidades</h3>
-          </div>
-          <p>Dashboards, mapas, indicadores e novidades do painel em um só lugar.</p>
-          <div class="card-actions">
-            <a href="{{ url_for('main.tecnologia') }}" class="card-btn">Ver</a>
-          </div>
-        </article>
+            <p>Dashboards, mapas, indicadores e novidades do painel em um só lugar.</p>
+            <a href="{{ url_for('main.tecnologia') }}" class="home-feature-link">Ver</a>
+          </article>
 
-        <article class="card-netflix category-card">
-          <div class="card-top">
-            <span class="badge">Equipes</span>
+          <article class="home-feature-card">
+            <span class="home-feature-badge">EQUIPES</span>
             <h3>Equipes</h3>
-          </div>
-          <p>Pilotos, operação, planejamento e acompanhamento com foco em resultado.</p>
-          <div class="card-actions">
-            <a href="{{ url_for('main.servicos') }}" class="card-btn">Ver</a>
-          </div>
-        </article>
+            <p>Pilotos, operação, planejamento e acompanhamento com foco em resultado.</p>
+            <a href="{{ url_for('main.servicos') }}" class="home-feature-link">Ver</a>
+          </article>
 
-        <article class="card-netflix category-card">
-          <div class="card-top">
-            <span class="badge">Atividades</span>
+          <article class="home-feature-card">
+            <span class="home-feature-badge">ATIVIDADES</span>
             <h3>Atividades</h3>
-          </div>
-          <p>Pulverização, rastreabilidade, relatórios e histórico operacional organizado.</p>
-          <div class="card-actions">
-            <a href="{{ url_for('main.servicos') }}" class="card-btn">Ver</a>
-          </div>
-        </article>
+            <p>Pulverização, rastreabilidade, relatórios e histórico operacional organizado.</p>
+            <a href="{{ url_for('main.servicos') }}" class="home-feature-link">Ver</a>
+          </article>
 
-        <article class="card-netflix category-card">
-          <div class="card-top">
-            <span class="badge">Clientes</span>
+          <article class="home-feature-card">
+            <span class="home-feature-badge">CLIENTES</span>
             <h3>Clientes</h3>
-          </div>
-          <p>Área do cliente, arquivos, imagens e informações com acesso simples e rápido.</p>
-          <div class="card-actions">
-            <a href="{{ url_for('main.contato') }}" class="card-btn">Contato</a>
-          </div>
-        </article>
+            <p>Área do cliente, arquivos, imagens e informações com acesso simples e rápido.</p>
+            <a href="{{ url_for('main.contato') }}" class="home-feature-link">Contato</a>
+          </article>
+        </div>
+
+        <button class="home-carousel-btn right" type="button" aria-label="Avançar">&#8250;</button>
       </div>
-
-      <button class="row-btn right" aria-label="Avançar">›</button>
     </div>
-  </div>
-</section>
-{% endblock %}
+  </section>
+</div>
 
-{% block extra_js %}
 <script>
-(function () {
-  const row = document.querySelector('.row-netflix.single-home-carousel');
-  if (!row) return;
+  (function () {
+    const root = document.querySelector("[data-home-carousel]");
+    if (!root) return;
 
-  const track = row.querySelector('.row-track');
-  const prev = row.querySelector('.row-btn.left');
-  const next = row.querySelector('.row-btn.right');
-  if (!track) return;
+    const track = root.querySelector("[data-home-track]");
+    const prev = root.querySelector(".home-carousel-btn.left");
+    const next = root.querySelector(".home-carousel-btn.right");
 
-  function getStep() {
-    const card = track.querySelector('.card-netflix');
-    if (!card) return track.clientWidth;
-    const style = window.getComputedStyle(track);
-    const gap = parseFloat(style.gap || style.columnGap || '0') || 0;
-    return card.getBoundingClientRect().width + gap;
-  }
+    function getStep() {
+      const card = track.querySelector(".home-feature-card");
+      if (!card) return 260;
+      const cardWidth = card.getBoundingClientRect().width;
+      const styles = window.getComputedStyle(track);
+      const gap = parseFloat(styles.gap || styles.columnGap || 16) || 16;
+      return cardWidth + gap;
+    }
 
-  function getCardsPerView() {
-    const w = window.innerWidth;
-    if (w <= 640) return 2;
-    if (w <= 980) return 2;
-    return 3;
-  }
+    function scrollTrack(direction) {
+      track.scrollBy({
+        left: getStep() * direction,
+        behavior: "smooth"
+      });
+    }
 
-  function scrollByCards(direction) {
-    const amount = getStep() * getCardsPerView() * direction;
-    track.scrollBy({ left: amount, behavior: 'smooth' });
-  }
+    if (prev) prev.addEventListener("click", function (e) {
+      e.preventDefault();
+      scrollTrack(-1);
+    });
 
-  prev && prev.addEventListener('click', function () {
-    scrollByCards(-1);
-  });
-
-  next && next.addEventListener('click', function () {
-    scrollByCards(1);
-  });
-})();
+    if (next) next.addEventListener("click", function (e) {
+      e.preventDefault();
+      scrollTrack(1);
+    });
+  })();
 </script>
 {% endblock %}
