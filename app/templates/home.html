@@ -1,6 +1,5 @@
 {% extends "layout.html" %}
 {% block title %}COMBATE RASANTE - Aviação Agrícola{% endblock %}
-
 {% block content %}
 <div class="home-landing">
   <section class="home-hero">
@@ -11,7 +10,6 @@
           Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
           Acompanhe relatórios, mapas e histórico das operações no painel do cliente.
         </p>
-
         <div class="home-hero-actions">
           <a href="{{ url_for('main.contato') }}" class="btn-hero primary">Contato</a>
         </div>
@@ -25,33 +23,29 @@
         <button class="home-carousel-btn left" type="button" aria-label="Voltar">&#8249;</button>
 
         <div class="home-carousel-track" data-home-track>
-          <article class="home-feature-card">
+          <a href="{{ url_for('main.tecnologia') }}" class="home-feature-card">
             <span class="home-feature-badge">NOVIDADES</span>
             <h3>Novidades</h3>
             <p>Dashboards, mapas, indicadores e novidades do painel em um só lugar.</p>
-            <a href="{{ url_for('main.tecnologia') }}" class="home-feature-link">Ver</a>
-          </article>
+          </a>
 
-          <article class="home-feature-card">
+          <a href="{{ url_for('main.servicos') }}" class="home-feature-card">
             <span class="home-feature-badge">EQUIPES</span>
             <h3>Equipes</h3>
             <p>Pilotos, operação, planejamento e acompanhamento com foco em resultado.</p>
-            <a href="{{ url_for('main.servicos') }}" class="home-feature-link">Ver</a>
-          </article>
+          </a>
 
-          <article class="home-feature-card">
+          <a href="{{ url_for('main.servicos') }}" class="home-feature-card">
             <span class="home-feature-badge">ATIVIDADES</span>
             <h3>Atividades</h3>
             <p>Pulverização, rastreabilidade, relatórios e histórico operacional organizado.</p>
-            <a href="{{ url_for('main.servicos') }}" class="home-feature-link">Ver</a>
-          </article>
+          </a>
 
-          <article class="home-feature-card">
+          <a href="{{ url_for('main.contato') }}" class="home-feature-card">
             <span class="home-feature-badge">CLIENTES</span>
             <h3>Clientes</h3>
             <p>Área do cliente, arquivos, imagens e informações com acesso simples e rápido.</p>
-            <a href="{{ url_for('main.contato') }}" class="home-feature-link">Contato</a>
-          </article>
+          </a>
         </div>
 
         <button class="home-carousel-btn right" type="button" aria-label="Avançar">&#8250;</button>
@@ -61,61 +55,54 @@
 </div>
 
 <script>
-  (function () {
-    const root = document.querySelector("[data-home-carousel]");
-    if (!root) return;
+(function () {
+  const root = document.querySelector("[data-home-carousel]");
+  if (!root) return;
 
-    const track = root.querySelector("[data-home-track]");
-    const prev = root.querySelector(".home-carousel-btn.left");
-    const next = root.querySelector(".home-carousel-btn.right");
+  const track = root.querySelector("[data-home-track]");
+  const prev = root.querySelector(".home-carousel-btn.left");
+  const next = root.querySelector(".home-carousel-btn.right");
+  const cards = Array.from(track.querySelectorAll(".home-feature-card"));
 
-    function getCards() {
-      return Array.from(track.querySelectorAll(".home-feature-card"));
-    }
+  function getClosestIndex() {
+    if (!cards.length) return 0;
+    const left = track.scrollLeft;
+    let bestIndex = 0;
+    let bestDistance = Infinity;
 
-    function getCurrentIndex() {
-      const cards = getCards();
-      if (!cards.length) return 0;
+    cards.forEach((card, index) => {
+      const distance = Math.abs(card.offsetLeft - left - 18);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    });
 
-      const left = track.scrollLeft;
-      let bestIndex = 0;
-      let bestDistance = Infinity;
+    return bestIndex;
+  }
 
-      cards.forEach((card, index) => {
-        const distance = Math.abs(card.offsetLeft - left);
-        if (distance < bestDistance) {
-          bestDistance = distance;
-          bestIndex = index;
-        }
-      });
+  function goToIndex(index) {
+    const safeIndex = Math.max(0, Math.min(index, cards.length - 1));
+    const card = cards[safeIndex];
+    if (!card) return;
+    track.scrollTo({ left: card.offsetLeft - 18, behavior: "smooth" });
+  }
 
-      return bestIndex;
-    }
+  if (prev) {
+    prev.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      goToIndex(getClosestIndex() - 1);
+    });
+  }
 
-    function goToIndex(index) {
-      const cards = getCards();
-      if (!cards.length) return;
-
-      const safeIndex = Math.max(0, Math.min(index, cards.length - 1));
-      track.scrollTo({
-        left: cards[safeIndex].offsetLeft,
-        behavior: "smooth"
-      });
-    }
-
-    if (prev) {
-      prev.addEventListener("click", function (e) {
-        e.preventDefault();
-        goToIndex(getCurrentIndex() - 1);
-      });
-    }
-
-    if (next) {
-      next.addEventListener("click", function (e) {
-        e.preventDefault();
-        goToIndex(getCurrentIndex() + 1);
-      });
-    }
-  })();
+  if (next) {
+    next.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      goToIndex(getClosestIndex() + 1);
+    });
+  }
+})();
 </script>
 {% endblock %}
