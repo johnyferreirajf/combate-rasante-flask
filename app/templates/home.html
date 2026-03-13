@@ -69,28 +69,53 @@
     const prev = root.querySelector(".home-carousel-btn.left");
     const next = root.querySelector(".home-carousel-btn.right");
 
-    function getStep() {
-      const card = track.querySelector(".home-feature-card");
-      if (!card) return 260;
-      const cardWidth = card.getBoundingClientRect().width;
-      const styles = window.getComputedStyle(track);
-      const gap = parseFloat(styles.gap || styles.columnGap || 16) || 16;
-      return cardWidth + gap;
+    function getCards() {
+      return Array.from(track.querySelectorAll(".home-feature-card"));
     }
 
-    function scrollTrack(direction) {
-      track.scrollBy({ left: getStep() * direction, behavior: "smooth" });
+    function getCurrentIndex() {
+      const cards = getCards();
+      if (!cards.length) return 0;
+
+      const left = track.scrollLeft;
+      let bestIndex = 0;
+      let bestDistance = Infinity;
+
+      cards.forEach((card, index) => {
+        const distance = Math.abs(card.offsetLeft - left);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+
+      return bestIndex;
     }
 
-    if (prev) prev.addEventListener("click", function (e) {
-      e.preventDefault();
-      scrollTrack(-1);
-    });
+    function goToIndex(index) {
+      const cards = getCards();
+      if (!cards.length) return;
 
-    if (next) next.addEventListener("click", function (e) {
-      e.preventDefault();
-      scrollTrack(1);
-    });
+      const safeIndex = Math.max(0, Math.min(index, cards.length - 1));
+      track.scrollTo({
+        left: cards[safeIndex].offsetLeft,
+        behavior: "smooth"
+      });
+    }
+
+    if (prev) {
+      prev.addEventListener("click", function (e) {
+        e.preventDefault();
+        goToIndex(getCurrentIndex() - 1);
+      });
+    }
+
+    if (next) {
+      next.addEventListener("click", function (e) {
+        e.preventDefault();
+        goToIndex(getCurrentIndex() + 1);
+      });
+    }
   })();
 </script>
 {% endblock %}
