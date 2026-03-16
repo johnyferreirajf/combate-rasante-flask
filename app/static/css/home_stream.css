@@ -5,7 +5,7 @@
 .home-stream-hero{
   position: relative;
   min-height: auto;
-  padding: 18px 0 22px;
+  padding: 14px 0 30px;
   overflow: hidden;
 }
 
@@ -37,7 +37,7 @@
 
 .home-stream-copy{
   max-width: 780px;
-  margin: 0 auto 14px;
+  margin: 0 auto -8px;
 }
 
 .home-stream-pill{
@@ -85,7 +85,7 @@
 .stream-carousel{
   position: relative;
   width: 100%;
-  margin-top: 6px;
+  margin-top: -26px;
 }
 
 .stream-track{
@@ -222,7 +222,7 @@
    DOTS
 ======================================================= */
 .stream-dots{
-  margin-top: 8px;
+  margin-top: 14px;
   display: flex;
   justify-content: center;
   gap: 8px;
@@ -279,8 +279,8 @@ body.intro-lock{
 ======================================================= */
 @media (max-width: 980px){
   .home-stream-hero{
-    padding-top: 14px;
-    padding-bottom: 18px;
+    padding-top: 12px;
+    padding-bottom: 22px;
   }
 
   .home-stream-title{
@@ -307,7 +307,7 @@ body.intro-lock{
 
   .home-stream-hero{
     padding-top: 8px;
-    padding-bottom: 14px;
+    padding-bottom: 16px;
   }
 
   .home-stream-container{
@@ -392,7 +392,7 @@ body.intro-lock{
   }
 
   .stream-dots{
-    margin-top: 6px;
+    margin-top: -26px;
     gap: 6px;
   }
 
@@ -415,5 +415,26 @@ body.intro-lock{
     flex: 0 0 calc((100% - 10px) / 2.05);
     min-height: 118px;
     padding: 9px;
+  }
+}
+
+
+@media (max-width: 980px){
+  .home-stream-copy{
+    margin: 0 auto 8px;
+  }
+
+  .stream-carousel{
+    margin-top: 2px;
+  }
+}
+
+@media (max-width: 768px){
+  .home-stream-copy{
+    margin-bottom: 10px;
+  }
+
+  .stream-carousel{
+    margin-top: 4px;
   }
 }
