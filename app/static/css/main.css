@@ -597,32 +597,6 @@ a {
   backdrop-filter: blur(6px);
 }
 
-.auth-panel-info {
-  max-width: 900px;
-  margin: 1.5rem auto 0;
-  padding: 1.7rem 2rem;
-}
-
-.auth-panel-info h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1.25rem;
-}
-
-.auth-panel-info p {
-  margin: 0 0 0.95rem;
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.auth-panel-info ul {
-  margin: 0;
-  padding-left: 1.2rem;
-}
-
-.auth-panel-info li + li {
-  margin-top: 0.25rem;
-}
-
 /* =======================================================
    DASHBOARD
 ======================================================= */
@@ -3616,5 +3590,152 @@ main {
 
   .page-panel-section-fill {
     min-height: auto !important;
+  }
+}
+
+/* =======================================================
+   AJUSTES FINAIS - MOBILE E NAVBAR
+======================================================= */
+
+@media (max-width: 768px) {
+  html,
+  body {
+    background-image: url("/static/img/hero-mobile-fixed.png") !important;
+    background-size: cover !important;
+    background-position: center top !important;
+    background-repeat: no-repeat !important;
+    background-attachment: scroll !important;
+    min-height: 100%;
+  }
+
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 500;
+  }
+
+  .navbar-inner {
+    min-height: 72px !important;
+    gap: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .navbar-logo {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .navbar-logo-img {
+    width: 34px !important;
+    height: 34px !important;
+    flex: 0 0 34px;
+  }
+
+  .navbar-logo-text {
+    min-width: 0;
+  }
+
+  .navbar-logo-title {
+    font-size: 0.72rem !important;
+    line-height: 1.02 !important;
+    letter-spacing: 0.02em !important;
+    white-space: nowrap;
+  }
+
+  .navbar-logo-subtitle {
+    font-size: 0.56rem !important;
+    line-height: 1.05 !important;
+    white-space: nowrap;
+  }
+
+  .navbar-toggle {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1.45rem !important;
+    border-radius: 12px !important;
+    flex: 0 0 38px;
+    margin-left: auto;
+  }
+
+  .navbar-links {
+    top: calc(100% + 8px) !important;
+    right: 10px !important;
+    left: 10px !important;
+    width: auto !important;
+    max-width: none !important;
+    padding: 10px !important;
+    gap: 7px !important;
+    border-radius: 18px !important;
+    background: rgba(18, 102, 59, 0.96) !important;
+    border: 1px solid rgba(255,255,255,0.16) !important;
+    box-shadow: 0 16px 34px rgba(0,0,0,0.26) !important;
+    backdrop-filter: blur(10px) !important;
+  }
+
+  .navbar-links.mobile-open {
+    display: flex !important;
+  }
+
+  .navbar-link,
+  .navbar-button {
+    width: 100% !important;
+    min-height: 40px !important;
+    padding: 0.72rem 0.82rem !important;
+    font-size: 0.84rem !important;
+    line-height: 1.15 !important;
+    border-radius: 12px !important;
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+  }
+
+  .flash-container {
+    top: 84px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .container {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .navbar-inner {
+    min-height: 68px !important;
+    gap: 8px;
+  }
+
+  .navbar-logo-img {
+    width: 30px !important;
+    height: 30px !important;
+    flex-basis: 30px;
+  }
+
+  .navbar-logo-title {
+    font-size: 0.64rem !important;
+  }
+
+  .navbar-logo-subtitle {
+    font-size: 0.52rem !important;
+  }
+
+  .navbar-toggle {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 1.32rem !important;
+  }
+
+  .navbar-links {
+    left: 8px !important;
+    right: 8px !important;
+    padding: 9px !important;
+    gap: 6px !important;
+  }
+
+  .navbar-link,
+  .navbar-button {
+    font-size: 0.78rem !important;
+    padding: 0.66rem 0.7rem !important;
   }
 }
