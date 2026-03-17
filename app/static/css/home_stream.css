@@ -5,7 +5,7 @@
 .home-stream-hero{
   position: relative;
   min-height: auto;
-  padding: 18px 0 34px;
+  padding: 18px 0 22px;
   overflow: hidden;
 }
 
@@ -37,22 +37,19 @@
 
 .home-stream-copy{
   max-width: 780px;
-  margin: 0 auto 10px;
+  margin: 0 auto 14px;
 }
 
 .home-stream-pill{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-    padding: 8px 15px;
+  display: inline-block;
+  padding: 8px 15px;
   border-radius: 999px;
   font-size: 12px;
   color: #18d26b;
   border: 1px solid rgba(24,210,107,0.45);
   background: rgba(8, 18, 14, 0.42);
   backdrop-filter: blur(6px);
-  margin-bottom: 12px;
-  box-shadow: 0 10px 26px rgba(0,0,0,0.18);
+  margin-bottom: 14px;
 }
 
 .home-stream-title{
@@ -85,21 +82,17 @@
 /* =======================================================
    CARROSSEL
 ======================================================= */
-.stream-pill-top{
-  margin: 8px auto 16px;
-}
-
 .stream-carousel{
   position: relative;
   width: 100%;
-  margin-top: 14px;
+  margin-top: 6px;
 }
 
 .stream-track{
   display: flex;
   gap: 14px;
   overflow-x: auto;
-  padding: 6px 4px 12px 4px;
+  padding: 6px 4px 10px 4px;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   scrollbar-width: none;
@@ -116,11 +109,10 @@
   border-radius: 20px;
   padding: 14px;
   text-align: left;
-  background: rgba(52, 120, 72, 0.30);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.30);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(10, 12, 16, 0.58);
+  border: 1px solid rgba(24,210,107,0.35);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.32);
+  backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
   text-decoration: none;
@@ -132,14 +124,14 @@
   content:"";
   position:absolute;
   inset:-40px;
-  background: radial-gradient(circle at left, rgba(255,255,255,0.10), transparent 58%);
+  background: radial-gradient(circle at left, rgba(24,210,107,0.14), transparent 55%);
   pointer-events:none;
 }
 
 .stream-tile:hover{
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.26);
-  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.34);
+  border-color: rgba(24,210,107,0.55);
+  box-shadow: 0 20px 55px rgba(0,0,0,0.40);
 }
 
 .tile-top{
@@ -149,12 +141,13 @@
 }
 
 .tile-badge{
-    font-size: 10px;
+  display: inline-block;
+  font-size: 10px;
   padding: 6px 10px;
   border-radius: 999px;
   color: #18d26b;
   border: 1px solid rgba(24,210,107,0.45);
-  background: rgba(52, 120, 72, 0.22);
+  background: rgba(8, 18, 14, 0.38);
 }
 
 .tile-icon{
@@ -165,8 +158,8 @@
   justify-content: center;
   border-radius: 12px;
   margin-bottom: 10px;
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(24,210,107,0.15);
+  border: 1px solid rgba(24,210,107,0.35);
   color: #18d26b;
   font-size: 16px;
 }
@@ -207,7 +200,7 @@
   height: 40px;
   border-radius: 999px;
   border: 1px solid rgba(255,255,255,0.18);
-  background: rgba(0,0,0,0.28);
+  background: rgba(0,0,0,0.35);
   color: rgba(255,255,255,0.92);
   font-size: 22px;
   cursor: pointer;
@@ -340,9 +333,6 @@ body.intro-lock{
   }
 
   .home-stream-pill{
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
     font-size: 10px;
     padding: 6px 11px;
     margin-bottom: 10px;
@@ -428,13 +418,165 @@ body.intro-lock{
   }
 }
 
+/* =======================================================
+   AJUSTES FINAIS - CARROSSEL E MOBILE
+======================================================= */
 
-@media (max-width: 768px){
-  .stream-pill-top{
-    margin: 6px auto 14px;
+.home-stream-hero::before {
+  background: none !important;
+}
+
+.home-stream-hero {
+  padding-top: 22px;
+  padding-bottom: 30px;
+}
+
+.home-stream-container {
+  max-width: 1160px;
+}
+
+.home-stream-copy {
+  margin: 0 auto 22px;
+}
+
+.home-stream-pill {
+  margin-bottom: 16px;
+}
+
+.stream-carousel {
+  margin-top: 18px;
+}
+
+.stream-track {
+  padding-top: 4px;
+}
+
+.stream-tile {
+  background: linear-gradient(180deg, rgba(108, 205, 122, 0.56), rgba(41, 169, 72, 0.52)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 14px 28px rgba(8, 40, 18, 0.12) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+.stream-tile::before {
+  display: none !important;
+}
+
+.tile-badge,
+.home-stream-pill {
+  background: rgba(8, 18, 14, 0.24) !important;
+}
+
+@media (max-width: 768px) {
+  .home-stream-hero {
+    padding-top: 12px;
+    padding-bottom: 22px;
   }
 
-  .stream-carousel{
-    margin-top: 10px;
+  .home-stream-container {
+    padding: 0 10px;
+  }
+
+  .home-stream-copy {
+    max-width: 100%;
+    margin-bottom: 14px;
+  }
+
+  .home-stream-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+  }
+
+  .home-stream-title {
+    font-size: 18px;
+    line-height: 1.06;
+    margin-bottom: 6px;
+    letter-spacing: 0.2px;
+    -webkit-text-stroke: 0;
+    text-shadow: 0 3px 10px rgba(0,0,0,0.30);
+  }
+
+  .home-stream-subtitle {
+    max-width: 94%;
+    font-size: 11px;
+    line-height: 1.28;
+  }
+
+  .stream-carousel {
+    margin-top: 12px;
+  }
+
+  .stream-track {
+    gap: 8px;
+    padding: 2px 2px 8px;
+  }
+
+  .stream-tile {
+    flex: 0 0 calc((100% - 8px) / 2);
+    min-height: 136px;
+    padding: 9px;
+    border-radius: 16px;
+  }
+
+  .tile-icon {
+    width: 26px;
+    height: 26px;
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  .tile-badge {
+    font-size: 7px;
+    padding: 4px 7px;
+  }
+
+  .tile-title {
+    font-size: 11px;
+    margin-bottom: 3px;
+  }
+
+  .tile-desc {
+    font-size: 9px;
+    line-height: 1.2;
+    margin-bottom: 4px;
+  }
+
+  .tile-list {
+    font-size: 8px;
+    line-height: 1.22;
+    padding-left: 12px;
+  }
+
+  .tile-list li {
+    margin: 1px 0;
+  }
+
+  .stream-dots {
+    margin-top: 5px;
+  }
+}
+
+@media (max-width: 420px) {
+  .home-stream-hero {
+    padding-top: 10px;
+    padding-bottom: 18px;
+  }
+
+  .home-stream-title {
+    font-size: 17px;
+  }
+
+  .home-stream-subtitle {
+    max-width: 100%;
+    font-size: 10px;
+  }
+
+  .stream-tile {
+    min-height: 128px;
+    padding: 8px;
   }
 }
