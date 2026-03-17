@@ -597,6 +597,32 @@ a {
   backdrop-filter: blur(6px);
 }
 
+.auth-panel-info {
+  max-width: 900px;
+  margin: 1.5rem auto 0;
+  padding: 1.7rem 2rem;
+}
+
+.auth-panel-info h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+}
+
+.auth-panel-info p {
+  margin: 0 0 0.95rem;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-panel-info ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.auth-panel-info li + li {
+  margin-top: 0.25rem;
+}
+
 /* =======================================================
    DASHBOARD
 ======================================================= */
@@ -3590,55 +3616,5 @@ main {
 
   .page-panel-section-fill {
     min-height: auto !important;
-  }
-}
-
-/* =======================================================
-   AJUSTES DE PADRÃO - TECNOLOGIA E LOGIN
-======================================================= */
-.tech-bubbles-column,
-.tech-bubble,
-.tech-bubble-title {
-  all: unset;
-}
-
-.login-info-card {
-  max-width: 900px;
-  margin: 1.5rem auto 3rem;
-  padding: 1.5rem 2rem;
-  border-radius: 24px;
-  background: rgba(52, 120, 72, 0.30) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  backdrop-filter: blur(8px) !important;
-  color: #ffffff !important;
-  box-shadow: none !important;
-}
-
-.login-info-card h2,
-.login-info-card p,
-.login-info-card li {
-  color: #ffffff !important;
-}
-
-.login-info-card h2 {
-  margin: 0 0 0.65rem;
-  font-size: 1.25rem;
-}
-
-.login-info-card p {
-  margin: 0 0 0.9rem;
-  line-height: 1.55;
-}
-
-.login-info-card ul {
-  margin: 0;
-  padding-left: 1.1rem;
-}
-
-@media (max-width: 768px) {
-  .login-info-card {
-    margin: 1rem auto 0;
-    padding: 1rem 1rem;
-    border-radius: 20px;
   }
 }
