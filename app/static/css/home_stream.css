@@ -67,13 +67,16 @@
   position: relative;
   width: 100%;
   margin-top: 18px;
+  /* padding lateral reserva espaço para as setas fora dos cards */
+  padding: 0 48px;
+  box-sizing: border-box;
 }
 
 .stream-track {
   display: flex;
   gap: 14px;
   overflow-x: auto;
-  padding: 4px 4px 10px 4px;
+  padding: 4px 0 10px 0;
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   scrollbar-width: none;
@@ -189,8 +192,8 @@
   color: #18d26b;
 }
 
-.stream-prev { left: -4px; }
-.stream-next { right: -4px; }
+.stream-prev { left: 4px; }
+.stream-next { right: 4px; }
 
 /* =======================================================
    DOTS
@@ -265,8 +268,8 @@ body.intro-lock {
     min-height: 172px;
   }
 
-  .stream-prev { left: 0; }
-  .stream-next { right: 0; }
+  .stream-prev { left: 4px; }
+  .stream-next { right: 4px; }
 }
 
 /* =======================================================
@@ -309,7 +312,7 @@ body.intro-lock {
     line-height: 1.28;
   }
 
-  .stream-carousel { margin-top: 12px; }
+  .stream-carousel { margin-top: 12px; padding: 0 4px; }
 
   .stream-track {
     gap: 8px;

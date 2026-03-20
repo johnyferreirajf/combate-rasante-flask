@@ -181,13 +181,13 @@ main,
 }
 
 /* =======================================================
-   HOME HERO
+   HOME HERO  (altura livre para rolar a página)
 ======================================================= */
 .home-hero {
-  min-height: calc(100vh - 78px);
   display: flex;
   align-items: center;
-  padding: 3rem 0 1rem;
+  padding: 5rem 0 2rem;
+  /* sem min-height: não prende o scroll */
 }
 
 .home-hero-copy {
@@ -234,14 +234,18 @@ main,
 }
 
 /* =======================================================
-   CARROSSEL HOME  (transparência: 20%)
+   CARROSSEL HOME
+   — setas fora do fluxo dos cards (padding lateral)
+   — transparência: 20%
 ======================================================= */
 .home-carousel-section {
-  padding: 0 0 2rem;
+  padding: 0 0 3rem;
 }
 
 .home-single-carousel {
   position: relative;
+  /* padding lateral deixa espaço para as setas sem cobrir os cards */
+  padding: 0 48px;
 }
 
 .home-carousel-track {
@@ -250,7 +254,7 @@ main,
   grid-auto-columns: calc((100% - 24px) / 3);
   gap: 12px;
   overflow-x: auto;
-  padding: 0 18px;
+  padding: 6px 0 10px;
   scroll-behavior: smooth;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -269,6 +273,12 @@ main,
   border: 1px solid rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(8px);
   color: #ffffff;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.home-feature-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.32);
 }
 
 .home-feature-badge {
@@ -294,23 +304,32 @@ main,
   color: #ffffff;
 }
 
+/* Setas posicionadas nas bordas do wrapper, fora da área dos cards */
 .home-carousel-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 5;
-  width: 42px;
-  height: 42px;
-  border: none;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 999px;
-  background: rgba(7, 33, 24, 0.62);
+  background: rgba(7, 33, 24, 0.55);
   color: #ffffff;
-  font-size: 1.8rem;
+  font-size: 1.6rem;
+  line-height: 1;
   cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.home-carousel-btn.left { left: -6px; }
-.home-carousel-btn.right { right: -6px; }
+.home-carousel-btn:hover {
+  background: rgba(7, 33, 24, 0.80);
+  border-color: rgba(24, 210, 107, 0.55);
+}
+
+.home-carousel-btn.left  { left: 0; }
+.home-carousel-btn.right { right: 0; }
 
 /* =======================================================
    BALÕES / CARDS GENÉRICOS
@@ -358,6 +377,32 @@ main,
 .login-info-card *,
 .dashboard-welcome-card * {
   color: #ffffff;
+}
+
+/* =======================================================
+   BOTÃO ENVIAR MENSAGEM (contato)
+======================================================= */
+.btn-enviar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0.75rem 1.6rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.30);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  margin-top: 0.4rem;
+}
+
+.btn-enviar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(22, 163, 74, 0.42);
 }
 
 /* =======================================================
@@ -477,6 +522,11 @@ textarea.form-control {
   border: 1px solid rgba(255, 255, 255, 0.18);
   backdrop-filter: blur(8px);
   transition: transform 0.18s ease, border-color 0.18s ease;
+  margin-bottom: 10px;
+}
+
+.social-item:last-child {
+  margin-bottom: 0;
 }
 
 .social-item:hover {
@@ -497,16 +547,20 @@ textarea.form-control {
   object-fit: cover;
 }
 
+/* mapa Google */
 .map-embed {
   overflow: hidden;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  margin-top: 14px;
 }
 
 .map-embed iframe {
   width: 100%;
-  min-height: 280px;
+  height: 180px;
   display: block;
+  border: 0;
+  border-radius: 12px;
 }
 
 /* =======================================================
@@ -683,44 +737,25 @@ textarea.form-control {
   padding: 2rem 2.3rem;
 }
 
-.auth-panel h1,
-.auth-panel h2,
-.auth-panel h3,
-.auth-panel p,
-.auth-panel label,
-.login-panel h1,
-.login-panel p,
-.login-panel label,
-.login-box h1,
-.login-box p,
-.login-box label,
-.login-card h1,
-.login-card p,
-.login-card label {
+.auth-panel h1, .auth-panel h2, .auth-panel h3,
+.auth-panel p, .auth-panel label,
+.login-panel h1, .login-panel p, .login-panel label,
+.login-box h1, .login-box p, .login-box label,
+.login-card h1, .login-card p, .login-card label {
   color: #ffffff;
 }
 
-.auth-panel input,
-.auth-panel select,
-.auth-panel textarea,
-.login-panel input,
-.login-panel select,
-.login-panel textarea,
-.login-box input,
-.login-box select,
-.login-box textarea,
-.login-card input,
-.login-card select,
-.login-card textarea {
+.auth-panel input, .auth-panel select, .auth-panel textarea,
+.login-panel input, .login-panel select, .login-panel textarea,
+.login-box input, .login-box select, .login-box textarea,
+.login-card input, .login-card select, .login-card textarea {
   background: rgba(255, 255, 255, 0.92) !important;
   color: #0b1a13 !important;
   border: 1px solid rgba(255, 255, 255, 0.24) !important;
 }
 
-.auth-panel button,
-.login-panel button,
-.login-box button,
-.login-card button {
+.auth-panel button, .login-panel button,
+.login-box button, .login-card button {
   background: linear-gradient(to right, #22c55e, #16a34a);
   color: #ffffff;
   border: none;
@@ -784,9 +819,7 @@ textarea.form-control {
   font-size: 1.35rem;
 }
 
-.footer-logo-subtitle {
-  font-size: 1rem;
-}
+.footer-logo-subtitle { font-size: 1rem; }
 
 .footer-text,
 .footer-list {
@@ -942,7 +975,7 @@ textarea.form-control {
 }
 
 /* =======================================================
-   RESPONSIVIDADE - TABLET
+   RESPONSIVIDADE — TABLET
 ======================================================= */
 @media (max-width: 1024px) {
   .home-carousel-track {
@@ -966,7 +999,7 @@ textarea.form-control {
 }
 
 /* =======================================================
-   RESPONSIVIDADE - MOBILE
+   RESPONSIVIDADE — MOBILE
 ======================================================= */
 @media (max-width: 768px) {
   html,
@@ -1012,12 +1045,7 @@ textarea.form-control {
     min-height: 40px;
   }
 
-  .navbar-logo-img {
-    width: 34px;
-    height: 34px;
-    flex: 0 0 34px;
-  }
-
+  .navbar-logo-img { width: 34px; height: 34px; flex: 0 0 34px; }
   .navbar-logo-title { font-size: 0.72rem; white-space: nowrap; }
   .navbar-logo-subtitle { font-size: 0.56rem; white-space: nowrap; }
 
@@ -1031,8 +1059,7 @@ textarea.form-control {
   }
 
   .home-hero {
-    min-height: auto;
-    padding: 2rem 0 0.6rem;
+    padding: 3rem 0 1.5rem;
   }
 
   .home-hero-copy { max-width: 100%; }
@@ -1048,19 +1075,16 @@ textarea.form-control {
   }
 
   .home-hero-actions { margin-top: 1rem; }
+  .btn-hero { width: 100%; min-height: 42px; padding: 0.72rem 1rem; }
 
-  .btn-hero {
-    width: 100%;
-    min-height: 42px;
-    padding: 0.72rem 1rem;
-  }
+  .home-carousel-section { padding-bottom: 1.5rem; }
 
-  .home-carousel-section { padding-bottom: 1.1rem; }
+  /* mobile: setas menores, padding reduzido */
+  .home-single-carousel { padding: 0 36px; }
 
   .home-carousel-track {
     grid-auto-columns: 82%;
     gap: 10px;
-    padding: 0 18px;
     scroll-snap-type: x mandatory;
   }
 
@@ -1071,68 +1095,36 @@ textarea.form-control {
     scroll-snap-align: center;
   }
 
-  .home-feature-card p {
-    margin-top: 0.15rem;
-    font-size: 0.82rem;
-    line-height: 1.28;
-  }
+  .home-feature-card p { margin-top: 0.15rem; font-size: 0.82rem; line-height: 1.28; }
+  .home-feature-badge { font-size: 0.58rem; padding: 0.20rem 0.46rem; }
 
-  .home-feature-badge {
-    font-size: 0.58rem;
-    padding: 0.20rem 0.46rem;
-  }
+  .home-carousel-btn { width: 30px; height: 30px; font-size: 1.2rem; }
 
-  .home-carousel-btn {
-    width: 34px;
-    height: 34px;
-    font-size: 1.35rem;
-  }
-
-  .home-carousel-btn.left { left: -2px; }
-  .home-carousel-btn.right { right: -2px; }
-
-  .section,
-  .section-alt { padding: 2.2rem 0; }
+  .section, .section-alt { padding: 2.2rem 0; }
 
   .page-panel-section { padding: 1.8rem 0 1rem; }
   .page-panel-section-fill { min-height: auto; }
 
-  .page-balloon {
-    padding: 1rem;
-    border-radius: 20px;
-  }
-
+  .page-balloon { padding: 1rem; border-radius: 20px; }
   .page-balloon h1 { font-size: 1.8rem; }
   .page-balloon h3 { font-size: 1.08rem; }
   .page-balloon p { font-size: 0.92rem; line-height: 1.45; }
 
-  .page-grid,
-  .footer-grid,
-  .contact-grid {
+  .page-grid, .footer-grid, .contact-grid {
     grid-template-columns: 1fr;
     gap: 12px;
   }
 
   .team-hero { padding: 28px 14px 24px; min-height: auto; }
   .team-header h1 { font-size: 1.8rem; }
-
-  .team-grid,
-  .team-grid-5 { grid-template-columns: 1fr; }
-
+  .team-grid, .team-grid-5 { grid-template-columns: 1fr; }
   .team-card { padding: 14px; border-radius: 18px; }
   .team-avatar { width: 44px; height: 44px; }
   .team-name { font-size: 1rem; }
-
-  .team-badge,
-  .team-chip,
-  .team-pill { font-size: 10px; padding: 5px 8px; }
+  .team-badge, .team-chip, .team-pill { font-size: 10px; padding: 5px 8px; }
 
   .footer { margin-top: 16px; }
-
-  .footer-grid {
-    gap: 12px;
-    padding: 16px 0;
-  }
+  .footer-grid { gap: 12px; padding: 16px 0; }
 
   .flash-container {
     width: auto;
@@ -1151,21 +1143,20 @@ textarea.form-control {
     line-height: 1.2;
     border-radius: 10px;
   }
+
+  .btn-enviar {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 420px) {
   .container { padding-left: 12px; padding-right: 12px; }
-
   .navbar-inner { min-height: 68px; gap: 8px; }
-
   .navbar-logo-img { width: 30px; height: 30px; flex-basis: 30px; }
   .navbar-logo-title { font-size: 0.64rem; }
   .navbar-logo-subtitle { font-size: 0.52rem; }
-
   .navbar-toggle { width: 36px; height: 36px; font-size: 1.32rem; }
-
   .navbar-links { left: 8px; right: 8px; padding: 9px; gap: 6px; }
-
-  .navbar-link,
-  .navbar-button { font-size: 0.78rem; padding: 0.66rem 0.7rem; }
+  .navbar-link, .navbar-button { font-size: 0.78rem; padding: 0.66rem 0.7rem; }
 }
