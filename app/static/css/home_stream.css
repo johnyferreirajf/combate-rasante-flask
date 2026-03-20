@@ -109,7 +109,7 @@
   border-radius: 20px;
   padding: 14px;
   text-align: left;
-  background: rgba(200, 215, 195, 0.10);
+  background: rgba(200, 215, 195, 0.90);
   border: 1px solid rgba(255,255,255,0.14);
   box-shadow: 0 8px 24px rgba(0,0,0,0.14);
   backdrop-filter: blur(10px);
