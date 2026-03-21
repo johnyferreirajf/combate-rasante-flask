@@ -232,17 +232,24 @@ body.intro-lock {
   z-index: 9999;
   background: #000;
   opacity: 1;
-  height: 100svh;
   width: 100%;
+  height: 100%;
+  /* fallback para browsers sem svh */
+  height: 100vh;
+  height: 100svh;
 }
 
 #intro-video video {
   width: 100%;
   height: 100%;
   display: block;
+  /* cover garante preenchimento total; center center mantém o foco no meio */
   object-fit: cover;
-  object-position: center;
+  object-position: center center;
   background: #000;
+  /* força o video a ocupar a janela toda em qualquer proporção */
+  min-width: 100%;
+  min-height: 100%;
 }
 
 #intro-video.hide {

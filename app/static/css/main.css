@@ -30,10 +30,17 @@ body {
   color: #ffffff;
   background-image: url("/static/img/hero-combate.jpeg");
   background-size: cover;
-  background-position: center center;
+  background-position: center top;
   background-repeat: no-repeat;
   background-attachment: fixed;
   background-color: #04150f;
+}
+
+/* Safari/iOS fix: fixed attachment não funciona no iOS — usa scroll com hack */
+@supports (-webkit-touch-callout: none) {
+  body {
+    background-attachment: scroll;
+  }
 }
 
 main {
@@ -1034,7 +1041,8 @@ textarea.form-control {
 ======================================================= */
 @media (max-width: 768px) {
   body {
-    background-image: url("/static/img/hero-mobile-fixed.png");
+    background-image: url("/static/img/hero-mobile-fixed.jpg");
+    background-size: cover;
     background-position: center top;
     background-attachment: scroll;
   }
