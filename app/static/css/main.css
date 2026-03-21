@@ -16,11 +16,16 @@
   box-sizing: border-box;
 }
 
-html,
+html {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
-  min-height: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   color: #ffffff;
   background-image: url("/static/img/hero-combate.jpeg");
@@ -31,13 +36,10 @@ body {
   background-color: #04150f;
 }
 
-body {
+main {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-}
-
-main {
-  flex: 1 0 auto;
 }
 
 img {
@@ -788,7 +790,7 @@ textarea.form-control {
    FOOTER
 ======================================================= */
 .footer {
-  margin-top: auto;
+  flex-shrink: 0;
   background: rgba(3, 58, 36, 0.84);
   backdrop-filter: blur(6px);
   color: #e5fdf0;
@@ -1002,7 +1004,6 @@ textarea.form-control {
    RESPONSIVIDADE — MOBILE
 ======================================================= */
 @media (max-width: 768px) {
-  html,
   body {
     background-image: url("/static/img/hero-mobile-fixed.png");
     background-position: center top;
