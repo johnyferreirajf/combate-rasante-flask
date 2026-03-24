@@ -28,7 +28,7 @@ body {
   flex-direction: column;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
   color: #ffffff;
-  background-image: url("/static/img/hero-combate.jpeg");
+  background-image: url("/static/img/hero-combate.png");
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
