@@ -434,12 +434,12 @@ textarea.form-control {
     /* Menu dropdown mobile */
     display: none;
     position: absolute;
-    top: calc(var(--navbar-height) + 6px);
-    inset-inline: 12px;
+    top: calc(var(--navbar-height) + 4px);
+    inset-inline: 10px;
     flex-direction: column;
     align-items: stretch;
-    gap: 4px;
-    padding: 12px;
+    gap: 3px;
+    padding: 8px;
     border-radius: var(--radius-xl);
     background: rgba(10, 80, 45, 0.97);
     border: 1px solid var(--color-border);
@@ -454,10 +454,10 @@ textarea.form-control {
   .navbar__link {
     width: 100%;
     justify-content: center;
-    height: 46px;
-    font-size: var(--text-base);
+    height: 38px;
+    font-size: 0.88rem;
     background: rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-md);
+    border-radius: 10px;
   }
 
   .navbar__link--cta {
@@ -1085,17 +1085,26 @@ textarea.form-control {
   }
 
   /* ─ Carousel ─ */
-  .carousel { padding-inline: 40px; }
+  .carousel { padding-inline: 10px; }
 
   .carousel__track {
-    grid-auto-columns: 80%;
+    grid-auto-columns: 58%;   /* ~1.5 visíveis dá dica de scroll */
     scroll-snap-type: x mandatory;
+    gap: 10px;
   }
 
   .feature-card {
-    min-height: 140px;
-    scroll-snap-align: center;
+    min-height: 120px;
+    padding: 12px;
+    border-radius: 16px;
+    scroll-snap-align: start;
   }
+
+  .feature-card__text  { font-size: 0.88rem; margin-top: 6px; }
+  .feature-card__badge { font-size: 0.68rem; }
+
+  /* Esconde setas no mobile — swipe já funciona */
+  .carousel__btn { display: none; }
 
   /* ─ Page ─ */
   .page-section { padding-block: var(--space-lg); }
@@ -1119,10 +1128,25 @@ textarea.form-control {
   .team-section { padding-block: var(--space-lg) var(--space-xl); }
 
   /* ─ Footer ─ */
+  /* Mobile: esconde colunas de endereço, mostra só brand + copyright */
   .footer__grid {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-md);
-    padding-block: var(--space-md);
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding-block: 10px 6px;
+  }
+
+  /* Esconde colunas de endereço no mobile para não ocupar tela */
+  .footer__grid > div:not(:first-child) {
+    display: none;
+  }
+
+  /* Brand compacto em linha única */
+  .footer__brand { margin-bottom: 4px; }
+  .footer__tagline { font-size: 0.7rem; line-height: 1.4; }
+
+  .footer__bottom {
+    padding-block: 6px;
+    font-size: 0.65rem;
   }
 
   /* ─ Flash ─ */
