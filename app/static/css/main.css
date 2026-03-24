@@ -1221,17 +1221,45 @@ textarea.form-control {
   .team-desc { font-size: 0.88rem; }
 
   /* ── Footer ── */
-  .footer { margin-top: 16px; }
+  .footer {
+    margin-top: 12px;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
   .footer-grid {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    padding: 14px 0;
+    padding: 10px 0 8px;
   }
-  .footer-logo-title { font-size: 0.82rem; }
-  .footer-logo-subtitle { font-size: 0.68rem; }
-  .footer-text, .footer-list { font-size: 0.74rem; line-height: 1.5; }
-  .footer-heading { font-size: 0.78rem; }
-  .footer-bottom { font-size: 0.7rem; padding: 6px 0; }
+  .footer-logo {
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .footer-logo-img {
+    width: 34px;
+    height: 34px;
+  }
+  .footer-logo-title { font-size: 0.8rem; }
+  .footer-logo-subtitle { font-size: 0.66rem; }
+  .footer-text, .footer-list {
+    font-size: 0.72rem;
+    line-height: 1.42;
+    margin-top: 6px;
+  }
+  .footer-list {
+    padding-left: 0;
+    margin-bottom: 0;
+  }
+  .footer-list li { margin-bottom: 4px; }
+  .footer-heading {
+    font-size: 0.76rem;
+    margin: 0 0 6px;
+  }
+  .footer-bottom {
+    font-size: 0.64rem;
+    line-height: 1.25;
+    padding: 4px 10px;
+    text-align: center;
+  }
 
   /* ── Flash ── */
   .flash-container {
@@ -1278,5 +1306,13 @@ textarea.form-control {
   .page-balloon h3 { font-size: 0.95rem; }
   .page-balloon p { font-size: 0.86rem; }
 
-  .footer-grid { grid-template-columns: 1fr; gap: 8px; }
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 8px 0 6px;
+  }
+  .footer-bottom {
+    font-size: 0.6rem;
+    padding: 4px 8px;
+  }
 }
