@@ -61,7 +61,7 @@
 
   /* verifica se foi exibido dentro da última hora */
   const lastShown = parseInt(localStorage.getItem(INTRO_KEY) || "0", 10);
-  const alreadySeen = (Date.now() - lastShown) < INTRO_TTL;
+  const alreadySeen = false;
 
   if (reduceMotion || alreadySeen) {
     wrap.remove();
