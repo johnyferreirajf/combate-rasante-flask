@@ -105,19 +105,18 @@ body {
   color: var(--color-text);
   background-color: var(--color-bg-body);
   background-image: url("/static/img/hero-combate.png");
-  background-size: cover;
-  background-position: center top;
+  background-size: cover;          /* preenche sem barras pretas */
+  background-position: center top; /* ancora o topo — avião visível */
   background-repeat: no-repeat;
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* iOS/Safari: background-attachment fixed trava o scroll — forçar scroll */
+/* iOS/Safari: fixed trava o scroll — forçar scroll, mantém cover */
 @supports (-webkit-touch-callout: none) {
   body {
     background-attachment: scroll;
-    background-size: cover;
   }
 }
 
@@ -1084,18 +1083,15 @@ textarea.form-control {
 @media (max-width: 768px) {
   body {
     /*
-     * Mobile responsivo:
-     * - scroll (sem fixed — iOS/Android não suportam bem)
-     * - contain: imagem aparece INTEIRA, sem corte
-     * - repeat-y: repete verticalmente se a página for longa
-     * - bg-color escuro cobre o resto da tela
+     * Mobile: usa hero-mobile-fixed.jpg (720x1189 portrait)
+     * Imagem feita especificamente para telas verticais
+     * cover preenche toda a tela sem barras e sem corte excessivo
      */
-    background-image: url("/static/img/hero-combate.png");
+    background-image: url("/static/img/hero-mobile-fixed.jpg");
     background-attachment: scroll;
-    background-size: 100% auto;    /* largura total, altura proporcional */
+    background-size: cover;
     background-position: top center;
     background-repeat: no-repeat;
-    background-color: #04150f;     /* cor sólida preenche abaixo da imagem */
   }
 
   /* ─ Carousel ─ */
