@@ -1,12 +1,21 @@
 {% extends "layout.html" %}
-{% block title %}Página não encontrada - COMBATE RASANTE{% endblock %}
+{% block title %}Página não encontrada — COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="section">
-  <div class="container not-found">
-    <h1>404</h1>
-    <p>A página que você procurou não foi encontrada.</p>
-    <a href="{{ url_for('main.index') }}" class="btn btn-primary">Voltar para o início</a>
+<section class="page-section section" style="text-align:center;">
+  <div class="container">
+
+    <div class="glass-card glass-card--wide" style="max-width:480px;margin-inline:auto;">
+      <p style="font-size:4rem;margin-bottom:var(--space-sm);">✈</p>
+      <h1 class="page-header__title">Página não encontrada</h1>
+      <p class="page-header__subtitle" style="margin-inline:auto;">
+        A página que você procura não existe ou foi movida.
+      </p>
+      <div class="mt-lg">
+        <a href="{{ url_for('main.index') }}" class="btn btn--primary">Voltar ao início</a>
+      </div>
+    </div>
+
   </div>
 </section>
 {% endblock %}

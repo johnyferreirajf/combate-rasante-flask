@@ -1,256 +1,94 @@
 {% extends "layout.html" %}
-{% block title %}Painel do Cliente - COMBATE RASANTE{% endblock %}
+{% block title %}Painel do Cliente — COMBATE RASANTE{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
 
 {% block content %}
-
-<style>
-  .section-dashboard{
-    padding-top: 7rem;
-    padding-bottom: 5rem;
-  }
-
-  .dashboard-info-card{
-    max-width: 900px;
-    margin: 0 auto 2rem auto;
-    padding: 1.8rem 2.4rem;
-    border-radius: 22px;
-    background: rgba(0, 200, 120, 0.35);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.5);
-    color: #042b18;
-  }
-
-  .dashboard-info-card h1{
-    margin: 0 0 0.6rem 0;
-    font-size: 1.6rem;
-    color: #02140b;
-  }
-
-  .dashboard-info-card h2{
-    margin: 0 0 0.5rem 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #02140b;
-  }
-
-  .dashboard-info-card p{
-    margin: 0;
-    font-size: 0.95rem;
-    line-height: 1.4;
-  }
-
-  /* Contorno branco pra melhorar visibilidade */
-  .panel-wrap{
-    max-width: 1150px;
-    margin: 0 auto;
-    padding: 18px;
-    border-radius: 22px;
-    border: 2px solid rgba(255,255,255,0.65);
-    background: rgba(255,255,255,0.10);
-    backdrop-filter: blur(6px);
-    box-shadow: 0 18px 42px rgba(0,0,0,0.35);
-  }
-
-  .grp{
-    margin-bottom: 14px;
-    border-radius: 18px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.30);
-    background: rgba(0,0,0,0.10);
-  }
-
-  details summary{
-    cursor: pointer;
-    padding: 12px 14px;
-    font-weight: 800;
-    color: #fff;
-    list-style: none;
-    display:flex;
-    align-items:center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  details summary::-webkit-details-marker{
-    display:none;
-  }
-
-  .badge{
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: 800;
-    background: rgba(255,255,255,0.18);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: #fff;
-  }
-
-  .inner{
-    padding: 12px 14px 18px 14px;
-  }
-
-  .day-title{
-    font-size: 15px;
-    font-weight: 900;
-    color: #ffffff;
-    margin: 10px 0 10px 0;
-    opacity: .95;
-  }
-
-  .grid{
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 14px;
-  }
-
-  .card{
-    border-radius: 18px;
-    background: rgba(255,255,255,0.10);
-    border: 1px solid rgba(255,255,255,0.22);
-    overflow:hidden;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-  }
-
-  .card img{
-    width: 100%;
-    height: 170px;
-    object-fit: cover;
-    display:block;
-    cursor: pointer;
-  }
-
-  .card .foot{
-    padding: 10px 12px;
-    color: #fff;
-    font-size: 13px;
-    opacity: .95;
-  }
-
-  /* Modal da imagem */
-  .img-modal{
-    position: fixed;
-    inset: 0;
-    display: none;
-    z-index: 9999;
-  }
-  .img-modal.active{ display: block; }
-
-  .img-modal-backdrop{
-    position:absolute;
-    inset:0;
-    background: rgba(0,0,0,0.75);
-    backdrop-filter: blur(4px);
-  }
-
-  .img-modal-photo{
-    position:absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%,-50%);
-    max-width: 92vw;
-    max-height: 88vh;
-    border-radius: 14px;
-    border: 2px solid rgba(255,255,255,0.35);
-    box-shadow: 0 30px 70px rgba(0,0,0,0.6);
-    background: #111;
-  }
-
-  .img-modal-close{
-    position:absolute;
-    top: 16px;
-    right: 18px;
-    border: none;
-    background: rgba(255,255,255,0.15);
-    color:#fff;
-    font-size: 20px;
-    border-radius: 12px;
-    padding: 10px 14px;
-    cursor:pointer;
-    border: 1px solid rgba(255,255,255,0.25);
-  }
-</style>
-
-<section class="section section-dashboard">
+<section class="dashboard-section section">
   <div class="container">
 
-    <div class="dashboard-info-card">
-      <h1>
-        Bem-vindo,
-        {{ (current_user.name if current_user and current_user.name else current_user.email) }}
+    {# ── Welcome ── #}
+    <div class="dashboard-welcome">
+      <h1 class="dashboard-welcome__title">
+        Olá, {{ current_user.name if current_user and current_user.name else current_user.email }}!
       </h1>
 
       {% if not tree %}
-        <h2>Nenhuma análise de aplicação cadastrada ainda</h2>
-        <p>
-          Aqui você acompanha os registros das aplicações em formato de galeria de fotos.
+        <h2 class="dashboard-welcome__subtitle">Nenhuma análise cadastrada ainda</h2>
+        <p class="dashboard-welcome__body">
+          Aqui você acompanhará os registros das aplicações em formato de galeria.
           Assim que suas aplicações forem registradas, elas aparecerão aqui.
+        </p>
+      {% else %}
+        <p class="dashboard-welcome__body">
+          Suas aplicações estão organizadas por tema, safra, mês e dia abaixo.
         </p>
       {% endif %}
     </div>
 
+    {# ── Árvore de fotos ── #}
     {% if tree %}
-    <div class="panel-wrap">
+    <div class="dashboard-panel">
 
-      <!-- Nível 1: Tema -->
       {% for tema, safras in tree.items() %}
-        <details class="grp" open>
+        <details class="dash-group" open>
           <summary>
             <span>📌 {{ tema_labels.get(tema, tema) }}</span>
-            <span class="badge">{{ safras|length }} safra(s)</span>
+            <span class="dash-badge">{{ safras | length }} safra(s)</span>
           </summary>
 
-          <div class="inner">
-
-            <!-- Nível 2: Safra -->
+          <div class="dash-inner">
             {% for safra, meses in safras.items() %}
-              <details class="grp">
+              <details class="dash-group">
                 <summary>
                   <span>🌾 {{ safra }}</span>
-                  <span class="badge">{{ meses|length }} mês(es)</span>
+                  <span class="dash-badge">{{ meses | length }} mês(es)</span>
                 </summary>
 
-                <div class="inner">
-
-                  <!-- Nível 3: Mês -->
+                <div class="dash-inner">
                   {% for mes, dias in meses.items() %}
-                    <details class="grp">
+                    <details class="dash-group">
                       <summary>
                         <span>📅 {{ mes }}</span>
-                        <span class="badge">{{ dias|length }} dia(s)</span>
+                        <span class="dash-badge">{{ dias | length }} dia(s)</span>
                       </summary>
 
-                      <div class="inner">
-
-                        <!-- Nível 4: Dia -->
+                      <div class="dash-inner">
                         {% for dia, fotos in dias.items() %}
-                          <div class="day-title">📍 Dia {{ dia }} <span class="badge">{{ fotos|length }} arquivo(s)</span></div>
 
-                          <div class="grid">
+                          <div class="dash-day-title">
+                            <span>📍 Dia {{ dia }}</span>
+                            <span class="dash-badge">{{ fotos | length }} arquivo(s)</span>
+                          </div>
+
+                          <div class="dash-photo-grid">
                             {% for foto in fotos %}
-                              <div class="card">
+                              <div class="dash-photo-card">
                                 <img
+                                  class="dash-photo-card__img js-lightbox-trigger"
                                   src="{{ foto.url }}"
                                   alt="{{ foto.name }}"
-                                  class="js-open-image"
                                   data-full="{{ foto.url }}"
+                                  loading="lazy"
                                 >
-                                <div class="foot">{{ foto.name }}</div>
+                                <div class="dash-photo-card__foot">{{ foto.name }}</div>
                               </div>
                             {% endfor %}
                           </div>
 
                         {% endfor %}
-
                       </div>
+
                     </details>
                   {% endfor %}
-
                 </div>
+
               </details>
             {% endfor %}
-
           </div>
+
         </details>
       {% endfor %}
 
@@ -260,39 +98,58 @@
   </div>
 </section>
 
-<!-- MODAL -->
-<div id="imgModal" class="img-modal" aria-hidden="true">
-  <div class="img-modal-backdrop"></div>
-  <button type="button" class="img-modal-close" aria-label="Fechar">✕</button>
-  <img id="imgModalPhoto" class="img-modal-photo" alt="">
+{# ── Lightbox ── #}
+<div
+  id="lightbox"
+  class="lightbox"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Visualizar imagem"
+  aria-hidden="true"
+>
+  <div class="lightbox__backdrop"></div>
+  <button type="button" class="lightbox__close" aria-label="Fechar imagem">✕</button>
+  <img id="lightboxImg" class="lightbox__img" src="" alt="">
 </div>
 
-<script>
-  const modal = document.getElementById("imgModal");
-  const backdrop = modal.querySelector(".img-modal-backdrop");
-  const closeBtn = modal.querySelector(".img-modal-close");
-  const modalPhoto = document.getElementById("imgModalPhoto");
+{% endblock %}
 
-  function closeModal(){
-    modal.classList.remove("active");
-    modalPhoto.src = "";
+{% block scripts %}
+<script>
+(function () {
+  "use strict";
+
+  var lightbox  = document.getElementById("lightbox");
+  var lbImg     = document.getElementById("lightboxImg");
+  var backdrop  = lightbox.querySelector(".lightbox__backdrop");
+  var closeBtn  = lightbox.querySelector(".lightbox__close");
+
+  function open(src, alt) {
+    lbImg.src = src;
+    lbImg.alt = alt || "";
+    lightbox.classList.add("lightbox--active");
+    lightbox.setAttribute("aria-hidden", "false");
+    closeBtn.focus();
   }
 
-  document.addEventListener("click", (e) => {
-    const img = e.target.closest(".js-open-image");
-    if (!img) return;
+  function close() {
+    lightbox.classList.remove("lightbox--active");
+    lightbox.setAttribute("aria-hidden", "true");
+    lbImg.src = "";
+  }
 
-    const full = img.getAttribute("data-full") || img.getAttribute("src");
-    modalPhoto.src = full;
-    modal.classList.add("active");
+  document.addEventListener("click", function (e) {
+    var trigger = e.target.closest(".js-lightbox-trigger");
+    if (!trigger) return;
+    open(trigger.dataset.full || trigger.src, trigger.alt);
   });
 
-  closeBtn.addEventListener("click", closeModal);
-  backdrop.addEventListener("click", closeModal);
+  closeBtn.addEventListener("click", close);
+  backdrop.addEventListener("click", close);
 
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") closeModal();
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") close();
   });
+})();
 </script>
-
 {% endblock %}

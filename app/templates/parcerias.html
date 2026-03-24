@@ -1,41 +1,49 @@
 {% extends "layout.html" %}
-{% block title %}Parcerias - COMBATE RASANTE{% endblock %}
+{% block title %}Parcerias — COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="section" id="parcerias">
+<section class="page-section section">
   <div class="container">
-    <header class="section-header">
-      <h2>Parcerias</h2>
-      <p>
-        Aqui você pode apresentar <strong>empresas, produtores e instituições</strong> parceiras.
-        (Depois é só substituir os textos e logos.)
+
+    <header class="page-header">
+      <h1 class="page-header__title">Parcerias</h1>
+      <p class="page-header__subtitle">
+        Empresas, produtores e instituições que constroem resultados junto com a Combate Rasante.
       </p>
     </header>
 
     <div class="cards-grid">
-      <article class="card">
-        <h3>Parceiro 01 (exemplo)</h3>
-        <p><strong>Tipo:</strong> Empresa / Produtor / Cooperativa</p>
-        <p><strong>Região:</strong> (ex: Goiás / Triângulo Mineiro)</p>
-        <p><strong>Atuação:</strong> (ex: Cana, Soja, Milho)</p>
-      </article>
 
-      <article class="card">
-        <h3>Parceiro 02 (exemplo)</h3>
-        <p><strong>Tipo:</strong> Consultoria / Revenda / Agroindústria</p>
-        <p><strong>Região:</strong> (ex: Sul Goiano)</p>
-        <p><strong>Atuação:</strong> (ex: Defensivos / Nutrição)</p>
-      </article>
-
-      <article class="card">
-        <h3>Como se tornar parceiro</h3>
-        <p>
-          Espaço para explicar critérios, benefícios e contato.
-          Ex: “Entre em contato e vamos construir uma parceria com resultados e rastreabilidade.”
+      <article class="page-card">
+        <h2 class="page-card__title">Parceiro 01</h2>
+        <p class="page-card__body">
+          <strong>Tipo:</strong> Empresa / Produtor / Cooperativa<br>
+          <strong>Região:</strong> Goiás / Triângulo Mineiro<br>
+          <strong>Atuação:</strong> Cana, Soja, Milho
         </p>
-        <p><strong>E-mail:</strong> weikren@combateaviacao.com.br</p>
       </article>
+
+      <article class="page-card">
+        <h2 class="page-card__title">Parceiro 02</h2>
+        <p class="page-card__body">
+          <strong>Tipo:</strong> Consultoria / Revenda / Agroindústria<br>
+          <strong>Região:</strong> Sul Goiano<br>
+          <strong>Atuação:</strong> Defensivos / Nutrição
+        </p>
+      </article>
+
+      <article class="page-card">
+        <h2 class="page-card__title">Torne-se Parceiro</h2>
+        <p class="page-card__body">
+          Construa uma parceria com resultados, rastreabilidade e apoio técnico de ponta a ponta.
+        </p>
+        <div class="mt-md">
+          <a href="{{ url_for('main.contato') }}" class="btn btn--primary">Fale conosco</a>
+        </div>
+      </article>
+
     </div>
+
   </div>
 </section>
 {% endblock %}

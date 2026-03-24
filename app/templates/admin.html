@@ -1,49 +1,92 @@
 {% extends "layout.html" %}
-{% block title %}COMBATE RASANTE - Administração{% endblock %}
+{% block title %}Administração — COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="section">
-  <div class="container admin-layout">
-    <div class="admin-panel">
-      <h1>Administração</h1>
-      <p>Criação de novos clientes para acesso ao painel.</p>
+<section class="auth-section section">
+  <div class="container">
 
-      <div class="admin-info">
-        <p><strong>Logado como:</strong> {{ current_user.email }}</p>
-        <p>Somente o administrador configurado pode acessar esta página.</p>
+    <div class="auth-layout">
+
+      {# ── Formulário de criação ── #}
+      <div class="auth-card">
+        <h1 class="auth-card__title">Criar Cliente</h1>
+        <p class="auth-card__desc">
+          Logado como: <strong>{{ current_user.email }}</strong>
+        </p>
+
+        <form method="POST" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="name">Nome do cliente</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              class="form-control"
+              placeholder="Nome completo"
+              required
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="email">E-mail</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              class="form-control"
+              placeholder="email@cliente.com"
+              required
+              autocomplete="off"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Senha</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              class="form-control"
+              placeholder="Mínimo 6 caracteres"
+              minlength="6"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirm_password">Confirmar senha</label>
+            <input
+              id="confirm_password"
+              name="confirm_password"
+              type="password"
+              class="form-control"
+              placeholder="Repita a senha"
+              minlength="6"
+              required
+            >
+          </div>
+
+          <div class="mt-lg">
+            <button type="submit" class="btn btn--primary btn--full">Criar cliente</button>
+          </div>
+        </form>
       </div>
 
-<div class="form-group">
-  <label for="name">Nome do cliente</label>
-  <input id="name" name="name" type="text" required>
-</div>
+      {# ── Boas práticas ── #}
+      <div class="auth-card">
+        <h2 class="auth-card__title">Boas práticas</h2>
+        <p class="auth-card__desc">Orientações para cadastro seguro de clientes.</p>
+        <ul class="auth-card__list">
+          <li>Utilize e-mails válidos e de responsáveis pela fazenda</li>
+          <li>Envie a senha ao cliente por canal seguro</li>
+          <li>Recomende a troca da senha no primeiro acesso</li>
+          <li>Não reutilize senhas entre clientes diferentes</li>
+        </ul>
+      </div>
 
-
-      <form method="post" class="form">
-        <div class="form-group">
-          <label for="email">E-mail do cliente</label>
-          <input id="email" name="email" type="email" required>
-        </div>
-        <div class="form-group">
-          <label for="password">Senha</label>
-          <input id="password" name="password" type="password" minlength="6" required>
-        </div>
-        <div class="form-group">
-          <label for="confirm_password">Confirmar senha</label>
-          <input id="confirm_password" name="confirm_password" type="password" minlength="6" required>
-        </div>
-        <button type="submit" class="btn btn-primary full-width">Criar cliente</button>
-      </form>
     </div>
 
-    <aside class="admin-side">
-      <h2>Boas práticas</h2>
-      <ul>
-        <li>Utilize e-mails válidos e de responsáveis pela fazenda.</li>
-        <li>Envie a senha ao cliente por um canal seguro.</li>
-        <li>Recomende a troca da senha no primeiro acesso.</li>
-      </ul>
-    </aside>
   </div>
 </section>
 {% endblock %}

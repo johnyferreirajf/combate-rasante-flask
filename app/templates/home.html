@@ -1,105 +1,109 @@
 {% extends "layout.html" %}
-{% block title %}COMBATE RASANTE - Aviação Agrícola{% endblock %}
+{% block title %}COMBATE RASANTE — Aviação Agrícola{% endblock %}
 
 {% block content %}
-<section class="home-hero">
-  <div class="container home-hero-wrap">
-    <div class="home-copy">
-      <h1>COMBATE RASANTE</h1>
-      <p>
+
+{# ── HERO ──────────────────────────────────────────────────── #}
+<section class="home-hero section">
+  <div class="container">
+    <div class="home-hero__copy">
+
+      <span class="home-hero__eyebrow" aria-hidden="true">✈ Aviação Agrícola</span>
+
+      <h1 class="home-hero__title">COMBATE<br>RASANTE</h1>
+
+      <p class="home-hero__subtitle">
         Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
         Acompanhe relatórios, mapas e histórico das operações no painel do cliente.
       </p>
 
-      <div class="home-actions">
-        <a href="{{ url_for('main.contato') }}" class="btn-hero primary">Contato</a>
-      </div>
+      <a href="{{ url_for('main.contato') }}" class="btn btn--primary">
+        Fale conosco
+      </a>
     </div>
   </div>
 </section>
 
-<section class="home-carousel-section">
+{# ── CAROUSEL DE FEATURES ──────────────────────────────────── #}
+<section class="home-carousel-section section--tight" aria-label="Destaques">
   <div class="container">
-    <div class="home-single-carousel" data-home-carousel>
-      <button class="home-carousel-btn left" type="button" aria-label="Voltar">&#8249;</button>
 
-      <div class="home-carousel-track" data-home-track>
-        <a href="{{ url_for('main.tecnologia') }}" class="home-feature-card">
-          <span class="home-feature-badge">NOVIDADES</span>
-          <p>Dashboards, mapas, indicadores e novidades do painel em um só lugar.</p>
+    <div class="carousel" data-carousel>
+
+      <button class="carousel__btn carousel__btn--prev" type="button" aria-label="Card anterior">&#8249;</button>
+
+      <div class="carousel__track" data-carousel-track>
+
+        <a href="{{ url_for('main.tecnologia') }}" class="feature-card">
+          <span class="feature-card__badge">NOVIDADES</span>
+          <p class="feature-card__text">Dashboards, mapas, indicadores e novidades do painel em um só lugar.</p>
         </a>
 
-        <a href="{{ url_for('main.servicos') }}" class="home-feature-card">
-          <span class="home-feature-badge">EQUIPES</span>
-          <p>Pilotos, operação, planejamento e acompanhamento com foco em resultado.</p>
+        <a href="{{ url_for('main.equipe') }}" class="feature-card">
+          <span class="feature-card__badge">EQUIPES</span>
+          <p class="feature-card__text">Pilotos, operação, planejamento e acompanhamento com foco em resultado.</p>
         </a>
 
-        <a href="{{ url_for('main.servicos') }}" class="home-feature-card">
-          <span class="home-feature-badge">ATIVIDADES</span>
-          <p>Pulverização, rastreabilidade, relatórios e histórico operacional organizado.</p>
+        <a href="{{ url_for('main.servicos') }}" class="feature-card">
+          <span class="feature-card__badge">SERVIÇOS</span>
+          <p class="feature-card__text">Pulverização, rastreabilidade, relatórios e histórico operacional organizado.</p>
         </a>
 
-        <a href="{{ url_for('main.contato') }}" class="home-feature-card">
-          <span class="home-feature-badge">CLIENTES</span>
-          <p>Área do cliente, arquivos, imagens e informações com acesso simples e rápido.</p>
+        <a href="{{ url_for('main.contato') }}" class="feature-card">
+          <span class="feature-card__badge">CLIENTES</span>
+          <p class="feature-card__text">Área do cliente, arquivos, imagens e informações com acesso simples e rápido.</p>
         </a>
+
       </div>
 
-      <button class="home-carousel-btn right" type="button" aria-label="Avançar">&#8250;</button>
+      <button class="carousel__btn carousel__btn--next" type="button" aria-label="Próximo card">&#8250;</button>
+
     </div>
+
   </div>
 </section>
 
+{% endblock %}
+
+{% block scripts %}
 <script>
 (function () {
-  const root = document.querySelector("[data-home-carousel]");
+  "use strict";
+
+  var root  = document.querySelector("[data-carousel]");
   if (!root) return;
 
-  const track = root.querySelector("[data-home-track]");
-  const prev = root.querySelector(".home-carousel-btn.left");
-  const next = root.querySelector(".home-carousel-btn.right");
+  var track = root.querySelector("[data-carousel-track]");
+  var prev  = root.querySelector(".carousel__btn--prev");
+  var next  = root.querySelector(".carousel__btn--next");
 
-  function getCards() {
-    return Array.from(track.querySelectorAll(".home-feature-card"));
-  }
-
-  function getCardStep() {
-    const cards = getCards();
-    if (!cards.length) return 240;
-    const card = cards[0];
-    const style = window.getComputedStyle(track);
-    const gap = parseFloat(style.gap || style.columnGap || 10) || 10;
-    return Math.round(card.getBoundingClientRect().width + gap);
-  }
-
-  function scrollToIndex(index) {
-    const cards = getCards();
-    if (!cards.length) return;
-    const safe = Math.max(0, Math.min(index, cards.length - 1));
-    const target = cards[safe].offsetLeft - 18;
-    track.scrollTo({ left: target, behavior: "smooth" });
+  function getStep() {
+    var card = track.querySelector(".feature-card");
+    if (!card) return track.clientWidth;
+    var gap = parseFloat(window.getComputedStyle(track).gap) || 12;
+    return card.getBoundingClientRect().width + gap;
   }
 
   function currentIndex() {
-    const step = getCardStep();
-    return Math.round(track.scrollLeft / step);
+    return Math.round(track.scrollLeft / getStep());
   }
 
-  if (prev) {
-    prev.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      scrollToIndex(currentIndex() - 1);
-    });
+  function goTo(index) {
+    var cards  = track.querySelectorAll(".feature-card");
+    var safe   = Math.max(0, Math.min(index, cards.length - 1));
+    var target = cards[safe].offsetLeft - 4;
+    track.scrollTo({ left: target, behavior: "smooth" });
   }
 
-  if (next) {
-    next.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      scrollToIndex(currentIndex() + 1);
-    });
-  }
+  prev && prev.addEventListener("click", function (e) {
+    e.preventDefault();
+    goTo(currentIndex() - 1);
+  });
+
+  next && next.addEventListener("click", function (e) {
+    e.preventDefault();
+    goTo(currentIndex() + 1);
+  });
 })();
 </script>
 {% endblock %}

@@ -1,237 +1,158 @@
 {% extends "layout.html" %}
-
-{% block title %}Equipe - COMBATE RASANTE{% endblock %}
+{% block title %}Equipe — COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="team-hero">
-  <div class="team-bubbles" aria-hidden="true">
-    <span class="team-bubble b1"></span>
-    <span class="team-bubble b2"></span>
-    <span class="team-bubble b3"></span>
-    <span class="team-bubble b4"></span>
-    <span class="team-bubble b5"></span>
-    <span class="team-bubble b6"></span>
-  </div>
+<section class="team-section section">
+  <div class="container">
 
-  <div class="team-wrap">
-    <header class="team-header">
-      <h1>Nossa Equipe</h1>
-      <p>
+    <header class="page-header">
+      <h1 class="page-header__title">Nossa Equipe</h1>
+      <p class="page-header__subtitle">
         Conheça os profissionais responsáveis pelas operações da <strong>Combate Rasante</strong>.
         Organização por função e responsabilidade.
       </p>
     </header>
 
-    <!-- Diretoria -->
-    <div class="team-section">
-      <div class="team-section-title">
-        <h2>Diretoria</h2>
-        <span class="team-section-line"></span>
-      </div>
-
-      <div class="team-grid team-grid-feature">
-        <article class="team-card team-card-feature">
-          <div class="team-card-top">
-            <div class="team-avatar">W</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Weikren</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-gold">Diretor de Operações</span>
-                <span class="team-chip">Gestão</span>
-                <span class="team-chip">Relacionamento</span>
-                <span class="team-chip">Segurança Operacional</span>
-              </div>
-            </div>
-          </div>
-
-          <p class="team-desc">
-            Responsável pela gestão das operações aéreas, padronização de processos, planejamento e relacionamento com clientes.
-          </p>
-
-          <div class="team-footer-tags">
-            <span class="team-pill">Alta Precisão</span>
-            <span class="team-pill">Conformidade</span>
-            <span class="team-pill">Eficiência</span>
-          </div>
-        </article>
-      </div>
+    {# ── Diretoria ── #}
+    <div class="team-divider">
+      <span class="team-divider__label">Diretoria</span>
+      <span class="team-divider__line" aria-hidden="true"></span>
     </div>
 
-    <!-- Coordenação & Pilotos -->
-    <div class="team-section">
-      <div class="team-section-title">
-        <h2>Coordenação &amp; Pilotos</h2>
-        <span class="team-section-line"></span>
-      </div>
-
-      <div class="team-grid">
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">C1</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Coordenador / Piloto 01</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-green">Coordenador / Piloto</span>
-                <span class="team-chip">Planejamento</span>
-                <span class="team-chip">Briefing</span>
-              </div>
+    <div class="team-grid">
+      <article class="team-card">
+        <div class="team-card__header">
+          <div class="team-card__avatar">W</div>
+          <div>
+            <h2 class="team-card__name">Weikren</h2>
+            <div class="team-card__tags">
+              <span class="tag tag--primary">Diretor de Operações</span>
+              <span class="tag">Gestão</span>
+              <span class="tag">Segurança Operacional</span>
             </div>
           </div>
-          <p class="team-desc">Coordena equipes em campo, organiza programação, checklist, rota e apoio operacional.</p>
-        </article>
-
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">C2</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Coordenador / Piloto 02</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-green">Coordenador / Piloto</span>
-                <span class="team-chip">Execução</span>
-                <span class="team-chip">Qualidade</span>
-              </div>
-            </div>
-          </div>
-          <p class="team-desc">Responsável por alinhamento técnico, padrão de aplicação e suporte ao time de pilotos.</p>
-        </article>
-      </div>
+        </div>
+        <p class="team-card__desc">
+          Responsável pela gestão das operações aéreas, padronização de processos,
+          planejamento e relacionamento com clientes.
+        </p>
+      </article>
     </div>
 
-    <!-- Pilotos Agrícolas -->
-    <div class="team-section">
-      <div class="team-section-title">
-        <h2>Pilotos Agrícolas</h2>
-        <span class="team-section-line"></span>
-      </div>
-
-      <div class="team-grid team-grid-5">
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">P1</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Piloto Agrícola 01</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
-                <span class="team-chip">Precisão</span>
-                <span class="team-chip">Segurança</span>
-              </div>
-            </div>
-          </div>
-          <p class="team-desc">Execução de aplicações com foco em uniformidade, cobertura e segurança operacional.</p>
-        </article>
-
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">P2</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Piloto Agrícola 02</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
-                <span class="team-chip">Eficiência</span>
-                <span class="team-chip">Conformidade</span>
-              </div>
-            </div>
-          </div>
-          <p class="team-desc">Operação e execução com padrão de qualidade e rastreabilidade.</p>
-        </article>
-
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">P3</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Piloto Agrícola 03</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
-                <span class="team-chip">Qualidade</span>
-                <span class="team-chip">Rotas</span>
-              </div>
-            </div>
-          </div>
-          <p class="team-desc">Aplicações com precisão, atenção ao vento, faixa e padronização de operação.</p>
-        </article>
-
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">P4</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Piloto Agrícola 04</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
-                <span class="team-chip">Performance</span>
-                <span class="team-chip">Segurança</span>
-              </div>
-            </div>
-          </div>
-          <p class="team-desc">Execução com alto padrão operacional e segurança.</p>
-        </article>
-
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">P5</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Piloto Agrícola 05</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-blue">Aplicação Aérea</span>
-                <span class="team-chip">Cobertura</span>
-                <span class="team-chip">Precisão</span>
-              </div>
-            </div>
-          </div>
-          <p class="team-desc">Aplicações com foco em cobertura, faixa e consistência.</p>
-        </article>
-      </div>
+    {# ── Coordenação & Pilotos ── #}
+    <div class="team-divider">
+      <span class="team-divider__label">Coordenação & Pilotos</span>
+      <span class="team-divider__line" aria-hidden="true"></span>
     </div>
 
-    <!-- Analista -->
-    <div class="team-section">
-      <div class="team-section-title">
-        <h2>Tecnologia &amp; Análise</h2>
-        <span class="team-section-line"></span>
-      </div>
-
-      <div class="team-grid">
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">A</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Analista</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-purple">Análise Operacional</span>
-                <span class="team-chip">Mapas</span>
-                <span class="team-chip">Relatórios</span>
-                <span class="team-chip">Indicadores</span>
-              </div>
+    <div class="team-grid">
+      <article class="team-card">
+        <div class="team-card__header">
+          <div class="team-card__avatar">C1</div>
+          <div>
+            <h2 class="team-card__name">Coordenador / Piloto 01</h2>
+            <div class="team-card__tags">
+              <span class="tag tag--primary">Coordenador</span>
+              <span class="tag">Planejamento</span>
+              <span class="tag">Briefing</span>
             </div>
           </div>
-          <p class="team-desc">Responsável por análises, relatórios, mapas e indicadores para melhorar desempenho e qualidade.</p>
-        </article>
-      </div>
+        </div>
+        <p class="team-card__desc">Coordena equipes em campo, organiza programação, checklist, rota e apoio operacional.</p>
+      </article>
+
+      <article class="team-card">
+        <div class="team-card__header">
+          <div class="team-card__avatar">C2</div>
+          <div>
+            <h2 class="team-card__name">Coordenador / Piloto 02</h2>
+            <div class="team-card__tags">
+              <span class="tag tag--primary">Coordenador</span>
+              <span class="tag">Execução</span>
+              <span class="tag">Qualidade</span>
+            </div>
+          </div>
+        </div>
+        <p class="team-card__desc">Responsável por alinhamento técnico, padrão de aplicação e suporte ao time de pilotos.</p>
+      </article>
     </div>
 
-    <!-- Comercial -->
-    <div class="team-section">
-      <div class="team-section-title">
-        <h2>Comercial</h2>
-        <span class="team-section-line"></span>
-      </div>
+    {# ── Pilotos Agrícolas ── #}
+    <div class="team-divider">
+      <span class="team-divider__label">Pilotos Agrícolas</span>
+      <span class="team-divider__line" aria-hidden="true"></span>
+    </div>
 
-      <div class="team-grid">
-        <article class="team-card">
-          <div class="team-card-top">
-            <div class="team-avatar">C</div>
-            <div class="team-card-meta">
-              <h3 class="team-name">Comercial</h3>
-              <div class="team-tags">
-                <span class="team-badge team-badge-orange">Atendimento &amp; Negócios</span>
-                <span class="team-chip">Propostas</span>
-                <span class="team-chip">Contratos</span>
-                <span class="team-chip">Pós-venda</span>
-              </div>
+    <div class="team-grid">
+      {% set pilotos = [
+        {"avatar": "P1", "nome": "Piloto Agrícola 01", "chips": ["Precisão", "Segurança"],    "desc": "Execução de aplicações com foco em uniformidade, cobertura e segurança operacional."},
+        {"avatar": "P2", "nome": "Piloto Agrícola 02", "chips": ["Eficiência", "Conformidade"],"desc": "Operação e execução com padrão de qualidade e rastreabilidade."},
+        {"avatar": "P3", "nome": "Piloto Agrícola 03", "chips": ["Qualidade", "Rotas"],        "desc": "Aplicações com precisão, atenção ao vento, faixa e padronização."},
+        {"avatar": "P4", "nome": "Piloto Agrícola 04", "chips": ["Performance", "Segurança"],  "desc": "Execução com alto padrão operacional e segurança."},
+        {"avatar": "P5", "nome": "Piloto Agrícola 05", "chips": ["Cobertura", "Precisão"],     "desc": "Aplicações com foco em cobertura, faixa e consistência."}
+      ] %}
+
+      {% for p in pilotos %}
+      <article class="team-card">
+        <div class="team-card__header">
+          <div class="team-card__avatar">{{ p.avatar }}</div>
+          <div>
+            <h2 class="team-card__name">{{ p.nome }}</h2>
+            <div class="team-card__tags">
+              <span class="tag tag--primary">Aplicação Aérea</span>
+              {% for chip in p.chips %}<span class="tag">{{ chip }}</span>{% endfor %}
             </div>
           </div>
-          <p class="team-desc">Atendimento, propostas e acompanhamento para garantir agilidade e clareza no serviço.</p>
-        </article>
-      </div>
+        </div>
+        <p class="team-card__desc">{{ p.desc }}</p>
+      </article>
+      {% endfor %}
+    </div>
+
+    {# ── Tecnologia & Análise ── #}
+    <div class="team-divider">
+      <span class="team-divider__label">Tecnologia & Análise</span>
+      <span class="team-divider__line" aria-hidden="true"></span>
+    </div>
+
+    <div class="team-grid">
+      <article class="team-card">
+        <div class="team-card__header">
+          <div class="team-card__avatar">A</div>
+          <div>
+            <h2 class="team-card__name">Analista</h2>
+            <div class="team-card__tags">
+              <span class="tag tag--primary">Análise Operacional</span>
+              <span class="tag">Mapas</span>
+              <span class="tag">Relatórios</span>
+            </div>
+          </div>
+        </div>
+        <p class="team-card__desc">Responsável por análises, relatórios, mapas e indicadores para melhorar desempenho e qualidade.</p>
+      </article>
+    </div>
+
+    {# ── Comercial ── #}
+    <div class="team-divider">
+      <span class="team-divider__label">Comercial</span>
+      <span class="team-divider__line" aria-hidden="true"></span>
+    </div>
+
+    <div class="team-grid">
+      <article class="team-card">
+        <div class="team-card__header">
+          <div class="team-card__avatar">C</div>
+          <div>
+            <h2 class="team-card__name">Comercial</h2>
+            <div class="team-card__tags">
+              <span class="tag tag--primary">Atendimento & Negócios</span>
+              <span class="tag">Propostas</span>
+              <span class="tag">Pós-venda</span>
+            </div>
+          </div>
+        </div>
+        <p class="team-card__desc">Atendimento, propostas e acompanhamento para garantir agilidade e clareza no serviço.</p>
+      </article>
     </div>
 
   </div>

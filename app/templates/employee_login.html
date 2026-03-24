@@ -1,43 +1,65 @@
 {% extends "layout.html" %}
-{% block title %}COMBATE RASANTE - Área de Funcionários{% endblock %}
+{% block title %}Área de Funcionários — COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="section section-auth">
-  <div class="container auth-grid">
+<section class="auth-section section">
+  <div class="container">
 
-    <!-- FORMULÁRIO -->
-    <div class="auth-panel">
-      <h1>Área de Funcionários</h1>
-      <p>Entre com seu usuário e senha para acessar os arquivos internos.</p>
+    <div class="auth-layout">
 
-      <form method="post" class="form">
-        <div class="form-group">
-          <label for="username">Usuário</label>
-          <input id="username" name="username" type="text" required>
-        </div>
+      {# ── Formulário ── #}
+      <div class="auth-card">
+        <h1 class="auth-card__title">Área de Funcionários</h1>
+        <p class="auth-card__desc">Entre com seu usuário e senha para acessar os arquivos internos.</p>
 
-        <div class="form-group">
-          <label for="password">Senha</label>
-          <input id="password" name="password" type="password" minlength="4" required>
-        </div>
+        <form method="POST" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="username">Usuário</label>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              class="form-control"
+              placeholder="Seu usuário"
+              required
+              autocomplete="username"
+            >
+          </div>
 
-        <button type="submit" class="btn btn-primary full-width">Entrar</button>
-      </form>
-    </div>
+          <div class="form-group">
+            <label class="form-label" for="password">Senha</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              class="form-control"
+              placeholder="Sua senha"
+              minlength="4"
+              required
+              autocomplete="current-password"
+            >
+          </div>
 
-    <!-- CARD EXPLICATIVO (mesmo padrão da Área do Cliente) -->
-    <div class="auth-side">
-      <div class="auth-panel auth-panel-info">
-        <h2>Compartilhamento interno</h2>
-        <p>
+          <div class="mt-lg">
+            <button type="submit" class="btn btn--primary btn--full">Entrar</button>
+          </div>
+        </form>
+      </div>
+
+      {# ── Info card ── #}
+      <div class="auth-card">
+        <h2 class="auth-card__title">Compartilhamento interno</h2>
+        <p class="auth-card__desc">
           Envie e consulte arquivos da equipe de forma organizada e segura.
         </p>
-        <ul>
+        <ul class="auth-card__list">
           <li>Upload de relatórios, PDFs e planilhas</li>
-          <li>Arquivos compartilhados entre os funcionários</li>
+          <li>Arquivos compartilhados entre funcionários</li>
           <li>Download rápido com 1 clique</li>
+          <li>Organização por data e categoria</li>
         </ul>
       </div>
+
     </div>
 
   </div>

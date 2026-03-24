@@ -1,0 +1,227 @@
+/* =============================================================
+   DASHBOARD DO CLIENTE
+   Estilos extraídos do template inline — separação de responsabilidades
+   ============================================================= */
+
+.dashboard-section {
+  padding-block: var(--space-xl) var(--space-2xl);
+  flex: 1;
+}
+
+/* ── Welcome card ────────────────────────────────────────────── */
+.dashboard-welcome {
+  max-width: 860px;
+  margin-inline: auto;
+  margin-bottom: var(--space-lg);
+  padding: var(--space-lg) var(--space-xl);
+  border-radius: var(--radius-xl);
+  background: rgba(0, 200, 120, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-lg);
+  color: #02140b;
+}
+
+.dashboard-welcome__title {
+  font-size: var(--text-2xl);
+  font-weight: 900;
+  margin-bottom: var(--space-xs);
+  color: #02140b;
+}
+
+.dashboard-welcome__subtitle {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+  color: #02140b;
+}
+
+.dashboard-welcome__body {
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: #02140b;
+}
+
+/* ── Panel wrapper ───────────────────────────────────────────── */
+.dashboard-panel {
+  max-width: 1150px;
+  margin-inline: auto;
+  padding: var(--space-md);
+  border-radius: var(--radius-xl);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Details groups ──────────────────────────────────────────── */
+.dash-group {
+  margin-bottom: var(--space-sm);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: rgba(0, 0, 0, 0.10);
+}
+
+.dash-group summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  font-weight: 800;
+  color: var(--color-text);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  user-select: none;
+  transition: background var(--transition-fast);
+}
+
+.dash-group summary:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dash-group summary::-webkit-details-marker { display: none; }
+
+.dash-badge {
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.dash-inner {
+  padding: 12px 16px 18px;
+}
+
+/* ── Day header ──────────────────────────────────────────────── */
+.dash-day-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-base);
+  font-weight: 900;
+  color: var(--color-text);
+  margin: var(--space-md) 0 var(--space-sm);
+  opacity: 0.95;
+}
+
+/* ── Photo grid ──────────────────────────────────────────────── */
+.dash-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(220px, 100%), 1fr));
+  gap: var(--space-sm);
+}
+
+.dash-photo-card {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base), border-color var(--transition-base);
+}
+
+.dash-photo-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-border-hover);
+}
+
+.dash-photo-card__img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
+}
+
+.dash-photo-card__foot {
+  padding: 10px 12px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Lightbox modal ──────────────────────────────────────────── */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 9999;
+}
+
+.lightbox--active { display: block; }
+
+.lightbox__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  z-index: 2;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-text);
+  font-size: 1.1rem;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  font-weight: 800;
+}
+
+.lightbox__close:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.lightbox__img {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 92vw;
+  max-height: 88vh;
+  border-radius: var(--radius-lg);
+  border: 2px solid rgba(255, 255, 255, 0.30);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+  background: #111;
+  display: block;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .dashboard-welcome {
+    padding: var(--space-md);
+  }
+
+  .dashboard-welcome__title {
+    font-size: var(--text-xl);
+  }
+
+  .dashboard-panel {
+    padding: var(--space-sm);
+  }
+
+  .dash-photo-card__img {
+    height: 130px;
+  }
+
+  .dash-photo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
+  }
+}

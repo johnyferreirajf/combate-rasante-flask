@@ -1,39 +1,49 @@
 {% extends "layout.html" %}
-{% block title %}Clientes - COMBATE RASANTE{% endblock %}
+{% block title %}Clientes — COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="section" id="clientes">
+<section class="page-section section">
   <div class="container">
-    <header class="section-header">
-      <h2>Clientes</h2>
-      <p>
-        Página pronta para apresentar <strong>clientes atendidos</strong> ou
-        deixar como vitrine (depois você decide se mostra nomes ou só regiões).
+
+    <header class="page-header">
+      <h1 class="page-header__title">Clientes</h1>
+      <p class="page-header__subtitle">
+        Produtores e empresas do agronegócio atendidos com precisão e rastreabilidade.
       </p>
     </header>
 
     <div class="cards-grid">
-      <article class="card">
-        <h3>Cliente 01 (exemplo)</h3>
-        <p><strong>Região:</strong> (ex: Sul Goiano)</p>
-        <p><strong>Cultura:</strong> (ex: Cana / Soja / Milho)</p>
-        <p><strong>Serviços:</strong> (ex: Pulverização aérea + relatórios)</p>
+
+      <article class="page-card">
+        <h2 class="page-card__title">Cliente 01</h2>
+        <p class="page-card__body">
+          <strong>Região:</strong> Sul Goiano<br>
+          <strong>Cultura:</strong> Cana / Soja / Milho<br>
+          <strong>Serviços:</strong> Pulverização aérea + relatórios
+        </p>
       </article>
 
-      <article class="card">
-        <h3>Cliente 02 (exemplo)</h3>
-        <p><strong>Região:</strong> (ex: Triângulo Mineiro)</p>
-        <p><strong>Cultura:</strong> (ex: Cana)</p>
-        <p><strong>Serviços:</strong> (ex: Controle de faixa e rastreabilidade)</p>
+      <article class="page-card">
+        <h2 class="page-card__title">Cliente 02</h2>
+        <p class="page-card__body">
+          <strong>Região:</strong> Triângulo Mineiro<br>
+          <strong>Cultura:</strong> Cana<br>
+          <strong>Serviços:</strong> Controle de faixa e rastreabilidade
+        </p>
       </article>
 
-      <article class="card">
-        <h3>Quer ser atendido?</h3>
-        <p>Use este espaço como CTA para captação.</p>
-        <p><strong>Telefone:</strong> 64 99983-6005 / 64 99221-7002</p>
-        <p><strong>E-mail:</strong> weikren@combateaviacao.com.br</p>
+      <article class="page-card">
+        <h2 class="page-card__title">Quer ser atendido?</h2>
+        <p class="page-card__body">
+          Aplicação precisa, relatórios completos e acompanhamento personalizado para sua lavoura.
+        </p>
+        <div class="mt-md">
+          <a href="{{ url_for('main.contato') }}" class="btn btn--primary">Solicitar orçamento</a>
+        </div>
       </article>
+
     </div>
+
   </div>
 </section>
 {% endblock %}

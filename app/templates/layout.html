@@ -4,82 +4,126 @@
   <meta charset="utf-8">
   <title>{% block title %}COMBATE RASANTE{% endblock %}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Aplicação aérea agrícola com precisão, tecnologia e segurança. Combate Rasante Aviação Agrícola.">
+  <meta name="description" content="{% block meta_description %}Aplicação aérea agrícola com precisão, tecnologia e segurança. Combate Rasante Aviação Agrícola.{% endblock %}">
+
+  {# Open Graph #}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_title %}COMBATE RASANTE — Aviação Agrícola{% endblock %}">
+  <meta property="og:description" content="Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.">
+  <meta property="og:image" content="{{ url_for('static', filename='img/og-combaterasante.jpeg') }}">
+
+  {# Preloads críticos #}
   <link rel="preload" href="{{ url_for('static', filename='img/logo-combate.jpeg') }}" as="image">
+  <link rel="preload" href="{{ url_for('static', filename='css/main.css') }}" as="style">
+
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+  {% block head_extra %}{% endblock %}
 </head>
 <body>
-  <header class="navbar">
-    <div class="container navbar-inner">
-      <a href="{{ url_for('main.index') }}" class="navbar-logo">
-        <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}" alt="COMBATE RASANTE" class="navbar-logo-img" loading="eager" onerror="this.style.display='none';">
-        <div class="navbar-logo-text">
-          <span class="navbar-logo-title">COMBATE RASANTE</span>
-          <span class="navbar-logo-subtitle">Aviação Agrícola</span>
+
+  {# ── NAVBAR ─────────────────────────────────────────────── #}
+  <header class="navbar" role="banner">
+    <div class="container navbar__inner">
+
+      <a href="{{ url_for('main.index') }}" class="navbar__logo" aria-label="COMBATE RASANTE – página inicial">
+        <img
+          src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+          alt=""
+          class="navbar__logo-img"
+          width="38" height="38"
+          loading="eager"
+          onerror="this.style.display='none';"
+        >
+        <div class="navbar__logo-text">
+          <span class="navbar__logo-title">COMBATE RASANTE</span>
+          <span class="navbar__logo-subtitle">Aviação Agrícola</span>
         </div>
       </a>
 
-      <nav class="navbar-links" id="navbarLinks">
-        <a href="{{ url_for('main.index') }}" class="navbar-link">Início</a>
-        <a href="{{ url_for('main.servicos') }}" class="navbar-link">Serviços</a>
-        <a href="{{ url_for('main.tecnologia') }}" class="navbar-link">Tecnologia</a>
-        <a href="{{ url_for('main.contato') }}" class="navbar-link">Contato</a>
+      <nav class="navbar__nav" id="navMenu" aria-label="Navegação principal">
+        <a href="{{ url_for('main.index') }}"       class="navbar__link">Início</a>
+        <a href="{{ url_for('main.servicos') }}"    class="navbar__link">Serviços</a>
+        <a href="{{ url_for('main.tecnologia') }}"  class="navbar__link">Tecnologia</a>
+        <a href="{{ url_for('main.equipe') }}"      class="navbar__link">Equipe</a>
+        <a href="{{ url_for('main.contato') }}"     class="navbar__link">Contato</a>
 
         {% if session.get('employee_id') %}
-          <a href="{{ url_for('employee.files') }}" class="navbar-link navbar-button">Painel do Funcionário</a>
-          <a href="{{ url_for('employee.logout') }}" class="navbar-link navbar-button">Sair do painel</a>
+          <a href="{{ url_for('employee.files') }}" class="navbar__link navbar__link--cta">Painel Funcionário</a>
+          <a href="{{ url_for('employee.logout') }}" class="navbar__link navbar__link--cta">Sair</a>
         {% elif session.get('user_id') %}
-          <a href="{{ url_for('main.painel') }}" class="navbar-link navbar-button">Painel</a>
-          <a href="{{ url_for('auth.logout') }}" class="navbar-link navbar-button">Sair</a>
+          <a href="{{ url_for('main.painel') }}"   class="navbar__link navbar__link--cta">Meu Painel</a>
+          <a href="{{ url_for('auth.logout') }}"   class="navbar__link navbar__link--cta">Sair</a>
         {% else %}
-          <a href="{{ url_for('auth.login') }}" class="navbar-link navbar-button">Área do Cliente</a>
-          <a href="{{ url_for('employee.login') }}" class="navbar-link navbar-button">Funcionários</a>
+          <a href="{{ url_for('auth.login') }}"    class="navbar__link navbar__link--cta">Área do Cliente</a>
+          <a href="{{ url_for('employee.login') }}" class="navbar__link navbar__link--cta">Funcionários</a>
         {% endif %}
       </nav>
 
-      <button class="navbar-toggle" type="button" aria-label="Abrir menu" onclick="toggleNavbar()">☰</button>
+      <button
+        class="navbar__toggle"
+        id="navToggle"
+        type="button"
+        aria-label="Abrir menu de navegação"
+        aria-expanded="false"
+        aria-controls="navMenu"
+      >☰</button>
+
     </div>
   </header>
 
+  {# ── FLASH MESSAGES ──────────────────────────────────────── #}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-      <div class="flash-container">
+      <div class="flash-stack" role="status" aria-live="polite">
         {% for category, message in messages %}
-          <div class="flash-message {% if category == 'success' %}flash-success{% endif %}">{{ message }}</div>
+          <div class="flash-item flash-item--{{ category }}">{{ message }}</div>
         {% endfor %}
       </div>
     {% endif %}
   {% endwith %}
 
-  <main>
+  {# ── CONTEÚDO PRINCIPAL ──────────────────────────────────── #}
+  <main id="main-content">
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="footer">
-    <div class="container footer-grid">
+  {# ── FOOTER ──────────────────────────────────────────────── #}
+  <footer class="footer" role="contentinfo">
+    <div class="container footer__grid">
+
       <div>
-        <div class="footer-logo">
-          <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}" alt="COMBATE RASANTE" class="footer-logo-img" loading="lazy" onerror="this.style.display='none';">
+        <div class="footer__brand">
+          <img
+            src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+            alt="COMBATE RASANTE"
+            class="footer__logo-img"
+            width="28" height="28"
+            loading="lazy"
+            onerror="this.style.display='none';"
+          >
           <div>
-            <div class="footer-logo-title">COMBATE RASANTE</div>
-            <div class="footer-logo-subtitle">Aviação Agrícola</div>
+            <div class="footer__brand-title">COMBATE RASANTE</div>
+            <div class="footer__brand-sub">Aviação Agrícola</div>
           </div>
         </div>
-        <p class="footer-text">Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.</p>
+        <p class="footer__tagline">
+          Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
+        </p>
       </div>
 
       <div>
-        <h3 class="footer-heading">Contatos</h3>
-        <ul class="footer-list">
-          <li><strong>Telefone:</strong> 64 99983-6005</li>
-          <li><strong>Telefone:</strong> 64 99221-7002</li>
+        <h3 class="footer__heading">Contatos</h3>
+        <ul class="footer__list">
+          <li><strong>Tel:</strong> (64) 99983-6005</li>
+          <li><strong>Tel:</strong> (64) 99221-7002</li>
           <li><strong>Email:</strong> weikren@combateaviacao.com.br</li>
         </ul>
       </div>
 
       <div>
-        <h3 class="footer-heading">Matriz</h3>
-        <ul class="footer-list">
+        <h3 class="footer__heading">Matriz</h3>
+        <ul class="footer__list">
           <li>Rod. GO 320, Km 82</li>
           <li>Vicentinópolis / GO</li>
           <li>CEP 75.555-000</li>
@@ -87,43 +131,21 @@
       </div>
 
       <div>
-        <h3 class="footer-heading">Filial</h3>
-        <ul class="footer-list">
+        <h3 class="footer__heading">Filial</h3>
+        <ul class="footer__list">
           <li>Aeroporto Municipal</li>
           <li>Ituiutaba / MG</li>
           <li>Hangar 10</li>
         </ul>
       </div>
-    </div>
 
-    <div class="footer-bottom">© 2026 COMBATE RASANTE Aviação Agrícola</div>
+    </div>
+    <div class="footer__bottom">© 2026 COMBATE RASANTE Aviação Agrícola</div>
   </footer>
 
-  <script>
-    function toggleNavbar() {
-      const nav = document.getElementById("navbarLinks");
-      if (!nav) return;
-      nav.classList.toggle("mobile-open");
-    }
+  {# ── SCRIPTS ─────────────────────────────────────────────── #}
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
 
-    window.addEventListener("resize", function () {
-      const nav = document.getElementById("navbarLinks");
-      if (nav && window.innerWidth > 768) nav.classList.remove("mobile-open");
-    });
-
-    document.addEventListener("click", function (event) {
-      const nav = document.getElementById("navbarLinks");
-      const toggle = document.querySelector(".navbar-toggle");
-      if (!nav || !toggle) return;
-      if (!nav.contains(event.target) && !toggle.contains(event.target)) nav.classList.remove("mobile-open");
-    });
-
-    document.querySelectorAll("#navbarLinks a").forEach(function (link) {
-      link.addEventListener("click", function () {
-        const nav = document.getElementById("navbarLinks");
-        if (nav && window.innerWidth <= 768) nav.classList.remove("mobile-open");
-      });
-    });
-  </script>
 </body>
 </html>

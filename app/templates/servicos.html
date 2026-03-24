@@ -1,41 +1,47 @@
 {% extends "layout.html" %}
-{% block title %}Serviços - COMBATE RASANTE{% endblock %}
+{% block title %}Serviços — COMBATE RASANTE{% endblock %}
+{% block meta_description %}Conheça os serviços da Combate Rasante: pulverização aérea, aplicação em cana, relatórios e rastreabilidade operacional.{% endblock %}
+
 {% block content %}
-<section class="section page-panel-section page-panel-section-fill">
+<section class="page-section section">
   <div class="container">
-    <div class="page-balloon page-balloon-wide service-balloon">
-      <h1>Serviços</h1>
-      <p>
+
+    <header class="page-header">
+      <h1 class="page-header__title">Nossos Serviços</h1>
+      <p class="page-header__subtitle">
         Conheça os principais serviços da COMBATE RASANTE Aviação Agrícola,
         focados em aplicações de alta precisão para o agronegócio.
       </p>
-    </div>
+    </header>
 
-    <div class="page-grid">
-      <article class="page-balloon service-balloon">
-        <h3>Pulverização aérea</h3>
-        <p>
+    <div class="cards-grid">
+
+      <article class="page-card">
+        <h2 class="page-card__title">Pulverização Aérea</h2>
+        <p class="page-card__body">
           Aplicações precisas com aeronaves equipadas com controle de faixa,
-          garantindo uniformidade e reduzindo sobreposição.
+          garantindo uniformidade e reduzindo sobreposição e desperdício.
         </p>
       </article>
 
-      <article class="page-balloon service-balloon">
-        <h3>Aplicação em cana</h3>
-        <p>
+      <article class="page-card">
+        <h2 class="page-card__title">Aplicação em Cana</h2>
+        <p class="page-card__body">
           Estratégias específicas para canaviais, desde herbicidas pré-emergentes
           até maturadores, sempre respeitando o manejo da área.
         </p>
       </article>
 
-      <article class="page-balloon service-balloon">
-        <h3>Relatórios personalizados</h3>
-        <p>
+      <article class="page-card">
+        <h2 class="page-card__title">Relatórios Personalizados</h2>
+        <p class="page-card__body">
           Mapas, indicadores e relatórios detalhados para acompanhar cada aplicação
-          com clareza e rastreabilidade.
+          com clareza e rastreabilidade total.
         </p>
       </article>
+
     </div>
+
   </div>
 </section>
 {% endblock %}

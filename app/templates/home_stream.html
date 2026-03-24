@@ -1,93 +1,85 @@
 {% extends "layout.html" %}
-{% block title %}COMBATE RASANTE - Central de Atividades{% endblock %}
+{% block title %}COMBATE RASANTE — Central de Atividades{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/home_stream.css') }}">
+{% endblock %}
 
 {% block content %}
 
-<div id="intro-video" aria-hidden="true">
+{# ── INTRO VIDEO ───────────────────────────────────────────── #}
+<div id="introVideo" role="presentation" aria-hidden="true">
   <video id="introVideoEl" autoplay muted playsinline preload="auto">
-    <source id="introVideoSource" src="{{ url_for('static', filename='video/intro.mp4') }}" type="video/mp4">
+    <source id="introVideoSrc" src="{{ url_for('static', filename='video/intro.mp4') }}" type="video/mp4">
   </video>
 </div>
 
-<link rel="stylesheet" href="{{ url_for('static', filename='css/home_stream.css') }}">
+{# ── HERO STREAM ───────────────────────────────────────────── #}
+<section class="stream-hero">
+  <div class="stream-hero__container">
 
-<section class="home-stream-hero">
-  <div class="home-stream-overlay"></div>
-
-  <div class="home-stream-container">
-    <div class="home-stream-copy">
-      <h1 class="home-stream-title">COMBATE RASANTE</h1>
-
-      <p class="home-stream-subtitle">
-        Aplicação aérea de <span class="alta-precisao">alta precisão</span>,
+    <div class="stream-hero__copy">
+      <h1 class="stream-hero__title">COMBATE RASANTE</h1>
+      <p class="stream-hero__subtitle">
+        Aplicação aérea de <span class="stream-hero__accent">alta precisão</span>,
         com tecnologia, segurança e agilidade para o agronegócio.
       </p>
     </div>
 
-    <div class="home-stream-pill stream-pill-top">Central de Atividades</div>
+    <span class="stream-hero__pill">Central de Atividades</span>
 
-    <div class="stream-carousel" aria-label="Carrossel de seções">
-      <button class="stream-arrow stream-prev" type="button" aria-label="Anterior">‹</button>
-      <div class="stream-track" id="streamTrack"></div>
-      <button class="stream-arrow stream-next" type="button" aria-label="Próximo">›</button>
+    <div class="stream-carousel" aria-label="Seções da plataforma">
+      <button class="stream-carousel__btn stream-carousel__btn--prev" type="button" aria-label="Anterior">‹</button>
+      <div class="stream-carousel__track" id="streamTrack"></div>
+      <button class="stream-carousel__btn stream-carousel__btn--next" type="button" aria-label="Próximo">›</button>
     </div>
 
     <div class="stream-dots" id="streamDots" aria-hidden="true"></div>
+
   </div>
 </section>
 
-<script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
+{% endblock %}
 
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
 <script>
 (function () {
-  const INTRO_KEY = "cr_intro_ts";
-  const INTRO_TTL = 60 * 60 * 1000; /* 1 hora em ms */
+  "use strict";
 
-  const wrap = document.getElementById("intro-video");
-  const vid = document.getElementById("introVideoEl");
-  const source = document.getElementById("introVideoSource");
+  var wrap   = document.getElementById("introVideo");
+  var vid    = document.getElementById("introVideoEl");
+  var source = document.getElementById("introVideoSrc");
 
   if (!wrap || !vid || !source) return;
 
-  const isMobile = window.matchMedia("(max-width: 768px)").matches;
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var isMobile     = window.matchMedia("(max-width: 768px)").matches;
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  const desktopVideo = "{{ url_for('static', filename='video/intro.mp4') }}";
-  const mobileVideo = "{{ url_for('static', filename='video/mobile-intro.mp4') }}";
+  if (reduceMotion) { wrap.remove(); return; }
 
-  /* escolhe o vídeo conforme o tamanho da tela */
-  source.src = isMobile ? mobileVideo : desktopVideo;
+  /* Seleciona vídeo conforme viewport */
+  var desktopSrc = "{{ url_for('static', filename='video/intro.mp4') }}";
+  var mobileSrc  = "{{ url_for('static', filename='video/mobile-intro.mp4') }}";
+  source.src = isMobile ? mobileSrc : desktopSrc;
   vid.load();
-
-  /* verifica se foi exibido dentro da última hora */
-  const lastShown = parseInt(localStorage.getItem(INTRO_KEY) || "0", 10);
-  const alreadySeen = false;
-
-  if (reduceMotion || alreadySeen) {
-    wrap.remove();
-    return;
-  }
-
-  /* marca o timestamp agora */
-  localStorage.setItem(INTRO_KEY, String(Date.now()));
 
   document.documentElement.classList.add("intro-lock");
   document.body.classList.add("intro-lock");
 
-  let done = false;
+  var done = false;
 
   function finish() {
     if (done) return;
     done = true;
-    wrap.classList.add("hide");
+    wrap.classList.add("intro-hide");
     document.documentElement.classList.remove("intro-lock");
     document.body.classList.remove("intro-lock");
-    setTimeout(() => wrap.remove(), 900);
+    setTimeout(function () { wrap.remove(); }, 900);
   }
 
   setTimeout(finish, 5000);
   vid.addEventListener("ended", finish);
 })();
 </script>
-
 {% endblock %}

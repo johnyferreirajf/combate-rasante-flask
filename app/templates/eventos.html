@@ -1,39 +1,49 @@
 {% extends "layout.html" %}
-{% block title %}Eventos - COMBATE RASANTE{% endblock %}
+{% block title %}Eventos — COMBATE RASANTE{% endblock %}
 
 {% block content %}
-<section class="section" id="eventos">
+<section class="page-section section">
   <div class="container">
-    <header class="section-header">
-      <h2>Eventos</h2>
-      <p>
-        Página pronta para divulgar <strong>dias de campo, treinamentos e comunicados</strong>.
-        Você só substitui as informações.
+
+    <header class="page-header">
+      <h1 class="page-header__title">Eventos</h1>
+      <p class="page-header__subtitle">
+        Dias de campo, treinamentos e comunicados da Combate Rasante.
       </p>
     </header>
 
     <div class="cards-grid">
-      <article class="card">
-        <h3>Dia de Campo (exemplo)</h3>
-        <p><strong>Data:</strong> 00/00/2026</p>
-        <p><strong>Local:</strong> (Fazenda / Município)</p>
-        <p><strong>Tema:</strong> (ex: Tecnologia de aplicação aérea e redução de sobreposição)</p>
-      </article>
 
-      <article class="card">
-        <h3>Treinamento (exemplo)</h3>
-        <p><strong>Data:</strong> 00/00/2026</p>
-        <p><strong>Público:</strong> Equipe / Clientes / Parceiros</p>
-        <p><strong>Conteúdo:</strong> (ex: boas práticas, segurança, condições climáticas)</p>
-      </article>
-
-      <article class="card">
-        <h3>Comunicado (exemplo)</h3>
-        <p>
-          Use este card para avisos: janela climática, agenda de operação, novas tecnologias, etc.
+      <article class="page-card">
+        <h2 class="page-card__title">Dia de Campo</h2>
+        <p class="page-card__body">
+          <strong>Data:</strong> A definir<br>
+          <strong>Local:</strong> Fazenda / Município<br>
+          <strong>Tema:</strong> Tecnologia de aplicação aérea e redução de sobreposição
         </p>
       </article>
+
+      <article class="page-card">
+        <h2 class="page-card__title">Treinamento</h2>
+        <p class="page-card__body">
+          <strong>Data:</strong> A definir<br>
+          <strong>Público:</strong> Equipe / Clientes / Parceiros<br>
+          <strong>Conteúdo:</strong> Boas práticas, segurança e condições climáticas
+        </p>
+      </article>
+
+      <article class="page-card">
+        <h2 class="page-card__title">Comunicados</h2>
+        <p class="page-card__body">
+          Avisos sobre janelas climáticas, agenda de operação, novas tecnologias e atualizações da frota.
+        </p>
+        <div class="mt-md">
+          <a href="{{ url_for('main.contato') }}" class="btn btn--ghost">Fique por dentro</a>
+        </div>
+      </article>
+
     </div>
+
   </div>
 </section>
 {% endblock %}
