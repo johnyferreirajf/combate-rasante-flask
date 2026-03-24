@@ -105,7 +105,7 @@ body {
   color: var(--color-text);
   background-color: var(--color-bg-body);
   background-image: url("/static/img/hero-combate.png");
-  background-size: contain;       /* sem zoom — imagem completa */
+  background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -113,7 +113,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* iOS: tratado na media query mobile abaixo */
+/* iOS/Safari: background-attachment fixed trava o scroll — forçar scroll */
+@supports (-webkit-touch-callout: none) {
+  body {
+    background-attachment: scroll;
+    background-size: cover;
+  }
+}
 
 main {
   flex: 1 1 auto;
@@ -1077,11 +1083,19 @@ textarea.form-control {
 /* Mobile */
 @media (max-width: 768px) {
   body {
-    /* Mobile: mesma imagem, estática, sem zoom */
+    /*
+     * Mobile responsivo:
+     * - scroll (sem fixed — iOS/Android não suportam bem)
+     * - contain: imagem aparece INTEIRA, sem corte
+     * - repeat-y: repete verticalmente se a página for longa
+     * - bg-color escuro cobre o resto da tela
+     */
     background-image: url("/static/img/hero-combate.png");
     background-attachment: scroll;
-    background-size: contain;
-    background-position: center top;
+    background-size: 100% auto;    /* largura total, altura proporcional */
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-color: #04150f;     /* cor sólida preenche abaixo da imagem */
   }
 
   /* ─ Carousel ─ */
