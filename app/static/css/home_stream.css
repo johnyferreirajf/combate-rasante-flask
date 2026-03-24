@@ -269,9 +269,10 @@ body.intro-lock {
   }
 
   .stream-tile {
-    flex: 0 0 46%;    /* 2 tiles visíveis + dica do 3º (~8% exposto) */
-    min-height: 118px;
-    padding: 10px 10px 12px;
+    flex: 0 0 46%;    /* 2 visíveis + dica do 3º */
+    min-height: 0;    /* sem altura mínima — tile encolhe com o conteúdo */
+    height: fit-content;
+    padding: 10px;
     border-radius: 12px;
   }
 
