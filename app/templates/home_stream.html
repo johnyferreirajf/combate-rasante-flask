@@ -5,7 +5,7 @@
 
 <div id="intro-video" aria-hidden="true">
   <video id="introVideoEl" autoplay muted playsinline preload="auto">
-    <source src="{{ url_for('static', filename='video/intro.mp4') }}" type="video/mp4">
+    <source id="introVideoSource" src="{{ url_for('static', filename='video/intro.mp4') }}" type="video/mp4">
   </video>
 </div>
 
@@ -40,21 +40,30 @@
 
 <script>
 (function () {
-  /* Mostra o intro 1x por hora — reaparece quando o usuário volta ao site */
-  const INTRO_KEY   = "cr_intro_ts";
-  const INTRO_TTL   = 60 * 60 * 1000; /* 1 hora em ms */
-  const wrap = document.getElementById("intro-video");
-  const vid  = document.getElementById("introVideoEl");
-  if (!wrap || !vid) return;
+  const INTRO_KEY = "cr_intro_ts";
+  const INTRO_TTL = 60 * 60 * 1000; /* 1 hora em ms */
 
-  const isMobile    = window.matchMedia("(max-width: 768px)").matches;
+  const wrap = document.getElementById("intro-video");
+  const vid = document.getElementById("introVideoEl");
+  const source = document.getElementById("introVideoSource");
+
+  if (!wrap || !vid || !source) return;
+
+  const isMobile = window.matchMedia("(max-width: 768px)").matches;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const desktopVideo = "{{ url_for('static', filename='video/intro.mp4') }}";
+  const mobileVideo = "{{ url_for('static', filename='video/mobile-intro.mp4') }}";
+
+  /* escolhe o vídeo conforme o tamanho da tela */
+  source.src = isMobile ? mobileVideo : desktopVideo;
+  vid.load();
 
   /* verifica se foi exibido dentro da última hora */
   const lastShown = parseInt(localStorage.getItem(INTRO_KEY) || "0", 10);
   const alreadySeen = (Date.now() - lastShown) < INTRO_TTL;
 
-  if (isMobile || reduceMotion || alreadySeen) {
+  if (reduceMotion || alreadySeen) {
     wrap.remove();
     return;
   }
@@ -76,7 +85,7 @@
     setTimeout(() => wrap.remove(), 900);
   }
 
-  setTimeout(finish, 4500);
+  setTimeout(finish, 5000);
   vid.addEventListener("ended", finish);
 })();
 </script>
