@@ -254,11 +254,11 @@ body.intro-lock {
 
 /* ─── MOBILE ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .stream-carousel { padding-inline: 8px; margin-top: 14px; }
+  .stream-carousel { padding-inline: 6px; margin-top: 14px; }
 
   .stream-tile {
-    flex: 0 0 calc(100% - 10px);
-    min-height: 155px;
+    flex: 0 0 72%;   /* mostra ~1.4 tiles, dá dica de scroll */
+    min-height: 145px;
     padding: 12px;
     border-radius: 16px;
   }
