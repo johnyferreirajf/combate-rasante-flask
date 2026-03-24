@@ -254,19 +254,22 @@ body.intro-lock {
 
 /* ─── MOBILE ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .stream-carousel { padding-inline: 6px; margin-top: 14px; }
+  .stream-carousel { padding-inline: 6px; margin-top: 12px; }
 
   .stream-tile {
-    flex: 0 0 72%;   /* mostra ~1.4 tiles, dá dica de scroll */
-    min-height: 145px;
-    padding: 12px;
-    border-radius: 16px;
+    flex: 0 0 38%;   /* ~2.5 visíveis */
+    min-height: 130px;
+    padding: 10px;
+    border-radius: 14px;
   }
 
-  .stream-tile__icon    { width: 30px; height: 30px; font-size: 14px; }
-  .stream-tile__title   { font-size: 15px; }
-  .stream-tile__desc    { font-size: 12px; }
-  .stream-tile__list    { font-size: 11px; }
+  /* Esconde ícone e badge no mobile — economiza espaço */
+  .stream-tile__icon  { display: none; }
+  .stream-tile__top   { display: none; }  /* badge */
+
+  .stream-tile__title { font-size: 13px; margin-bottom: 4px; }
+  .stream-tile__desc  { font-size: 11px; margin-bottom: 4px; }
+  .stream-tile__list  { font-size: 10px; }
 
   .stream-carousel__btn { display: none; }
 
