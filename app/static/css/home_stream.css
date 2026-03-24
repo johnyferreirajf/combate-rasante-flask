@@ -254,22 +254,35 @@ body.intro-lock {
 
 /* ─── MOBILE ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .stream-carousel { padding-inline: 6px; margin-top: 12px; }
-
-  .stream-tile {
-    flex: 0 0 38%;   /* ~2.5 visíveis */
-    min-height: 130px;
-    padding: 10px;
-    border-radius: 14px;
+  .stream-hero {
+    padding-top: 10px;
+    padding-bottom: 14px;
   }
 
-  /* Esconde ícone e badge no mobile — economiza espaço */
-  .stream-tile__icon  { display: none; }
-  .stream-tile__top   { display: none; }  /* badge */
+  .stream-hero__copy { margin-bottom: 10px; }
 
-  .stream-tile__title { font-size: 13px; margin-bottom: 4px; }
-  .stream-tile__desc  { font-size: 11px; margin-bottom: 4px; }
-  .stream-tile__list  { font-size: 10px; }
+  .stream-carousel { padding-inline: 6px; margin-top: 10px; }
+
+  .stream-carousel__track {
+    gap: 8px;
+    padding-block: 2px 8px;
+  }
+
+  .stream-tile {
+    flex: 0 0 46%;    /* 2 tiles visíveis + dica do 3º (~8% exposto) */
+    min-height: 118px;
+    padding: 10px 10px 12px;
+    border-radius: 12px;
+  }
+
+  /* Esconde ícone e badge no mobile — mais espaço para a foto de fundo */
+  .stream-tile__icon  { display: none; }
+  .stream-tile__top   { display: none; }
+
+  .stream-tile__title { font-size: 12px; font-weight: 900; margin-bottom: 3px; }
+  .stream-tile__desc  { font-size: 10.5px; line-height: 1.3; margin-bottom: 4px; }
+  .stream-tile__list  { font-size: 9.5px; padding-left: 12px; }
+  .stream-tile__list li + li { margin-top: 2px; }
 
   .stream-carousel__btn { display: none; }
 
