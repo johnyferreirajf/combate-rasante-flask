@@ -15,6 +15,7 @@
       </p>
     </header>
 
+    {# ── 6 cards em grid 3x2 — fecha limpo ── #}
     <div class="cards-grid">
 
       <article class="page-card">
@@ -56,10 +57,9 @@
       <article class="page-card">
         <h2 class="page-card__title">✈ Precisão e Eficiência</h2>
         <p class="page-card__body">
-          <strong>Altura de voo:</strong> entre 2 e 5m do dossel, com baixa deriva e deposição uniforme.<br><br>
-          <strong>Controle de faixa GPS:</strong> sobreposição inferior a 3% entre passadas.<br><br>
-          <strong>Turbulência dirigida:</strong> o fluxo das hélices penetra no dossel e melhora a cobertura das folhas inferiores.<br><br>
-          <strong>Velocidade operacional:</strong> centenas de hectares por dia, sem depender das condições do solo.
+          <strong>Altura de voo:</strong> entre 2 e 5m do dossel, baixa deriva e deposição uniforme.<br><br>
+          <strong>Controle GPS:</strong> sobreposição inferior a 3% entre passadas.<br><br>
+          <strong>Velocidade:</strong> centenas de hectares por dia, sem depender das condições do solo.
         </p>
       </article>
 
@@ -68,25 +68,26 @@
         <p class="page-card__body">
           Referência no cerrado goiano e Triângulo Mineiro, com equipe certificada pela ANAC
           e operação comprometida com o resultado do produtor.<br><br>
-          <strong>Sem compactação</strong> do solo, <strong>rastreabilidade total</strong> em cada operação
-          e relatório georreferenciado entregue após cada aplicação.
+          Sem compactação do solo, rastreabilidade total e relatório georreferenciado
+          entregue após cada aplicação.
         </p>
       </article>
 
-      <article class="page-card" style="display: flex; flex-direction: column; justify-content: center; text-align: center;">
-        <h2 class="page-card__title">Solicite um Orçamento</h2>
-        <p class="page-card__body">
-          Fale com nossa equipe para planejar a aplicação certa
-          para sua lavoura e momento da safra.
-        </p>
-        <div class="mt-lg">
-          <a href="{{ url_for('main.contato') }}" class="btn btn--primary">Entrar em contato</a>
-        </div>
-        <p class="page-card__body mt-md">
-          <strong>Tel:</strong> (64) 99983-6005 &nbsp;|&nbsp; (64) 99221-7002
-        </p>
-      </article>
+    </div>
 
+    {# ── CTA fora do grid — ocupa largura total centralizado ── #}
+    <div class="page-card mt-lg" style="text-align: center; max-width: 480px; margin-inline: auto;">
+      <h2 class="page-card__title">Solicite um Orçamento</h2>
+      <p class="page-card__body">
+        Fale com nossa equipe para planejar a aplicação certa
+        para sua lavoura e momento da safra.
+      </p>
+      <div class="mt-lg">
+        <a href="{{ url_for('main.contato') }}" class="btn btn--primary">Entrar em contato</a>
+      </div>
+      <p class="page-card__body mt-md">
+        <strong>Tel:</strong> (64) 99983-6005 &nbsp;|&nbsp; (64) 99221-7002
+      </p>
     </div>
 
   </div>
