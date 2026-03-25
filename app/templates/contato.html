@@ -1,5 +1,24 @@
 {% extends "layout.html" %}
 {% block title %}Contato — COMBATE RASANTE{% endblock %}
+
+{% block scripts %}
+<script>
+/* Ativa o mapa no primeiro toque (mobile) */
+(function () {
+  var mapWrap = document.getElementById("mapEmbed");
+  if (!mapWrap) return;
+
+  function activate() {
+    mapWrap.classList.add("map-active");
+    mapWrap.removeEventListener("touchstart", activate);
+    mapWrap.removeEventListener("click", activate);
+  }
+
+  mapWrap.addEventListener("touchstart", activate, { passive: true });
+  mapWrap.addEventListener("click", activate);
+})();
+</script>
+{% endblock %}
 {% block meta_description %}Entre em contato com a Combate Rasante Aviação Agrícola para solicitar orçamento ou tirar dúvidas.{% endblock %}
 
 {% block content %}
@@ -141,13 +160,14 @@
               Hangar 10
             </div>
           </div>
-          <div class="map-embed">
+          <div class="map-embed" id="mapEmbed">
             <iframe
               title="Localização Combate Rasante"
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d237.515649354601!2d-49.80516892240592!3d-17.73283742945343!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x94a00ed2cbf94dbf%3A0x45dac67a92e2f53d!2zQ29tYmF0ZSBBdmlhw6fDo28gQWdyw61jb2xh!5e0!3m2!1spt-BR!2sbr!4v1774053620213!5m2!1spt-BR!2sbr"
               loading="lazy"
               referrerpolicy="no-referrer-when-downgrade"
               aria-label="Mapa da localização da Combate Rasante"
+              allowfullscreen
             ></iframe>
           </div>
         </div>
