@@ -58,11 +58,24 @@
 
   if (reduceMotion) { wrap.remove(); return; }
 
-  /* Seleciona vídeo conforme viewport */
+  /* Seleciona vídeo conforme viewport
+   * mobile-intro.mp4 pode estar corrompido — usa intro.mp4 como fallback seguro */
   var desktopSrc = "{{ url_for('static', filename='video/intro.mp4') }}";
   var mobileSrc  = "{{ url_for('static', filename='video/mobile-intro.mp4') }}";
+
   source.src = isMobile ? mobileSrc : desktopSrc;
   vid.load();
+
+  /* Se o vídeo mobile falhar (arquivo corrompido/ausente), usa o desktop */
+  vid.addEventListener("error", function () {
+    if (isMobile && source.src !== desktopSrc) {
+      source.src = desktopSrc;
+      vid.load();
+      vid.play().catch(function () { finish(); });
+    } else {
+      finish();
+    }
+  });
 
   document.documentElement.classList.add("intro-lock");
   document.body.classList.add("intro-lock");
