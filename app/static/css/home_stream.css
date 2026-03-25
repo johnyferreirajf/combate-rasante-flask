@@ -12,20 +12,27 @@ body.intro-lock {
 /* ─── INTRO VIDEO ───────────────────────────────────────────── */
 #introVideo {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 9999;
   background: #000;
-  width: 100%;
-  height: 100%;
+  overflow: hidden;          /* impede qualquer vazamento */
 }
 
 #introVideo video {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* Garante cobertura total independente do ratio do vídeo */
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
   display: block;
-  object-fit: cover;        /* preenche toda a tela sem barras pretas */
+  object-fit: cover;
   object-position: center center;
   background: #000;
 }
@@ -121,7 +128,7 @@ body.intro-lock {
 /* ─── TILE ──────────────────────────────────────────────────── */
 .stream-tile {
   flex: 0 0 calc((100% - 28px) / 3);
-  min-height: 185px;
+  min-height: 0;
   scroll-snap-align: start;
   border-radius: 20px;
   padding: 16px;
@@ -270,16 +277,18 @@ body.intro-lock {
   .stream-carousel__track {
     gap: 8px;
     padding-block: 2px 8px;
-    align-items: start; /* tiles ficam com altura do próprio conteúdo */
+    align-items: flex-start; /* tiles com altura do próprio conteúdo */
   }
 
   .stream-tile {
-    flex: 0 0 46%;    /* 2 visíveis + dica do 3º */
-    min-height: 0;
-    height: fit-content;
-    align-self: start; /* ignora altura dos irmãos */
+    flex: 0 0 46%;        /* 2 visíveis + dica do 3º */
+    width: 46%;
+    min-height: unset !important;
+    height: auto !important;
+    align-self: flex-start;
     padding: 8px;
     border-radius: 12px;
+    box-sizing: border-box;
   }
 
   /* Esconde ícone e badge no mobile — mais espaço para a foto de fundo */
