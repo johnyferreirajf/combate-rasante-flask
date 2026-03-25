@@ -1123,7 +1123,7 @@ textarea.form-control {
     position: fixed;          /* fixo no viewport, não na página */
     inset: 0;                 /* cobre tudo: top/right/bottom/left = 0 */
     z-index: -1;              /* atrás de todo o conteúdo */
-    background-image: url("/static/img/hero-mobile-fixed.jpg");
+    background-image: url("/static/img/hero-mobile-fixed.png");
     background-size: cover;
     background-position: top center;
     background-repeat: no-repeat;
