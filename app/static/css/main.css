@@ -641,6 +641,7 @@ textarea.form-control {
   grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: var(--space-md);
   margin-top: var(--space-lg);
+  align-items: start; /* cada card tem a altura do próprio conteúdo */
 }
 
 .page-card {
@@ -652,6 +653,7 @@ textarea.form-control {
   -webkit-backdrop-filter: blur(10px);
   color: var(--color-text);
   transition: transform var(--transition-base), border-color var(--transition-base);
+  align-self: start; /* garante individualmente, mesmo em grids aninhados */
 }
 
 .page-card:hover {
