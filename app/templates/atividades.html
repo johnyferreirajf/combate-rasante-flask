@@ -1,44 +1,132 @@
 {% extends "layout.html" %}
-{% block title %}Atividades — COMBATE RASANTE{% endblock %}
+{% block title %}Atividades — COMBATE RASANTE Aviação Agrícola{% endblock %}
+{% block meta_description %}Conheça as principais atividades de aplicação aérea da Combate Rasante: maturadores, dessecantes, inseticidas, fungicidas, herbicidas e fertilizantes foliares para cana e grãos.{% endblock %}
 
 {% block content %}
 <section class="page-section section">
   <div class="container">
 
     <header class="page-header">
-      <h1 class="page-header__title">Atividades</h1>
+      <h1 class="page-header__title">Atividades de Aplicação</h1>
       <p class="page-header__subtitle">
-        Operações, relatórios, status e atualizações em campo.
+        Detalhamento técnico das principais aplicações aéreas realizadas pela
+        <strong>Combate Rasante</strong> nas lavouras de cana-de-açúcar, soja, milho e outras culturas
+        do cerrado goiano e do Triângulo Mineiro.
       </p>
     </header>
+
+    {# ── MATURADORES ── #}
+    <div class="page-card" style="margin-bottom: var(--space-md);">
+      <h2 class="page-card__title">🍬 Aplicação de Maturadores — Cana-de-Açúcar</h2>
+      <p class="page-card__body">
+        A aplicação aérea de maturadores é uma das operações mais estratégicas no manejo da cana-de-açúcar.
+        Realizada entre 30 e 60 dias antes da colheita, promove a paralisação do crescimento vegetativo
+        e induz o acúmulo de sacarose nos colmos, elevando diretamente o ATR (Açúcar Total Recuperável)
+        e, consequentemente, a rentabilidade da safra. Os produtos mais utilizados incluem
+        <strong>Ethephon, Fluazifop-P-butílico e Sulfometuron-metil</strong>, aplicados em doses e
+        diluições calibradas conforme o estádio da planta, variedade e condições climáticas.
+        A aviação garante cobertura uniforme sem danos mecânicos ao canavial e sem compactação do solo.
+      </p>
+    </div>
 
     <div class="cards-grid">
 
       <article class="page-card">
-        <h2 class="page-card__title">Status Operacional</h2>
+        <h2 class="page-card__title">🌿 Dessecação</h2>
         <p class="page-card__body">
-          <strong>Hoje:</strong> Operações programadas / em execução / concluídas.<br>
-          <strong>Condições:</strong> Vento, umidade, janela de aplicação.<br>
-          <strong>Observação:</strong> Anotações rápidas do dia.
+          Aplicação de dessecantes para controle de plantas daninhas, manejo de palhada
+          e uniformização da maturação antes da colheita. Realizada em:
         </p>
+        <ul style="padding-left: 1.2rem; margin-top: 0.6rem; display: flex; flex-direction: column; gap: 5px; font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.5;">
+          <li><strong style="color:var(--color-text);">Soja e milho:</strong> pré-colheita com Paraquate, Diquat ou Glufosinate</li>
+          <li><strong style="color:var(--color-text);">Cana:</strong> manejo de rebrota e eliminação de perfilhos indesejados</li>
+          <li><strong style="color:var(--color-text);">Pastagens:</strong> renovação e reforma de áreas degradadas</li>
+          <li>Monitoramento do intervalo de segurança (IEP) e condições climáticas</li>
+          <li>Registro de data, produto e dose por talhão tratado</li>
+        </ul>
       </article>
 
       <article class="page-card">
-        <h2 class="page-card__title">Relatórios Recentes</h2>
+        <h2 class="page-card__title">🐛 Controle de Pragas — Inseticidas</h2>
         <p class="page-card__body">
-          Relatório de aplicação — cliente e área.<br>
-          Mapa de cobertura — data e região.<br>
-          Indicadores — resumo semanal.
+          Aplicação aérea de inseticidas para controle de pragas de alto impacto econômico,
+          com atuação rápida e cobertura abrangente mesmo em grandes áreas infestadas:
         </p>
+        <ul style="padding-left: 1.2rem; margin-top: 0.6rem; display: flex; flex-direction: column; gap: 5px; font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.5;">
+          <li><strong style="color:var(--color-text);">Lagartas (Spodoptera, Helicoverpa):</strong> soja e milho em V4–R5</li>
+          <li><strong style="color:var(--color-text);">Percevejos (Euschistus, Nezara):</strong> enchimento de grãos em soja</li>
+          <li><strong style="color:var(--color-text);">Cigarrinha-das-raízes:</strong> voo dos adultos em cana</li>
+          <li><strong style="color:var(--color-text);">Broca-da-cana (Diatraea):</strong> liberação de Cotesia ou produto químico</li>
+          <li><strong style="color:var(--color-text);">Mosca-branca e tripes:</strong> em soja e culturas de sequeiro</li>
+          <li>Monitoramento prévio com armadilhas e amostragens de campo</li>
+        </ul>
       </article>
 
       <article class="page-card">
-        <h2 class="page-card__title">Próximas Ações</h2>
+        <h2 class="page-card__title">🍄 Controle de Doenças — Fungicidas</h2>
         <p class="page-card__body">
-          Revisão de aeronave programada.<br>
-          Treinamento interno da equipe.<br>
-          Reunião de alinhamento com cliente.
+          A aplicação aérea de fungicidas é fundamental para proteger o potencial produtivo
+          em janelas climáticas favoráveis ao desenvolvimento de patógenos:
         </p>
+        <ul style="padding-left: 1.2rem; margin-top: 0.6rem; display: flex; flex-direction: column; gap: 5px; font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.5;">
+          <li><strong style="color:var(--color-text);">Ferrugem asiática (Phakopsora):</strong> principal ameaça à soja no Brasil</li>
+          <li><strong style="color:var(--color-text);">Ferrugem alaranjada da cana:</strong> controle em variedades suscetíveis</li>
+          <li><strong style="color:var(--color-text);">Antracnose e mancha-alvo:</strong> soja em períodos de alta umidade</li>
+          <li><strong style="color:var(--color-text);">Podridão-vermelha (Fusarium):</strong> em cana após períodos secos</li>
+          <li><strong style="color:var(--color-text);">Helmintosporiose e cercosporiose:</strong> milho em fases críticas</li>
+          <li>Aplicações preventivas e curativas com misturas de SDHI + triazóis</li>
+        </ul>
+      </article>
+
+      <article class="page-card">
+        <h2 class="page-card__title">🌱 Controle de Plantas Daninhas — Herbicidas</h2>
+        <p class="page-card__body">
+          Manejo de plantas daninhas com herbicidas seletivos e não seletivos,
+          respeitando o perfil de resistência da área e as culturas adjacentes:
+        </p>
+        <ul style="padding-left: 1.2rem; margin-top: 0.6rem; display: flex; flex-direction: column; gap: 5px; font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.5;">
+          <li><strong style="color:var(--color-text);">Pré-emergência:</strong> aplicação em solo úmido antes da germinação das daninhas</li>
+          <li><strong style="color:var(--color-text);">Pós-emergência seletiva:</strong> graminicidas em soja e dicotiledôneas em gramíneas</li>
+          <li><strong style="color:var(--color-text);">Buva, azevém e capim-amargoso:</strong> manejo de resistentes com herbicidas alternativos</li>
+          <li><strong style="color:var(--color-text);">Cana:</strong> controle de folha-larga em pós-emergência inicial</li>
+          <li>Análise prévia das daninhas presentes e histórico da área</li>
+          <li>Respeito obrigatório ao IEP e deriva para culturas vizinhas</li>
+        </ul>
+      </article>
+
+      <article class="page-card">
+        <h2 class="page-card__title">🧪 Fertilizantes Foliares e Nutrição</h2>
+        <p class="page-card__body">
+          A aplicação foliar via aviação permite disponibilizar nutrientes diretamente
+          às folhas em momentos críticos de demanda da planta, com alta eficiência de absorção:
+        </p>
+        <ul style="padding-left: 1.2rem; margin-top: 0.6rem; display: flex; flex-direction: column; gap: 5px; font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.5;">
+          <li><strong style="color:var(--color-text);">Boro:</strong> floração e pegamento de vagens em soja</li>
+          <li><strong style="color:var(--color-text);">Zinco e manganês:</strong> correção de deficiências em solos de cerrado</li>
+          <li><strong style="color:var(--color-text);">Molibdênio e cobalto:</strong> eficiência da fixação biológica de nitrogênio</li>
+          <li><strong style="color:var(--color-text);">Nitrogênio foliar (ureia):</strong> suplementação em momentos de alta demanda</li>
+          <li><strong style="color:var(--color-text);">Aminoácidos e bioestimulantes:</strong> redução de estresse e ganho de produtividade</li>
+          <li>Compatibilidade verificada com defensivos em caldas mistas</li>
+        </ul>
+      </article>
+
+      <article class="page-card">
+        <h2 class="page-card__title">🗺 Registro e Rastreabilidade</h2>
+        <p class="page-card__body">
+          Cada aplicação realizada pela Combate Rasante gera um registro completo
+          que fica disponível para o produtor no painel do cliente:
+        </p>
+        <ul style="padding-left: 1.2rem; margin-top: 0.6rem; display: flex; flex-direction: column; gap: 5px; font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.5;">
+          <li>Mapa georreferenciado do talhão tratado (KML/KMZ)</li>
+          <li>Data, hora de início e término da operação</li>
+          <li>Produto(s) aplicado(s), dose e volume de calda por hectare</li>
+          <li>Nome do piloto responsável pela operação</li>
+          <li>Condições climáticas registradas durante o voo</li>
+          <li>Área efetivamente coberta e hectares totais da operação</li>
+        </ul>
+        <div class="mt-lg">
+          <a href="{{ url_for('auth.login') }}" class="btn btn--primary">Acessar meu painel</a>
+        </div>
       </article>
 
     </div>
