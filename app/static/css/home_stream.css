@@ -122,11 +122,11 @@ body.intro-lock {
   border-radius: 20px;
   padding: 16px;
   text-align: left;
-  background: linear-gradient(180deg, rgba(108, 205, 122, 0.52), rgba(41, 169, 72, 0.48));
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow: 0 14px 28px rgba(8, 40, 18, 0.12);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(52, 120, 72, 0.28);   /* igual ao page-card das abas */
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 14px 28px rgba(8, 40, 18, 0.10);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
