@@ -33,3 +33,6 @@ class Config:
 
     # limite de upload (global)
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
+
+    # Render usa proxy reverso HTTPS — garante que url_for gere https://
+    PREFERRED_URL_SCHEME = os.environ.get("PREFERRED_URL_SCHEME", "https")
