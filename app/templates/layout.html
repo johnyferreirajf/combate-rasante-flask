@@ -11,12 +11,15 @@
   <meta property="og:title" content="{% block og_title %}COMBATE RASANTE — Aviação Agrícola{% endblock %}">
   <meta property="og:description" content="Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.">
   {# _external=True gera URL absoluta com domínio — obrigatório para WhatsApp/Telegram lerem a imagem #}
-  <meta property="og:image" content="{{ url_for('static', filename='img/og-combaterasante.jpeg', _external=True) }}">
+  {# Força HTTPS na URL da imagem — necessário para WhatsApp/Telegram carregarem #}
+  {% set og_image = url_for('static', filename='img/og-combaterasante.jpeg', _external=True) | replace('http://', 'https://') %}
+  <meta property="og:image" content="{{ og_image }}">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:url" content="{{ request.url }}">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:url" content="{{ request.url | replace('http://', 'https://') }}">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="{{ url_for('static', filename='img/og-combaterasante.jpeg', _external=True) }}">
+  <meta name="twitter:image" content="{{ og_image }}">
 
   {# Preloads críticos #}
   <link rel="preload" href="{{ url_for('static', filename='img/logo-combate.jpeg') }}" as="image">
