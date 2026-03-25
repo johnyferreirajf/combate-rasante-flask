@@ -1,5 +1,6 @@
 import os
 from flask import Flask
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
 
@@ -9,6 +10,8 @@ db = SQLAlchemy()
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object("config.Config")
+    # Render usa proxy reverso — ProxyFix faz url_for gerar https:// corretamente
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     # garante BASE_DIR/instance (onde o config.py da raiz aponta)
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
