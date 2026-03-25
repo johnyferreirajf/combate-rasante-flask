@@ -381,11 +381,9 @@ main,
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: var(--color-form-bg);
   color: var(--color-form-text);
-  font-size: var(--text-base);
+  font-size: max(16px, var(--text-base)); /* previne zoom iOS em inputs */
   font-family: inherit;
   transition: border-color var(--transition-fast);
-  /* Previne zoom iOS em inputs */
-  font-size: max(16px, var(--text-base));
 }
 
 .form-control:focus {
