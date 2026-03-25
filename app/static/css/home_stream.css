@@ -19,8 +19,8 @@ body.intro-lock {
 
 #introVideo video {
   width: 100%;
-  height: 100%;
-  height: 100svh;
+  height: 100vh;    /* fallback para browsers antigos */
+  height: 100svh;   /* descontando barra de endereço no mobile */
   display: block;
   object-fit: cover;
   object-position: center center;
