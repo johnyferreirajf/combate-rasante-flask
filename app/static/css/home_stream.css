@@ -267,13 +267,15 @@ body.intro-lock {
   .stream-carousel__track {
     gap: 8px;
     padding-block: 2px 8px;
+    align-items: start; /* tiles ficam com altura do próprio conteúdo */
   }
 
   .stream-tile {
     flex: 0 0 46%;    /* 2 visíveis + dica do 3º */
-    min-height: 0;    /* sem altura mínima — tile encolhe com o conteúdo */
+    min-height: 0;
     height: fit-content;
-    padding: 10px;
+    align-self: start; /* ignora altura dos irmãos */
+    padding: 8px;
     border-radius: 12px;
   }
 
