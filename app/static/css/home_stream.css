@@ -11,19 +11,23 @@ body.intro-lock {
 
 /* ─── INTRO VIDEO ───────────────────────────────────────────── */
 #introVideo {
-  position: fixed;
-  inset: 0;
+  position: fixed;       /* fixo no viewport do browser — não sai da janela */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;          /* 100% da janela do browser, não da tela do monitor */
   z-index: 9999;
   background: #000;
+  overflow: hidden;
 }
 
 #introVideo video {
   width: 100%;
   height: 100%;
-  height: 100svh;  /* small viewport height para mobile */
   display: block;
-  object-fit: cover;
+  object-fit: contain;   /* contain: vídeo inteiro visível, sem cortes */
   object-position: center center;
+  background: #000;
 }
 
 #introVideo.intro-hide {
