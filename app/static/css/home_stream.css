@@ -4,7 +4,7 @@
    ============================================================= */
 
 /* ─── INTRO LOCK ────────────────────────────────────────────── */
-html.intro-lock,
+/* Durante o intro: bloqueia scroll da página mas navbar/footer ficam visíveis */
 body.intro-lock {
   overflow: hidden;
 }
@@ -16,9 +16,9 @@ body.intro-lock {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9999;
+  z-index: 900;   /* abaixo da navbar (1000) — navbar aparece por cima */
   background: #000;
-  overflow: hidden;          /* impede qualquer vazamento */
+  overflow: hidden;
 }
 
 #introVideo video {
