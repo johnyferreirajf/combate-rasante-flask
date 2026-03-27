@@ -176,7 +176,7 @@ main,
 .navbar {
   position: sticky;
   top: 0;
-  z-index: 1000;
+  z-index: 1100;  /* acima do intro video (900) */
   height: var(--navbar-height);
   background: var(--color-surface-top);
   border-bottom: 1px solid var(--color-border);
@@ -963,6 +963,8 @@ textarea.form-control {
 /* ─── 16. FOOTER ────────────────────────────────────────────── */
 .footer {
   flex-shrink: 0;
+  position: relative;
+  z-index: 1100;  /* acima do intro video (900) */
   background: var(--color-surface-mid);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
