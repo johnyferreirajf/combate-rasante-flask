@@ -5,6 +5,13 @@
 <section class="auth-section section">
   <div class="container">
 
+    {# ── Navegação entre painéis admin ── #}
+    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg);">
+      <a href="{{ url_for('auth.admin') }}" class="btn btn--primary">Clientes</a>
+      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">→ Funcionários</a>
+      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">Mensagens</a>
+    </div>
+
     <div class="auth-layout">
 
       {# ── Formulário de criação ── #}
