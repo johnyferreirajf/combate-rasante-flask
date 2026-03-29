@@ -1,0 +1,134 @@
+{% extends "layout.html" %}
+{% block title %}Gerenciar Funcionários — COMBATE RASANTE{% endblock %}
+
+{% block content %}
+<section class="auth-section section">
+  <div class="container">
+
+    {# ── Navegação entre painéis admin ── #}
+    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg);">
+      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">← Clientes</a>
+      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--primary">Funcionários</a>
+      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">Mensagens</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); align-items: start;">
+
+      {# ── Formulário de criação ── #}
+      <div class="auth-card">
+        <h1 class="auth-card__title">Novo Funcionário</h1>
+        <p class="auth-card__desc">
+          Logado como: <strong>{{ current_user.email }}</strong>
+        </p>
+
+        <form method="POST" novalidate>
+
+          <div class="form-group">
+            <label class="form-label" for="name">Nome completo</label>
+            <input id="name" name="name" type="text" class="form-control"
+                   placeholder="Nome do funcionário" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="username">Usuário de login</label>
+            <input id="username" name="username" type="text" class="form-control"
+                   placeholder="Ex: piloto01" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Senha</label>
+            <input id="password" name="password" type="password" class="form-control"
+                   placeholder="Mínimo 4 caracteres" minlength="4" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="confirm_password">Confirmar senha</label>
+            <input id="confirm_password" name="confirm_password" type="password"
+                   class="form-control" placeholder="Repita a senha" minlength="4" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+              <input type="checkbox" name="is_admin" value="1"
+                     style="width:auto; border-radius:4px;">
+              É administrador do portal de funcionários
+            </label>
+          </div>
+
+          <div class="mt-lg">
+            <button type="submit" class="btn btn--primary btn--full">Criar funcionário</button>
+          </div>
+        </form>
+      </div>
+
+      {# ── Info ── #}
+      <div class="auth-card">
+        <h2 class="auth-card__title">Orientações</h2>
+        <p class="auth-card__desc">Boas práticas para cadastro de funcionários.</p>
+        <ul class="auth-card__list">
+          <li>Use um usuário simples, sem espaços (ex: piloto01)</li>
+          <li>Senha mínima de 4 caracteres</li>
+          <li>Marque "administrador" apenas para quem pode criar pastas e fazer uploads</li>
+          <li>Funcionários acessam em: <strong>/funcionarios/login</strong></li>
+        </ul>
+      </div>
+
+    </div>
+
+    {# ── Lista de funcionários ── #}
+    {% if employees %}
+    <div class="glass-card glass-card--standard mt-lg">
+      <h2 style="font-size: var(--text-lg); font-weight:900; margin-bottom: var(--space-md);">
+        Funcionários cadastrados ({{ employees|length }})
+      </h2>
+
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        {% for emp in employees %}
+        <div style="display:flex; align-items:center; justify-content:space-between;
+                    gap:12px; padding:12px 16px; border-radius:14px;
+                    background:rgba(0,0,0,0.15); border:1px solid var(--color-border);
+                    flex-wrap:wrap;">
+
+          <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+            <div style="width:38px; height:38px; border-radius:50%;
+                        background:rgba(255,255,255,0.15); border:1px solid var(--color-border);
+                        display:flex; align-items:center; justify-content:center;
+                        font-weight:900; font-size:1rem; flex-shrink:0;">
+              {{ (emp.name or 'F')[:1]|upper }}
+            </div>
+            <div>
+              <div style="font-weight:800; color:var(--color-text);">{{ emp.name }}</div>
+              <div style="font-size:var(--text-xs); color:var(--color-text-muted);">
+                @{{ emp.username }}
+                {% if emp.is_admin %}
+                  &nbsp;<span style="background:rgba(22,163,74,0.25); border:1px solid rgba(22,163,74,0.45);
+                                     padding:2px 8px; border-radius:999px; font-size:10px; font-weight:800;">
+                    ADMIN
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size:var(--text-xs); color:var(--color-text-muted);">
+            Criado em {{ emp.created_at.strftime("%d/%m/%Y") }}
+          </div>
+
+          <form method="POST"
+                action="{{ url_for('auth.admin_funcionarios_excluir', emp_id=emp.id) }}"
+                onsubmit="return confirm('Excluir funcionário {{ emp.name }}?')">
+            <button type="submit" class="btn btn--danger"
+                    style="min-height:34px; padding:0 14px; font-size:var(--text-xs);">
+              Excluir
+            </button>
+          </form>
+
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
