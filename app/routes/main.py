@@ -106,41 +106,31 @@ ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
 def _build_dashboard_tree():
-    """Lê app/static/uploads no padrão tema/safra/mes/dia/arquivo."""
-    uploads_root = current_app.config.get("UPLOAD_FOLDER")
-    if not uploads_root or not os.path.isdir(uploads_root):
+    """Busca no banco as fotos do cliente logado, organizadas por tema/safra/mes/dia."""
+    from app.models.photo import Photo
+    user = get_current_user()
+    if not user:
         return {}
 
-    tree = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+    fotos = Photo.query.filter_by(user_id=user.id).order_by(
+        Photo.tema, Photo.safra, Photo.mes, Photo.dia, Photo.filename
+    ).all()
 
-    for root, _dirs, files in os.walk(uploads_root):
-        rel_root = os.path.relpath(root, uploads_root)
-        if rel_root == ".":
-            continue
-
-        parts = [p for p in rel_root.replace("\\", "/").split("/") if p]
-        tema = parts[0] if len(parts) > 0 else "outros"
-        safra = parts[1] if len(parts) > 1 else "Sem safra"
-        mes = parts[2] if len(parts) > 2 else "Sem mês"
-        dia = parts[3] if len(parts) > 3 else "Sem dia"
-
-        for filename in sorted(files):
-            ext = os.path.splitext(filename)[1].lower()
-            if ext not in ALLOWED_IMAGE_EXTENSIONS:
-                continue
-
-            rel_file = os.path.join(rel_root, filename).replace("\\", "/")
-            url = url_for("static", filename=f"uploads/{rel_file}")
-            tree[tema][safra][mes][dia].append({"name": filename, "url": url})
-
-    # ordena internamente mantendo dicts simples para o template
     ordered_tree = {}
-    for tema in sorted(tree.keys()):
-        ordered_tree[tema] = {}
-        for safra in sorted(tree[tema].keys()):
-            ordered_tree[tema][safra] = {}
-            for mes in sorted(tree[tema][safra].keys()):
-                ordered_tree[tema][safra][mes] = {}
-                for dia in sorted(tree[tema][safra][mes].keys()):
-                    ordered_tree[tema][safra][mes][dia] = tree[tema][safra][mes][dia]
+    for foto in fotos:
+        t = foto.tema  or "outros"
+        s = foto.safra or "Sem safra"
+        m = foto.mes   or "Sem mês"
+        d = foto.dia   or "Sem dia"
+
+        ordered_tree.setdefault(t, {})
+        ordered_tree[t].setdefault(s, {})
+        ordered_tree[t][s].setdefault(m, {})
+        ordered_tree[t][s][m].setdefault(d, [])
+        ordered_tree[t][s][m][d].append({
+            "name": foto.title or foto.filename,
+            "url":  foto.url,
+            "id":   foto.id,
+        })
+
     return ordered_tree
