@@ -2,9 +2,11 @@ import os
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash
 
 db = SQLAlchemy()
+migrate = Migrate()
 
 
 def create_app():
@@ -22,6 +24,7 @@ def create_app():
 
     # Banco
     db.init_app(app)
+    migrate.init_app(app, db)
 
     # Importa modelos antes de criar tabelas (necessário para db.create_all enxergar tudo)
     from app import models  # noqa: F401
