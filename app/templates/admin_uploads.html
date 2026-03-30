@@ -14,16 +14,38 @@
       <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
     </div>
 
+    {# ── Seleção de cliente ── #}
+    <div class="glass-card glass-card--standard" style="margin-bottom: var(--space-lg);">
+      <h2 style="font-size:var(--text-lg); font-weight:900; margin-bottom:var(--space-md);">
+        Selecionar Cliente
+      </h2>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        {% for c in clientes %}
+          <a
+            href="{{ url_for('auth.admin_uploads', cliente_id=c.id) }}"
+            class="btn {% if cliente_sel and cliente_sel.id == c.id %}btn--primary{% else %}btn--ghost{% endif %}"
+          >
+            {{ c.name or c.email }}
+          </a>
+        {% else %}
+          <p style="color:var(--color-text-muted);">Nenhum cliente cadastrado ainda.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if cliente_sel %}
+
     {# ── Formulário de upload ── #}
     <div class="auth-layout" style="margin-bottom: var(--space-lg);">
 
       <div class="auth-card">
-        <h1 class="auth-card__title">Enviar Análise</h1>
+        <h1 class="auth-card__title">Enviar para {{ cliente_sel.name }}</h1>
         <p class="auth-card__desc">
-          O arquivo aparecerá automaticamente no painel do cliente após o envio.
+          O arquivo ficará disponível no painel deste cliente.
         </p>
 
         <form method="POST" enctype="multipart/form-data" novalidate>
+          <input type="hidden" name="user_id" value="{{ cliente_sel.id }}">
 
           <div class="form-group">
             <label class="form-label" for="tema">Categoria</label>
@@ -58,75 +80,84 @@
           </div>
 
           <div class="form-group">
+            <label class="form-label" for="titulo">Título (opcional)</label>
+            <input id="titulo" name="titulo" type="text" class="form-control"
+                   placeholder="Ex: Análise de cobertura talhão 3" autocomplete="off">
+          </div>
+
+          <div class="form-group">
             <label class="form-label" for="arquivo">Arquivo</label>
             <input id="arquivo" name="arquivo" type="file" class="form-control"
                    accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.kml,.kmz" required>
             <p style="font-size:var(--text-xs); color:var(--color-text-muted); margin-top:4px;">
-              Permitido: imagens (JPG, PNG, WEBP), PDF, KML, KMZ
+              Imagens (JPG, PNG, WEBP), PDF, KML, KMZ
             </p>
           </div>
 
           <div class="mt-lg">
-            <button type="submit" class="btn btn--primary btn--full">
-              ⬆ Enviar arquivo
-            </button>
+            <button type="submit" class="btn btn--primary btn--full">⬆ Enviar arquivo</button>
           </div>
         </form>
       </div>
 
       <div class="auth-card">
         <h2 class="auth-card__title">Como organizar</h2>
-        <p class="auth-card__desc">Os arquivos aparecem no painel do cliente organizados por:</p>
+        <p class="auth-card__desc">Estrutura que aparece no painel do cliente:</p>
         <ul class="auth-card__list">
           <li><strong>Categoria:</strong> Aplicações, Mapas, Relatórios, Fotos</li>
           <li><strong>Safra:</strong> Ex: Safra2025-2026</li>
           <li><strong>Mês:</strong> Janeiro, Fevereiro...</li>
-          <li><strong>Dia:</strong> número do dia (14, 15...)</li>
+          <li><strong>Dia:</strong> número do dia da aplicação</li>
         </ul>
-        <p style="font-size:var(--text-xs); color:var(--color-text-muted); margin-top:var(--space-sm); line-height:1.6;">
-          ⚠️ No Railway o disco é efêmero — os arquivos somem no redeploy.
-          Configure o <strong>Cloudinary</strong> para armazenamento permanente.
-        </p>
       </div>
 
     </div>
 
-    {# ── Lista de arquivos enviados ── #}
-    {% if tree %}
+    {# ── Arquivos do cliente selecionado ── #}
     <div class="glass-card glass-card--standard">
       <h2 style="font-size:var(--text-lg); font-weight:900; margin-bottom:var(--space-md);">
-        Arquivos enviados ({{ tree|length }})
+        Arquivos de {{ cliente_sel.name }}
+        {% if fotos %}({{ fotos|length }}){% endif %}
       </h2>
 
+      {% if fotos %}
       <div style="overflow-x:auto;">
         <table class="admin-table">
           <thead>
             <tr>
-              <th>Arquivo</th>
+              <th>Título</th>
               <th>Categoria</th>
               <th>Safra</th>
               <th>Mês</th>
               <th>Dia</th>
-              <th>Tamanho</th>
+              <th>Storage</th>
               <th>Ação</th>
             </tr>
           </thead>
           <tbody>
-            {% for item in tree %}
+            {% for foto in fotos %}
             <tr>
               <td>
-                <span style="font-weight:800; color:var(--color-text);">{{ item.nome }}</span>
+                <a href="{{ foto.url }}" target="_blank" rel="noopener"
+                   style="color:var(--color-text); font-weight:800; text-decoration:underline;">
+                  {{ foto.title or foto.filename }}
+                </a>
               </td>
-              <td>{{ item.tema }}</td>
-              <td>{{ item.safra }}</td>
-              <td>{{ item.mes }}</td>
-              <td>{{ item.dia }}</td>
-              <td>{{ item.size }}</td>
+              <td>{{ temas.get(foto.tema, foto.tema) }}</td>
+              <td>{{ foto.safra }}</td>
+              <td>{{ foto.mes }}</td>
+              <td>{{ foto.dia }}</td>
               <td>
-                <form method="POST" action="{{ url_for('auth.admin_uploads_excluir') }}"
-                      onsubmit="return confirm('Excluir {{ item.nome }}?')"
+                <span style="font-size:var(--text-xs);
+                  {% if foto.source == 'cloudinary' %}color:#22c55e;{% else %}color:var(--color-text-muted);{% endif %}">
+                  {{ foto.source }}
+                </span>
+              </td>
+              <td>
+                <form method="POST"
+                      action="{{ url_for('auth.admin_uploads_excluir', foto_id=foto.id) }}"
+                      onsubmit="return confirm('Excluir {{ foto.title or foto.filename }}?')"
                       style="display:inline;">
-                  <input type="hidden" name="rel_path" value="{{ item.rel_path }}">
                   <button type="submit" class="btn btn--danger"
                           style="min-height:30px; padding:0 12px; font-size:var(--text-xs);">
                     Excluir
@@ -138,12 +169,17 @@
           </tbody>
         </table>
       </div>
+      {% else %}
+        <p style="color:var(--color-text-muted);">Nenhum arquivo enviado para este cliente ainda.</p>
+      {% endif %}
     </div>
 
     {% else %}
     <div class="glass-card glass-card--standard" style="text-align:center; padding:var(--space-xl);">
-      <p style="color:var(--color-text-muted); font-size:var(--text-lg);">📂</p>
-      <p style="color:var(--color-text-muted);">Nenhum arquivo enviado ainda.</p>
+      <p style="font-size:2rem;">☝️</p>
+      <p style="color:var(--color-text-muted); margin-top:var(--space-sm);">
+        Selecione um cliente acima para enviar ou gerenciar arquivos.
+      </p>
     </div>
     {% endif %}
 
