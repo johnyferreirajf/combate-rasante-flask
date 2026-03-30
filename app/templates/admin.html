@@ -6,10 +6,11 @@
   <div class="container">
 
     {# ── Navegação ── #}
-    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg);">
+    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg); flex-wrap:wrap;">
       <a href="{{ url_for('auth.admin') }}" class="btn btn--primary">👤 Clientes</a>
       <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
       <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
+      <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
     </div>
 
     <div class="auth-layout">

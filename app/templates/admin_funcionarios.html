@@ -6,10 +6,11 @@
   <div class="container">
 
     {# ── Navegação entre painéis admin ── #}
-    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg);">
-      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">← Clientes</a>
-      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--primary">Funcionários</a>
-      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">Mensagens</a>
+    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg); flex-wrap:wrap;">
+      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--primary">👷 Funcionários</a>
+      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
+      <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
     </div>
 
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); align-items: start;">
