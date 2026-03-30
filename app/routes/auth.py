@@ -101,10 +101,12 @@ def admin():
         flash(f"Cliente {new_user.email} criado com sucesso!", "success")
         return redirect(url_for("auth.admin"))
 
+    users = User.query.order_by(User.id.desc()).all()
     return render_template(
         "admin.html",
         current_user=current_user_obj,
         created_user_email=created_user_email,
+        users=users,
     )
 
 
