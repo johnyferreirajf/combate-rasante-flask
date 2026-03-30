@@ -214,13 +214,7 @@ def trocar_senha():
     )
 
 
-# ─── Upload de análises (painel do admin) ──────────────────────
-ALLOWED_UPLOAD_EXTENSIONS = {
-    "png", "jpg", "jpeg", "webp", "gif",   # imagens
-    "pdf",                                   # PDFs
-    "kml", "kmz",                            # mapas
-}
-
+# ─── Upload de análises por cliente ───────────────────────────
 TEMAS = {
     "aplicacoes": "Aplicações",
     "mapas":      "Mapas",
@@ -234,6 +228,7 @@ MESES = [
     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
 ]
 
+ALLOWED_UPLOAD_EXTENSIONS = {"png","jpg","jpeg","webp","gif","pdf","kml","kmz"}
 
 def _allowed_upload(filename):
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -244,122 +239,142 @@ def _allowed_upload(filename):
 @login_required
 @admin_required
 def admin_uploads():
+    import datetime, cloudinary, cloudinary.uploader
     from flask import current_app
-    import datetime
+    from app.models.photo import Photo
 
     current_user_obj = get_current_user()
-    upload_root = current_app.config.get("UPLOAD_FOLDER", "")
+    clientes = User.query.filter_by(is_admin=False).order_by(User.name).all()
 
-    # Listar arquivos já enviados
-    tree = _list_uploads(upload_root)
+    # Filtro por cliente selecionado
+    cliente_id = request.args.get("cliente_id", type=int)
+    fotos = []
+    cliente_sel = None
+    if cliente_id:
+        cliente_sel = User.query.get(cliente_id)
+        fotos = Photo.query.filter_by(user_id=cliente_id).order_by(
+            Photo.tema, Photo.safra, Photo.mes, Photo.dia, Photo.filename
+        ).all()
 
     if request.method == "POST":
-        tema    = (request.form.get("tema")    or "").strip()
-        safra   = (request.form.get("safra")   or "").strip()
-        mes     = (request.form.get("mes")     or "").strip()
-        dia     = (request.form.get("dia")     or "").strip()
+        user_id = request.form.get("user_id", type=int)
+        tema    = (request.form.get("tema")  or "").strip()
+        safra   = (request.form.get("safra") or "").strip()
+        mes     = (request.form.get("mes")   or "").strip()
+        dia     = (request.form.get("dia")   or "").strip()
+        titulo  = (request.form.get("titulo") or "").strip()
         arquivo = request.files.get("arquivo")
 
-        if not all([tema, safra, mes, dia, arquivo and arquivo.filename]):
+        if not all([user_id, tema, safra, mes, dia, arquivo and arquivo.filename]):
             flash("Preencha todos os campos e selecione um arquivo.", "error")
-            return redirect(url_for("auth.admin_uploads"))
+            return redirect(url_for("auth.admin_uploads", cliente_id=user_id))
 
         if not _allowed_upload(arquivo.filename):
             flash("Tipo de arquivo não permitido.", "error")
+            return redirect(url_for("auth.admin_uploads", cliente_id=user_id))
+
+        cliente = User.query.get(user_id)
+        if not cliente:
+            flash("Cliente não encontrado.", "error")
             return redirect(url_for("auth.admin_uploads"))
-
-        if tema not in TEMAS:
-            flash("Tema inválido.", "error")
-            return redirect(url_for("auth.admin_uploads"))
-
-        # Sanitizar entradas
-        safra = secure_filename(safra)
-        mes   = secure_filename(mes)
-        dia   = secure_filename(dia)
-
-        dest_dir = os.path.join(upload_root, tema, safra, mes, dia)
-        os.makedirs(dest_dir, exist_ok=True)
 
         filename = secure_filename(arquivo.filename)
-        # Evitar sobrescrever: adicionar timestamp se já existir
-        if os.path.exists(os.path.join(dest_dir, filename)):
-            name, ext = os.path.splitext(filename)
-            ts = datetime.datetime.now().strftime("%H%M%S")
-            filename = f"{name}_{ts}{ext}"
+        titulo   = titulo or filename
+        url_final  = ""
+        public_id  = ""
+        source     = "local"
 
-        arquivo.save(os.path.join(dest_dir, filename))
-        flash(f"Arquivo '{filename}' enviado com sucesso!", "success")
-        return redirect(url_for("auth.admin_uploads"))
+        # ── Cloudinary (se configurado) ──
+        use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+        if use_cloud:
+            try:
+                cloudinary.config(
+                    cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                    api_key=current_app.config["CLOUDINARY_API_KEY"],
+                    api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                    secure=True,
+                )
+                folder = f"combaterasante/cliente_{user_id}/{tema}/{safra}/{mes}/{dia}"
+                ext = filename.rsplit(".", 1)[-1].lower()
+                rtype = "image" if ext in {"png","jpg","jpeg","webp","gif"} else "raw"
+                result = cloudinary.uploader.upload(
+                    arquivo,
+                    folder=folder,
+                    resource_type=rtype,
+                    use_filename=True,
+                    unique_filename=True,
+                )
+                url_final = result["secure_url"]
+                public_id = result["public_id"]
+                source    = "cloudinary"
+            except Exception as e:
+                flash(f"Erro no Cloudinary: {e}", "error")
+                return redirect(url_for("auth.admin_uploads", cliente_id=user_id))
+        else:
+            # ── Fallback local ──
+            upload_root = current_app.config.get("UPLOAD_FOLDER", "")
+            dest_dir = os.path.join(upload_root, str(user_id), tema, safra, mes, dia)
+            os.makedirs(dest_dir, exist_ok=True)
+            if os.path.exists(os.path.join(dest_dir, filename)):
+                name, ext2 = os.path.splitext(filename)
+                ts = datetime.datetime.now().strftime("%H%M%S")
+                filename = f"{name}_{ts}{ext2}"
+            arquivo.save(os.path.join(dest_dir, filename))
+            url_final = url_for("static",
+                filename=f"uploads/{user_id}/{tema}/{safra}/{mes}/{dia}/{filename}",
+                _external=True)
+            source = "local"
+
+        photo = Photo(
+            user_id=user_id, filename=filename, title=titulo,
+            tema=tema, safra=safra, mes=mes, dia=dia,
+            url=url_final, public_id=public_id, source=source,
+        )
+        db.session.add(photo)
+        db.session.commit()
+
+        flash(f"Arquivo '{titulo}' enviado para {cliente.name}!", "success")
+        return redirect(url_for("auth.admin_uploads", cliente_id=user_id))
 
     return render_template(
         "admin_uploads.html",
         current_user=current_user_obj,
+        clientes=clientes,
+        cliente_sel=cliente_sel,
         temas=TEMAS,
         meses=MESES,
-        tree=tree,
+        fotos=fotos,
     )
 
 
-@auth_bp.route("/admin/uploads/excluir", methods=["POST"])
+@auth_bp.route("/admin/uploads/excluir/<int:foto_id>", methods=["POST"])
 @login_required
 @admin_required
-def admin_uploads_excluir():
+def admin_uploads_excluir(foto_id):
+    import cloudinary, cloudinary.uploader
     from flask import current_app
-    upload_root = current_app.config.get("UPLOAD_FOLDER", "")
+    from app.models.photo import Photo
 
-    rel_path = request.form.get("rel_path", "").strip()
-    if not rel_path or ".." in rel_path:
-        flash("Caminho inválido.", "error")
-        return redirect(url_for("auth.admin_uploads"))
+    foto = Photo.query.get_or_404(foto_id)
+    cliente_id = foto.user_id
 
-    full_path = os.path.join(upload_root, rel_path)
-    abs_root  = os.path.abspath(upload_root)
-    abs_file  = os.path.abspath(full_path)
+    if foto.source == "cloudinary" and foto.public_id:
+        try:
+            cloudinary.config(
+                cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                api_key=current_app.config["CLOUDINARY_API_KEY"],
+                api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                secure=True,
+            )
+            cloudinary.uploader.destroy(foto.public_id, resource_type="raw")
+        except Exception:
+            pass
 
-    if not abs_file.startswith(abs_root):
-        flash("Acesso negado.", "error")
-        return redirect(url_for("auth.admin_uploads"))
+    db.session.delete(foto)
+    db.session.commit()
+    flash("Arquivo removido.", "success")
+    return redirect(url_for("auth.admin_uploads", cliente_id=cliente_id))
 
-    if os.path.isfile(full_path):
-        os.remove(full_path)
-        flash("Arquivo removido.", "success")
-    else:
-        flash("Arquivo não encontrado.", "error")
-
-    return redirect(url_for("auth.admin_uploads"))
-
-
-def _list_uploads(upload_root):
-    """Retorna lista de arquivos organizados para exibição no admin."""
-    items = []
-    if not upload_root or not os.path.isdir(upload_root):
-        return items
-
-    for root, _dirs, files in os.walk(upload_root):
-        for filename in sorted(files):
-            if filename.startswith("."):
-                continue
-            full   = os.path.join(root, filename)
-            rel    = os.path.relpath(full, upload_root).replace("\\", "/")
-            parts  = rel.replace("\\", "/").split("/")
-            tema   = parts[0] if len(parts) > 0 else "-"
-            safra  = parts[1] if len(parts) > 1 else "-"
-            mes    = parts[2] if len(parts) > 2 else "-"
-            dia    = parts[3] if len(parts) > 3 else "-"
-            ext    = os.path.splitext(filename)[1].lower().lstrip(".")
-            size   = os.path.getsize(full)
-            items.append({
-                "nome":     filename,
-                "rel_path": rel,
-                "tema":     tema,
-                "safra":    safra,
-                "mes":      mes,
-                "dia":      dia,
-                "ext":      ext,
-                "size":     f"{size//1024}KB" if size > 1024 else f"{size}B",
-            })
-
-    return items
 
 
 # ✅ Mensagens do formulário de contato
