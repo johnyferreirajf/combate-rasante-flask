@@ -1,0 +1,152 @@
+{% extends "layout.html" %}
+{% block title %}Upload de Análises — COMBATE RASANTE{% endblock %}
+
+{% block content %}
+<section class="auth-section section">
+  <div class="container">
+
+    {# ── Navegação ── #}
+    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg); flex-wrap:wrap;">
+      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
+      <a href="{{ url_for('auth.admin_uploads') }}" class="btn btn--primary">📁 Análises</a>
+      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
+      <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
+    </div>
+
+    {# ── Formulário de upload ── #}
+    <div class="auth-layout" style="margin-bottom: var(--space-lg);">
+
+      <div class="auth-card">
+        <h1 class="auth-card__title">Enviar Análise</h1>
+        <p class="auth-card__desc">
+          O arquivo aparecerá automaticamente no painel do cliente após o envio.
+        </p>
+
+        <form method="POST" enctype="multipart/form-data" novalidate>
+
+          <div class="form-group">
+            <label class="form-label" for="tema">Categoria</label>
+            <select id="tema" name="tema" class="form-control" required>
+              <option value="">Selecione...</option>
+              {% for key, label in temas.items() %}
+                <option value="{{ key }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="safra">Safra</label>
+            <input id="safra" name="safra" type="text" class="form-control"
+                   placeholder="Ex: Safra2025-2026" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="mes">Mês</label>
+            <select id="mes" name="mes" class="form-control" required>
+              <option value="">Selecione...</option>
+              {% for m in meses %}
+                <option value="{{ m }}">{{ m }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="dia">Dia</label>
+            <input id="dia" name="dia" type="number" class="form-control"
+                   placeholder="Ex: 14" min="1" max="31" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="arquivo">Arquivo</label>
+            <input id="arquivo" name="arquivo" type="file" class="form-control"
+                   accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.kml,.kmz" required>
+            <p style="font-size:var(--text-xs); color:var(--color-text-muted); margin-top:4px;">
+              Permitido: imagens (JPG, PNG, WEBP), PDF, KML, KMZ
+            </p>
+          </div>
+
+          <div class="mt-lg">
+            <button type="submit" class="btn btn--primary btn--full">
+              ⬆ Enviar arquivo
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="auth-card">
+        <h2 class="auth-card__title">Como organizar</h2>
+        <p class="auth-card__desc">Os arquivos aparecem no painel do cliente organizados por:</p>
+        <ul class="auth-card__list">
+          <li><strong>Categoria:</strong> Aplicações, Mapas, Relatórios, Fotos</li>
+          <li><strong>Safra:</strong> Ex: Safra2025-2026</li>
+          <li><strong>Mês:</strong> Janeiro, Fevereiro...</li>
+          <li><strong>Dia:</strong> número do dia (14, 15...)</li>
+        </ul>
+        <p style="font-size:var(--text-xs); color:var(--color-text-muted); margin-top:var(--space-sm); line-height:1.6;">
+          ⚠️ No Railway o disco é efêmero — os arquivos somem no redeploy.
+          Configure o <strong>Cloudinary</strong> para armazenamento permanente.
+        </p>
+      </div>
+
+    </div>
+
+    {# ── Lista de arquivos enviados ── #}
+    {% if tree %}
+    <div class="glass-card glass-card--standard">
+      <h2 style="font-size:var(--text-lg); font-weight:900; margin-bottom:var(--space-md);">
+        Arquivos enviados ({{ tree|length }})
+      </h2>
+
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Arquivo</th>
+              <th>Categoria</th>
+              <th>Safra</th>
+              <th>Mês</th>
+              <th>Dia</th>
+              <th>Tamanho</th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in tree %}
+            <tr>
+              <td>
+                <span style="font-weight:800; color:var(--color-text);">{{ item.nome }}</span>
+              </td>
+              <td>{{ item.tema }}</td>
+              <td>{{ item.safra }}</td>
+              <td>{{ item.mes }}</td>
+              <td>{{ item.dia }}</td>
+              <td>{{ item.size }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('auth.admin_uploads_excluir') }}"
+                      onsubmit="return confirm('Excluir {{ item.nome }}?')"
+                      style="display:inline;">
+                  <input type="hidden" name="rel_path" value="{{ item.rel_path }}">
+                  <button type="submit" class="btn btn--danger"
+                          style="min-height:30px; padding:0 12px; font-size:var(--text-xs);">
+                    Excluir
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="glass-card glass-card--standard" style="text-align:center; padding:var(--space-xl);">
+      <p style="color:var(--color-text-muted); font-size:var(--text-lg);">📂</p>
+      <p style="color:var(--color-text-muted);">Nenhum arquivo enviado ainda.</p>
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

@@ -6,8 +6,11 @@
   <div class="container">
 
     {# ── Navegação ── #}
-    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg);">
-      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">← Voltar</a>
+    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg); flex-wrap:wrap;">
+      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
+      <a href="{{ url_for('auth.admin_uploads') }}" class="btn btn--ghost">📁 Análises</a>
+      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
       <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--primary">🔑 Trocar Senha</a>
     </div>
 
