@@ -177,6 +177,40 @@ def admin_funcionarios_excluir(emp_id):
     return redirect(url_for("auth.admin_funcionarios"))
 
 
+
+@auth_bp.route("/admin/trocar-senha", methods=["GET", "POST"])
+@login_required
+@admin_required
+def trocar_senha():
+    current_user_obj = get_current_user()
+
+    if request.method == "POST":
+        senha_atual   = request.form.get("senha_atual")    or ""
+        nova_senha    = request.form.get("nova_senha")     or ""
+        confirmar     = request.form.get("confirmar")      or ""
+
+        if not current_user_obj.check_password(senha_atual):
+            flash("Senha atual incorreta.", "error")
+            return redirect(url_for("auth.trocar_senha"))
+
+        if len(nova_senha) < 6:
+            flash("A nova senha deve ter pelo menos 6 caracteres.", "error")
+            return redirect(url_for("auth.trocar_senha"))
+
+        if nova_senha != confirmar:
+            flash("As senhas não coincidem.", "error")
+            return redirect(url_for("auth.trocar_senha"))
+
+        current_user_obj.set_password(nova_senha)
+        db.session.commit()
+        flash("Senha alterada com sucesso!", "success")
+        return redirect(url_for("auth.trocar_senha"))
+
+    return render_template(
+        "trocar_senha.html",
+        current_user=current_user_obj,
+    )
+
 # ✅ Mensagens do formulário de contato
 @auth_bp.route("/admin/mensagens")
 @login_required
