@@ -377,6 +377,191 @@ def admin_uploads_excluir(foto_id):
 
 
 
+
+# ─── Backup e Restore do banco ─────────────────────────────────
+
+@auth_bp.route("/admin/backup")
+@login_required
+@admin_required
+def admin_backup():
+    """Gera um JSON com todos os dados do banco para download."""
+    import json
+    import datetime
+    from flask import Response
+    from app.models.photo import Photo
+    from app.models.employee import Employee
+
+    data = {
+        "gerado_em": datetime.datetime.utcnow().isoformat(),
+        "versao": "1.0",
+        "clientes": [],
+        "funcionarios": [],
+        "fotos": [],
+    }
+
+    for u in User.query.all():
+        data["clientes"].append({
+            "id":           u.id,
+            "name":         u.name,
+            "email":        u.email,
+            "password_hash": u.password_hash,
+            "is_admin":     u.is_admin,
+            "created_at":   u.created_at.isoformat() if u.created_at else None,
+        })
+
+    for e in Employee.query.all():
+        data["funcionarios"].append({
+            "id":           e.id,
+            "name":         e.name,
+            "username":     e.username,
+            "password_hash": e.password_hash,
+            "is_admin":     e.is_admin,
+            "created_at":   e.created_at.isoformat() if e.created_at else None,
+        })
+
+    for f in Photo.query.all():
+        data["fotos"].append({
+            "id":         f.id,
+            "user_id":    f.user_id,
+            "filename":   f.filename,
+            "title":      f.title,
+            "tema":       f.tema,
+            "safra":      f.safra,
+            "mes":        f.mes,
+            "dia":        f.dia,
+            "url":        f.url,
+            "public_id":  f.public_id,
+            "source":     f.source,
+            "created_at": f.created_at.isoformat() if f.created_at else None,
+        })
+
+    json_str = json.dumps(data, ensure_ascii=False, indent=2)
+    filename = f"backup_combaterasante_{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+
+    return Response(
+        json_str,
+        mimetype="application/json",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
+
+@auth_bp.route("/admin/restore", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_restore():
+    """Restaura dados a partir de um arquivo JSON de backup."""
+    import json
+    from app.models.photo import Photo
+    from app.models.employee import Employee
+    from werkzeug.security import generate_password_hash
+
+    current_user_obj = get_current_user()
+    resultado = None
+
+    if request.method == "POST":
+        arquivo = request.files.get("backup_file")
+
+        if not arquivo or not arquivo.filename.endswith(".json"):
+            flash("Selecione um arquivo .json de backup.", "error")
+            return redirect(url_for("auth.admin_restore"))
+
+        try:
+            data = json.loads(arquivo.read().decode("utf-8"))
+        except Exception:
+            flash("Arquivo inválido ou corrompido.", "error")
+            return redirect(url_for("auth.admin_restore"))
+
+        stats = {"clientes": 0, "funcionarios": 0, "fotos": 0, "erros": 0}
+
+        # ── Restaurar clientes ──
+        for c in data.get("clientes", []):
+            try:
+                existing = User.query.filter_by(email=c["email"]).first()
+                if existing:
+                    # Atualiza dados mas mantém registro existente
+                    existing.name         = c.get("name", existing.name)
+                    existing.password_hash = c.get("password_hash", existing.password_hash)
+                    existing.is_admin     = c.get("is_admin", existing.is_admin)
+                else:
+                    u = User(
+                        name=c["name"],
+                        email=c["email"],
+                        password_hash=c["password_hash"],
+                        is_admin=c.get("is_admin", False),
+                    )
+                    db.session.add(u)
+                stats["clientes"] += 1
+            except Exception:
+                stats["erros"] += 1
+
+        db.session.flush()  # garante que os IDs dos clientes existam antes das fotos
+
+        # ── Restaurar funcionários ──
+        for e in data.get("funcionarios", []):
+            try:
+                existing = Employee.query.filter_by(username=e["username"]).first()
+                if existing:
+                    existing.name          = e.get("name", existing.name)
+                    existing.password_hash = e.get("password_hash", existing.password_hash)
+                    existing.is_admin      = e.get("is_admin", existing.is_admin)
+                else:
+                    emp = Employee(
+                        name=e["name"],
+                        username=e["username"],
+                        password_hash=e["password_hash"],
+                        is_admin=e.get("is_admin", False),
+                    )
+                    db.session.add(emp)
+                stats["funcionarios"] += 1
+            except Exception:
+                stats["erros"] += 1
+
+        # ── Restaurar fotos (vínculos com Cloudinary) ──
+        for f in data.get("fotos", []):
+            try:
+                # Buscar o user pelo email original não é possível sem ele
+                # Usa o user_id direto — funciona se o banco foi recriado com recreate_db.py
+                existing = Photo.query.filter_by(
+                    url=f.get("url", ""),
+                ).first()
+                if not existing and f.get("url"):
+                    foto = Photo(
+                        user_id=f["user_id"],
+                        filename=f.get("filename", ""),
+                        title=f.get("title"),
+                        tema=f.get("tema", "outros"),
+                        safra=f.get("safra", ""),
+                        mes=f.get("mes", ""),
+                        dia=f.get("dia", ""),
+                        url=f.get("url", ""),
+                        public_id=f.get("public_id"),
+                        source=f.get("source", "cloudinary"),
+                    )
+                    db.session.add(foto)
+                    stats["fotos"] += 1
+            except Exception:
+                stats["erros"] += 1
+
+        try:
+            db.session.commit()
+            resultado = stats
+            flash(
+                f"Restaurado: {stats['clientes']} clientes, "
+                f"{stats['funcionarios']} funcionários, "
+                f"{stats['fotos']} fotos. "
+                f"Erros: {stats['erros']}",
+                "success" if stats["erros"] == 0 else "error"
+            )
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Erro ao salvar no banco: {e}", "error")
+
+    return render_template(
+        "admin_backup.html",
+        current_user=current_user_obj,
+        resultado=resultado,
+    )
+
 # ✅ Mensagens do formulário de contato
 @auth_bp.route("/admin/mensagens")
 @login_required
