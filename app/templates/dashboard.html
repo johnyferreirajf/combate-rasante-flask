@@ -9,147 +9,119 @@
 <section class="dashboard-section section">
   <div class="container">
 
-    {# ── Welcome ── #}
     <div class="dashboard-welcome">
       <h1 class="dashboard-welcome__title">
         Olá, {{ current_user.name if current_user and current_user.name else current_user.email }}!
       </h1>
-
       {% if not tree %}
-        <h2 class="dashboard-welcome__subtitle">Nenhuma análise cadastrada ainda</h2>
+        <h2 class="dashboard-welcome__subtitle">Nenhum arquivo disponível ainda</h2>
         <p class="dashboard-welcome__body">
-          Aqui você acompanhará os registros das aplicações em formato de galeria.
-          Assim que suas aplicações forem registradas, elas aparecerão aqui.
+          Assim que sua equipe enviar arquivos, eles aparecerão aqui organizados por pastas.
         </p>
       {% else %}
         <p class="dashboard-welcome__body">
-          Suas aplicações estão organizadas por tema, safra, mês e dia abaixo.
+          Seus arquivos estão organizados abaixo. Clique nas pastas para navegar.
         </p>
       {% endif %}
     </div>
 
-    {# ── Árvore de fotos ── #}
     {% if tree %}
     <div class="dashboard-panel">
-
-      {% for tema, safras in tree.items() %}
-        <details class="dash-group" open>
-          <summary>
-            <span>📌 {{ tema_labels.get(tema, tema) }}</span>
-            <span class="dash-badge">{{ safras | length }} safra(s)</span>
-          </summary>
-
-          <div class="dash-inner">
-            {% for safra, meses in safras.items() %}
-              <details class="dash-group">
-                <summary>
-                  <span>🌾 {{ safra }}</span>
-                  <span class="dash-badge">{{ meses | length }} mês(es)</span>
-                </summary>
-
-                <div class="dash-inner">
-                  {% for mes, dias in meses.items() %}
-                    <details class="dash-group">
-                      <summary>
-                        <span>📅 {{ mes }}</span>
-                        <span class="dash-badge">{{ dias | length }} dia(s)</span>
-                      </summary>
-
-                      <div class="dash-inner">
-                        {% for dia, fotos in dias.items() %}
-
-                          <div class="dash-day-title">
-                            <span>📍 Dia {{ dia }}</span>
-                            <span class="dash-badge">{{ fotos | length }} arquivo(s)</span>
-                          </div>
-
-                          <div class="dash-photo-grid">
-                            {% for foto in fotos %}
-                              <div class="dash-photo-card">
-                                <img
-                                  class="dash-photo-card__img js-lightbox-trigger"
-                                  src="{{ foto.url }}"
-                                  alt="{{ foto.name }}"
-                                  data-full="{{ foto.url }}"
-                                  loading="lazy"
-                                >
-                                <div class="dash-photo-card__foot">{{ foto.name }}</div>
-                              </div>
-                            {% endfor %}
-                          </div>
-
-                        {% endfor %}
-                      </div>
-
-                    </details>
-                  {% endfor %}
+      {% macro render_tree(node, depth=0) %}
+        {% for key, value in node.items() %}
+          {% if key == "__files__" %}
+            <div class="dash-photo-grid" style="margin-top:{{ '8px' if depth > 0 else '0' }}">
+              {% for arq in value %}
+                <div class="dash-photo-card">
+                  {% set ext = arq.ext|lower %}
+                  {% if ext in ['jpg','jpeg','png','webp','gif'] %}
+                    <img class="dash-photo-card__img js-lightbox-trigger"
+                         src="{{ arq.url }}" alt="{{ arq.name }}"
+                         data-full="{{ arq.url }}" loading="lazy">
+                  {% else %}
+                    <a href="{{ arq.url }}" target="_blank" rel="noopener"
+                       class="dash-photo-card__img"
+                       style="display:flex; align-items:center; justify-content:center;
+                              background:rgba(0,0,0,0.15); text-decoration:none; height:100px;">
+                      <span style="font-size:2rem;">
+                        {% if ext == 'pdf' %}📄
+                        {% elif ext in ['kml','kmz'] %}🗺️
+                        {% elif ext in ['xlsx','xls','csv'] %}📊
+                        {% elif ext in ['doc','docx'] %}📝
+                        {% elif ext == 'zip' %}📦
+                        {% else %}📎{% endif %}
+                      </span>
+                    </a>
+                  {% endif %}
+                  <div class="dash-photo-card__foot">
+                    <a href="{{ arq.url }}" target="_blank" rel="noopener"
+                       style="color:inherit; text-decoration:none;">
+                      {{ arq.name }}
+                    </a>
+                    {% if arq.size %}<span style="opacity:.6;"> · {{ arq.size }}</span>{% endif %}
+                  </div>
                 </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <details class="dash-group" {% if depth == 0 %}open{% endif %}>
+              <summary>
+                <span>📁 {{ key }}</span>
+                {% set file_count = value.get('__files__', [])|length %}
+                {% if file_count %}
+                  <span class="dash-badge">{{ file_count }} arquivo(s)</span>
+                {% endif %}
+              </summary>
+              <div class="dash-inner">
+                {{ render_tree(value, depth + 1) }}
+              </div>
+            </details>
+          {% endif %}
+        {% endfor %}
+      {% endmacro %}
 
-              </details>
-            {% endfor %}
-          </div>
-
-        </details>
-      {% endfor %}
-
+      {{ render_tree(tree) }}
     </div>
     {% endif %}
 
   </div>
 </section>
 
-{# ── Lightbox ── #}
-<div
-  id="lightbox"
-  class="lightbox"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Visualizar imagem"
-  aria-hidden="true"
->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true"
+     aria-label="Visualizar imagem" aria-hidden="true">
   <div class="lightbox__backdrop"></div>
   <button type="button" class="lightbox__close" aria-label="Fechar imagem">✕</button>
   <img id="lightboxImg" class="lightbox__img" src="" alt="">
 </div>
-
 {% endblock %}
 
 {% block scripts %}
 <script>
 (function () {
-  "use strict";
-
-  var lightbox  = document.getElementById("lightbox");
-  var lbImg     = document.getElementById("lightboxImg");
-  var backdrop  = lightbox.querySelector(".lightbox__backdrop");
-  var closeBtn  = lightbox.querySelector(".lightbox__close");
+  var lightbox = document.getElementById("lightbox");
+  var lbImg    = document.getElementById("lightboxImg");
+  var backdrop = lightbox.querySelector(".lightbox__backdrop");
+  var closeBtn = lightbox.querySelector(".lightbox__close");
 
   function open(src, alt) {
-    lbImg.src = src;
-    lbImg.alt = alt || "";
+    lbImg.src = src; lbImg.alt = alt || "";
     lightbox.classList.add("lightbox--active");
-    lightbox.setAttribute("aria-hidden", "false");
+    lightbox.setAttribute("aria-hidden","false");
     closeBtn.focus();
   }
-
   function close() {
     lightbox.classList.remove("lightbox--active");
-    lightbox.setAttribute("aria-hidden", "true");
+    lightbox.setAttribute("aria-hidden","true");
     lbImg.src = "";
   }
 
-  document.addEventListener("click", function (e) {
-    var trigger = e.target.closest(".js-lightbox-trigger");
-    if (!trigger) return;
-    open(trigger.dataset.full || trigger.src, trigger.alt);
+  document.addEventListener("click", function(e) {
+    var t = e.target.closest(".js-lightbox-trigger");
+    if (t) open(t.dataset.full || t.src, t.alt);
   });
-
   closeBtn.addEventListener("click", close);
   backdrop.addEventListener("click", close);
-
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") close();
-  });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape") close(); });
 })();
 </script>
 {% endblock %}

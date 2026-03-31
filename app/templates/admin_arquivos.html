@@ -1,0 +1,301 @@
+{% extends "layout.html" %}
+{% block title %}Arquivos do Cliente — COMBATE RASANTE{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/employee_portal.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="sp-page">
+  <div style="width:min(1200px,calc(100% - 32px)); margin-inline:auto;">
+
+    {# ── Navegação admin ── #}
+    <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
+      <a href="{{ url_for('auth.admin_arquivos') }}" class="btn btn--primary">📁 Arquivos</a>
+      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
+      <a href="{{ url_for('auth.admin_restore') }}" class="btn btn--ghost">💾 Backup</a>
+      <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
+    </div>
+
+    {# ── Seleção de cliente ── #}
+    <div class="sp-main" style="margin-bottom:14px; padding:14px 18px;">
+      <div style="font-size:12px; font-weight:900; color:var(--sp-muted);
+                  text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">
+        Selecionar cliente
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:8px;">
+        {% for c in clientes %}
+          <a href="{{ url_for('auth.admin_arquivos', cliente_id=c.id) }}"
+             style="padding:7px 14px; border-radius:10px; font-size:13px; font-weight:800;
+                    text-decoration:none; transition:.15s;
+                    {% if cliente_sel and cliente_sel.id == c.id %}
+                      background:var(--sp-accent2); border:1px solid rgba(14,165,233,.30); color:#0b4a64;
+                    {% else %}
+                      background:#fff; border:1px solid var(--sp-border-md); color:var(--sp-muted);
+                    {% endif %}">
+            {{ c.name or c.email }}
+          </a>
+        {% else %}
+          <p style="color:var(--sp-muted); font-size:13px;">Nenhum cliente cadastrado.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if cliente_sel %}
+    <div class="sp-main">
+
+      {# ── Topbar ── #}
+      <div class="sp-topbar">
+        <div>
+          {# Breadcrumbs #}
+          <div class="sp-breadcrumbs">
+            <a class="sp-crumb-link"
+               href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id) }}">
+              📁 {{ cliente_sel.name }}
+            </a>
+            {% for crumb in breadcrumbs %}
+              <span class="sp-crumb-sep">/</span>
+              <a class="sp-crumb-link"
+                 href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id, path=crumb.path) }}">
+                {{ crumb.name }}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+
+        <div class="sp-actions">
+          {# Botão nova pasta #}
+          <button class="sp-btn" type="button"
+                  onclick="document.getElementById('modalPasta').setAttribute('aria-hidden','false')">
+            + Nova pasta
+          </button>
+
+          {# Botão upload #}
+          <button class="sp-btn sp-btn-primary" type="button"
+                  onclick="document.getElementById('modalUpload').setAttribute('aria-hidden','false')">
+            ⬆ Upload
+          </button>
+        </div>
+      </div>
+
+      {# ── Tabela de arquivos ── #}
+      <div class="sp-table" role="table">
+
+        {# Cabeçalho #}
+        <div class="sp-row sp-row-head" role="row">
+          <div class="sp-col-name" role="columnheader">Nome</div>
+          <div class="sp-col-type" role="columnheader">Tipo</div>
+          <div class="sp-col-size" role="columnheader">Tamanho</div>
+          <div class="sp-col-mod"  role="columnheader">Enviado em</div>
+          <div class="sp-col-actions" role="columnheader">Ações</div>
+        </div>
+
+        {# Pastas #}
+        {% for pasta_nome in subpastas %}
+          {% set pasta_path = (pasta + '/' + pasta_nome).strip('/') if pasta else pasta_nome %}
+          <div class="sp-row sp-row-item" role="row">
+            <div class="sp-col-name" role="cell">
+              <div class="sp-name">
+                <img class="sp-ico" src="{{ url_for('static', filename='icons/folder.svg') }}" alt="">
+                <a class="sp-link"
+                   href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id, path=pasta_path) }}">
+                  {{ pasta_nome }}
+                </a>
+              </div>
+            </div>
+            <div class="sp-col-type" role="cell"><span class="sp-pill">Pasta</span></div>
+            <div class="sp-col-size" role="cell"><span class="sp-muted-text">—</span></div>
+            <div class="sp-col-mod"  role="cell"><span class="sp-muted-text">—</span></div>
+            <div class="sp-col-actions" role="cell">
+              <form method="POST" action="{{ url_for('auth.admin_pasta_excluir') }}"
+                    onsubmit="return confirm('Excluir pasta {{ pasta_nome }} e todos os arquivos dentro?')">
+                <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
+                <input type="hidden" name="pasta" value="{{ pasta_path }}">
+                <button class="sp-action danger" type="submit">Excluir</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+
+        {# Arquivos #}
+        {% for item in itens %}
+          <div class="sp-row sp-row-item" role="row">
+            <div class="sp-col-name" role="cell">
+              <div class="sp-name">
+                {% if item.is_image %}
+                  <img class="sp-ico" src="{{ url_for('static', filename='icons/image.svg') }}" alt="">
+                {% elif item.is_pdf %}
+                  <img class="sp-ico" src="{{ url_for('static', filename='icons/pdf.svg') }}" alt="">
+                {% elif item.file_ext in ['kml','kmz'] %}
+                  <img class="sp-ico" src="{{ url_for('static', filename='icons/kml.svg') }}" alt="">
+                {% else %}
+                  <img class="sp-ico" src="{{ url_for('static', filename='icons/file.svg') }}" alt="">
+                {% endif %}
+                <a class="sp-link" href="{{ item.url }}" target="_blank" rel="noopener">
+                  {{ item.display_name }}
+                </a>
+              </div>
+            </div>
+            <div class="sp-col-type" role="cell">
+              <span class="sp-pill">{{ (item.file_ext or 'arquivo')|upper }}</span>
+            </div>
+            <div class="sp-col-size" role="cell">
+              <span class="sp-muted-text">{{ item.size_human }}</span>
+            </div>
+            <div class="sp-col-mod" role="cell">
+              <span class="sp-muted-text">
+                {{ item.uploaded_at.strftime("%d/%m/%Y") if item.uploaded_at else "—" }}
+              </span>
+            </div>
+            <div class="sp-col-actions" role="cell">
+              <a class="sp-action" href="{{ item.url }}" target="_blank" rel="noopener">Abrir</a>
+
+              <button class="sp-action" type="button"
+                      onclick="abrirRenomear({{ item.id }}, '{{ item.display_name|replace("'", "\\'") }}')">
+                Renomear
+              </button>
+
+              <form class="sp-action-form" method="POST"
+                    action="{{ url_for('auth.admin_arquivo_excluir', file_id=item.id) }}"
+                    onsubmit="return confirm('Excluir {{ item.display_name }}?')">
+                <button class="sp-action danger" type="submit">Excluir</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+
+        {% if not subpastas and not itens %}
+          <div class="sp-empty">Pasta vazia — use os botões acima para criar pastas ou fazer upload.</div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    {% else %}
+    <div class="sp-main" style="text-align:center; padding:40px;">
+      <p style="font-size:2rem;">☝️</p>
+      <p style="color:var(--sp-muted); margin-top:10px;">
+        Selecione um cliente acima para gerenciar os arquivos.
+      </p>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% if cliente_sel %}
+
+{# ── Modal: Nova Pasta ── #}
+<div class="sp-modal" id="modalPasta" aria-hidden="true">
+  <div class="sp-modal-backdrop"
+       onclick="document.getElementById('modalPasta').setAttribute('aria-hidden','true')"></div>
+  <div class="sp-modal-card">
+    <div class="sp-modal-head">
+      <div>
+        <div class="sp-modal-title">Nova pasta</div>
+        <div class="sp-muted-text">Dentro de: /{{ pasta or cliente_sel.name }}</div>
+      </div>
+      <button class="sp-icon-btn" type="button"
+              onclick="document.getElementById('modalPasta').setAttribute('aria-hidden','true')">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('auth.admin_nova_pasta') }}" class="sp-form">
+      <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
+      <input type="hidden" name="pasta_atual" value="{{ pasta }}">
+      <label class="sp-label">Nome da pasta</label>
+      <input class="sp-input" type="text" name="nome" placeholder="Ex: Safra2025-2026" required autofocus>
+      <div class="sp-form-actions">
+        <button class="sp-btn" type="button"
+                onclick="document.getElementById('modalPasta').setAttribute('aria-hidden','true')">
+          Cancelar
+        </button>
+        <button class="sp-btn sp-btn-primary" type="submit">Criar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Upload ── #}
+<div class="sp-modal" id="modalUpload" aria-hidden="true">
+  <div class="sp-modal-backdrop"
+       onclick="document.getElementById('modalUpload').setAttribute('aria-hidden','true')"></div>
+  <div class="sp-modal-card">
+    <div class="sp-modal-head">
+      <div>
+        <div class="sp-modal-title">Enviar arquivo</div>
+        <div class="sp-muted-text">Para: {{ cliente_sel.name }} / {{ pasta or 'raiz' }}</div>
+      </div>
+      <button class="sp-icon-btn" type="button"
+              onclick="document.getElementById('modalUpload').setAttribute('aria-hidden','true')">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('auth.admin_arquivo_upload') }}"
+          enctype="multipart/form-data" class="sp-form">
+      <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
+      <input type="hidden" name="pasta_atual" value="{{ pasta }}">
+      <label class="sp-label">Arquivo</label>
+      <input class="sp-input" type="file" name="arquivo" required
+             accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.kml,.kmz,.xlsx,.xls,.csv,.doc,.docx,.zip,.txt">
+      <label class="sp-label">Título exibido (opcional)</label>
+      <input class="sp-input" type="text" name="titulo" placeholder="Ex: Mapa de cobertura Talhão 3">
+      <div class="sp-form-actions">
+        <button class="sp-btn" type="button"
+                onclick="document.getElementById('modalUpload').setAttribute('aria-hidden','true')">
+          Cancelar
+        </button>
+        <button class="sp-btn sp-btn-primary" type="submit">Enviar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── Modal: Renomear ── #}
+<div class="sp-modal" id="modalRenomear" aria-hidden="true">
+  <div class="sp-modal-backdrop"
+       onclick="document.getElementById('modalRenomear').setAttribute('aria-hidden','true')"></div>
+  <div class="sp-modal-card">
+    <div class="sp-modal-head">
+      <div><div class="sp-modal-title">Renomear arquivo</div></div>
+      <button class="sp-icon-btn" type="button"
+              onclick="document.getElementById('modalRenomear').setAttribute('aria-hidden','true')">✕</button>
+    </div>
+    <form method="POST" id="formRenomear" class="sp-form">
+      <label class="sp-label">Novo título</label>
+      <input class="sp-input" type="text" name="novo_titulo" id="inputRenomear" required>
+      <div class="sp-form-actions">
+        <button class="sp-btn" type="button"
+                onclick="document.getElementById('modalRenomear').setAttribute('aria-hidden','true')">
+          Cancelar
+        </button>
+        <button class="sp-btn sp-btn-primary" type="submit">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/employee_portal.js') }}"></script>
+<script>
+function abrirRenomear(fileId, nomeAtual) {
+  var modal = document.getElementById('modalRenomear');
+  var form  = document.getElementById('formRenomear');
+  var input = document.getElementById('inputRenomear');
+  form.action = '/admin/arquivos/renomear/' + fileId;
+  input.value = nomeAtual;
+  modal.setAttribute('aria-hidden', 'false');
+  setTimeout(function(){ input.focus(); input.select(); }, 100);
+}
+// Fechar modais com Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  ['modalPasta','modalUpload','modalRenomear'].forEach(function(id){
+    var m = document.getElementById(id);
+    if (m) m.setAttribute('aria-hidden','true');
+  });
+});
+</script>
+{% endblock %}
