@@ -6,40 +6,42 @@
 .eq{--g1:rgba(3,58,36,.80);--g2:rgba(4,105,64,.90);--b:rgba(255,255,255,.13);
     --bh:rgba(34,197,94,.55);--t:#fff;--m:rgba(255,255,255,.60);
     --ac:#22c55e;--as:rgba(22,163,74,.20);--ds:rgba(239,68,68,.18);--rl:20px;}
-.eq-wrap{width:min(1100px,calc(100% - 24px));margin-inline:auto;padding-block:16px 40px;color:var(--t);}
-.eq-card{background:var(--g1);border:1px solid var(--b);border-radius:var(--rl);
-         backdrop-filter:blur(10px);padding:16px 20px;margin-bottom:14px;}
-.eq-title{font-size:16px;font-weight:900;margin-bottom:14px;}
-.eq-setor{font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;
-          color:var(--m);padding:6px 0 8px;border-bottom:1px solid rgba(255,255,255,.10);
-          margin:6px 0 10px;}
-.eq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
+.eq-wrap{width:min(1140px,calc(100% - 24px));margin-inline:auto;padding-block:16px 40px;color:var(--t);}
+
+/* setor */
+.eq-setor-bloco{background:rgba(3,58,36,.72);border:1px solid var(--b);
+                border-radius:var(--rl);backdrop-filter:blur(10px);
+                padding:16px 18px;margin-bottom:14px;}
+.eq-setor-titulo{font-size:10px;font-weight:900;letter-spacing:.08em;
+                 text-transform:uppercase;color:var(--m);
+                 padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.10);
+                 margin-bottom:12px;}
+
+/* grid de membros */
+.eq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
 
 /* card de membro */
-.em{background:rgba(4,21,15,.35);border:1px solid var(--b);border-radius:14px;
+.em{background:rgba(4,21,15,.38);border:1px solid var(--b);border-radius:14px;
     padding:14px;display:flex;flex-direction:column;gap:10px;transition:.15s;}
-.em:hover{border-color:var(--bh);}
+.em:hover{border-color:var(--bh);background:rgba(4,21,15,.50);}
 .em-top{display:flex;align-items:center;gap:12px;}
-.em-av{width:48px;height:48px;border-radius:50%;object-fit:cover;
-       border:2px solid var(--bh);flex-shrink:0;background:var(--as);
+.em-av{width:46px;height:46px;border-radius:50%;flex-shrink:0;
+       background:var(--as);border:2px solid var(--bh);overflow:hidden;
        display:flex;align-items:center;justify-content:center;
-       font-weight:900;font-size:15px;color:var(--ac);}
-.em-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;}
-.em-nome{font-weight:900;font-size:14px;}
+       font-weight:900;font-size:14px;color:var(--ac);}
+.em-av img{width:100%;height:100%;object-fit:cover;}
+.em-nome{font-weight:900;font-size:13px;line-height:1.3;}
 .em-cargo{font-size:11px;color:var(--ac);margin-top:2px;}
-.em-desc{font-size:12px;color:var(--m);line-height:1.5;}
-.em-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;}
+.em-oculto{font-size:10px;color:#fca5a5;margin-top:2px;}
+.em-desc{font-size:12px;color:var(--m);line-height:1.5;
+         overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.em-btns{display:flex;gap:6px;margin-top:auto;}
 
-/* botão */
-.eb{display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:9px;
-    font-size:12px;font-weight:800;cursor:pointer;border:1px solid var(--b);
-    background:rgba(255,255,255,.08);color:var(--t);text-decoration:none;
-    transition:.15s;font-family:inherit;}
-.eb:hover{background:rgba(255,255,255,.14);border-color:var(--bh);}
-.eb.p{background:var(--as);border-color:var(--bh);color:var(--ac);}
-.eb.d{background:var(--ds);border-color:rgba(239,68,68,.35);color:#fca5a5;}
-
-/* form */
+/* form lateral */
+.eq-form-card{background:rgba(3,58,36,.80);border:1px solid var(--b);
+              border-radius:var(--rl);backdrop-filter:blur(10px);
+              padding:18px 20px;position:sticky;top:80px;}
+.eq-form-title{font-size:15px;font-weight:900;margin-bottom:14px;color:var(--t);}
 .ef{display:flex;flex-direction:column;gap:11px;}
 .el{font-size:11px;font-weight:900;color:var(--m);display:block;margin-bottom:3px;}
 .ei{width:100%;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);
@@ -49,6 +51,17 @@
 .ei:focus{border-color:var(--bh);}
 textarea.ei{min-height:80px;resize:vertical;}
 .er{display:flex;justify-content:flex-end;gap:7px;padding-top:4px;}
+
+/* botões */
+.eb{display:inline-flex;align-items:center;gap:4px;padding:6px 13px;border-radius:9px;
+    font-size:12px;font-weight:800;cursor:pointer;border:1px solid var(--b);
+    background:rgba(255,255,255,.08);color:var(--t);text-decoration:none;
+    transition:.15s;font-family:inherit;}
+.eb:hover{background:rgba(255,255,255,.15);border-color:var(--bh);}
+.eb.p{background:var(--as);border-color:var(--bh);color:var(--ac);}
+.eb.p:hover{background:rgba(22,163,74,.30);}
+.eb.d{background:var(--ds);border-color:rgba(239,68,68,.35);color:#fca5a5;}
+.eb.d:hover{background:rgba(239,68,68,.28);}
 </style>
 {% endblock %}
 
@@ -67,93 +80,101 @@ textarea.ei{min-height:80px;resize:vertical;}
     <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 340px;gap:14px;align-items:start;">
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:14px;align-items:start;">
 
-    {# ── Lista da equipe ── #}
+    {# ── Coluna esquerda: setores e membros ── #}
     <div>
-      {% set setor_atual = namespace(val="") %}
-      {% for membro in membros %}
-        {% if membro.setor != setor_atual.val %}
-          {% if not loop.first %}</div>{% endif %}
-          {% set setor_atual.val = membro.setor %}
-          <div class="eq-card">
-          <div class="eq-setor">{{ membro.setor }}</div>
+      {% if setores %}
+        {% for setor_nome, membros_setor in setores.items() %}
+        <div class="eq-setor-bloco">
+          <div class="eq-setor-titulo">{{ setor_nome }}</div>
           <div class="eq-grid">
-        {% endif %}
-
-        <div class="em {% if not membro.ativo %}" style="opacity:.5"{% endif %}">
-          <div class="em-top">
-            <div class="em-av">
-              {% if membro.foto_url %}
-                <img src="{{ membro.foto_url }}" alt="{{ membro.nome }}">
-              {% else %}
-                {{ membro.avatar_letra }}
+            {% for membro in membros_setor %}
+            <div class="em">
+              <div class="em-top">
+                <div class="em-av">
+                  {% if membro.foto_url %}
+                    <img src="{{ membro.foto_url }}" alt="{{ membro.nome }}">
+                  {% else %}
+                    {{ membro.avatar_letra }}
+                  {% endif %}
+                </div>
+                <div>
+                  <div class="em-nome">{{ membro.nome }}</div>
+                  <div class="em-cargo">{{ membro.cargo }}</div>
+                  {% if not membro.ativo %}<div class="em-oculto">● Oculto</div>{% endif %}
+                </div>
+              </div>
+              {% if membro.descricao %}
+                <div class="em-desc">{{ membro.descricao }}</div>
               {% endif %}
+              <div class="em-btns">
+                <a class="eb p" href="{{ url_for('auth.admin_equipe_editar', mid=membro.id) }}">✏ Editar</a>
+                <form method="POST"
+                      action="{{ url_for('auth.admin_equipe_excluir', mid=membro.id) }}"
+                      onsubmit="return confirm('Excluir {{ membro.nome }}?')">
+                  <button class="eb d" type="submit">🗑</button>
+                </form>
+              </div>
             </div>
-            <div>
-              <div class="em-nome">{{ membro.nome }}</div>
-              <div class="em-cargo">{{ membro.cargo }}</div>
-              {% if not membro.ativo %}<div style="font-size:10px;color:#fca5a5;">● Oculto</div>{% endif %}
-            </div>
-          </div>
-          {% if membro.descricao %}
-            <div class="em-desc">{{ membro.descricao[:80] }}{% if membro.descricao|length > 80 %}…{% endif %}</div>
-          {% endif %}
-          <div class="em-btns">
-            <a class="eb p" href="{{ url_for('auth.admin_equipe_editar', mid=membro.id) }}">✏ Editar</a>
-            <form method="POST" action="{{ url_for('auth.admin_equipe_excluir', mid=membro.id) }}"
-                  onsubmit="return confirm('Excluir {{ membro.nome }}?')">
-              <button class="eb d" type="submit">🗑</button>
-            </form>
+            {% endfor %}
           </div>
         </div>
-
-        {% if loop.last %}</div></div>{% endif %}
+        {% endfor %}
       {% else %}
-        <div class="eq-card" style="text-align:center;padding:32px;color:var(--m);">
-          Nenhum membro cadastrado ainda.
+        <div style="background:rgba(3,58,36,.72);border:1px solid var(--b);border-radius:var(--rl);
+                    padding:40px;text-align:center;color:var(--m);">
+          Nenhum membro cadastrado. Use o formulário ao lado.
         </div>
-      {% endfor %}
+      {% endif %}
     </div>
 
-    {# ── Formulário adicionar ── #}
-    <div class="eq-card" style="position:sticky;top:80px;">
-      <div class="eq-title">+ Novo membro</div>
+    {# ── Coluna direita: formulário ── #}
+    <div class="eq-form-card">
+      <div class="eq-form-title">+ Novo membro</div>
       <form method="POST" class="ef">
+
         <div>
           <label class="el">Nome *</label>
           <input class="ei" type="text" name="nome" placeholder="Ex: João Silva" required>
         </div>
+
         <div>
           <label class="el">Cargo (tag verde) *</label>
-          <input class="ei" type="text" name="cargo" placeholder="Ex: Piloto Agrícola">
+          <input class="ei" type="text" name="cargo" placeholder="Ex: Piloto Agrícola" required>
         </div>
+
         <div>
-          <label class="el">Setor / Grupo *</label>
-          <input class="ei" type="text" name="setor" placeholder="Ex: Pilotos Agrícolas"
-                 list="setores-lista">
-          <datalist id="setores-lista">
-            {% set setores_vistos = [] %}
-            {% for m in membros %}
-              {% if m.setor not in setores_vistos %}
-                <option value="{{ m.setor }}">
-                {% if setores_vistos.append(m.setor) %}{% endif %}
-              {% endif %}
+          <label class="el">Setor *</label>
+          <input class="ei" type="text" name="setor" list="dl-setores" required
+                 placeholder="Ex: Pilotos Agrícolas">
+          <datalist id="dl-setores">
+            <option value="Diretoria">
+            <option value="Coordenação & Pilotos">
+            <option value="Pilotos Agrícolas">
+            <option value="Tecnologia & Análise">
+            <option value="Comercial">
+            {% for s in setores.keys() %}
+              <option value="{{ s }}">
             {% endfor %}
           </datalist>
         </div>
+
         <div>
-          <label class="el">Tags extras (separadas por vírgula)</label>
+          <label class="el">Tags extras (vírgula)</label>
           <input class="ei" type="text" name="tags" placeholder="Ex: Precisão, Segurança">
         </div>
+
         <div>
           <label class="el">Descrição</label>
-          <textarea class="ei" name="descricao" placeholder="Breve descrição do papel na equipe…"></textarea>
+          <textarea class="ei" name="descricao" placeholder="Breve descrição…"></textarea>
         </div>
+
         <div>
-          <label class="el">Ordem no grupo</label>
+          <label class="el">Ordem no setor</label>
           <input class="ei" type="number" name="ordem" value="99" min="1" max="99">
         </div>
+
         <div class="er">
           <button class="eb p" type="submit">Adicionar</button>
         </div>

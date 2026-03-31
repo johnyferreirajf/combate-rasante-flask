@@ -90,11 +90,11 @@ def parcerias():
 @main_bp.route("/equipe")
 def equipe():
     from app.models.team_member import TeamMember
-    membros_db = TeamMember.query.filter_by(ativo=True).order_by(
-        TeamMember.setor, TeamMember.ordem
-    ).all()
-    # Agrupar por setor
-    setores = {}
+    from collections import OrderedDict
+    ORDEM = ["Diretoria","Coordenação & Pilotos","Pilotos Agrícolas","Tecnologia & Análise","Comercial"]
+    membros_db = TeamMember.query.filter_by(ativo=True).order_by(TeamMember.ordem).all()
+    membros_db.sort(key=lambda m: (ORDEM.index(m.setor) if m.setor in ORDEM else 99, m.ordem))
+    setores = OrderedDict()
     for m in membros_db:
         setores.setdefault(m.setor, []).append(m)
     return render_template("equipe.html", setores=setores)

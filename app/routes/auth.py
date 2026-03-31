@@ -681,13 +681,36 @@ def admin_restore():
 
 # ─── Gerenciar Equipe ─────────────────────────────────────────
 
+# Ordem preferencial dos setores
+ORDEM_SETORES = [
+    "Diretoria",
+    "Coordenação & Pilotos",
+    "Pilotos Agrícolas",
+    "Tecnologia & Análise",
+    "Comercial",
+]
+
+def _sort_key_setor(membro):
+    try:
+        return ORDEM_SETORES.index(membro.setor)
+    except ValueError:
+        return 99  # setores novos ficam no final
+
+
 @auth_bp.route("/admin/equipe", methods=["GET", "POST"])
 @login_required
 @admin_required
 def admin_equipe():
     from app.models.team_member import TeamMember
     current_user_obj = get_current_user()
-    membros = TeamMember.query.order_by(TeamMember.setor, TeamMember.ordem).all()
+    todos = TeamMember.query.order_by(TeamMember.ordem).all()
+    todos.sort(key=lambda m: (_sort_key_setor(m), m.ordem))
+
+    # Agrupar por setor mantendo a ordem
+    from collections import OrderedDict
+    setores = OrderedDict()
+    for m in todos:
+        setores.setdefault(m.setor, []).append(m)
 
     if request.method == "POST":
         nome      = (request.form.get("nome")      or "").strip()
@@ -710,7 +733,8 @@ def admin_equipe():
 
     return render_template("admin_equipe.html",
                            current_user=current_user_obj,
-                           membros=membros)
+                           membros=todos,
+                           setores=setores)
 
 
 @auth_bp.route("/admin/equipe/editar/<int:mid>", methods=["GET", "POST"])
