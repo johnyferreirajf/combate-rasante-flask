@@ -678,6 +678,160 @@ def admin_restore():
         resultado=resultado,
     )
 
+
+# ─── Gerenciar Equipe ─────────────────────────────────────────
+
+@auth_bp.route("/admin/equipe", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_equipe():
+    from app.models.team_member import TeamMember
+    current_user_obj = get_current_user()
+    membros = TeamMember.query.order_by(TeamMember.setor, TeamMember.ordem).all()
+
+    if request.method == "POST":
+        nome      = (request.form.get("nome")      or "").strip()
+        cargo     = (request.form.get("cargo")     or "").strip()
+        setor     = (request.form.get("setor")     or "").strip()
+        tags      = (request.form.get("tags")      or "").strip()
+        descricao = (request.form.get("descricao") or "").strip()
+        ordem     = request.form.get("ordem", 99, type=int)
+
+        if not nome or not cargo or not setor:
+            flash("Nome, cargo e setor são obrigatórios.", "error")
+            return redirect(url_for("auth.admin_equipe"))
+
+        membro = TeamMember(nome=nome, cargo=cargo, setor=setor,
+                            tags=tags, descricao=descricao, ordem=ordem)
+        db.session.add(membro)
+        db.session.commit()
+        flash(f"'{nome}' adicionado à equipe!", "success")
+        return redirect(url_for("auth.admin_equipe"))
+
+    return render_template("admin_equipe.html",
+                           current_user=current_user_obj,
+                           membros=membros)
+
+
+@auth_bp.route("/admin/equipe/editar/<int:mid>", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_equipe_editar(mid):
+    import cloudinary, cloudinary.uploader
+    from flask import current_app
+    from app.models.team_member import TeamMember
+
+    membro = TeamMember.query.get_or_404(mid)
+    current_user_obj = get_current_user()
+
+    if request.method == "POST":
+        acao = request.form.get("acao", "salvar")
+
+        if acao == "foto":
+            foto = request.files.get("foto")
+            if foto and foto.filename:
+                use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+                if use_cloud:
+                    try:
+                        cloudinary.config(
+                            cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                            api_key=current_app.config["CLOUDINARY_API_KEY"],
+                            api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                            secure=True,
+                        )
+                        # Remover foto antiga se existir
+                        if membro.foto_public_id:
+                            try:
+                                cloudinary.uploader.destroy(membro.foto_public_id,
+                                                            resource_type="image")
+                            except Exception:
+                                pass
+
+                        result = cloudinary.uploader.upload(
+                            foto,
+                            folder="combaterasante/equipe",
+                            resource_type="image",
+                            transformation=[
+                                {"width": 400, "height": 400,
+                                 "crop": "fill", "gravity": "face"}
+                            ],
+                            use_filename=True,
+                            unique_filename=True,
+                        )
+                        membro.foto_url = result["secure_url"]
+                        membro.foto_public_id = result["public_id"]
+                        db.session.commit()
+                        flash("Foto atualizada!", "success")
+                    except Exception as e:
+                        flash(f"Erro ao enviar foto: {e}", "error")
+                else:
+                    flash("Configure o Cloudinary para upload de fotos.", "error")
+            return redirect(url_for("auth.admin_equipe_editar", mid=mid))
+
+        elif acao == "remover_foto":
+            use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+            if use_cloud and membro.foto_public_id:
+                try:
+                    cloudinary.config(
+                        cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                        api_key=current_app.config["CLOUDINARY_API_KEY"],
+                        api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                        secure=True,
+                    )
+                    cloudinary.uploader.destroy(membro.foto_public_id,
+                                                resource_type="image")
+                except Exception:
+                    pass
+            membro.foto_url = ""
+            membro.foto_public_id = ""
+            db.session.commit()
+            flash("Foto removida.", "success")
+            return redirect(url_for("auth.admin_equipe_editar", mid=mid))
+
+        else:  # salvar dados
+            membro.nome      = (request.form.get("nome")      or "").strip()
+            membro.cargo     = (request.form.get("cargo")     or "").strip()
+            membro.setor     = (request.form.get("setor")     or "").strip()
+            membro.tags      = (request.form.get("tags")      or "").strip()
+            membro.descricao = (request.form.get("descricao") or "").strip()
+            membro.ordem     = request.form.get("ordem", membro.ordem, type=int)
+            membro.ativo     = request.form.get("ativo") == "1"
+            db.session.commit()
+            flash("Membro atualizado!", "success")
+            return redirect(url_for("auth.admin_equipe"))
+
+    return render_template("admin_equipe_editar.html",
+                           current_user=current_user_obj,
+                           membro=membro)
+
+
+@auth_bp.route("/admin/equipe/excluir/<int:mid>", methods=["POST"])
+@login_required
+@admin_required
+def admin_equipe_excluir(mid):
+    import cloudinary, cloudinary.uploader
+    from flask import current_app
+    from app.models.team_member import TeamMember
+
+    membro = TeamMember.query.get_or_404(mid)
+    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+    if use_cloud and membro.foto_public_id:
+        try:
+            cloudinary.config(
+                cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                api_key=current_app.config["CLOUDINARY_API_KEY"],
+                api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                secure=True,
+            )
+            cloudinary.uploader.destroy(membro.foto_public_id, resource_type="image")
+        except Exception:
+            pass
+
+    db.session.delete(membro)
+    db.session.commit()
+    flash(f"'{membro.nome}' removido da equipe.", "success")
+    return redirect(url_for("auth.admin_equipe"))
+
 # ✅ Mensagens do formulário de contato
 @auth_bp.route("/admin/mensagens")
 @login_required

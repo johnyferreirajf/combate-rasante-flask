@@ -89,7 +89,15 @@ def parcerias():
 
 @main_bp.route("/equipe")
 def equipe():
-    return render_template("equipe.html")
+    from app.models.team_member import TeamMember
+    membros_db = TeamMember.query.filter_by(ativo=True).order_by(
+        TeamMember.setor, TeamMember.ordem
+    ).all()
+    # Agrupar por setor
+    setores = {}
+    for m in membros_db:
+        setores.setdefault(m.setor, []).append(m)
+    return render_template("equipe.html", setores=setores)
 
 
 @main_bp.route("/eventos")

@@ -1,0 +1,182 @@
+{% extends "layout.html" %}
+{% block title %}Editar {{ membro.nome }} — COMBATE RASANTE{% endblock %}
+
+{% block head_extra %}
+<style>
+.eq{--g1:rgba(3,58,36,.80);--g2:rgba(4,105,64,.90);--b:rgba(255,255,255,.13);
+    --bh:rgba(34,197,94,.55);--t:#fff;--m:rgba(255,255,255,.60);
+    --ac:#22c55e;--as:rgba(22,163,74,.20);--ds:rgba(239,68,68,.18);--rl:20px;}
+.eq-wrap{width:min(820px,calc(100% - 24px));margin-inline:auto;padding-block:16px 40px;color:var(--t);}
+.eq-card{background:var(--g1);border:1px solid var(--b);border-radius:var(--rl);
+         backdrop-filter:blur(10px);padding:20px 24px;margin-bottom:14px;}
+.eq-title{font-size:16px;font-weight:900;margin-bottom:16px;}
+.ef{display:flex;flex-direction:column;gap:13px;}
+.ef-row{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.el{font-size:11px;font-weight:900;color:var(--m);display:block;margin-bottom:4px;}
+.ei{width:100%;padding:10px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.10);color:#fff;font-size:13px;font-family:inherit;
+    outline:none;transition:border-color .15s;box-sizing:border-box;}
+.ei::placeholder{color:var(--m);}
+.ei:focus{border-color:var(--bh);}
+textarea.ei{min-height:90px;resize:vertical;}
+.er{display:flex;justify-content:flex-end;gap:8px;padding-top:4px;}
+.eb{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:10px;
+    font-size:13px;font-weight:800;cursor:pointer;border:1px solid var(--b);
+    background:rgba(255,255,255,.08);color:var(--t);text-decoration:none;
+    transition:.15s;font-family:inherit;}
+.eb:hover{background:rgba(255,255,255,.14);border-color:var(--bh);}
+.eb.p{background:var(--as);border-color:var(--bh);color:var(--ac);}
+.eb.d{background:var(--ds);border-color:rgba(239,68,68,.35);color:#fca5a5;}
+
+/* Foto */
+.foto-wrap{display:flex;align-items:center;gap:20px;padding:16px;
+           background:rgba(4,21,15,.35);border:1px solid var(--b);
+           border-radius:14px;}
+.foto-av{width:90px;height:90px;border-radius:50%;object-fit:cover;
+         border:3px solid var(--bh);flex-shrink:0;background:var(--as);
+         display:flex;align-items:center;justify-content:center;
+         font-weight:900;font-size:26px;color:var(--ac);overflow:hidden;}
+.foto-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.foto-drop{border:2px dashed rgba(255,255,255,.25);border-radius:12px;
+           padding:14px;text-align:center;cursor:pointer;transition:.15s;
+           background:rgba(255,255,255,.05);}
+.foto-drop:hover{border-color:var(--bh);background:var(--as);}
+.foto-drop input{display:none;}
+.foto-drop-label{font-size:12px;font-weight:700;color:var(--m);}
+.foto-drop-sub{font-size:11px;color:rgba(255,255,255,.40);margin-top:4px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="eq">
+<div class="eq-wrap">
+
+  <div style="display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;">
+    <a href="{{ url_for('auth.admin_equipe') }}" class="btn btn--ghost">← Voltar à equipe</a>
+    <a href="{{ url_for('auth.admin_equipe') }}" class="btn btn--ghost">🧑‍✈️ Equipe</a>
+  </div>
+
+  {# ── Foto ── #}
+  <div class="eq-card">
+    <div class="eq-title">📷 Foto de {{ membro.nome }}</div>
+    <div class="foto-wrap">
+      <div class="foto-av" id="avatarPreview">
+        {% if membro.foto_url %}
+          <img src="{{ membro.foto_url }}" alt="{{ membro.nome }}" id="fotoImg">
+        {% else %}
+          <span id="fotoLetra">{{ membro.avatar_letra }}</span>
+        {% endif %}
+      </div>
+      <div style="flex:1;">
+        <form method="POST" enctype="multipart/form-data"
+              action="{{ url_for('auth.admin_equipe_editar', mid=membro.id) }}">
+          <input type="hidden" name="acao" value="foto">
+          <label class="foto-drop" for="fotoInput"
+                 ondragover="this.style.borderColor='#22c55e'" 
+                 ondragleave="this.style.borderColor=''"
+                 ondrop="handleDrop(event)">
+            <input type="file" id="fotoInput" name="foto"
+                   accept="image/jpeg,image/png,image/webp"
+                   onchange="previewFoto(this); this.form.submit()">
+            <div class="foto-drop-label">📁 Clique ou arraste a foto aqui</div>
+            <div class="foto-drop-sub">JPG, PNG ou WEBP — será cortada em 400×400px</div>
+          </label>
+        </form>
+
+        {% if membro.foto_url %}
+        <form method="POST" action="{{ url_for('auth.admin_equipe_editar', mid=membro.id) }}"
+              style="margin-top:10px;"
+              onsubmit="return confirm('Remover a foto de {{ membro.nome }}?')">
+          <input type="hidden" name="acao" value="remover_foto">
+          <button class="eb d" type="submit" style="font-size:12px;">🗑 Remover foto</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  {# ── Dados ── #}
+  <div class="eq-card">
+    <div class="eq-title">✏ Editar informações</div>
+    <form method="POST" action="{{ url_for('auth.admin_equipe_editar', mid=membro.id) }}"
+          class="ef">
+      <input type="hidden" name="acao" value="salvar">
+
+      <div class="ef-row">
+        <div>
+          <label class="el">Nome *</label>
+          <input class="ei" type="text" name="nome" value="{{ membro.nome }}" required>
+        </div>
+        <div>
+          <label class="el">Cargo (tag verde) *</label>
+          <input class="ei" type="text" name="cargo" value="{{ membro.cargo }}" required>
+        </div>
+      </div>
+
+      <div class="ef-row">
+        <div>
+          <label class="el">Setor / Grupo *</label>
+          <input class="ei" type="text" name="setor" value="{{ membro.setor }}" required>
+        </div>
+        <div>
+          <label class="el">Ordem no grupo</label>
+          <input class="ei" type="number" name="ordem" value="{{ membro.ordem }}" min="1" max="99">
+        </div>
+      </div>
+
+      <div>
+        <label class="el">Tags extras (separadas por vírgula)</label>
+        <input class="ei" type="text" name="tags" value="{{ membro.tags }}"
+               placeholder="Ex: Precisão, Segurança, Rotas">
+      </div>
+
+      <div>
+        <label class="el">Descrição</label>
+        <textarea class="ei" name="descricao">{{ membro.descricao }}</textarea>
+      </div>
+
+      <div>
+        <label class="el" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="ativo" value="1"
+                 {% if membro.ativo %}checked{% endif %}
+                 style="width:auto;">
+          Visível na página da equipe
+        </label>
+      </div>
+
+      <div class="er">
+        <a href="{{ url_for('auth.admin_equipe') }}" class="eb">Cancelar</a>
+        <button class="eb p" type="submit">💾 Salvar</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewFoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var av = document.getElementById('avatarPreview');
+    av.innerHTML = '<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function handleDrop(e) {
+  e.preventDefault();
+  var input = document.getElementById('fotoInput');
+  var dt = e.dataTransfer;
+  if (dt && dt.files && dt.files[0]) {
+    var transfer = new DataTransfer();
+    transfer.items.add(dt.files[0]);
+    input.files = transfer.files;
+    previewFoto(input);
+    input.form.submit();
+  }
+}
+</script>
+{% endblock %}

@@ -13,147 +13,50 @@
       </p>
     </header>
 
-    {# ── Diretoria ── #}
-    <div class="team-divider">
-      <span class="team-divider__label">Diretoria</span>
-      <span class="team-divider__line" aria-hidden="true"></span>
-    </div>
+    {% if setores %}
+      {% for setor_nome, membros in setores.items() %}
 
-    <div class="team-grid">
-      <article class="team-card">
-        <div class="team-card__header">
-          <div class="team-card__avatar">W</div>
-          <div>
-            <h2 class="team-card__name">Weikren</h2>
-            <div class="team-card__tags">
-              <span class="tag tag--primary">Diretor de Operações</span>
-              <span class="tag">Gestão</span>
-              <span class="tag">Segurança Operacional</span>
-            </div>
-          </div>
+        <div class="team-divider">
+          <span class="team-divider__label">{{ setor_nome }}</span>
+          <span class="team-divider__line" aria-hidden="true"></span>
         </div>
-        <p class="team-card__desc">
-          Responsável pela gestão das operações aéreas, padronização de processos,
-          planejamento e relacionamento com clientes.
-        </p>
-      </article>
-    </div>
 
-    {# ── Coordenação & Pilotos ── #}
-    <div class="team-divider">
-      <span class="team-divider__label">Coordenação & Pilotos</span>
-      <span class="team-divider__line" aria-hidden="true"></span>
-    </div>
+        <div class="team-grid">
+          {% for m in membros %}
+          <article class="team-card">
+            <div class="team-card__header">
 
-    <div class="team-grid">
-      <article class="team-card">
-        <div class="team-card__header">
-          <div class="team-card__avatar">C1</div>
-          <div>
-            <h2 class="team-card__name">Coordenador / Piloto 01</h2>
-            <div class="team-card__tags">
-              <span class="tag tag--primary">Coordenador</span>
-              <span class="tag">Planejamento</span>
-              <span class="tag">Briefing</span>
+              {% if m.foto_url %}
+                <img src="{{ m.foto_url }}" alt="{{ m.nome }}"
+                     class="team-card__avatar"
+                     style="object-fit:cover; border-radius:50%; width:52px; height:52px;">
+              {% else %}
+                <div class="team-card__avatar">{{ m.avatar_letra }}</div>
+              {% endif %}
+
+              <div>
+                <h2 class="team-card__name">{{ m.nome }}</h2>
+                <div class="team-card__tags">
+                  <span class="tag tag--primary">{{ m.cargo }}</span>
+                  {% for tag in m.tags_list %}
+                    <span class="tag">{{ tag }}</span>
+                  {% endfor %}
+                </div>
+              </div>
             </div>
-          </div>
+            {% if m.descricao %}
+              <p class="team-card__desc">{{ m.descricao }}</p>
+            {% endif %}
+          </article>
+          {% endfor %}
         </div>
-        <p class="team-card__desc">Coordena equipes em campo, organiza programação, checklist, rota e apoio operacional.</p>
-      </article>
 
-      <article class="team-card">
-        <div class="team-card__header">
-          <div class="team-card__avatar">C2</div>
-          <div>
-            <h2 class="team-card__name">Coordenador / Piloto 02</h2>
-            <div class="team-card__tags">
-              <span class="tag tag--primary">Coordenador</span>
-              <span class="tag">Execução</span>
-              <span class="tag">Qualidade</span>
-            </div>
-          </div>
-        </div>
-        <p class="team-card__desc">Responsável por alinhamento técnico, padrão de aplicação e suporte ao time de pilotos.</p>
-      </article>
-    </div>
-
-    {# ── Pilotos Agrícolas ── #}
-    <div class="team-divider">
-      <span class="team-divider__label">Pilotos Agrícolas</span>
-      <span class="team-divider__line" aria-hidden="true"></span>
-    </div>
-
-    <div class="team-grid">
-      {% set pilotos = [
-        {"avatar": "P1", "nome": "Piloto Agrícola 01", "chips": ["Precisão", "Segurança"],    "desc": "Execução de aplicações com foco em uniformidade, cobertura e segurança operacional."},
-        {"avatar": "P2", "nome": "Piloto Agrícola 02", "chips": ["Eficiência", "Conformidade"],"desc": "Operação e execução com padrão de qualidade e rastreabilidade."},
-        {"avatar": "P3", "nome": "Piloto Agrícola 03", "chips": ["Qualidade", "Rotas"],        "desc": "Aplicações com precisão, atenção ao vento, faixa e padronização."},
-        {"avatar": "P4", "nome": "Piloto Agrícola 04", "chips": ["Performance", "Segurança"],  "desc": "Execução com alto padrão operacional e segurança."},
-        {"avatar": "P5", "nome": "Piloto Agrícola 05", "chips": ["Cobertura", "Precisão"],     "desc": "Aplicações com foco em cobertura, faixa e consistência."}
-      ] %}
-
-      {% for p in pilotos %}
-      <article class="team-card">
-        <div class="team-card__header">
-          <div class="team-card__avatar">{{ p.avatar }}</div>
-          <div>
-            <h2 class="team-card__name">{{ p.nome }}</h2>
-            <div class="team-card__tags">
-              <span class="tag tag--primary">Aplicação Aérea</span>
-              {% for chip in p.chips %}<span class="tag">{{ chip }}</span>{% endfor %}
-            </div>
-          </div>
-        </div>
-        <p class="team-card__desc">{{ p.desc }}</p>
-      </article>
       {% endfor %}
-    </div>
-
-    {# ── Tecnologia & Análise ── #}
-    <div class="team-divider">
-      <span class="team-divider__label">Tecnologia & Análise</span>
-      <span class="team-divider__line" aria-hidden="true"></span>
-    </div>
-
-    <div class="team-grid">
-      <article class="team-card">
-        <div class="team-card__header">
-          <div class="team-card__avatar">A</div>
-          <div>
-            <h2 class="team-card__name">Analista</h2>
-            <div class="team-card__tags">
-              <span class="tag tag--primary">Análise Operacional</span>
-              <span class="tag">Mapas</span>
-              <span class="tag">Relatórios</span>
-            </div>
-          </div>
-        </div>
-        <p class="team-card__desc">Responsável por análises, relatórios, mapas e indicadores para melhorar desempenho e qualidade.</p>
-      </article>
-    </div>
-
-    {# ── Comercial ── #}
-    <div class="team-divider">
-      <span class="team-divider__label">Comercial</span>
-      <span class="team-divider__line" aria-hidden="true"></span>
-    </div>
-
-    <div class="team-grid">
-      <article class="team-card">
-        <div class="team-card__header">
-          <div class="team-card__avatar">C</div>
-          <div>
-            <h2 class="team-card__name">Comercial</h2>
-            <div class="team-card__tags">
-              <span class="tag tag--primary">Atendimento & Negócios</span>
-              <span class="tag">Propostas</span>
-              <span class="tag">Pós-venda</span>
-            </div>
-          </div>
-        </div>
-        <p class="team-card__desc">Atendimento, propostas e acompanhamento para garantir agilidade e clareza no serviço.</p>
-      </article>
-    </div>
+    {% else %}
+      <p style="color:rgba(255,255,255,.6);text-align:center;padding:40px 0;">
+        Equipe em atualização.
+      </p>
+    {% endif %}
 
   </div>
 </section>
