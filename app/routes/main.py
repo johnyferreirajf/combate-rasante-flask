@@ -106,31 +106,34 @@ ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
 def _build_dashboard_tree():
-    """Busca no banco as fotos do cliente logado, organizadas por tema/safra/mes/dia."""
-    from app.models.photo import Photo
+    """Busca no banco os arquivos do cliente logado (ClientFile), organizados por pasta."""
+    from app.models.client_file import ClientFile
     user = get_current_user()
     if not user:
         return {}
 
-    fotos = Photo.query.filter_by(user_id=user.id).order_by(
-        Photo.tema, Photo.safra, Photo.mes, Photo.dia, Photo.filename
-    ).all()
+    arquivos = ClientFile.query.filter_by(user_id=user.id).filter(
+        ClientFile.url != "__folder__"
+    ).order_by(ClientFile.folder_path, ClientFile.original_filename).all()
 
-    ordered_tree = {}
-    for foto in fotos:
-        t = foto.tema  or "outros"
-        s = foto.safra or "Sem safra"
-        m = foto.mes   or "Sem mês"
-        d = foto.dia   or "Sem dia"
+    # Monta árvore: pasta_raiz -> subpasta -> ... -> [arquivos]
+    tree = {}
+    for arq in arquivos:
+        pasta = arq.folder_path or ""
+        partes = pasta.split("/") if pasta else []
 
-        ordered_tree.setdefault(t, {})
-        ordered_tree[t].setdefault(s, {})
-        ordered_tree[t][s].setdefault(m, {})
-        ordered_tree[t][s][m].setdefault(d, [])
-        ordered_tree[t][s][m][d].append({
-            "name": foto.title or foto.filename,
-            "url":  foto.url,
-            "id":   foto.id,
+        node = tree
+        for parte in partes:
+            node.setdefault(parte, {})
+            node = node[parte]
+
+        node.setdefault("__files__", [])
+        node["__files__"].append({
+            "name": arq.display_name,
+            "url":  arq.url,
+            "id":   arq.id,
+            "ext":  arq.file_ext or "",
+            "size": arq.size_human,
         })
 
-    return ordered_tree
+    return tree

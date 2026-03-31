@@ -214,151 +214,153 @@ def trocar_senha():
     )
 
 
-# ─── Upload de análises por cliente ───────────────────────────
-TEMAS = {
-    "aplicacoes": "Aplicações",
-    "mapas":      "Mapas",
-    "relatorios": "Relatórios",
-    "fotos":      "Fotos",
-    "outros":     "Outros",
+# ─── Explorador de arquivos por cliente (admin) ───────────────
+
+ADMIN_ALLOWED_EXT = {
+    "png","jpg","jpeg","webp","gif",
+    "pdf","kml","kmz",
+    "xlsx","xls","csv",
+    "doc","docx","ppt","pptx",
+    "zip","txt",
 }
 
-MESES = [
-    "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
-    "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
-]
-
-ALLOWED_UPLOAD_EXTENSIONS = {"png","jpg","jpeg","webp","gif","pdf","kml","kmz"}
-
-def _allowed_upload(filename):
+def _admin_allowed(filename):
     ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
-    return ext in ALLOWED_UPLOAD_EXTENSIONS
+    return ext in ADMIN_ALLOWED_EXT
+
+def _clean_path(path):
+    path = (path or "").strip().replace("\\", "/").strip("/")
+    if ".." in path.split("/"):
+        return ""
+    return path
+
+def _ext(filename):
+    return filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
 
 
-@auth_bp.route("/admin/uploads", methods=["GET", "POST"])
+@auth_bp.route("/admin/arquivos")
 @login_required
 @admin_required
-def admin_uploads():
-    import datetime, cloudinary, cloudinary.uploader
-    from flask import current_app
-    from app.models.photo import Photo
-
+def admin_arquivos():
+    from app.models.client_file import ClientFile
     current_user_obj = get_current_user()
     clientes = User.query.filter_by(is_admin=False).order_by(User.name).all()
 
-    # Filtro por cliente selecionado
     cliente_id = request.args.get("cliente_id", type=int)
-    fotos = []
+    pasta      = _clean_path(request.args.get("path", ""))
+
     cliente_sel = None
+    itens       = []
+    subpastas   = []
+    breadcrumbs = []
+
     if cliente_id:
         cliente_sel = User.query.get(cliente_id)
-        fotos = Photo.query.filter_by(user_id=cliente_id).order_by(
-            Photo.tema, Photo.safra, Photo.mes, Photo.dia, Photo.filename
-        ).all()
+        if cliente_sel:
+            if pasta:
+                partes = pasta.split("/")
+                acc = []
+                for p in partes:
+                    acc.append(p)
+                    breadcrumbs.append({"name": p, "path": "/".join(acc)})
 
-    if request.method == "POST":
-        user_id = request.form.get("user_id", type=int)
-        tema    = (request.form.get("tema")  or "").strip()
-        safra   = (request.form.get("safra") or "").strip()
-        mes     = (request.form.get("mes")   or "").strip()
-        dia     = (request.form.get("dia")   or "").strip()
-        titulo  = (request.form.get("titulo") or "").strip()
-        arquivo = request.files.get("arquivo")
+            prefixo = pasta + "/" if pasta else ""
+            todas_pastas = set()
+            for f in ClientFile.query.filter_by(user_id=cliente_id).all():
+                fp = f.folder_path or ""
+                if pasta == "":
+                    if fp and "/" not in fp:
+                        todas_pastas.add(fp)
+                    elif fp and "/" in fp:
+                        todas_pastas.add(fp.split("/")[0])
+                else:
+                    if fp.startswith(prefixo):
+                        resto = fp[len(prefixo):]
+                        if resto:
+                            todas_pastas.add(resto.split("/")[0])
+            subpastas = sorted(todas_pastas)
 
-        if not all([user_id, tema, safra, mes, dia, arquivo and arquivo.filename]):
-            flash("Preencha todos os campos e selecione um arquivo.", "error")
-            return redirect(url_for("auth.admin_uploads", cliente_id=user_id))
-
-        if not _allowed_upload(arquivo.filename):
-            flash("Tipo de arquivo não permitido.", "error")
-            return redirect(url_for("auth.admin_uploads", cliente_id=user_id))
-
-        cliente = User.query.get(user_id)
-        if not cliente:
-            flash("Cliente não encontrado.", "error")
-            return redirect(url_for("auth.admin_uploads"))
-
-        filename = secure_filename(arquivo.filename)
-        titulo   = titulo or filename
-        url_final  = ""
-        public_id  = ""
-        source     = "local"
-
-        # ── Cloudinary (se configurado) ──
-        use_cloud = current_app.config.get("USE_CLOUDINARY", False)
-        if use_cloud:
-            try:
-                cloudinary.config(
-                    cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
-                    api_key=current_app.config["CLOUDINARY_API_KEY"],
-                    api_secret=current_app.config["CLOUDINARY_API_SECRET"],
-                    secure=True,
-                )
-                folder = f"combaterasante/cliente_{user_id}/{tema}/{safra}/{mes}/{dia}"
-                ext = filename.rsplit(".", 1)[-1].lower()
-                rtype = "image" if ext in {"png","jpg","jpeg","webp","gif"} else "raw"
-                result = cloudinary.uploader.upload(
-                    arquivo,
-                    folder=folder,
-                    resource_type=rtype,
-                    use_filename=True,
-                    unique_filename=True,
-                )
-                url_final = result["secure_url"]
-                public_id = result["public_id"]
-                source    = "cloudinary"
-            except Exception as e:
-                flash(f"Erro no Cloudinary: {e}", "error")
-                return redirect(url_for("auth.admin_uploads", cliente_id=user_id))
-        else:
-            # ── Fallback local ──
-            upload_root = current_app.config.get("UPLOAD_FOLDER", "")
-            dest_dir = os.path.join(upload_root, str(user_id), tema, safra, mes, dia)
-            os.makedirs(dest_dir, exist_ok=True)
-            if os.path.exists(os.path.join(dest_dir, filename)):
-                name, ext2 = os.path.splitext(filename)
-                ts = datetime.datetime.now().strftime("%H%M%S")
-                filename = f"{name}_{ts}{ext2}"
-            arquivo.save(os.path.join(dest_dir, filename))
-            url_final = url_for("static",
-                filename=f"uploads/{user_id}/{tema}/{safra}/{mes}/{dia}/{filename}",
-                _external=True)
-            source = "local"
-
-        photo = Photo(
-            user_id=user_id, filename=filename, title=titulo,
-            tema=tema, safra=safra, mes=mes, dia=dia,
-            url=url_final, public_id=public_id, source=source,
-        )
-        db.session.add(photo)
-        db.session.commit()
-
-        flash(f"Arquivo '{titulo}' enviado para {cliente.name}!", "success")
-        return redirect(url_for("auth.admin_uploads", cliente_id=user_id))
+            itens = ClientFile.query.filter_by(
+                user_id=cliente_id,
+                folder_path=pasta
+            ).filter(
+                ClientFile.url != "__folder__"
+            ).order_by(ClientFile.uploaded_at.desc()).all()
 
     return render_template(
-        "admin_uploads.html",
+        "admin_arquivos.html",
         current_user=current_user_obj,
         clientes=clientes,
         cliente_sel=cliente_sel,
-        temas=TEMAS,
-        meses=MESES,
-        fotos=fotos,
+        pasta=pasta,
+        subpastas=subpastas,
+        itens=itens,
+        breadcrumbs=breadcrumbs,
     )
 
 
-@auth_bp.route("/admin/uploads/excluir/<int:foto_id>", methods=["POST"])
+@auth_bp.route("/admin/arquivos/nova-pasta", methods=["POST"])
 @login_required
 @admin_required
-def admin_uploads_excluir(foto_id):
+def admin_nova_pasta():
+    from app.models.client_file import ClientFile
+    cliente_id  = request.form.get("cliente_id", type=int)
+    pasta_atual = _clean_path(request.form.get("pasta_atual", ""))
+    nome        = secure_filename((request.form.get("nome") or "").strip())
+
+    if not nome:
+        flash("Informe o nome da pasta.", "error")
+        return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+
+    nova = (pasta_atual + "/" + nome).strip("/") if pasta_atual else nome
+
+    placeholder = ClientFile(
+        user_id=cliente_id,
+        original_filename=".keep",
+        title=".keep",
+        folder_path=nova,
+        url="__folder__",
+        source="folder",
+        file_ext="",
+    )
+    db.session.add(placeholder)
+    db.session.commit()
+
+    flash(f"Pasta '{nome}' criada.", "success")
+    return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=nova))
+
+
+@auth_bp.route("/admin/arquivos/upload", methods=["POST"])
+@login_required
+@admin_required
+def admin_arquivo_upload():
     import cloudinary, cloudinary.uploader
     from flask import current_app
-    from app.models.photo import Photo
+    from app.models.client_file import ClientFile
 
-    foto = Photo.query.get_or_404(foto_id)
-    cliente_id = foto.user_id
+    cliente_id  = request.form.get("cliente_id", type=int)
+    pasta_atual = _clean_path(request.form.get("pasta_atual", ""))
+    titulo      = (request.form.get("titulo") or "").strip()
+    arquivo     = request.files.get("arquivo")
 
-    if foto.source == "cloudinary" and foto.public_id:
+    if not arquivo or not arquivo.filename:
+        flash("Selecione um arquivo.", "error")
+        return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+
+    if not _admin_allowed(arquivo.filename):
+        flash("Tipo de arquivo não permitido.", "error")
+        return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+
+    filename  = secure_filename(arquivo.filename)
+    ext       = _ext(filename)
+    titulo    = titulo or filename
+    url_final = ""
+    public_id = ""
+    source    = "local"
+    file_size = 0
+
+    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+    if use_cloud:
         try:
             cloudinary.config(
                 cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
@@ -366,16 +368,130 @@ def admin_uploads_excluir(foto_id):
                 api_secret=current_app.config["CLOUDINARY_API_SECRET"],
                 secure=True,
             )
-            cloudinary.uploader.destroy(foto.public_id, resource_type="raw")
+            pasta_cloud = pasta_atual.replace("/", "_") if pasta_atual else "raiz"
+            folder = f"combaterasante/cliente_{cliente_id}/{pasta_cloud}"
+            rtype  = "image" if ext in {"png","jpg","jpeg","webp","gif"} else "raw"
+
+            content = arquivo.stream.read()
+            file_size = len(content)
+            arquivo.stream.seek(0)
+
+            result = cloudinary.uploader.upload(
+                arquivo.stream,
+                folder=folder,
+                resource_type=rtype,
+                use_filename=True,
+                unique_filename=True,
+            )
+            url_final = result["secure_url"]
+            public_id = result["public_id"]
+            source    = "cloudinary"
+        except Exception as e:
+            flash(f"Erro no Cloudinary: {e}", "error")
+            return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+    else:
+        flash("Configure o Cloudinary para uploads permanentes.", "error")
+        return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+
+    cf = ClientFile(
+        user_id=cliente_id,
+        original_filename=filename,
+        title=titulo,
+        folder_path=pasta_atual,
+        url=url_final,
+        public_id=public_id,
+        source=source,
+        file_ext=ext,
+        file_size=file_size,
+    )
+    db.session.add(cf)
+    db.session.commit()
+
+    flash(f"'{titulo}' enviado!", "success")
+    return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+
+
+@auth_bp.route("/admin/arquivos/excluir/<int:file_id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_arquivo_excluir(file_id):
+    import cloudinary, cloudinary.uploader
+    from flask import current_app
+    from app.models.client_file import ClientFile
+
+    cf         = ClientFile.query.get_or_404(file_id)
+    cliente_id = cf.user_id
+    pasta      = cf.folder_path or ""
+
+    if cf.source == "cloudinary" and cf.public_id:
+        try:
+            cloudinary.config(
+                cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                api_key=current_app.config["CLOUDINARY_API_KEY"],
+                api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                secure=True,
+            )
+            rtype = "image" if cf.is_image else "raw"
+            cloudinary.uploader.destroy(cf.public_id, resource_type=rtype)
         except Exception:
             pass
 
-    db.session.delete(foto)
+    db.session.delete(cf)
     db.session.commit()
     flash("Arquivo removido.", "success")
-    return redirect(url_for("auth.admin_uploads", cliente_id=cliente_id))
+    return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta))
 
 
+@auth_bp.route("/admin/arquivos/renomear/<int:file_id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_arquivo_renomear(file_id):
+    from app.models.client_file import ClientFile
+    cf   = ClientFile.query.get_or_404(file_id)
+    novo = (request.form.get("novo_titulo") or "").strip()
+    if novo:
+        cf.title = novo
+        db.session.commit()
+        flash("Renomeado.", "success")
+    return redirect(url_for("auth.admin_arquivos",
+                            cliente_id=cf.user_id, path=cf.folder_path or ""))
+
+
+@auth_bp.route("/admin/arquivos/excluir-pasta", methods=["POST"])
+@login_required
+@admin_required
+def admin_pasta_excluir():
+    import cloudinary, cloudinary.uploader
+    from flask import current_app
+    from app.models.client_file import ClientFile
+
+    cliente_id = request.form.get("cliente_id", type=int)
+    pasta      = _clean_path(request.form.get("pasta", ""))
+    pasta_pai  = "/".join(pasta.split("/")[:-1]) if "/" in pasta else ""
+    prefixo    = pasta + "/"
+    use_cloud  = current_app.config.get("USE_CLOUDINARY", False)
+
+    todos = ClientFile.query.filter_by(user_id=cliente_id).all()
+    for cf in todos:
+        fp = cf.folder_path or ""
+        if fp == pasta or fp.startswith(prefixo):
+            if use_cloud and cf.source == "cloudinary" and cf.public_id:
+                try:
+                    cloudinary.config(
+                        cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                        api_key=current_app.config["CLOUDINARY_API_KEY"],
+                        api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                        secure=True,
+                    )
+                    rtype = "image" if cf.is_image else "raw"
+                    cloudinary.uploader.destroy(cf.public_id, resource_type=rtype)
+                except Exception:
+                    pass
+            db.session.delete(cf)
+
+    db.session.commit()
+    flash(f"Pasta excluída.", "success")
+    return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_pai))
 
 
 # ─── Backup e Restore do banco ─────────────────────────────────
