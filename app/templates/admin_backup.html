@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+{% block title %}Backup & Restore — COMBATE RASANTE{% endblock %}
+
+{% block content %}
+<section class="auth-section section">
+  <div class="container">
+
+    {# ── Navegação ── #}
+    <div style="display:flex; gap:10px; margin-bottom: var(--space-lg); flex-wrap:wrap;">
+      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
+      <a href="{{ url_for('auth.admin_uploads') }}" class="btn btn--ghost">📁 Análises</a>
+      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
+      <a href="{{ url_for('auth.admin_backup') }}" class="btn btn--primary">💾 Backup</a>
+      <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
+    </div>
+
+    <div class="auth-layout">
+
+      {# ── Baixar backup ── #}
+      <div class="auth-card">
+        <h1 class="auth-card__title">💾 Fazer Backup</h1>
+        <p class="auth-card__desc">
+          Baixa um arquivo <strong>.json</strong> com todos os dados:
+          clientes, funcionários e vínculos de arquivos.
+          Guarde em local seguro.
+        </p>
+
+        <div class="mt-lg">
+          <a href="{{ url_for('auth.admin_backup') }}" class="btn btn--primary btn--full">
+            ⬇ Baixar backup agora
+          </a>
+        </div>
+
+        <ul class="auth-card__list mt-md">
+          <li>Inclui todos os clientes e senhas (criptografadas)</li>
+          <li>Inclui todos os funcionários</li>
+          <li>Inclui os vínculos de arquivos com o Cloudinary</li>
+          <li>Os arquivos em si ficam no Cloudinary — não precisam de backup</li>
+        </ul>
+
+        <div style="margin-top:var(--space-lg); padding:12px; border-radius:12px;
+                    background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.35);">
+          <p style="font-size:var(--text-xs); color:var(--color-text); line-height:1.6;">
+            ⚠️ <strong>Faça backup ANTES de qualquer deploy.</strong>
+            Nunca coloque <code>python recreate_db.py</code> no Pre-deploy Command.
+          </p>
+        </div>
+      </div>
+
+      {# ── Restaurar backup ── #}
+      <div class="auth-card">
+        <h1 class="auth-card__title">🔄 Restaurar Backup</h1>
+        <p class="auth-card__desc">
+          Selecione um arquivo <strong>.json</strong> gerado anteriormente
+          para restaurar os dados.
+        </p>
+
+        <form method="POST" action="{{ url_for('auth.admin_restore') }}"
+              enctype="multipart/form-data" novalidate>
+
+          <div class="form-group">
+            <label class="form-label" for="backup_file">Arquivo de backup (.json)</label>
+            <input id="backup_file" name="backup_file" type="file"
+                   class="form-control" accept=".json" required>
+          </div>
+
+          <div class="mt-lg">
+            <button type="submit" class="btn btn--primary btn--full"
+                    onclick="return confirm('Confirmar restauração? Dados existentes serão mesclados.')">
+              🔄 Restaurar
+            </button>
+          </div>
+        </form>
+
+        {% if resultado %}
+        <div style="margin-top:var(--space-lg); padding:12px; border-radius:12px;
+                    background:rgba(22,163,74,0.15); border:1px solid rgba(22,163,74,0.35);">
+          <p style="font-size:var(--text-sm); font-weight:800; color:var(--color-text);">
+            Resultado:
+          </p>
+          <ul style="font-size:var(--text-xs); color:var(--color-text-muted);
+                     padding-left:1rem; margin-top:6px; display:flex; flex-direction:column; gap:4px;">
+            <li>Clientes: {{ resultado.clientes }}</li>
+            <li>Funcionários: {{ resultado.funcionarios }}</li>
+            <li>Fotos/vínculos: {{ resultado.fotos }}</li>
+            <li>Erros: {{ resultado.erros }}</li>
+          </ul>
+        </div>
+        {% endif %}
+
+        <ul class="auth-card__list mt-md">
+          <li>Clientes e funcionários existentes são atualizados, não duplicados</li>
+          <li>Fotos já vinculadas não são duplicadas</li>
+          <li>Use após um <code>recreate_db.py</code> acidental</li>
+        </ul>
+      </div>
+
+    </div>
+
+  </div>
+</section>
+{% endblock %}
