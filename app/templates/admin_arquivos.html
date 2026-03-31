@@ -2,300 +2,335 @@
 {% block title %}Arquivos do Cliente — COMBATE RASANTE{% endblock %}
 
 {% block head_extra %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/employee_portal.css') }}">
+<style>
+/* ── Explorador de arquivos — tema verde ── */
+.af { --g1: rgba(3,58,36,.80); --g2: rgba(4,105,64,.90);
+      --g3: rgba(4,21,15,.45); --b: rgba(255,255,255,.13);
+      --bh: rgba(34,197,94,.55); --t: #fff; --m: rgba(255,255,255,.60);
+      --ac: #22c55e; --as: rgba(22,163,74,.20); --ds: rgba(239,68,68,.18);
+      --r: 14px; --rl: 20px; }
+
+.af-wrap { width: min(1180px, calc(100% - 24px)); margin-inline: auto; padding-block: 16px 40px; }
+
+/* card */
+.af-card { background:var(--g1); border:1px solid var(--b); border-radius:var(--rl);
+           backdrop-filter:blur(10px); padding:14px 18px; margin-bottom:12px; color:var(--t); }
+.af-card-label { font-size:10px; font-weight:900; letter-spacing:.07em; text-transform:uppercase;
+                 color:var(--m); margin-bottom:10px; }
+
+/* botões de cliente */
+.af-cbtn { display:inline-flex; align-items:center; padding:7px 15px; border-radius:10px;
+           font-size:13px; font-weight:800; text-decoration:none; border:1px solid var(--b);
+           background:rgba(255,255,255,.07); color:var(--m); transition:.15s; }
+.af-cbtn:hover, .af-cbtn.on { background:var(--as); border-color:var(--bh); color:var(--t); }
+
+/* explorador */
+.af-box { background:var(--g1); border:1px solid var(--b); border-radius:var(--rl);
+          backdrop-filter:blur(10px); overflow:hidden; color:var(--t); }
+
+/* topbar */
+.af-top { display:flex; align-items:center; justify-content:space-between; gap:10px;
+          flex-wrap:wrap; padding:12px 16px; background:var(--g2); border-bottom:1px solid var(--b); }
+.af-bc  { display:flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:13px; }
+.af-bc a { color:var(--m); font-weight:800; text-decoration:none; transition:color .15s; }
+.af-bc a:hover { color:var(--t); }
+.af-bc span { color:var(--m); opacity:.45; }
+.af-btns { display:flex; gap:7px; }
+
+/* botão genérico */
+.af-b { display:inline-flex; align-items:center; gap:4px; padding:7px 13px;
+        border-radius:10px; font-size:12px; font-weight:800; cursor:pointer;
+        border:1px solid var(--b); background:rgba(255,255,255,.08);
+        color:var(--t); text-decoration:none; transition:.15s; font-family:inherit; }
+.af-b:hover { background:rgba(255,255,255,.14); border-color:var(--bh); }
+.af-b.p  { background:var(--as); border-color:var(--bh); color:var(--ac); }
+.af-b.p:hover { background:rgba(22,163,74,.30); }
+.af-b.d  { background:var(--ds); border-color:rgba(239,68,68,.35); color:#fca5a5; }
+.af-b.d:hover { background:rgba(239,68,68,.28); }
+
+/* tabela */
+.af-head { display:grid; grid-template-columns:1.8fr .45fr .5fr .6fr 1fr;
+           gap:8px; padding:9px 16px; background:rgba(4,105,64,.35);
+           font-size:10px; font-weight:900; letter-spacing:.06em;
+           text-transform:uppercase; color:var(--m); }
+.af-row  { display:grid; grid-template-columns:1.8fr .45fr .5fr .6fr 1fr;
+           gap:8px; padding:10px 16px; align-items:center;
+           border-bottom:1px solid rgba(255,255,255,.06); transition:background .12s; }
+.af-row:last-child { border-bottom:none; }
+.af-row:hover { background:rgba(255,255,255,.04); }
+
+.af-nm { display:flex; align-items:center; gap:9px; min-width:0; }
+.af-nm a { color:var(--t); font-weight:800; font-size:13px; text-decoration:none;
+           white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:color .15s; }
+.af-nm a:hover { color:var(--ac); }
+.af-ico { font-size:17px; flex-shrink:0; }
+.af-pill { display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px;
+           font-weight:900; border:1px solid var(--b); color:var(--m);
+           background:rgba(255,255,255,.06); }
+.af-sm { color:var(--m); font-size:12px; }
+.af-ac { display:flex; gap:5px; flex-wrap:wrap; }
+.af-empty { padding:30px 16px; text-align:center; color:var(--m); font-size:13px; font-weight:700; }
+
+/* modal */
+.af-modal { position:fixed; inset:0; display:none; z-index:9999; }
+.af-modal.on { display:block; }
+.af-mbg { position:absolute; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); }
+.af-mc  { position:relative; width:min(460px,calc(100% - 24px)); margin:7vh auto 0;
+          background:rgba(3,40,24,.97); border:1px solid var(--b); border-radius:var(--rl);
+          box-shadow:0 20px 56px rgba(0,0,0,.55); padding:16px 18px;
+          backdrop-filter:blur(16px); }
+.af-mh  { display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+          padding-bottom:12px; border-bottom:1px solid var(--b); margin-bottom:14px; }
+.af-mt  { font-size:14px; font-weight:900; color:var(--t); }
+.af-ms  { font-size:11px; color:var(--m); margin-top:2px; }
+.af-xb  { background:rgba(255,255,255,.10); border:1px solid var(--b); border-radius:8px;
+          width:30px; height:30px; cursor:pointer; color:var(--t); font-weight:900;
+          display:grid; place-items:center; transition:background .15s; font-family:inherit; flex-shrink:0; }
+.af-xb:hover { background:rgba(255,255,255,.20); }
+.af-fm  { display:flex; flex-direction:column; gap:11px; }
+.af-lb  { font-size:11px; font-weight:900; color:var(--m); display:block; margin-bottom:3px; }
+.af-in  { width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--b);
+          background:rgba(255,255,255,.10); color:var(--t); font-size:13px;
+          font-family:inherit; outline:none; transition:border-color .15s; box-sizing:border-box; }
+.af-in::placeholder { color:var(--m); }
+.af-in:focus { border-color:var(--bh); }
+.af-fa { display:flex; justify-content:flex-end; gap:7px; padding-top:3px; }
+
+@media(max-width:900px){
+  .af-head,.af-row { grid-template-columns:1.5fr .5fr 1fr; }
+  .af-head > *:nth-child(3),.af-head > *:nth-child(4),
+  .af-row  > *:nth-child(3),.af-row  > *:nth-child(4){ display:none; }
+}
+@media(max-width:560px){
+  .af-head,.af-row { grid-template-columns:1fr 1fr; }
+  .af-head > *:nth-child(2),.af-row > *:nth-child(2){ display:none; }
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="sp-page">
-  <div style="width:min(1200px,calc(100% - 32px)); margin-inline:auto;">
+<div class="af">
+<div class="af-wrap">
 
-    {# ── Navegação admin ── #}
-    <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
-      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
-      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
-      <a href="{{ url_for('auth.admin_arquivos') }}" class="btn btn--primary">📁 Arquivos</a>
-      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
-      <a href="{{ url_for('auth.admin_restore') }}" class="btn btn--ghost">💾 Backup</a>
-      <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
+  {# ── Navegação ── #}
+  <div style="display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;">
+    <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+    <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
+    <a href="{{ url_for('auth.admin_arquivos') }}" class="btn btn--primary">📁 Arquivos</a>
+    <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
+    <a href="{{ url_for('auth.admin_restore') }}" class="btn btn--ghost">💾 Backup</a>
+    <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
+  </div>
+
+  {# ── Selecionar cliente ── #}
+  <div class="af-card">
+    <div class="af-card-label">Selecionar cliente</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+      {% for c in clientes %}
+        <a href="{{ url_for('auth.admin_arquivos', cliente_id=c.id) }}"
+           class="af-cbtn {% if cliente_sel and cliente_sel.id == c.id %}on{% endif %}">
+          {{ c.name or c.email }}
+        </a>
+      {% else %}
+        <span style="color:rgba(255,255,255,.55);font-size:13px;">Nenhum cliente cadastrado.</span>
+      {% endfor %}
     </div>
+  </div>
 
-    {# ── Seleção de cliente ── #}
-    <div class="sp-main" style="margin-bottom:14px; padding:14px 18px;">
-      <div style="font-size:12px; font-weight:900; color:var(--sp-muted);
-                  text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px;">
-        Selecionar cliente
-      </div>
-      <div style="display:flex; flex-wrap:wrap; gap:8px;">
-        {% for c in clientes %}
-          <a href="{{ url_for('auth.admin_arquivos', cliente_id=c.id) }}"
-             style="padding:7px 14px; border-radius:10px; font-size:13px; font-weight:800;
-                    text-decoration:none; transition:.15s;
-                    {% if cliente_sel and cliente_sel.id == c.id %}
-                      background:var(--sp-accent2); border:1px solid rgba(14,165,233,.30); color:#0b4a64;
-                    {% else %}
-                      background:#fff; border:1px solid var(--sp-border-md); color:var(--sp-muted);
-                    {% endif %}">
-            {{ c.name or c.email }}
+  {% if cliente_sel %}
+
+  {# ── Explorador ── #}
+  <div class="af-box">
+
+    {# Topbar #}
+    <div class="af-top">
+      <div class="af-bc">
+        <a href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id) }}">
+          📁 {{ cliente_sel.name }}
+        </a>
+        {% for crumb in breadcrumbs %}
+          <span>/</span>
+          <a href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id, path=crumb.path) }}">
+            {{ crumb.name }}
           </a>
-        {% else %}
-          <p style="color:var(--sp-muted); font-size:13px;">Nenhum cliente cadastrado.</p>
         {% endfor %}
+      </div>
+      <div class="af-btns">
+        <button class="af-b" onclick="abrirModal('mPasta')">+ Nova pasta</button>
+        <button class="af-b p" onclick="abrirModal('mUpload')">⬆ Upload</button>
       </div>
     </div>
 
-    {% if cliente_sel %}
-    <div class="sp-main">
-
-      {# ── Topbar ── #}
-      <div class="sp-topbar">
-        <div>
-          {# Breadcrumbs #}
-          <div class="sp-breadcrumbs">
-            <a class="sp-crumb-link"
-               href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id) }}">
-              📁 {{ cliente_sel.name }}
-            </a>
-            {% for crumb in breadcrumbs %}
-              <span class="sp-crumb-sep">/</span>
-              <a class="sp-crumb-link"
-                 href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id, path=crumb.path) }}">
-                {{ crumb.name }}
-              </a>
-            {% endfor %}
-          </div>
-        </div>
-
-        <div class="sp-actions">
-          {# Botão nova pasta #}
-          <button class="sp-btn" type="button"
-                  onclick="document.getElementById('modalPasta').setAttribute('aria-hidden','false')">
-            + Nova pasta
-          </button>
-
-          {# Botão upload #}
-          <button class="sp-btn sp-btn-primary" type="button"
-                  onclick="document.getElementById('modalUpload').setAttribute('aria-hidden','false')">
-            ⬆ Upload
-          </button>
-        </div>
-      </div>
-
-      {# ── Tabela de arquivos ── #}
-      <div class="sp-table" role="table">
-
-        {# Cabeçalho #}
-        <div class="sp-row sp-row-head" role="row">
-          <div class="sp-col-name" role="columnheader">Nome</div>
-          <div class="sp-col-type" role="columnheader">Tipo</div>
-          <div class="sp-col-size" role="columnheader">Tamanho</div>
-          <div class="sp-col-mod"  role="columnheader">Enviado em</div>
-          <div class="sp-col-actions" role="columnheader">Ações</div>
-        </div>
-
-        {# Pastas #}
-        {% for pasta_nome in subpastas %}
-          {% set pasta_path = (pasta + '/' + pasta_nome).strip('/') if pasta else pasta_nome %}
-          <div class="sp-row sp-row-item" role="row">
-            <div class="sp-col-name" role="cell">
-              <div class="sp-name">
-                <img class="sp-ico" src="{{ url_for('static', filename='icons/folder.svg') }}" alt="">
-                <a class="sp-link"
-                   href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id, path=pasta_path) }}">
-                  {{ pasta_nome }}
-                </a>
-              </div>
-            </div>
-            <div class="sp-col-type" role="cell"><span class="sp-pill">Pasta</span></div>
-            <div class="sp-col-size" role="cell"><span class="sp-muted-text">—</span></div>
-            <div class="sp-col-mod"  role="cell"><span class="sp-muted-text">—</span></div>
-            <div class="sp-col-actions" role="cell">
-              <form method="POST" action="{{ url_for('auth.admin_pasta_excluir') }}"
-                    onsubmit="return confirm('Excluir pasta {{ pasta_nome }} e todos os arquivos dentro?')">
-                <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
-                <input type="hidden" name="pasta" value="{{ pasta_path }}">
-                <button class="sp-action danger" type="submit">Excluir</button>
-              </form>
-            </div>
-          </div>
-        {% endfor %}
-
-        {# Arquivos #}
-        {% for item in itens %}
-          <div class="sp-row sp-row-item" role="row">
-            <div class="sp-col-name" role="cell">
-              <div class="sp-name">
-                {% if item.is_image %}
-                  <img class="sp-ico" src="{{ url_for('static', filename='icons/image.svg') }}" alt="">
-                {% elif item.is_pdf %}
-                  <img class="sp-ico" src="{{ url_for('static', filename='icons/pdf.svg') }}" alt="">
-                {% elif item.file_ext in ['kml','kmz'] %}
-                  <img class="sp-ico" src="{{ url_for('static', filename='icons/kml.svg') }}" alt="">
-                {% else %}
-                  <img class="sp-ico" src="{{ url_for('static', filename='icons/file.svg') }}" alt="">
-                {% endif %}
-                <a class="sp-link" href="{{ item.url }}" target="_blank" rel="noopener">
-                  {{ item.display_name }}
-                </a>
-              </div>
-            </div>
-            <div class="sp-col-type" role="cell">
-              <span class="sp-pill">{{ (item.file_ext or 'arquivo')|upper }}</span>
-            </div>
-            <div class="sp-col-size" role="cell">
-              <span class="sp-muted-text">{{ item.size_human }}</span>
-            </div>
-            <div class="sp-col-mod" role="cell">
-              <span class="sp-muted-text">
-                {{ item.uploaded_at.strftime("%d/%m/%Y") if item.uploaded_at else "—" }}
-              </span>
-            </div>
-            <div class="sp-col-actions" role="cell">
-              <a class="sp-action" href="{{ item.url }}" target="_blank" rel="noopener">Abrir</a>
-
-              <button class="sp-action" type="button"
-                      onclick="abrirRenomear({{ item.id }}, '{{ item.display_name|replace("'", "\\'") }}')">
-                Renomear
-              </button>
-
-              <form class="sp-action-form" method="POST"
-                    action="{{ url_for('auth.admin_arquivo_excluir', file_id=item.id) }}"
-                    onsubmit="return confirm('Excluir {{ item.display_name }}?')">
-                <button class="sp-action danger" type="submit">Excluir</button>
-              </form>
-            </div>
-          </div>
-        {% endfor %}
-
-        {% if not subpastas and not itens %}
-          <div class="sp-empty">Pasta vazia — use os botões acima para criar pastas ou fazer upload.</div>
-        {% endif %}
-
-      </div>
+    {# Cabeçalho da tabela #}
+    <div class="af-head">
+      <div>Nome</div>
+      <div>Tipo</div>
+      <div>Tamanho</div>
+      <div>Data</div>
+      <div>Ações</div>
     </div>
 
-    {% else %}
-    <div class="sp-main" style="text-align:center; padding:40px;">
-      <p style="font-size:2rem;">☝️</p>
-      <p style="color:var(--sp-muted); margin-top:10px;">
-        Selecione um cliente acima para gerenciar os arquivos.
-      </p>
-    </div>
+    {# Pastas #}
+    {% for pasta_nome in subpastas %}
+      {% set pasta_path = (pasta + '/' + pasta_nome).strip('/') if pasta else pasta_nome %}
+      <div class="af-row">
+        <div class="af-nm">
+          <span class="af-ico">📁</span>
+          <a href="{{ url_for('auth.admin_arquivos', cliente_id=cliente_sel.id, path=pasta_path) }}">
+            {{ pasta_nome }}
+          </a>
+        </div>
+        <div><span class="af-pill">Pasta</span></div>
+        <div><span class="af-sm">—</span></div>
+        <div><span class="af-sm">—</span></div>
+        <div class="af-ac">
+          <form method="POST" action="{{ url_for('auth.admin_pasta_excluir') }}"
+                onsubmit="return confirm('Excluir pasta {{ pasta_nome }} e todo o conteúdo?')">
+            <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
+            <input type="hidden" name="pasta" value="{{ pasta_path }}">
+            <button class="af-b d" type="submit">🗑 Excluir</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+
+    {# Arquivos #}
+    {% for item in itens %}
+      <div class="af-row">
+        <div class="af-nm">
+          {% set ext = item.file_ext|lower if item.file_ext else '' %}
+          <span class="af-ico">
+            {% if ext in ['jpg','jpeg','png','webp','gif'] %}🖼
+            {% elif ext == 'pdf' %}📄
+            {% elif ext in ['kml','kmz'] %}🗺️
+            {% elif ext in ['xlsx','xls','csv'] %}📊
+            {% elif ext in ['doc','docx'] %}📝
+            {% elif ext == 'zip' %}📦
+            {% else %}📎{% endif %}
+          </span>
+          <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.display_name }}</a>
+        </div>
+        <div><span class="af-pill">{{ (item.file_ext or 'arq')|upper }}</span></div>
+        <div><span class="af-sm">{{ item.size_human }}</span></div>
+        <div><span class="af-sm">{{ item.uploaded_at.strftime('%d/%m/%Y') if item.uploaded_at else '—' }}</span></div>
+        <div class="af-ac">
+          <a class="af-b" href="{{ item.url }}" target="_blank" rel="noopener">↗ Abrir</a>
+          <button class="af-b" onclick="abrirRenomear({{ item.id }}, '{{ item.display_name|replace("'","\\'") }}')">✏ Renomear</button>
+          <form method="POST" action="{{ url_for('auth.admin_arquivo_excluir', file_id=item.id) }}"
+                onsubmit="return confirm('Excluir {{ item.display_name }}?')">
+            <button class="af-b d" type="submit">🗑</button>
+          </form>
+        </div>
+      </div>
+    {% endfor %}
+
+    {% if not subpastas and not itens %}
+      <div class="af-empty">📂 Pasta vazia — use os botões acima para criar pastas ou fazer upload.</div>
     {% endif %}
 
-  </div>
-</div>
+  </div>{# /af-box #}
 
-{% if cliente_sel %}
-
-{# ── Modal: Nova Pasta ── #}
-<div class="sp-modal" id="modalPasta" aria-hidden="true">
-  <div class="sp-modal-backdrop"
-       onclick="document.getElementById('modalPasta').setAttribute('aria-hidden','true')"></div>
-  <div class="sp-modal-card">
-    <div class="sp-modal-head">
-      <div>
-        <div class="sp-modal-title">Nova pasta</div>
-        <div class="sp-muted-text">Dentro de: /{{ pasta or cliente_sel.name }}</div>
+  {# ── Modal Nova Pasta ── #}
+  <div class="af-modal" id="mPasta">
+    <div class="af-mbg" onclick="fecharModal('mPasta')"></div>
+    <div class="af-mc">
+      <div class="af-mh">
+        <div>
+          <div class="af-mt">Nova pasta</div>
+          <div class="af-ms">Dentro de: /{{ (pasta or cliente_sel.name) }}</div>
+        </div>
+        <button class="af-xb" onclick="fecharModal('mPasta')">✕</button>
       </div>
-      <button class="sp-icon-btn" type="button"
-              onclick="document.getElementById('modalPasta').setAttribute('aria-hidden','true')">✕</button>
+      <form method="POST" action="{{ url_for('auth.admin_nova_pasta') }}" class="af-fm">
+        <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
+        <input type="hidden" name="pasta_atual" value="{{ pasta }}">
+        <div>
+          <label class="af-lb">Nome da pasta</label>
+          <input class="af-in" type="text" name="nome" placeholder="Ex: Safra2025-2026" required autofocus>
+        </div>
+        <div class="af-fa">
+          <button class="af-b" type="button" onclick="fecharModal('mPasta')">Cancelar</button>
+          <button class="af-b p" type="submit">Criar</button>
+        </div>
+      </form>
     </div>
-    <form method="POST" action="{{ url_for('auth.admin_nova_pasta') }}" class="sp-form">
-      <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
-      <input type="hidden" name="pasta_atual" value="{{ pasta }}">
-      <label class="sp-label">Nome da pasta</label>
-      <input class="sp-input" type="text" name="nome" placeholder="Ex: Safra2025-2026" required autofocus>
-      <div class="sp-form-actions">
-        <button class="sp-btn" type="button"
-                onclick="document.getElementById('modalPasta').setAttribute('aria-hidden','true')">
-          Cancelar
-        </button>
-        <button class="sp-btn sp-btn-primary" type="submit">Criar</button>
-      </div>
-    </form>
   </div>
-</div>
 
-{# ── Modal: Upload ── #}
-<div class="sp-modal" id="modalUpload" aria-hidden="true">
-  <div class="sp-modal-backdrop"
-       onclick="document.getElementById('modalUpload').setAttribute('aria-hidden','true')"></div>
-  <div class="sp-modal-card">
-    <div class="sp-modal-head">
-      <div>
-        <div class="sp-modal-title">Enviar arquivo</div>
-        <div class="sp-muted-text">Para: {{ cliente_sel.name }} / {{ pasta or 'raiz' }}</div>
+  {# ── Modal Upload ── #}
+  <div class="af-modal" id="mUpload">
+    <div class="af-mbg" onclick="fecharModal('mUpload')"></div>
+    <div class="af-mc">
+      <div class="af-mh">
+        <div>
+          <div class="af-mt">Enviar arquivo</div>
+          <div class="af-ms">{{ cliente_sel.name }} / {{ pasta or 'raiz' }}</div>
+        </div>
+        <button class="af-xb" onclick="fecharModal('mUpload')">✕</button>
       </div>
-      <button class="sp-icon-btn" type="button"
-              onclick="document.getElementById('modalUpload').setAttribute('aria-hidden','true')">✕</button>
+      <form method="POST" action="{{ url_for('auth.admin_arquivo_upload') }}"
+            enctype="multipart/form-data" class="af-fm">
+        <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
+        <input type="hidden" name="pasta_atual" value="{{ pasta }}">
+        <div>
+          <label class="af-lb">Arquivo</label>
+          <input class="af-in" type="file" name="arquivo" required
+                 accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.kml,.kmz,.xlsx,.xls,.csv,.doc,.docx,.zip,.txt">
+        </div>
+        <div>
+          <label class="af-lb">Título exibido (opcional)</label>
+          <input class="af-in" type="text" name="titulo" placeholder="Ex: Mapa cobertura Talhão 3">
+        </div>
+        <div class="af-fa">
+          <button class="af-b" type="button" onclick="fecharModal('mUpload')">Cancelar</button>
+          <button class="af-b p" type="submit">⬆ Enviar</button>
+        </div>
+      </form>
     </div>
-    <form method="POST" action="{{ url_for('auth.admin_arquivo_upload') }}"
-          enctype="multipart/form-data" class="sp-form">
-      <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
-      <input type="hidden" name="pasta_atual" value="{{ pasta }}">
-      <label class="sp-label">Arquivo</label>
-      <input class="sp-input" type="file" name="arquivo" required
-             accept=".png,.jpg,.jpeg,.webp,.gif,.pdf,.kml,.kmz,.xlsx,.xls,.csv,.doc,.docx,.zip,.txt">
-      <label class="sp-label">Título exibido (opcional)</label>
-      <input class="sp-input" type="text" name="titulo" placeholder="Ex: Mapa de cobertura Talhão 3">
-      <div class="sp-form-actions">
-        <button class="sp-btn" type="button"
-                onclick="document.getElementById('modalUpload').setAttribute('aria-hidden','true')">
-          Cancelar
-        </button>
-        <button class="sp-btn sp-btn-primary" type="submit">Enviar</button>
-      </div>
-    </form>
   </div>
-</div>
 
-{# ── Modal: Renomear ── #}
-<div class="sp-modal" id="modalRenomear" aria-hidden="true">
-  <div class="sp-modal-backdrop"
-       onclick="document.getElementById('modalRenomear').setAttribute('aria-hidden','true')"></div>
-  <div class="sp-modal-card">
-    <div class="sp-modal-head">
-      <div><div class="sp-modal-title">Renomear arquivo</div></div>
-      <button class="sp-icon-btn" type="button"
-              onclick="document.getElementById('modalRenomear').setAttribute('aria-hidden','true')">✕</button>
+  {# ── Modal Renomear ── #}
+  <div class="af-modal" id="mRenomear">
+    <div class="af-mbg" onclick="fecharModal('mRenomear')"></div>
+    <div class="af-mc">
+      <div class="af-mh">
+        <div><div class="af-mt">Renomear arquivo</div></div>
+        <button class="af-xb" onclick="fecharModal('mRenomear')">✕</button>
+      </div>
+      <form method="POST" id="fRenomear" class="af-fm">
+        <div>
+          <label class="af-lb">Novo título</label>
+          <input class="af-in" type="text" name="novo_titulo" id="iRenomear" required>
+        </div>
+        <div class="af-fa">
+          <button class="af-b" type="button" onclick="fecharModal('mRenomear')">Cancelar</button>
+          <button class="af-b p" type="submit">Salvar</button>
+        </div>
+      </form>
     </div>
-    <form method="POST" id="formRenomear" class="sp-form">
-      <label class="sp-label">Novo título</label>
-      <input class="sp-input" type="text" name="novo_titulo" id="inputRenomear" required>
-      <div class="sp-form-actions">
-        <button class="sp-btn" type="button"
-                onclick="document.getElementById('modalRenomear').setAttribute('aria-hidden','true')">
-          Cancelar
-        </button>
-        <button class="sp-btn sp-btn-primary" type="submit">Salvar</button>
-      </div>
-    </form>
   </div>
-</div>
 
-{% endif %}
+  {% else %}
+  <div class="af-box">
+    <div class="af-empty" style="padding:40px;">☝️ Selecione um cliente acima para gerenciar os arquivos.</div>
+  </div>
+  {% endif %}
 
+</div>{# /af-wrap #}
+</div>{# /af #}
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/employee_portal.js') }}"></script>
 <script>
-function abrirRenomear(fileId, nomeAtual) {
-  var modal = document.getElementById('modalRenomear');
-  var form  = document.getElementById('formRenomear');
-  var input = document.getElementById('inputRenomear');
-  form.action = '/admin/arquivos/renomear/' + fileId;
-  input.value = nomeAtual;
-  modal.setAttribute('aria-hidden', 'false');
-  setTimeout(function(){ input.focus(); input.select(); }, 100);
+function abrirModal(id){ document.getElementById(id).classList.add('on'); }
+function fecharModal(id){ document.getElementById(id).classList.remove('on'); }
+function abrirRenomear(fileId, nome){
+  document.getElementById('fRenomear').action='/admin/arquivos/renomear/'+fileId;
+  var i=document.getElementById('iRenomear'); i.value=nome;
+  abrirModal('mRenomear');
+  setTimeout(function(){ i.focus(); i.select(); },120);
 }
-// Fechar modais com Escape
-document.addEventListener('keydown', function(e) {
-  if (e.key !== 'Escape') return;
-  ['modalPasta','modalUpload','modalRenomear'].forEach(function(id){
-    var m = document.getElementById(id);
-    if (m) m.setAttribute('aria-hidden','true');
-  });
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') ['mPasta','mUpload','mRenomear'].forEach(fecharModal);
 });
 </script>
 {% endblock %}
