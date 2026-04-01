@@ -118,6 +118,11 @@
             Criado em {{ emp.created_at.strftime("%d/%m/%Y") }}
           </div>
 
+          <a href="{{ url_for('auth.admin_funcionario_editar', eid=emp.id) }}"
+             class="btn btn--ghost"
+             style="min-height:34px;padding:0 14px;font-size:var(--text-xs);">
+            ✏ Editar
+          </a>
           <form method="POST"
                 action="{{ url_for('auth.admin_funcionarios_excluir', emp_id=emp.id) }}"
                 onsubmit="return confirm('Excluir funcionário {{ emp.name }}?')">

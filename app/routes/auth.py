@@ -214,6 +214,149 @@ def trocar_senha():
     )
 
 
+
+# ─── Editar / Excluir Cliente ─────────────────────────────────
+
+@auth_bp.route("/admin/clientes/editar/<int:uid>", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_cliente_editar(uid):
+    user = User.query.get_or_404(uid)
+    current_user_obj = get_current_user()
+
+    if request.method == "POST":
+        acao  = request.form.get("acao", "dados")
+        nome  = (request.form.get("name")  or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        senha = request.form.get("password") or ""
+        conf  = request.form.get("confirm_password") or ""
+
+        if acao == "dados":
+            if not nome:
+                flash("Informe o nome.", "error")
+                return redirect(url_for("auth.admin_cliente_editar", uid=uid))
+            if not email:
+                flash("Informe o e-mail.", "error")
+                return redirect(url_for("auth.admin_cliente_editar", uid=uid))
+            # Verificar e-mail duplicado em outro usuário
+            dup = User.query.filter_by(email=email).first()
+            if dup and dup.id != uid:
+                flash("Este e-mail já está em uso.", "error")
+                return redirect(url_for("auth.admin_cliente_editar", uid=uid))
+            user.name  = nome
+            user.email = email
+            db.session.commit()
+            flash("Dados atualizados!", "success")
+
+        elif acao == "senha":
+            if len(senha) < 6:
+                flash("Senha deve ter pelo menos 6 caracteres.", "error")
+                return redirect(url_for("auth.admin_cliente_editar", uid=uid))
+            if senha != conf:
+                flash("As senhas não coincidem.", "error")
+                return redirect(url_for("auth.admin_cliente_editar", uid=uid))
+            user.set_password(senha)
+            db.session.commit()
+            flash("Senha alterada!", "success")
+
+        return redirect(url_for("auth.admin_cliente_editar", uid=uid))
+
+    return render_template("admin_cliente_editar.html",
+                           current_user=current_user_obj,
+                           cliente=user)
+
+
+@auth_bp.route("/admin/clientes/excluir/<int:uid>", methods=["POST"])
+@login_required
+@admin_required
+def admin_cliente_excluir(uid):
+    from app.models.client_file import ClientFile
+    import cloudinary, cloudinary.uploader
+    from flask import current_app
+
+    user = User.query.get_or_404(uid)
+
+    # Não deixa excluir o próprio admin
+    admin_email = current_app.config.get("ADMIN_EMAIL", "")
+    if user.email.lower() == admin_email.lower() or user.is_admin:
+        flash("Não é possível excluir a conta admin.", "error")
+        return redirect(url_for("auth.admin"))
+
+    # Excluir arquivos do Cloudinary
+    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+    for cf in ClientFile.query.filter_by(user_id=uid).all():
+        if use_cloud and cf.source == "cloudinary" and cf.public_id:
+            try:
+                cloudinary.config(
+                    cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                    api_key=current_app.config["CLOUDINARY_API_KEY"],
+                    api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                    secure=True,
+                )
+                rtype = "image" if cf.is_image else "raw"
+                cloudinary.uploader.destroy(cf.public_id, resource_type=rtype)
+            except Exception:
+                pass
+        db.session.delete(cf)
+
+    nome = user.name or user.email
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"Cliente '{nome}' excluído.", "success")
+    return redirect(url_for("auth.admin"))
+
+
+# ─── Editar Funcionário ────────────────────────────────────────
+
+@auth_bp.route("/admin/funcionarios/editar/<int:eid>", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_funcionario_editar(eid):
+    emp = Employee.query.get_or_404(eid)
+    current_user_obj = get_current_user()
+
+    if request.method == "POST":
+        acao     = request.form.get("acao", "dados")
+        nome     = (request.form.get("name")     or "").strip()
+        username = (request.form.get("username") or "").strip().lower()
+        senha    = request.form.get("password")  or ""
+        conf     = request.form.get("confirm_password") or ""
+        is_admin = request.form.get("is_admin") == "1"
+
+        if acao == "dados":
+            if not nome:
+                flash("Informe o nome.", "error")
+                return redirect(url_for("auth.admin_funcionario_editar", eid=eid))
+            if not username:
+                flash("Informe o usuário.", "error")
+                return redirect(url_for("auth.admin_funcionario_editar", eid=eid))
+            dup = Employee.query.filter_by(username=username).first()
+            if dup and dup.id != eid:
+                flash("Este usuário já está em uso.", "error")
+                return redirect(url_for("auth.admin_funcionario_editar", eid=eid))
+            emp.name     = nome
+            emp.username = username
+            emp.is_admin = is_admin
+            db.session.commit()
+            flash("Dados atualizados!", "success")
+
+        elif acao == "senha":
+            if len(senha) < 4:
+                flash("Senha deve ter pelo menos 4 caracteres.", "error")
+                return redirect(url_for("auth.admin_funcionario_editar", eid=eid))
+            if senha != conf:
+                flash("As senhas não coincidem.", "error")
+                return redirect(url_for("auth.admin_funcionario_editar", eid=eid))
+            emp.set_password(senha)
+            db.session.commit()
+            flash("Senha alterada!", "success")
+
+        return redirect(url_for("auth.admin_funcionario_editar", eid=eid))
+
+    return render_template("admin_funcionario_editar.html",
+                           current_user=current_user_obj,
+                           funcionario=emp)
+
 # ─── Explorador de arquivos por cliente (admin) ───────────────
 
 ADMIN_ALLOWED_EXT = {

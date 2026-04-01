@@ -1,0 +1,93 @@
+{% extends "layout.html" %}
+{% block title %}Editar {{ funcionario.name }} — COMBATE RASANTE{% endblock %}
+
+{% block head_extra %}
+<style>
+.eq{--g1:rgba(3,58,36,.80);--g2:rgba(4,105,64,.90);--b:rgba(255,255,255,.13);
+    --bh:rgba(34,197,94,.55);--t:#fff;--m:rgba(255,255,255,.60);
+    --ac:#22c55e;--as:rgba(22,163,74,.20);--ds:rgba(239,68,68,.18);--rl:20px;}
+.eq-wrap{width:min(720px,calc(100% - 24px));margin-inline:auto;padding-block:16px 40px;color:var(--t);}
+.eq-card{background:var(--g1);border:1px solid var(--b);border-radius:var(--rl);
+         backdrop-filter:blur(10px);padding:20px 24px;margin-bottom:14px;}
+.eq-title{font-size:16px;font-weight:900;margin-bottom:16px;}
+.ef{display:flex;flex-direction:column;gap:13px;}
+.ef-row{display:grid;grid-template-columns:1fr 1fr;gap:13px;}
+.el{font-size:11px;font-weight:900;color:var(--m);display:block;margin-bottom:4px;}
+.ei{width:100%;padding:10px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.10);color:#fff;font-size:13px;font-family:inherit;
+    outline:none;transition:border-color .15s;box-sizing:border-box;}
+.ei::placeholder{color:var(--m);}
+.ei:focus{border-color:var(--bh);}
+.er{display:flex;justify-content:flex-end;gap:8px;padding-top:4px;}
+.eb{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:10px;
+    font-size:13px;font-weight:800;cursor:pointer;border:1px solid var(--b);
+    background:rgba(255,255,255,.08);color:var(--t);text-decoration:none;
+    transition:.15s;font-family:inherit;}
+.eb:hover{background:rgba(255,255,255,.14);border-color:var(--bh);}
+.eb.p{background:var(--as);border-color:var(--bh);color:var(--ac);}
+.eb.d{background:var(--ds);border-color:rgba(239,68,68,.35);color:#fca5a5;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="eq">
+<div class="eq-wrap">
+
+  <div style="display:flex;gap:9px;margin-bottom:14px;">
+    <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">← Voltar a Funcionários</a>
+  </div>
+
+  {# ── Dados ── #}
+  <div class="eq-card">
+    <div class="eq-title">✏ Editar dados — {{ funcionario.name }}</div>
+    <form method="POST" class="ef">
+      <input type="hidden" name="acao" value="dados">
+      <div class="ef-row">
+        <div>
+          <label class="el">Nome completo</label>
+          <input class="ei" type="text" name="name" value="{{ funcionario.name }}" required>
+        </div>
+        <div>
+          <label class="el">Usuário de login</label>
+          <input class="ei" type="text" name="username" value="{{ funcionario.username }}" required>
+        </div>
+      </div>
+      <div>
+        <label class="el" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="is_admin" value="1"
+                 {% if funcionario.is_admin %}checked{% endif %}
+                 style="width:auto;">
+          É administrador do portal de funcionários
+        </label>
+      </div>
+      <div class="er">
+        <a href="{{ url_for('auth.admin_funcionarios') }}" class="eb">Cancelar</a>
+        <button class="eb p" type="submit">💾 Salvar dados</button>
+      </div>
+    </form>
+  </div>
+
+  {# ── Senha ── #}
+  <div class="eq-card">
+    <div class="eq-title">🔑 Alterar senha</div>
+    <form method="POST" class="ef">
+      <input type="hidden" name="acao" value="senha">
+      <div class="ef-row">
+        <div>
+          <label class="el">Nova senha (mín. 4 caracteres)</label>
+          <input class="ei" type="password" name="password" placeholder="Nova senha" minlength="4" required>
+        </div>
+        <div>
+          <label class="el">Confirmar senha</label>
+          <input class="ei" type="password" name="confirm_password" placeholder="Repita a senha" minlength="4" required>
+        </div>
+      </div>
+      <div class="er">
+        <button class="eb p" type="submit">🔑 Alterar senha</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+</div>
+{% endblock %}
