@@ -401,11 +401,15 @@ body:has(.sp-page) {
   position: relative;
   width: min(520px, calc(100% - 28px));
   margin: 8vh auto 0;
-  background: #fff;
+  /* Tema verde escuro — compatível com o fundo do site */
+  background: rgba(3, 45, 25, 0.97);
   border-radius: var(--sp-radius-lg);
-  border: 1px solid var(--sp-border);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
   padding: 18px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: #fff;
 }
 
 .sp-modal-head {
@@ -414,18 +418,19 @@ body:has(.sp-page) {
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--sp-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.13);
 }
 
 .sp-modal-title {
   font-size: 15px;
   font-weight: 900;
-  color: var(--sp-text);
+  color: #fff;
 }
 
 .sp-icon-btn {
-  border: 1px solid var(--sp-border-md);
-  background: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.10);
+  color: #fff;
   border-radius: 10px;
   width: 34px;
   height: 34px;
@@ -434,6 +439,11 @@ body:has(.sp-page) {
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.sp-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.20);
 }
 
 /* Form inside modal */
@@ -447,7 +457,7 @@ body:has(.sp-page) {
 .sp-label {
   font-size: 12px;
   font-weight: 900;
-  color: var(--sp-text);
+  color: rgba(255, 255, 255, 0.65);
   display: block;
   margin-bottom: 4px;
 }
@@ -457,18 +467,24 @@ body:has(.sp-page) {
   width: 100%;
   padding: 9px 12px;
   border-radius: 10px;
-  border: 1px solid var(--sp-border-md);
-  background: #fff;
-  color: var(--sp-text);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.10);
+  color: #fff;
   outline: none;
   font-size: 13px;
   font-family: inherit;
   transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.sp-input::placeholder,
+.sp-textarea::placeholder {
+  color: rgba(255, 255, 255, 0.40);
 }
 
 .sp-input:focus,
 .sp-textarea:focus {
-  border-color: rgba(14, 165, 233, 0.40);
+  border-color: rgba(34, 197, 94, 0.55);
 }
 
 .sp-form-actions {
@@ -560,3 +576,37 @@ body:has(.sp-page) {
 
 .sp-title   { font-size: 14px; font-weight: 800; color: var(--sp-text); }
 .sp-subtitle { font-size: 12px; color: var(--sp-muted); margin-top: 2px; }
+
+/* ── Modais: forçar tema verde escuro (sobrescreve o tema claro) ── */
+.sp-modal .sp-btn {
+  background: rgba(255, 255, 255, 0.10) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  color: #fff !important;
+  transition: background 0.15s;
+}
+
+.sp-modal .sp-btn:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+.sp-modal .sp-btn-primary {
+  background: rgba(22, 163, 74, 0.22) !important;
+  border-color: rgba(34, 197, 94, 0.55) !important;
+  color: #22c55e !important;
+}
+
+.sp-modal .sp-btn-primary:hover {
+  background: rgba(22, 163, 74, 0.35) !important;
+}
+
+.sp-modal .sp-modal-sub {
+  color: rgba(255, 255, 255, 0.60);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Backdrop mais escuro */
+.sp-modal-backdrop {
+  background: rgba(0, 0, 0, 0.60) !important;
+  backdrop-filter: blur(4px) !important;
+}
