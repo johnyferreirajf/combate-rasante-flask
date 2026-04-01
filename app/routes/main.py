@@ -153,7 +153,7 @@ def painel_download(file_id):
 
     from flask import make_response
     resp = make_response(data)
-    resp.headers["Content-Disposition"] = f'attachment; filename="{safe_name}"\'
+    resp.headers["Content-Disposition"] = "attachment; filename=\"" + safe_name + "\""
     resp.headers["Content-Type"] = ctype
     resp.headers["Content-Length"] = str(len(data))
     return resp
