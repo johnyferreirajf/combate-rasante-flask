@@ -12,10 +12,12 @@
 .eq-setor-bloco{background:rgba(3,58,36,.72);border:1px solid var(--b);
                 border-radius:var(--rl);backdrop-filter:blur(10px);
                 padding:16px 18px;margin-bottom:14px;}
+.eq-setor-header{display:flex;align-items:center;justify-content:space-between;
+                 gap:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.10);
+                 margin-bottom:12px;flex-wrap:wrap;}
 .eq-setor-titulo{font-size:10px;font-weight:900;letter-spacing:.08em;
-                 text-transform:uppercase;color:var(--m);
-                 padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.10);
-                 margin-bottom:12px;}
+                 text-transform:uppercase;color:var(--m);}
+.eq-setor-btns{display:flex;gap:6px;}
 
 /* grid de membros */
 .eq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
@@ -37,10 +39,10 @@
          overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .em-btns{display:flex;gap:6px;margin-top:auto;}
 
-/* form lateral */
+/* coluna direita */
+.eq-side{display:flex;flex-direction:column;gap:12px;position:sticky;top:80px;}
 .eq-form-card{background:rgba(3,58,36,.80);border:1px solid var(--b);
-              border-radius:var(--rl);backdrop-filter:blur(10px);
-              padding:18px 20px;position:sticky;top:80px;}
+              border-radius:var(--rl);backdrop-filter:blur(10px);padding:18px 20px;}
 .eq-form-title{font-size:15px;font-weight:900;margin-bottom:14px;color:var(--t);}
 .ef{display:flex;flex-direction:column;gap:11px;}
 .el{font-size:11px;font-weight:900;color:var(--m);display:block;margin-bottom:3px;}
@@ -62,6 +64,25 @@ textarea.ei{min-height:80px;resize:vertical;}
 .eb.p:hover{background:rgba(22,163,74,.30);}
 .eb.d{background:var(--ds);border-color:rgba(239,68,68,.35);color:#fca5a5;}
 .eb.d:hover{background:rgba(239,68,68,.28);}
+.eb.sm{padding:4px 10px;font-size:11px;}
+
+/* modal */
+.af-modal{position:fixed;inset:0;display:none;z-index:9999;}
+.af-modal.on{display:block;}
+.af-mbg{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
+.af-mc{position:relative;width:min(440px,calc(100% - 24px));margin:8vh auto 0;
+       background:rgba(3,40,24,.97);border:1px solid rgba(255,255,255,.18);
+       border-radius:20px;box-shadow:0 20px 56px rgba(0,0,0,.55);
+       padding:16px 18px;backdrop-filter:blur(16px);}
+.af-mh{display:flex;align-items:flex-start;justify-content:space-between;
+       gap:10px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.13);margin-bottom:14px;}
+.af-mt{font-size:14px;font-weight:900;color:#fff;}
+.af-xb{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
+       border-radius:8px;width:30px;height:30px;cursor:pointer;color:#fff;
+       font-weight:900;display:grid;place-items:center;font-family:inherit;flex-shrink:0;}
+.af-xb:hover{background:rgba(255,255,255,.20);}
+.af-fm{display:flex;flex-direction:column;gap:11px;}
+.af-fa{display:flex;justify-content:flex-end;gap:7px;padding-top:3px;}
 </style>
 {% endblock %}
 
@@ -87,7 +108,30 @@ textarea.ei{min-height:80px;resize:vertical;}
       {% if setores %}
         {% for setor_nome, membros_setor in setores.items() %}
         <div class="eq-setor-bloco">
-          <div class="eq-setor-titulo">{{ setor_nome }}</div>
+
+          {# Cabeçalho do setor com ações #}
+          <div class="eq-setor-header">
+            <div class="eq-setor-titulo">{{ setor_nome }}</div>
+            <div class="eq-setor-btns">
+              <button class="eb sm" type="button"
+                      onclick="abrirRenomear('{{ setor_nome|replace("'", "\\'") }}')">
+                ✏ Renomear
+              </button>
+              {% if membros_setor|length == 0 %}
+              <form method="POST" action="{{ url_for('auth.admin_setor_excluir') }}"
+                    onsubmit="return confirm('Excluir setor {{ setor_nome }}?')">
+                <input type="hidden" name="nome" value="{{ setor_nome }}">
+                <button class="eb sm d" type="submit">🗑 Excluir</button>
+              </form>
+              {% else %}
+              <button class="eb sm d" type="button"
+                      onclick="alert('Mova ou exclua os {{ membros_setor|length }} membro(s) antes de excluir o setor.')">
+                🗑 Excluir
+              </button>
+              {% endif %}
+            </div>
+          </div>
+
           <div class="eq-grid">
             {% for membro in membros_setor %}
             <div class="em">
@@ -129,59 +173,114 @@ textarea.ei{min-height:80px;resize:vertical;}
       {% endif %}
     </div>
 
-    {# ── Coluna direita: formulário ── #}
-    <div class="eq-form-card">
-      <div class="eq-form-title">+ Novo membro</div>
-      <form method="POST" class="ef">
+    {# ── Coluna direita ── #}
+    <div class="eq-side">
 
-        <div>
-          <label class="el">Nome *</label>
-          <input class="ei" type="text" name="nome" placeholder="Ex: João Silva" required>
-        </div>
+      {# Criar novo setor #}
+      <div class="eq-form-card">
+        <div class="eq-form-title">📂 Novo setor</div>
+        <form method="POST" action="{{ url_for('auth.admin_equipe') }}" class="ef">
+          <input type="hidden" name="criar_setor" value="1">
+          <div>
+            <label class="el">Nome do setor</label>
+            <input class="ei" type="text" name="nome_setor"
+                   placeholder="Ex: Agronomia" required>
+          </div>
+          <div class="er">
+            <button class="eb p" type="submit">+ Criar setor</button>
+          </div>
+        </form>
+      </div>
 
-        <div>
-          <label class="el">Cargo (tag verde) *</label>
-          <input class="ei" type="text" name="cargo" placeholder="Ex: Piloto Agrícola" required>
-        </div>
+      {# Novo membro #}
+      <div class="eq-form-card">
+        <div class="eq-form-title">+ Novo membro</div>
+        <form method="POST" action="{{ url_for('auth.admin_equipe') }}" class="ef">
+          <div>
+            <label class="el">Nome *</label>
+            <input class="ei" type="text" name="nome" placeholder="Ex: João Silva" required>
+          </div>
+          <div>
+            <label class="el">Cargo (tag verde) *</label>
+            <input class="ei" type="text" name="cargo" placeholder="Ex: Piloto Agrícola" required>
+          </div>
+          <div>
+            <label class="el">Setor *</label>
+            <input class="ei" type="text" name="setor" list="dl-setores" required
+                   placeholder="Selecione ou digite">
+            <datalist id="dl-setores">
+              {% for s in setores.keys() %}
+                <option value="{{ s }}">
+              {% endfor %}
+            </datalist>
+          </div>
+          <div>
+            <label class="el">Tags extras (vírgula)</label>
+            <input class="ei" type="text" name="tags" placeholder="Ex: Precisão, Segurança">
+          </div>
+          <div>
+            <label class="el">Descrição</label>
+            <textarea class="ei" name="descricao" placeholder="Breve descrição…"></textarea>
+          </div>
+          <div>
+            <label class="el">Ordem no setor</label>
+            <input class="ei" type="number" name="ordem" value="99" min="1" max="99">
+          </div>
+          <div class="er">
+            <button class="eb p" type="submit">Adicionar</button>
+          </div>
+        </form>
+      </div>
 
-        <div>
-          <label class="el">Setor *</label>
-          <input class="ei" type="text" name="setor" list="dl-setores" required
-                 placeholder="Ex: Pilotos Agrícolas">
-          <datalist id="dl-setores">
-            <option value="Diretoria">
-            <option value="Coordenação & Pilotos">
-            <option value="Pilotos Agrícolas">
-            <option value="Tecnologia & Análise">
-            <option value="Comercial">
-            {% for s in setores.keys() %}
-              <option value="{{ s }}">
-            {% endfor %}
-          </datalist>
-        </div>
-
-        <div>
-          <label class="el">Tags extras (vírgula)</label>
-          <input class="ei" type="text" name="tags" placeholder="Ex: Precisão, Segurança">
-        </div>
-
-        <div>
-          <label class="el">Descrição</label>
-          <textarea class="ei" name="descricao" placeholder="Breve descrição…"></textarea>
-        </div>
-
-        <div>
-          <label class="el">Ordem no setor</label>
-          <input class="ei" type="number" name="ordem" value="99" min="1" max="99">
-        </div>
-
-        <div class="er">
-          <button class="eb p" type="submit">Adicionar</button>
-        </div>
-      </form>
     </div>
-
   </div>
 </div>
 </div>
+
+{# ── Modal Renomear Setor ── #}
+<div class="af-modal" id="mRenomear">
+  <div class="af-mbg" onclick="fecharModal()"></div>
+  <div class="af-mc">
+    <div class="af-mh">
+      <div><div class="af-mt">✏ Renomear setor</div></div>
+      <button class="af-xb" onclick="fecharModal()">✕</button>
+    </div>
+    <form method="POST" action="{{ url_for('auth.admin_setor_renomear') }}" class="af-fm">
+      <input type="hidden" name="nome_antigo" id="inputNomeAntigo">
+      <div>
+        <label class="el">Nome atual</label>
+        <input class="ei" type="text" id="inputNomeAtualShow" disabled
+               style="opacity:.6;">
+      </div>
+      <div>
+        <label class="el">Novo nome</label>
+        <input class="ei" type="text" name="nome_novo" id="inputNomeNovo"
+               placeholder="Ex: Coordenação de Voo" required>
+      </div>
+      <div class="af-fa">
+        <button class="eb" type="button" onclick="fecharModal()">Cancelar</button>
+        <button class="eb p" type="submit">Salvar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function abrirRenomear(nome) {
+  document.getElementById('inputNomeAntigo').value = nome;
+  document.getElementById('inputNomeAtualShow').value = nome;
+  document.getElementById('inputNomeNovo').value = nome;
+  document.getElementById('mRenomear').classList.add('on');
+  setTimeout(function(){ document.getElementById('inputNomeNovo').select(); }, 120);
+}
+function fecharModal() {
+  document.getElementById('mRenomear').classList.remove('on');
+}
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') fecharModal();
+});
+</script>
 {% endblock %}

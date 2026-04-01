@@ -822,6 +822,48 @@ def admin_restore():
     )
 
 
+
+# ─── Gerenciar Setores da Equipe ──────────────────────────────
+
+@auth_bp.route("/admin/equipe/setor/renomear", methods=["POST"])
+@login_required
+@admin_required
+def admin_setor_renomear():
+    from app.models.team_member import TeamMember
+    nome_antigo = (request.form.get("nome_antigo") or "").strip()
+    nome_novo   = (request.form.get("nome_novo")   or "").strip()
+
+    if not nome_antigo or not nome_novo:
+        flash("Preencha os dois campos.", "error")
+        return redirect(url_for("auth.admin_equipe"))
+
+    membros = TeamMember.query.filter_by(setor=nome_antigo).all()
+    for m in membros:
+        m.setor = nome_novo
+    db.session.commit()
+    flash(f"Setor renomeado para '{nome_novo}'.", "success")
+    return redirect(url_for("auth.admin_equipe"))
+
+
+@auth_bp.route("/admin/equipe/setor/excluir", methods=["POST"])
+@login_required
+@admin_required
+def admin_setor_excluir():
+    from app.models.team_member import TeamMember
+    nome = (request.form.get("nome") or "").strip()
+
+    if not nome:
+        flash("Setor inválido.", "error")
+        return redirect(url_for("auth.admin_equipe"))
+
+    count = TeamMember.query.filter_by(setor=nome).count()
+    if count > 0:
+        flash(f"Não é possível excluir '{nome}' — ainda tem {count} membro(s). Mova ou exclua os membros primeiro.", "error")
+        return redirect(url_for("auth.admin_equipe"))
+
+    flash(f"Setor '{nome}' removido.", "success")
+    return redirect(url_for("auth.admin_equipe"))
+
 # ─── Gerenciar Equipe ─────────────────────────────────────────
 
 # Ordem preferencial dos setores
@@ -849,13 +891,42 @@ def admin_equipe():
     todos = TeamMember.query.order_by(TeamMember.ordem).all()
     todos.sort(key=lambda m: (_sort_key_setor(m), m.ordem))
 
-    # Agrupar por setor mantendo a ordem
+    # Agrupar por setor mantendo a ordem (excluir placeholders de setor)
     from collections import OrderedDict
     setores = OrderedDict()
     for m in todos:
-        setores.setdefault(m.setor, []).append(m)
+        # Incluir o setor mesmo se só tiver placeholder
+        if m.setor not in setores:
+            setores[m.setor] = []
+        # Não mostrar placeholders de setor na listagem
+        if not m.nome.startswith("__setor__"):
+            setores[m.setor].append(m)
 
     if request.method == "POST":
+
+        # ── Criar novo setor (placeholder) ──
+        if request.form.get("criar_setor"):
+            nome_setor = (request.form.get("nome_setor") or "").strip()
+            if not nome_setor:
+                flash("Informe o nome do setor.", "error")
+                return redirect(url_for("auth.admin_equipe"))
+            # Verifica se já existe
+            existing = TeamMember.query.filter_by(setor=nome_setor).first()
+            if existing:
+                flash(f"Setor '{nome_setor}' já existe.", "error")
+                return redirect(url_for("auth.admin_equipe"))
+            # Cria membro placeholder oculto para materializar o setor
+            placeholder = TeamMember(
+                nome=f"__setor__{nome_setor}",
+                cargo="—", setor=nome_setor,
+                ativo=False, ordem=999
+            )
+            db.session.add(placeholder)
+            db.session.commit()
+            flash(f"Setor '{nome_setor}' criado! Adicione membros a ele.", "success")
+            return redirect(url_for("auth.admin_equipe"))
+
+        # ── Adicionar novo membro ──
         nome      = (request.form.get("nome")      or "").strip()
         cargo     = (request.form.get("cargo")     or "").strip()
         setor     = (request.form.get("setor")     or "").strip()
