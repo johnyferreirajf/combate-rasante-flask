@@ -1,7 +1,7 @@
 import os
 from collections import defaultdict
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import abort, Blueprint, render_template, request, redirect, url_for, flash, current_app, Response, stream_with_context
 
 from app import db
 from app.models import ContactMessage
@@ -111,6 +111,52 @@ def not_found(_error):
 
 
 ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+
+
+@main_bp.route("/painel/download/<int:file_id>")
+@login_required
+def painel_download(file_id):
+    """Proxy de download — baixa do Cloudinary e força download no navegador."""
+    import urllib.request
+    from app.models.client_file import ClientFile
+
+    user = get_current_user()
+    cf = ClientFile.query.get_or_404(file_id)
+
+    # Segurança: só o dono pode baixar
+    if cf.user_id != user.id:
+        abort(403)
+
+    # Nome do arquivo para download — garante extensão
+    name = cf.original_filename or cf.title or "arquivo"
+    ext  = cf.file_ext or ""
+    if ext and not name.lower().endswith(f".{ext.lower()}"):
+        name = f"{name}.{ext}"
+
+    # Sanitizar filename para o header (remover aspas e quebras)
+    safe_name = name.replace('"', '').replace("\n", "").replace("\r", "")
+
+    try:
+        req = urllib.request.Request(
+            cf.url,
+            headers={"User-Agent": "Mozilla/5.0"}
+        )
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = resp.read()
+            ctype = resp.headers.get("Content-Type", "application/octet-stream")
+    except Exception:
+        # fallback: redirecionar com fl_attachment do Cloudinary
+        if "cloudinary.com" in cf.url:
+            dl_url = cf.url.replace("/upload/", "/upload/fl_attachment/")
+            return redirect(dl_url)
+        return redirect(cf.url)
+
+    from flask import make_response
+    resp = make_response(data)
+    resp.headers["Content-Disposition"] = f'attachment; filename="{safe_name}"\'
+    resp.headers["Content-Type"] = ctype
+    resp.headers["Content-Length"] = str(len(data))
+    return resp
 
 
 def _build_dashboard_tree():
