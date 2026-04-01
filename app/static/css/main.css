@@ -913,23 +913,25 @@ textarea.form-control {
 .team-card__header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   margin-bottom: var(--space-sm);
 }
 
 .team-card__avatar {
-  width: 50px;
-  height: 50px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 900;
-  font-size: 1rem;
+  font-size: 1.8rem;
   background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 2px solid rgba(34, 197, 94, 0.50);
   color: var(--color-text);
   flex-shrink: 0;
+  overflow: hidden;
+  object-fit: cover;
 }
 
 .team-card__name {
