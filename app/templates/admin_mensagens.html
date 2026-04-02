@@ -5,38 +5,74 @@
 <section class="page-section section">
   <div class="container">
 
+    {# ── Navegação ── #}
+    <div style="display:flex;gap:9px;margin-bottom:var(--space-lg);flex-wrap:wrap;">
+      <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+      <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
+      <a href="{{ url_for('auth.admin_arquivos') }}" class="btn btn--ghost">📁 Arquivos</a>
+      <a href="{{ url_for('auth.admin_equipe') }}" class="btn btn--ghost">🧑‍✈️ Equipe</a>
+      <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--primary">✉ Mensagens</a>
+      <a href="{{ url_for('auth.admin_restore') }}" class="btn btn--ghost">💾 Backup</a>
+      <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
+    </div>
+
     <header class="page-header">
       <h1 class="page-header__title">Mensagens de Contato</h1>
       <p class="page-header__subtitle">
-        Mensagens recebidas pelo formulário do site.
+        Mensagens recebidas pelo formulário do site. Total: {{ msgs|length }}
       </p>
     </header>
 
-    {% if msgs and msgs | length > 0 %}
-      <div class="glass-card glass-card--standard" style="overflow-x: auto;">
-        <table class="admin-table">
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Nome</th>
-              <th>E-mail</th>
-              <th>Mensagem</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for m in msgs %}
-              <tr>
-                <td style="white-space:nowrap;">{{ m.created_at.strftime("%d/%m/%Y %H:%M") }}</td>
-                <td>{{ m.nome }}</td>
-                <td>{{ m.email }}</td>
-                <td>{{ m.mensagem }}</td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    {% if msgs %}
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        {% for m in msgs %}
+        <div class="glass-card glass-card--standard"
+             style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;">
+
+          {# Cabeçalho da mensagem #}
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      flex-wrap:wrap;gap:10px;">
+            <div style="display:flex;align-items:center;gap:14px;">
+              <div style="width:40px;height:40px;border-radius:50%;
+                          background:rgba(255,255,255,.15);border:1px solid var(--color-border);
+                          display:flex;align-items:center;justify-content:center;
+                          font-weight:900;font-size:15px;flex-shrink:0;">
+                {{ (m.nome or '?')[:1]|upper }}
+              </div>
+              <div>
+                <div style="font-weight:800;font-size:14px;">{{ m.nome }}</div>
+                <div style="font-size:12px;color:var(--color-text-muted);">
+                  <a href="mailto:{{ m.email }}"
+                     style="color:var(--color-text-muted);text-decoration:none;">
+                    {{ m.email }}
+                  </a>
+                  &nbsp;·&nbsp;
+                  {{ m.created_at.strftime("%d/%m/%Y às %H:%M") }}
+                </div>
+              </div>
+            </div>
+
+            <form method="POST"
+                  action="{{ url_for('auth.admin_mensagem_excluir', mid=m.id) }}"
+                  onsubmit="return confirm('Excluir mensagem de {{ m.nome }}?')">
+              <button type="submit" class="btn btn--danger"
+                      style="min-height:32px;padding:0 12px;font-size:12px;">
+                🗑 Excluir
+              </button>
+            </form>
+          </div>
+
+          {# Corpo da mensagem #}
+          <div style="font-size:13px;color:var(--color-text-muted);line-height:1.7;
+                      background:rgba(0,0,0,.15);padding:12px 14px;border-radius:12px;
+                      border:1px solid var(--color-border);white-space:pre-wrap;
+                      max-height:200px;overflow-y:auto;">{{ m.mensagem }}</div>
+
+        </div>
+        {% endfor %}
       </div>
     {% else %}
-      <div class="glass-card glass-card--standard">
+      <div class="glass-card glass-card--standard" style="text-align:center;padding:40px;">
         <p style="color:var(--color-text-muted);">Nenhuma mensagem registrada ainda.</p>
       </div>
     {% endif %}

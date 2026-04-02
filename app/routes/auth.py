@@ -1124,3 +1124,14 @@ def admin_mensagens():
         current_user=get_current_user(),
         msgs=msgs
     )
+
+
+@auth_bp.route("/admin/mensagens/excluir/<int:mid>", methods=["POST"])
+@login_required
+@admin_required
+def admin_mensagem_excluir(mid):
+    msg = ContactMessage.query.get_or_404(mid)
+    db.session.delete(msg)
+    db.session.commit()
+    flash("Mensagem excluída.", "success")
+    return redirect(url_for("auth.admin_mensagens"))
