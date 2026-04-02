@@ -161,6 +161,7 @@ def files():
     # arquivos cadastrados no banco por "pasta" (guardamos o relpath em category)
     db_items = (
         EmployeeFile.query.filter_by(category=relpath)
+        .filter(EmployeeFile.original_filename != ".keep")
         .order_by(EmployeeFile.uploaded_at.desc())
         .all()
     )
