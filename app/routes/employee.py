@@ -114,6 +114,23 @@ def _list_folder(relpath: str):
     return sorted(folder_set), []
 
 
+
+def _log(acao, detalhe=""):
+    """Registra ação no log de auditoria."""
+    try:
+        from app.models.action_log import ActionLog
+        from app import db as _db
+        emp = get_current_employee()
+        if emp:
+            _db.session.add(ActionLog(
+                employee_id=emp.id,
+                acao=acao,
+                detalhe=detalhe[:500] if detalhe else ""
+            ))
+            _db.session.commit()
+    except Exception:
+        pass
+
 # ------------------------------
 # Auth
 # ------------------------------
@@ -289,6 +306,7 @@ def mkdir():
     db.session.add(placeholder)
     db.session.commit()
 
+    _log("criar_pasta", f"Pasta: {target_rel}")
     flash("Pasta criada com sucesso.", "success")
     return redirect(url_for("employee.files", path=target_rel))
 
@@ -375,6 +393,7 @@ def delete_folder():
         db.session.delete(item)
     db.session.commit()
 
+    _log("excluir_pasta", f"Pasta: {folder_rel}")
     flash("Pasta excluída.", "success")
     return redirect(url_for("employee.files", path=base))
 
@@ -469,6 +488,7 @@ def upload():
     db.session.add(item)
     db.session.commit()
 
+    _log("upload_arquivo", f"{original} → {relpath or 'raiz'}")
     flash("Arquivo enviado com sucesso.", "success")
     return redirect(url_for("employee.files", path=relpath))
 
@@ -488,6 +508,7 @@ def rename_file(file_id: int):
     if new_title:
         item.title = new_title
         db.session.commit()
+        _log("renomear_arquivo", f"{item.original_filename} → {new_title}")
         flash("Nome exibido atualizado.", "success")
     return redirect(url_for("employee.files", path=relpath))
 
