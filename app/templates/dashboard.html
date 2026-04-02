@@ -23,7 +23,7 @@
           Seus arquivos estão organizados abaixo. Clique nas pastas para navegar.
         </p>
         <div style="margin-top:10px;">
-          <a href="{{ url_for('main.painel_download_pasta', path='') }}"
+          <a href="/painel/download-pasta?path="
              class="btn btn--ghost"
              style="font-size:12px;min-height:32px;padding:0 14px;">
             ⬇ Baixar todos os arquivos (.zip)
@@ -50,7 +50,7 @@
                          data-file-id="{{ arq.id }}"
                          loading="lazy">
                   {% else %}
-                    <a href="{{ url_for('main.painel_download', file_id=arq.id) }}"
+                    <a href="/painel/download/{{ arq.id }}"
                        class="dash-photo-card__img"
                        style="display:flex;align-items:center;justify-content:center;
                               background:rgba(0,0,0,0.15);text-decoration:none;height:100px;">
@@ -71,7 +71,7 @@
                       {{ arq.name }}
                     </span>
                     {# Botão download — usa rota proxy para forçar download #}
-                    <a href="{{ url_for('main.painel_download', file_id=arq.id) }}"
+                    <a href="/painel/download/{{ arq.id }}"
                        title="Baixar arquivo"
                        style="flex-shrink:0;color:rgba(255,255,255,.65);font-size:13px;
                               text-decoration:none;padding:2px 6px;border-radius:6px;
@@ -98,7 +98,7 @@
                   {% endif %}
                 </div>
                 {# Botão download da pasta — evita propagar o click no summary #}
-                <a href="{{ url_for('main.painel_download_pasta', path=pasta_path) }}"
+                <a href="/painel/download-pasta?path={{ pasta_path | urlencode }}"
                    title="Baixar pasta como ZIP"
                    onclick="event.stopPropagation();"
                    style="flex-shrink:0;color:rgba(255,255,255,.55);font-size:11px;
