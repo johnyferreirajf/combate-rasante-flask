@@ -125,47 +125,106 @@ ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 @main_bp.route("/painel/download/<int:file_id>")
 @login_required
 def painel_download(file_id):
-    """Proxy de download — baixa do Cloudinary e força download no navegador."""
+    """Proxy de download — força download via Cloudinary fl_attachment."""
     import urllib.request
+    from flask import make_response
     from app.models.client_file import ClientFile
 
     user = get_current_user()
     cf = ClientFile.query.get_or_404(file_id)
 
-    # Segurança: só o dono pode baixar
     if cf.user_id != user.id:
         abort(403)
 
-    # Nome do arquivo para download — garante extensão
     name = cf.original_filename or cf.title or "arquivo"
     ext  = cf.file_ext or ""
     if ext and not name.lower().endswith(f".{ext.lower()}"):
         name = f"{name}.{ext}"
-
-    # Sanitizar filename para o header (remover aspas e quebras)
     safe_name = name.replace('"', '').replace("\n", "").replace("\r", "")
 
+    # Para Cloudinary: usar fl_attachment que força download no próprio CDN
+    if "cloudinary.com" in (cf.url or ""):
+        # fl_attachment:nome_do_arquivo faz o Cloudinary servir com Content-Disposition
+        safe_cloud = safe_name.replace(" ", "_")
+        dl_url = cf.url.replace("/upload/", f"/upload/fl_attachment:{safe_cloud}/")
+        return redirect(dl_url)
+
+    # Fallback para outros storages
     try:
-        req = urllib.request.Request(
-            cf.url,
-            headers={"User-Agent": "Mozilla/5.0"}
-        )
+        req = urllib.request.Request(cf.url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = resp.read()
             ctype = resp.headers.get("Content-Type", "application/octet-stream")
+        r = make_response(data)
+        r.headers["Content-Disposition"] = "attachment; filename=\"" + safe_name + "\""
+        r.headers["Content-Type"] = ctype
+        r.headers["Content-Length"] = str(len(data))
+        return r
     except Exception:
-        # fallback: redirecionar com fl_attachment do Cloudinary
-        if "cloudinary.com" in cf.url:
-            dl_url = cf.url.replace("/upload/", "/upload/fl_attachment/")
-            return redirect(dl_url)
         return redirect(cf.url)
 
+
+
+@main_bp.route("/painel/download-pasta")
+@login_required
+def painel_download_pasta():
+    """Baixa todos os arquivos de uma pasta como ZIP."""
+    import zipfile, tempfile, urllib.request as _ur
     from flask import make_response
-    resp = make_response(data)
-    resp.headers["Content-Disposition"] = "attachment; filename=\"" + safe_name + "\""
-    resp.headers["Content-Type"] = ctype
-    resp.headers["Content-Length"] = str(len(data))
-    return resp
+    from app.models.client_file import ClientFile
+
+    user = get_current_user()
+    pasta = (request.args.get("path") or "").strip("/")
+
+    # Buscar arquivos da pasta e subpastas
+    prefixo = pasta + "/" if pasta else ""
+    todos = ClientFile.query.filter_by(user_id=user.id).filter(
+        ClientFile.url != "__folder__"
+    ).all()
+
+    itens = [f for f in todos if
+             f.folder_path == pasta or
+             (pasta == "" and not f.folder_path) or
+             (f.folder_path or "").startswith(prefixo)]
+
+    if not itens:
+        flash("Nenhum arquivo encontrado nesta pasta.", "error")
+        return redirect(url_for("main.painel"))
+
+    zip_name = (pasta.split("/")[-1] if pasta else "arquivos") + ".zip"
+    tmpdir   = tempfile.mkdtemp()
+    zip_path = f"{tmpdir}/{zip_name}"
+
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        for cf in itens:
+            filename = cf.original_filename or cf.title or "arquivo"
+            ext = cf.file_ext or ""
+            if ext and not filename.lower().endswith(f".{ext.lower()}"):
+                filename = f"{filename}.{ext}"
+
+            # Subcaminho relativo à pasta selecionada
+            fp = cf.folder_path or ""
+            if pasta and fp.startswith(pasta):
+                rel = fp[len(pasta):].strip("/")
+            else:
+                rel = fp
+            arc_name = f"{rel}/{filename}".strip("/") if rel else filename
+
+            try:
+                req = _ur.Request(cf.url, headers={"User-Agent": "Mozilla/5.0"})
+                with _ur.urlopen(req, timeout=20) as resp:
+                    zf.writestr(arc_name, resp.read())
+            except Exception:
+                pass
+
+    with open(zip_path, "rb") as f:
+        data = f.read()
+
+    r = make_response(data)
+    r.headers["Content-Disposition"] = f"attachment; filename=\"{zip_name}\""
+    r.headers["Content-Type"] = "application/zip"
+    r.headers["Content-Length"] = str(len(data))
+    return r
 
 
 def _build_dashboard_tree():

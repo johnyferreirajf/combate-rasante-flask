@@ -1113,6 +1113,17 @@ def admin_equipe_excluir(mid):
     flash(f"'{membro.nome}' removido da equipe.", "success")
     return redirect(url_for("auth.admin_equipe"))
 
+
+@auth_bp.route("/admin/logs")
+@login_required
+@admin_required
+def admin_logs():
+    from app.models.action_log import ActionLog
+    logs = ActionLog.query.order_by(ActionLog.created_at.desc()).limit(200).all()
+    return render_template("admin_logs.html",
+                           current_user=get_current_user(),
+                           logs=logs)
+
 # ✅ Mensagens do formulário de contato
 @auth_bp.route("/admin/mensagens")
 @login_required

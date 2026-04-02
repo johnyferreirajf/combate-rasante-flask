@@ -21,6 +21,7 @@ from flask import (
 
 from app import db
 from app.models import Employee, EmployeeFile
+from app.models.action_log import ActionLog
 from app.utils.security import employee_login_required, get_current_employee
 
 def _human_size(size_bytes):
@@ -507,6 +508,16 @@ def delete_file(file_id: int):
     if os.path.exists(abs_file):
         os.remove(abs_file)
 
+    # Registrar log de exclusão
+    try:
+        log = ActionLog(
+            employee_id=get_current_employee().id,
+            acao="excluir_arquivo",
+            detalhe=f"{item.original_filename} (pasta: {item.category or 'raiz'})"
+        )
+        db.session.add(log)
+    except Exception:
+        pass
     db.session.delete(item)
     db.session.commit()
 

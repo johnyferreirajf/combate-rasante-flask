@@ -39,4 +39,20 @@ with app.app_context():
             print(f"~ {tabela}.{coluna}: {e}")
 
     conn.close()
+    # Criar tabela action_logs se não existir
+    try:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS action_logs (
+                id SERIAL PRIMARY KEY,
+                employee_id INTEGER REFERENCES employees(id),
+                acao VARCHAR(50) NOT NULL,
+                detalhe VARCHAR(500),
+                created_at TIMESTAMP DEFAULT NOW()
+            )
+        """))
+        conn.commit()
+        print("✓ action_logs criada")
+    except Exception as e:
+        print(f"~ action_logs: {e}")
+
     print("\n✅ Migration concluída!")
