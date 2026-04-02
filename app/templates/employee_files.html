@@ -49,13 +49,14 @@
             <input id="spSearch" type="text" placeholder="Pesquisar..." autocomplete="off">
           </div>
 
+          {% if employee.is_admin %}
           <button class="sp-btn sp-btn-secondary" type="button" data-modal-open="modalFolder">
             + Nova pasta
           </button>
-
           <button class="sp-btn sp-btn-primary" type="button" data-modal-open="modalUpload">
             ⬆ Upload
           </button>
+          {% endif %}
         </div>
       </div>
 
@@ -135,33 +136,33 @@
             <div class="sp-col-actions" role="cell">
               {% if it.is_folder %}
                 <a class="sp-action" href="{{ it.href }}">Abrir</a>
+                {% if employee.is_admin %}
                 <a class="sp-action" href="{{ it.download_href }}">Baixar</a>
-
                 <form class="sp-action-form" method="post" action="{{ it.rename_folder_href }}" data-rename-folder-form>
                   <input type="hidden" name="path" value="{{ current_path }}">
                   <input type="hidden" name="old_name" value="{{ it.display }}">
                   <input type="hidden" name="new_name" value="">
                   <button class="sp-action" type="button" data-rename-folder-btn data-current="{{ it.display }}">Renomear</button>
                 </form>
-
                 <form class="sp-action-form" method="post" action="{{ it.delete_folder_href }}" data-delete-folder-form>
                   <input type="hidden" name="path" value="{{ current_path }}">
                   <input type="hidden" name="name" value="{{ it.display }}">
                   <button class="sp-action danger" type="button" data-delete-folder-btn>Excluir</button>
                 </form>
+                {% endif %}
               {% else %}
                 <a class="sp-action" href="{{ it.download_href }}">Baixar</a>
-
+                {% if employee.is_admin %}
                 <form class="sp-action-form" method="post" action="{{ it.rename_href }}" data-rename-form>
                   <input type="hidden" name="path" value="{{ current_path }}">
                   <input type="hidden" name="new_title" value="">
                   <button class="sp-action" type="button" data-rename-btn data-current="{{ it.display }}">Renomear</button>
                 </form>
-
                 <form class="sp-action-form" method="post" action="{{ it.delete_href }}" data-delete-form>
                   <input type="hidden" name="path" value="{{ current_path }}">
                   <button class="sp-action danger" type="button" data-delete-btn>Excluir</button>
                 </form>
+                {% endif %}
               {% endif %}
             </div>
           </div>

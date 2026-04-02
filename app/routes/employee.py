@@ -255,6 +255,12 @@ def files():
 @employee_bp.route("/mkdir", methods=["POST"])
 @employee_login_required
 def mkdir():
+    # Verificação: apenas admins podem modificar
+    _emp = get_current_employee()
+    if not _emp or not _emp.is_admin:
+        flash("Apenas administradores do painel podem realizar esta ação.", "error")
+        _rpath = _clean_relpath(request.form.get("path", "") or request.args.get("path", ""))
+        return redirect(url_for("employee.files", path=_rpath))
     from app.models import EmployeeFile
     base = _clean_relpath(request.form.get("path", ""))
     name = (request.form.get("name") or "").strip()
@@ -288,6 +294,12 @@ def mkdir():
 @employee_bp.route("/rename_folder", methods=["POST"])
 @employee_login_required
 def rename_folder():
+    # Verificação: apenas admins podem modificar
+    _emp = get_current_employee()
+    if not _emp or not _emp.is_admin:
+        flash("Apenas administradores do painel podem realizar esta ação.", "error")
+        _rpath = _clean_relpath(request.form.get("path", "") or request.args.get("path", ""))
+        return redirect(url_for("employee.files", path=_rpath))
     base = _clean_relpath(request.form.get("path", ""))
     old_name = (request.form.get("old_name") or "").strip()
     new_name = (request.form.get("new_name") or "").strip()
@@ -334,6 +346,12 @@ def rename_folder():
 @employee_bp.route("/delete_folder", methods=["POST"])
 @employee_login_required
 def delete_folder():
+    # Verificação: apenas admins podem modificar
+    _emp = get_current_employee()
+    if not _emp or not _emp.is_admin:
+        flash("Apenas administradores do painel podem realizar esta ação.", "error")
+        _rpath = _clean_relpath(request.form.get("path", "") or request.args.get("path", ""))
+        return redirect(url_for("employee.files", path=_rpath))
     base = _clean_relpath(request.form.get("path", ""))
     name = (request.form.get("name") or "").strip()
     if not name:
@@ -362,6 +380,12 @@ def delete_folder():
 @employee_bp.route("/upload", methods=["POST"])
 @employee_login_required
 def upload():
+    # Verificação: apenas admins podem modificar
+    _emp = get_current_employee()
+    if not _emp or not _emp.is_admin:
+        flash("Apenas administradores do painel podem realizar esta ação.", "error")
+        _rpath = _clean_relpath(request.form.get("path", "") or request.args.get("path", ""))
+        return redirect(url_for("employee.files", path=_rpath))
     import mimetypes as _mt
     current_employee = get_current_employee()
     relpath = _clean_relpath(request.form.get("path", ""))
@@ -450,6 +474,11 @@ def upload():
 @employee_bp.route("/rename_file/<int:file_id>", methods=["POST"])
 @employee_login_required
 def rename_file(file_id: int):
+    current_employee = get_current_employee()
+    if not current_employee.is_admin:
+        flash("Apenas administradores podem realizar esta ação.", "error")
+        relpath = _clean_relpath(request.form.get("path", ""))
+        return redirect(url_for("employee.files", path=relpath))
     relpath = _clean_relpath(request.form.get("path", ""))
     new_title = (request.form.get("new_title") or "").strip()
 
@@ -464,6 +493,11 @@ def rename_file(file_id: int):
 @employee_bp.route("/delete_file/<int:file_id>", methods=["POST"])
 @employee_login_required
 def delete_file(file_id: int):
+    current_employee = get_current_employee()
+    if not current_employee.is_admin:
+        flash("Apenas administradores podem realizar esta ação.", "error")
+        relpath = _clean_relpath(request.form.get("path", ""))
+        return redirect(url_for("employee.files", path=relpath))
     relpath = _clean_relpath(request.form.get("path", ""))
     item = EmployeeFile.query.get_or_404(file_id)
 

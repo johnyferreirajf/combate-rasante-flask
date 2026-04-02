@@ -58,13 +58,21 @@
         <a href="{{ url_for('main.contato') }}"     class="navbar__link">Contato</a>
 
         {% if session.get('employee_id') %}
+          <span style="font-size:var(--text-xs);font-weight:800;color:rgba(255,255,255,.75);
+                       padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.10);">
+            {{ current_employee.name.split()[0] if current_employee else '' }}
+          </span>
           <a href="{{ url_for('employee.files') }}" class="navbar__link navbar__link--cta">Painel Funcionário</a>
           <a href="{{ url_for('employee.logout') }}" class="navbar__link navbar__link--cta">Sair</a>
         {% elif session.get('user_id') %}
-          <a href="{{ url_for('main.painel') }}"   class="navbar__link navbar__link--cta">Meu Painel</a>
-          <a href="{{ url_for('auth.logout') }}"   class="navbar__link navbar__link--cta">Sair</a>
+          <span style="font-size:var(--text-xs);font-weight:800;color:rgba(255,255,255,.75);
+                       padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.10);">
+            {{ current_user.name.split()[0] if current_user else '' }}
+          </span>
+          <a href="{{ url_for('main.painel') }}" class="navbar__link navbar__link--cta">Meu Painel</a>
+          <a href="{{ url_for('auth.logout') }}" class="navbar__link navbar__link--cta">Sair</a>
         {% else %}
-          <a href="{{ url_for('auth.login') }}"    class="navbar__link navbar__link--cta">Área do Cliente</a>
+          <a href="{{ url_for('auth.login') }}" class="navbar__link navbar__link--cta">Área do Cliente</a>
           <a href="{{ url_for('employee.login') }}" class="navbar__link navbar__link--cta">Funcionários</a>
         {% endif %}
       </nav>
