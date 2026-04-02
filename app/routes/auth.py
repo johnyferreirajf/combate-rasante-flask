@@ -864,22 +864,57 @@ def admin_setor_excluir():
     flash(f"Setor '{nome}' removido.", "success")
     return redirect(url_for("auth.admin_equipe"))
 
+
+@auth_bp.route("/admin/equipe/setor/mover", methods=["POST"])
+@login_required
+@admin_required
+def admin_setor_mover():
+    from app.models.sector_order import SectorOrder
+    setor     = (request.form.get("setor")     or "").strip()
+    direcao   = request.form.get("direcao", "cima")  # "cima" ou "baixo"
+
+    _garantir_setor_no_banco(setor)
+
+    todos = SectorOrder.query.order_by(SectorOrder.posicao).all()
+    idx   = next((i for i, r in enumerate(todos) if r.setor == setor), None)
+
+    if idx is None:
+        flash("Setor não encontrado.", "error")
+        return redirect(url_for("auth.admin_equipe"))
+
+    # Trocar posição com o vizinho
+    if direcao == "cima" and idx > 0:
+        vizinho = todos[idx - 1]
+        todos[idx].posicao, vizinho.posicao = vizinho.posicao, todos[idx].posicao
+    elif direcao == "baixo" and idx < len(todos) - 1:
+        vizinho = todos[idx + 1]
+        todos[idx].posicao, vizinho.posicao = vizinho.posicao, todos[idx].posicao
+
+    db.session.commit()
+    return redirect(url_for("auth.admin_equipe"))
+
 # ─── Gerenciar Equipe ─────────────────────────────────────────
 
 # Ordem preferencial dos setores
-ORDEM_SETORES = [
-    "Diretoria",
-    "Coordenação & Pilotos",
-    "Pilotos Agrícolas",
-    "Tecnologia & Análise",
-    "Comercial",
-]
+def _get_ordem_setores():
+    """Retorna dict {setor: posicao} do banco."""
+    from app.models.sector_order import SectorOrder
+    rows = SectorOrder.query.order_by(SectorOrder.posicao).all()
+    return {r.setor: r.posicao for r in rows}
 
 def _sort_key_setor(membro):
-    try:
-        return ORDEM_SETORES.index(membro.setor)
-    except ValueError:
-        return 99  # setores novos ficam no final
+    from app.models.sector_order import SectorOrder
+    row = SectorOrder.query.filter_by(setor=membro.setor).first()
+    return row.posicao if row else 999
+
+def _garantir_setor_no_banco(setor):
+    """Cria registro de ordem se não existir."""
+    from app.models.sector_order import SectorOrder
+    from app import db as _db
+    if not SectorOrder.query.filter_by(setor=setor).first():
+        max_pos = _db.session.query(_db.func.max(SectorOrder.posicao)).scalar() or 0
+        _db.session.add(SectorOrder(setor=setor, posicao=max_pos + 10))
+        _db.session.commit()
 
 
 @auth_bp.route("/admin/equipe", methods=["GET", "POST"])
@@ -889,18 +924,24 @@ def admin_equipe():
     from app.models.team_member import TeamMember
     current_user_obj = get_current_user()
     todos = TeamMember.query.order_by(TeamMember.ordem).all()
+    # Garantir que todos os setores existam no banco de ordem
+    for m in todos:
+        _garantir_setor_no_banco(m.setor)
     todos.sort(key=lambda m: (_sort_key_setor(m), m.ordem))
 
-    # Agrupar por setor mantendo a ordem (excluir placeholders de setor)
     from collections import OrderedDict
     setores = OrderedDict()
     for m in todos:
-        # Incluir o setor mesmo se só tiver placeholder
         if m.setor not in setores:
             setores[m.setor] = []
-        # Não mostrar placeholders de setor na listagem
         if not m.nome.startswith("__setor__"):
             setores[m.setor].append(m)
+    
+    # Incluir setores vazios (só placeholder) também
+    from app.models.sector_order import SectorOrder
+    for so in SectorOrder.query.order_by(SectorOrder.posicao).all():
+        if so.setor not in setores:
+            setores[so.setor] = []
 
     if request.method == "POST":
 
@@ -923,6 +964,7 @@ def admin_equipe():
             )
             db.session.add(placeholder)
             db.session.commit()
+            _garantir_setor_no_banco(nome_setor)
             flash(f"Setor '{nome_setor}' criado! Adicione membros a ele.", "success")
             return redirect(url_for("auth.admin_equipe"))
 
@@ -942,6 +984,7 @@ def admin_equipe():
                             tags=tags, descricao=descricao, ordem=ordem)
         db.session.add(membro)
         db.session.commit()
+        _garantir_setor_no_banco(setor)
         flash(f"'{nome}' adicionado à equipe!", "success")
         return redirect(url_for("auth.admin_equipe"))
 

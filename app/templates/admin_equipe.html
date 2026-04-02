@@ -113,20 +113,30 @@ textarea.ei{min-height:80px;resize:vertical;}
           <div class="eq-setor-header">
             <div class="eq-setor-titulo">{{ setor_nome }}</div>
             <div class="eq-setor-btns">
+              <form method="POST" action="{{ url_for('auth.admin_setor_mover') }}" style="display:inline;">
+                <input type="hidden" name="setor" value="{{ setor_nome }}">
+                <input type="hidden" name="direcao" value="cima">
+                <button class="eb sm" type="submit" title="Mover para cima">↑</button>
+              </form>
+              <form method="POST" action="{{ url_for('auth.admin_setor_mover') }}" style="display:inline;">
+                <input type="hidden" name="setor" value="{{ setor_nome }}">
+                <input type="hidden" name="direcao" value="baixo">
+                <button class="eb sm" type="submit" title="Mover para baixo">↓</button>
+              </form>
               <button class="eb sm" type="button"
                       onclick="abrirRenomear('{{ setor_nome|replace("'", "\\'") }}')">
-                ✏ Renomear
+                ✏
               </button>
               {% if membros_setor|length == 0 %}
               <form method="POST" action="{{ url_for('auth.admin_setor_excluir') }}"
-                    onsubmit="return confirm('Excluir setor {{ setor_nome }}?')">
+                    onsubmit="return confirm('Excluir setor {{ setor_nome }}?')" style="display:inline;">
                 <input type="hidden" name="nome" value="{{ setor_nome }}">
-                <button class="eb sm d" type="submit">🗑 Excluir</button>
+                <button class="eb sm d" type="submit">🗑</button>
               </form>
               {% else %}
               <button class="eb sm d" type="button"
-                      onclick="alert('Mova ou exclua os {{ membros_setor|length }} membro(s) antes de excluir o setor.')">
-                🗑 Excluir
+                      onclick="alert('Remova os {{ membros_setor|length }} membro(s) antes de excluir.')">
+                🗑
               </button>
               {% endif %}
             </div>
