@@ -320,8 +320,9 @@ def delete_folder():
 @employee_bp.route("/upload", methods=["POST"])
 @employee_login_required
 def upload():
+    import mimetypes as _mt
     current_employee = get_current_employee()
-    relpath = _clean_relpath(request.form.get("path", ""))  # pasta atual
+    relpath = _clean_relpath(request.form.get("path", ""))
 
     file = request.files.get("file")
     if not file or not file.filename:
@@ -333,28 +334,60 @@ def upload():
         flash("Tipo de arquivo não permitido.", "error")
         return redirect(url_for("employee.files", path=relpath))
 
-    # salva dentro da pasta selecionada
-    ext = original.rsplit(".", 1)[1].lower()
-    stored = f"{uuid.uuid4().hex}.{ext}"
-
-    # stored_filename guarda caminho relativo
-    stored_rel = f"{relpath}/{stored}".strip("/")
-
-    abs_folder = _safe_abs_path(relpath)
-    os.makedirs(abs_folder, exist_ok=True)
-    abs_file = _safe_abs_path(stored_rel)
-    file.save(abs_file)
-
-    title = (request.form.get("title") or "").strip() or None
+    title       = (request.form.get("title")       or "").strip() or None
     description = (request.form.get("description") or "").strip() or None
+    ext         = original.rsplit(".", 1)[1].lower() if "." in original else ""
+
+    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+    cloudinary_url       = None
+    cloudinary_public_id = None
+    file_size            = None
+    stored_rel           = f"{relpath}/{uuid.uuid4().hex}.{ext}".strip("/")
+
+    if use_cloud:
+        try:
+            import cloudinary, cloudinary.uploader
+            cloudinary.config(
+                cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                api_key=current_app.config["CLOUDINARY_API_KEY"],
+                api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                secure=True,
+            )
+            folder_cloud = f"combaterasante/funcionarios/{relpath or 'raiz'}"
+            mime, _ = _mt.guess_type(original)
+            rtype = "image" if (mime and mime.startswith("image")) else "raw"
+            content = file.stream.read()
+            file_size = len(content)
+            file.stream.seek(0)
+            result = cloudinary.uploader.upload(
+                file.stream,
+                folder=folder_cloud,
+                resource_type=rtype,
+                use_filename=True,
+                unique_filename=True,
+            )
+            cloudinary_url       = result["secure_url"]
+            cloudinary_public_id = result["public_id"]
+        except Exception as e:
+            flash(f"Erro no Cloudinary: {e}", "error")
+            return redirect(url_for("employee.files", path=relpath))
+    else:
+        # Fallback local
+        abs_folder = _safe_abs_path(relpath)
+        os.makedirs(abs_folder, exist_ok=True)
+        abs_file = _safe_abs_path(stored_rel)
+        file.save(abs_file)
 
     item = EmployeeFile(
         stored_filename=stored_rel,
         original_filename=original,
         title=title,
         description=description,
-        category=relpath,  # usamos category como "pasta"
+        category=relpath,
         uploader_id=current_employee.id,
+        cloudinary_url=cloudinary_url,
+        cloudinary_public_id=cloudinary_public_id,
+        file_size=file_size,
     )
     db.session.add(item)
     db.session.commit()
@@ -398,10 +431,41 @@ def delete_file(file_id: int):
 @employee_bp.route("/download/<int:file_id>")
 @employee_login_required
 def download(file_id: int):
+    import urllib.request
     item = EmployeeFile.query.get_or_404(file_id)
-    root = _ensure_upload_root()
 
-    # stored_filename é caminho relativo
+    # Se tiver URL do Cloudinary, baixar via proxy
+    if item.cloudinary_url:
+        filename = item.original_filename or "arquivo"
+        safe_name = filename.replace('"', '').replace("\n", "")
+        try:
+            req = urllib.request.Request(
+                item.cloudinary_url,
+                headers={"User-Agent": "Mozilla/5.0"}
+            )
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = resp.read()
+                ctype = resp.headers.get("Content-Type", "application/octet-stream")
+        except Exception:
+            # Fallback: redirecionar com fl_attachment
+            dl_url = item.cloudinary_url
+            if "cloudinary.com" in dl_url:
+                dl_url = dl_url.replace("/upload/", "/upload/fl_attachment/")
+            return redirect(dl_url)
+
+        from flask import make_response
+        r = make_response(data)
+        r.headers["Content-Disposition"] = "attachment; filename=\"" + safe_name + "\""
+        r.headers["Content-Type"] = ctype
+        r.headers["Content-Length"] = str(len(data))
+        return r
+
+    # Fallback local (disco)
+    root = _ensure_upload_root()
+    abs_file = os.path.join(root, item.stored_filename)
+    if not os.path.isfile(abs_file):
+        flash("Arquivo não encontrado. Pode ter sido perdido em um redeploy.", "error")
+        return redirect(url_for("employee.files"))
     return send_from_directory(
         root,
         item.stored_filename,
@@ -413,27 +477,46 @@ def download(file_id: int):
 @employee_bp.route("/download_folder")
 @employee_login_required
 def download_folder():
-    """Baixa uma pasta como .zip (download)."""
-    import tempfile
+    """Baixa uma pasta como .zip — suporta Cloudinary e disco local."""
+    import tempfile, urllib.request as _ur
     base_rel = _clean_relpath(request.args.get("folder", ""))
     if not base_rel:
         abort(400)
 
-    folder_abs = _safe_abs_path(base_rel)
-    if not os.path.isdir(folder_abs):
-        abort(404)
-
-    # Cria zip temporário
-    tmpdir = tempfile.mkdtemp(prefix="cr_folder_")
     zip_name = secure_filename(os.path.basename(base_rel) or "pasta") + ".zip"
+    tmpdir   = tempfile.mkdtemp(prefix="cr_folder_")
     zip_path = os.path.join(tmpdir, zip_name)
 
+    # Buscar arquivos do banco cujo category começa com base_rel
+    from app.models import EmployeeFile as EF
+    prefixo = base_rel + "/"
+    items = EF.query.filter(
+        (EF.category == base_rel) |
+        EF.category.like(prefixo + "%")
+    ).all()
+
     with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for root, dirs, files in os.walk(folder_abs):
-            for fn in files:
-                abs_fp = os.path.join(root, fn)
-                rel_fp = os.path.relpath(abs_fp, os.path.dirname(folder_abs))
-                zf.write(abs_fp, rel_fp)
+        for item in items:
+            filename = item.original_filename or "arquivo"
+
+            if item.cloudinary_url:
+                try:
+                    req = _ur.Request(item.cloudinary_url,
+                                      headers={"User-Agent": "Mozilla/5.0"})
+                    with _ur.urlopen(req, timeout=20) as resp:
+                        data = resp.read()
+                    # Preservar estrutura de subpasta relativa
+                    rel_cat = item.category[len(base_rel):].strip("/")
+                    arc_name = os.path.join(rel_cat, filename) if rel_cat else filename
+                    zf.writestr(arc_name, data)
+                except Exception:
+                    pass
+            else:
+                abs_fp = _safe_abs_path(item.stored_filename)
+                if os.path.isfile(abs_fp):
+                    rel_cat = item.category[len(base_rel):].strip("/")
+                    arc_name = os.path.join(rel_cat, filename) if rel_cat else filename
+                    zf.write(abs_fp, arc_name)
 
     return send_file(zip_path, as_attachment=True, download_name=zip_name)
 
