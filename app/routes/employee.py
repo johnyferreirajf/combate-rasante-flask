@@ -42,7 +42,10 @@ def _ensure_upload_root() -> str:
     root = current_app.config.get("EMP_UPLOAD_FOLDER")
     if not root:
         root = os.path.join(current_app.instance_path, "employee_uploads")
-    os.makedirs(root, exist_ok=True)
+    try:
+        os.makedirs(root, exist_ok=True)
+    except Exception:
+        pass
     return root
 
 
@@ -75,23 +78,39 @@ def _allowed_file(filename: str) -> bool:
 
 
 def _list_folder(relpath: str):
-    """Retorna (folders, files) do filesystem dentro do caminho informado."""
+    """Retorna (folders, files) — pastas do banco + disco se disponível."""
+    from app.models import EmployeeFile
     relpath = _clean_relpath(relpath)
-    abs_path = _safe_abs_path(relpath)
 
-    folders = []
-    files = []
-
-    if not os.path.exists(abs_path):
-        os.makedirs(abs_path, exist_ok=True)
-
-    for name in sorted(os.listdir(abs_path)):
-        full = os.path.join(abs_path, name)
-        if os.path.isdir(full):
-            folders.append(name)
+    # Subpastas: derivadas do banco (category que começa com relpath/)
+    prefixo = relpath + "/" if relpath else ""
+    todas = EmployeeFile.query.with_entities(EmployeeFile.category).distinct().all()
+    folder_set = set()
+    for (cat,) in todas:
+        cat = cat or ""
+        if relpath == "":
+            # raiz: primeira parte de qualquer category não-vazia
+            if cat and "/" not in cat:
+                folder_set.add(cat)
+            elif cat and "/" in cat:
+                folder_set.add(cat.split("/")[0])
         else:
-            files.append(name)
-    return folders, files
+            if cat.startswith(prefixo):
+                resto = cat[len(prefixo):]
+                if resto:
+                    folder_set.add(resto.split("/")[0])
+
+    # Também verificar disco se disponível (fallback)
+    try:
+        abs_path = _safe_abs_path(relpath)
+        if os.path.isdir(abs_path):
+            for name in os.listdir(abs_path):
+                if os.path.isdir(os.path.join(abs_path, name)):
+                    folder_set.add(name)
+    except Exception:
+        pass
+
+    return sorted(folder_set), []
 
 
 # ------------------------------
@@ -236,6 +255,7 @@ def files():
 @employee_bp.route("/mkdir", methods=["POST"])
 @employee_login_required
 def mkdir():
+    from app.models import EmployeeFile
     base = _clean_relpath(request.form.get("path", ""))
     name = (request.form.get("name") or "").strip()
 
@@ -243,18 +263,26 @@ def mkdir():
         flash("Informe o nome da pasta.", "error")
         return redirect(url_for("employee.files", path=base))
 
-    # evita caracteres estranhos
     folder_name = secure_filename(name).replace("_", "-")
     if not folder_name:
         flash("Nome de pasta inválido.", "error")
         return redirect(url_for("employee.files", path=base))
 
     target_rel = f"{base}/{folder_name}".strip("/")
-    target_abs = _safe_abs_path(target_rel)
-    os.makedirs(target_abs, exist_ok=True)
+
+    # Criar pasta via registro no banco (não depende do disco)
+    emp_user = get_current_employee()
+    placeholder = EmployeeFile(
+        stored_filename=f"__folder__/{target_rel}",
+        original_filename=".keep",
+        category=target_rel,
+        uploader_id=emp_user.id,
+    )
+    db.session.add(placeholder)
+    db.session.commit()
 
     flash("Pasta criada com sucesso.", "success")
-    return redirect(url_for("employee.files", path=base))
+    return redirect(url_for("employee.files", path=target_rel))
 
 
 @employee_bp.route("/rename_folder", methods=["POST"])
@@ -274,7 +302,7 @@ def rename_folder():
     old_abs = _safe_abs_path(old_rel)
     new_abs = _safe_abs_path(new_rel)
 
-    if not os.path.isdir(old_abs):
+    if False and not os.path.isdir(old_abs):  # disco opcional no Railway
         flash("Pasta não encontrada.", "error")
         return redirect(url_for("employee.files", path=base))
 
@@ -314,7 +342,7 @@ def delete_folder():
     folder_rel = f"{base}/{name}".strip("/")
     folder_abs = _safe_abs_path(folder_rel)
 
-    if not os.path.isdir(folder_abs):
+    if False and not os.path.isdir(folder_abs):  # disco opcional no Railway
         flash("Pasta não encontrada.", "error")
         return redirect(url_for("employee.files", path=base))
 
@@ -387,10 +415,14 @@ def upload():
             return redirect(url_for("employee.files", path=relpath))
     else:
         # Fallback local
-        abs_folder = _safe_abs_path(relpath)
-        os.makedirs(abs_folder, exist_ok=True)
-        abs_file = _safe_abs_path(stored_rel)
-        file.save(abs_file)
+        try:
+            abs_folder = _safe_abs_path(relpath)
+            os.makedirs(abs_folder, exist_ok=True)
+            abs_file = _safe_abs_path(stored_rel)
+            file.save(abs_file)
+        except Exception as e:
+            flash(f"Erro ao salvar arquivo local: {e}", "error")
+            return redirect(url_for("employee.files", path=relpath))
 
     item_kwargs = dict(
         stored_filename=stored_rel,
