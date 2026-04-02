@@ -181,9 +181,23 @@ def files():
 
     # Arquivos (do banco)
     for item in db_items:
-        abs_file = _safe_abs_path(item.stored_filename)
-        size_bytes = os.path.getsize(abs_file) if os.path.exists(abs_file) else None
-        mtime = os.path.getmtime(abs_file) if os.path.exists(abs_file) else None
+        # Tamanho: usa file_size do banco (Cloudinary) ou tenta disco
+        try:
+            cloud_size = getattr(item, "file_size", None)
+        except Exception:
+            cloud_size = None
+        if cloud_size:
+            size_bytes = cloud_size
+        else:
+            abs_file = _safe_abs_path(item.stored_filename)
+            size_bytes = os.path.getsize(abs_file) if os.path.exists(abs_file) else None
+        mtime = None
+        if not cloud_size:
+            try:
+                abs_file2 = _safe_abs_path(item.stored_filename)
+                mtime = os.path.getmtime(abs_file2) if os.path.exists(abs_file2) else None
+            except Exception:
+                mtime = None
 
         display = item.title or item.original_filename
         ext = ""
@@ -378,17 +392,22 @@ def upload():
         abs_file = _safe_abs_path(stored_rel)
         file.save(abs_file)
 
-    item = EmployeeFile(
+    item_kwargs = dict(
         stored_filename=stored_rel,
         original_filename=original,
         title=title,
         description=description,
         category=relpath,
         uploader_id=current_employee.id,
-        cloudinary_url=cloudinary_url,
-        cloudinary_public_id=cloudinary_public_id,
-        file_size=file_size,
     )
+    # Adicionar campos Cloudinary se as colunas já existirem no banco
+    try:
+        item_kwargs["cloudinary_url"]       = cloudinary_url
+        item_kwargs["cloudinary_public_id"] = cloudinary_public_id
+        item_kwargs["file_size"]            = file_size
+    except Exception:
+        pass
+    item = EmployeeFile(**item_kwargs)
     db.session.add(item)
     db.session.commit()
 
