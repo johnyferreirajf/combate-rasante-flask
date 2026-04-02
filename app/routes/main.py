@@ -125,9 +125,10 @@ ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 @main_bp.route("/painel/download/<int:file_id>")
 @login_required
 def painel_download(file_id):
-    """Proxy de download — força download via Cloudinary fl_attachment."""
+    """Proxy de download — baixa via servidor e força Content-Disposition: attachment."""
     import urllib.request
-    from flask import make_response
+    import re
+    from flask import make_response, stream_with_context, Response
     from app.models.client_file import ClientFile
 
     user = get_current_user()
@@ -136,31 +137,37 @@ def painel_download(file_id):
     if cf.user_id != user.id:
         abort(403)
 
+    # Montar nome do arquivo para download
     name = cf.original_filename or cf.title or "arquivo"
-    ext  = cf.file_ext or ""
-    if ext and not name.lower().endswith(f".{ext.lower()}"):
+    ext  = (cf.file_ext or "").lower()
+    if ext and not name.lower().endswith(f".{ext}"):
         name = f"{name}.{ext}"
-    safe_name = name.replace('"', '').replace("\n", "").replace("\r", "")
+    # Remover caracteres problemáticos para headers HTTP
+    safe_name = re.sub(r'[\x00-\x1f"\\]', "", name).strip() or "arquivo"
 
-    # Para Cloudinary: usar fl_attachment que força download no próprio CDN
-    if "cloudinary.com" in (cf.url or ""):
-        # fl_attachment:nome_do_arquivo faz o Cloudinary servir com Content-Disposition
-        safe_cloud = safe_name.replace(" ", "_")
-        dl_url = cf.url.replace("/upload/", f"/upload/fl_attachment:{safe_cloud}/")
-        return redirect(dl_url)
-
-    # Fallback para outros storages
     try:
-        req = urllib.request.Request(cf.url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        req = urllib.request.Request(
+            cf.url,
+            headers={
+                "User-Agent": "Mozilla/5.0",
+                "Accept": "*/*",
+            }
+        )
+        with urllib.request.urlopen(req, timeout=90) as resp:
             data = resp.read()
             ctype = resp.headers.get("Content-Type", "application/octet-stream")
+
         r = make_response(data)
-        r.headers["Content-Disposition"] = "attachment; filename=\"" + safe_name + "\""
+        r.headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{urllib.request.quote(safe_name)}"
         r.headers["Content-Type"] = ctype
         r.headers["Content-Length"] = str(len(data))
+        r.headers["Cache-Control"] = "no-store"
+        r.headers["X-Content-Type-Options"] = "nosniff"
         return r
-    except Exception:
+
+    except Exception as e:
+        current_app.logger.error(f"painel_download error: {e}")
+        # Último recurso: redirecionar direto para a URL
         return redirect(cf.url)
 
 
