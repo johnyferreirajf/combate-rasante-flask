@@ -122,6 +122,34 @@ def not_found(_error):
 ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
+@main_bp.route("/painel/trocar-senha", methods=["GET", "POST"])
+@login_required
+def painel_trocar_senha():
+    user = get_current_user()
+    if request.method == "POST":
+        atual    = request.form.get("senha_atual")    or ""
+        nova     = request.form.get("nova_senha")     or ""
+        confirma = request.form.get("confirmar")      or ""
+
+        if not user.check_password(atual):
+            flash("Senha atual incorreta.", "error")
+            return redirect(url_for("main.painel_trocar_senha"))
+        if len(nova) < 6:
+            flash("A nova senha deve ter pelo menos 6 caracteres.", "error")
+            return redirect(url_for("main.painel_trocar_senha"))
+        if nova != confirma:
+            flash("As senhas não coincidem.", "error")
+            return redirect(url_for("main.painel_trocar_senha"))
+
+        user.set_password(nova)
+        from app import db
+        db.session.commit()
+        flash("Senha alterada com sucesso!", "success")
+        return redirect(url_for("main.painel_trocar_senha"))
+
+    return render_template("painel_trocar_senha.html", current_user=user)
+
+
 @main_bp.route("/painel/download/<int:file_id>")
 @login_required
 def painel_download(file_id):

@@ -134,6 +134,33 @@ def _log(acao, detalhe=""):
 # ------------------------------
 # Auth
 # ------------------------------
+@employee_bp.route("/trocar-senha", methods=["GET", "POST"])
+@employee_login_required
+def trocar_senha():
+    emp_user = get_current_employee()
+    if request.method == "POST":
+        atual    = request.form.get("senha_atual")    or ""
+        nova     = request.form.get("nova_senha")     or ""
+        confirma = request.form.get("confirmar")      or ""
+
+        if not emp_user.check_password(atual):
+            flash("Senha atual incorreta.", "error")
+            return redirect(url_for("employee.trocar_senha"))
+        if len(nova) < 4:
+            flash("A nova senha deve ter pelo menos 4 caracteres.", "error")
+            return redirect(url_for("employee.trocar_senha"))
+        if nova != confirma:
+            flash("As senhas não coincidem.", "error")
+            return redirect(url_for("employee.trocar_senha"))
+
+        emp_user.set_password(nova)
+        db.session.commit()
+        flash("Senha alterada com sucesso!", "success")
+        return redirect(url_for("employee.trocar_senha"))
+
+    return render_template("employee_trocar_senha.html", employee=emp_user)
+
+
 @employee_bp.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
