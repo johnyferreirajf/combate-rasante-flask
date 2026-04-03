@@ -37,6 +37,26 @@ def create_app():
     with app.app_context():
         db.create_all()
 
+        # ── Migration segura: adicionar colunas novas sem apagar dados ──
+        try:
+            from sqlalchemy import text as _text
+            with db.engine.connect() as _conn:
+                _migrations = [
+                    "ALTER TABLE employees ADD COLUMN IF NOT EXISTS foto_url TEXT",
+                    "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS cloudinary_url TEXT",
+                    "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS cloudinary_public_id VARCHAR(255)",
+                    "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS file_size INTEGER",
+                ]
+                for _sql in _migrations:
+                    try:
+                        _conn.execute(_text(_sql))
+                        _conn.commit()
+                    except Exception:
+                        _conn.rollback()
+        except Exception:
+            pass
+        # ── Fim migration ──
+
         # Admin cliente padrão
         if not User.query.filter_by(email="admin@teste.com").first():
             admin_user = User(
