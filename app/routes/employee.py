@@ -670,22 +670,38 @@ def download_folder():
 @employee_bp.route("/preview/<int:file_id>")
 @employee_login_required
 def preview(file_id: int):
-    """Pré-visualização inline (sem download) para imagens/PDF e outros tipos suportados."""
-    # Garante mimetype correto para KML/KMZ
+    """Pré-visualização inline — usa Cloudinary se disponível, disco como fallback."""
+    import urllib.request
+    from flask import make_response
     mimetypes.add_type("application/vnd.google-earth.kml+xml", ".kml")
     mimetypes.add_type("application/vnd.google-earth.kmz", ".kmz")
     item = EmployeeFile.query.get_or_404(file_id)
 
-    # Caminho absoluto seguro do arquivo no disco
-    abs_path = _safe_abs_path(item.stored_filename)
-    if not os.path.isfile(abs_path):
-        abort(404)
-
-    guessed_mime, _ = mimetypes.guess_type(item.original_filename or item.stored_filename)
+    filename = item.original_filename or "arquivo"
+    guessed_mime, _ = mimetypes.guess_type(filename)
     mimetype = guessed_mime or "application/octet-stream"
 
-    resp = send_file(abs_path, mimetype=mimetype, as_attachment=False)
+    # Preferir Cloudinary
+    cloud_url = getattr(item, "cloudinary_url", None)
+    if cloud_url:
+        try:
+            req = urllib.request.Request(cloud_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = resp.read()
+                ctype = resp.headers.get("Content-Type", mimetype)
+            r = make_response(data)
+            r.headers["Content-Type"] = ctype
+            r.headers["Content-Disposition"] = f'inline; filename="{filename}"'
+            r.headers["Cache-Control"] = "public, max-age=3600"
+            return r
+        except Exception:
+            pass
 
-    filename = item.original_filename or os.path.basename(item.stored_filename)
-    resp.headers["Content-Disposition"] = f'inline; filename="{filename}"'
-    return resp
+    # Fallback: disco local
+    abs_path = _safe_abs_path(item.stored_filename)
+    if os.path.isfile(abs_path):
+        resp = send_file(abs_path, mimetype=mimetype, as_attachment=False)
+        resp.headers["Content-Disposition"] = f'inline; filename="{filename}"'
+        return resp
+
+    abort(404)

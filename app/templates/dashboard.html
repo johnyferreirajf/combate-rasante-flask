@@ -28,13 +28,15 @@
              style="font-size:12px;min-height:32px;padding:0 14px;">
             ⬇ Baixar todos os arquivos (.zip)
           </a>
-          <a href="{{ url_for('main.painel_trocar_senha') }}"
-             class="btn btn--ghost"
-             style="font-size:12px;min-height:32px;padding:0 14px;">
-            🔑 Trocar senha
-          </a>
         </div>
       {% endif %}
+      <div style="margin-top:8px;">
+        <a href="{{ url_for('main.painel_trocar_senha') }}"
+           class="btn btn--ghost"
+           style="font-size:12px;min-height:32px;padding:0 14px;">
+          🔑 Trocar senha
+        </a>
+      </div>
     </div>
 
     {% if tree %}
