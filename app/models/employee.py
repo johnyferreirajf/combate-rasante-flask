@@ -13,7 +13,8 @@ class Employee(db.Model):
 
     password_hash = db.Column(db.String(255), nullable=False)
 
-    is_admin = db.Column(db.Boolean, default=False)
+    is_admin  = db.Column(db.Boolean, default=False)
+    foto_url  = db.Column(db.Text, nullable=True)   # avatar Cloudinary
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):

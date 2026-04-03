@@ -24,7 +24,36 @@
 
       <div class="sp-sidebar-footer">
         <div class="sp-user">
-          <div class="sp-user-avatar">{{ (employee.name or "F")[:1]|upper }}</div>
+          {# Avatar com foto ou inicial — clique abre o input de foto #}
+          <label for="fotoInput" title="Clique para trocar sua foto"
+                 style="cursor:pointer;position:relative;flex-shrink:0;">
+            {% if employee.foto_url %}
+              <img src="{{ employee.foto_url }}" alt="{{ employee.name }}"
+                   class="sp-user-avatar"
+                   style="object-fit:cover;border-radius:50%;width:38px;height:38px;
+                          border:2px solid rgba(34,197,94,.6);">
+            {% else %}
+              <div class="sp-user-avatar"
+                   style="border:2px dashed rgba(255,255,255,.35);
+                          transition:.2s;cursor:pointer;"
+                   onmouseover="this.style.borderColor='rgba(34,197,94,.6)'"
+                   onmouseout="this.style.borderColor='rgba(255,255,255,.35)'">
+                {{ (employee.name or "F")[:1]|upper }}
+              </div>
+            {% endif %}
+            <span style="position:absolute;bottom:-2px;right:-2px;
+                         background:rgba(34,197,94,.9);border-radius:50%;
+                         width:14px;height:14px;display:flex;align-items:center;
+                         justify-content:center;font-size:8px;color:#fff;font-weight:900;">
+              +
+            </span>
+          </label>
+          <form method="POST" action="{{ url_for('employee.minha_foto') }}"
+                enctype="multipart/form-data" id="fotoForm" style="display:none;">
+            <input type="file" id="fotoInput" name="foto"
+                   accept="image/jpeg,image/png,image/webp,image/gif"
+                   onchange="document.getElementById('fotoForm').submit()">
+          </form>
           <div class="sp-user-meta">
             <div class="sp-user-name">{{ employee.name }}</div>
             <div class="sp-user-role">{{ employee.username }}</div>

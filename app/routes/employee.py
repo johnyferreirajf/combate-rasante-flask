@@ -134,6 +134,59 @@ def _log(acao, detalhe=""):
 # ------------------------------
 # Auth
 # ------------------------------
+@employee_bp.route("/minha-foto", methods=["POST"])
+@employee_login_required
+def minha_foto():
+    """Upload de foto de perfil do funcionário → Cloudinary."""
+    import mimetypes as _mt
+    emp_user = get_current_employee()
+    file = request.files.get("foto")
+
+    if not file or not file.filename:
+        flash("Selecione uma imagem.", "error")
+        return redirect(url_for("employee.files"))
+
+    fname = file.filename.lower()
+    if not any(fname.endswith(ext) for ext in [".jpg", ".jpeg", ".png", ".webp", ".gif"]):
+        flash("Formato inválido. Use JPG, PNG ou WEBP.", "error")
+        return redirect(url_for("employee.files"))
+
+    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+    if use_cloud:
+        try:
+            import cloudinary, cloudinary.uploader
+            cloudinary.config(
+                cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                api_key=current_app.config["CLOUDINARY_API_KEY"],
+                api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+                secure=True,
+            )
+            # Remover foto antiga
+            if emp_user.foto_url and "cloudinary" in (emp_user.foto_url or ""):
+                try:
+                    old_pid = emp_user.foto_url.split("/upload/")[1].split(".")[0]
+                    cloudinary.uploader.destroy(f"combaterasante/avatars/{old_pid}",
+                                                resource_type="image")
+                except Exception:
+                    pass
+
+            result = cloudinary.uploader.upload(
+                file.stream,
+                folder="combaterasante/avatars",
+                resource_type="image",
+                transformation=[{"width": 300, "height": 300, "crop": "fill", "gravity": "face"}],
+            )
+            emp_user.foto_url = result["secure_url"]
+            db.session.commit()
+            flash("Foto atualizada!", "success")
+        except Exception as e:
+            flash(f"Erro ao enviar foto: {e}", "error")
+    else:
+        flash("Cloudinary não configurado.", "error")
+
+    return redirect(url_for("employee.files"))
+
+
 @employee_bp.route("/trocar-senha", methods=["GET", "POST"])
 @employee_login_required
 def trocar_senha():

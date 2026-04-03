@@ -55,4 +55,12 @@ with app.app_context():
     except Exception as e:
         print(f"~ action_logs: {e}")
 
+    # Adicionar foto_url na tabela employees
+    try:
+        conn.execute(text("ALTER TABLE employees ADD COLUMN IF NOT EXISTS foto_url TEXT"))
+        conn.commit()
+        print("✓ employees.foto_url adicionada")
+    except Exception as e:
+        print(f"~ employees.foto_url: {e}")
+
     print("\n✅ Migration concluída!")
