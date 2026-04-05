@@ -215,6 +215,40 @@ def trocar_senha():
 
 
 
+
+# ─── Impersonation (visualizar como cliente) ──────────────────
+
+@auth_bp.route("/admin/visualizar-como/<int:uid>")
+@login_required
+@admin_required
+def visualizar_como(uid):
+    """Admin entra no painel do cliente sem precisar da senha."""
+    from app.models.user import User
+    from flask import session
+    user = User.query.get_or_404(uid)
+    # Salvar sessão do admin para poder voltar
+    session["admin_impersonating"] = True
+    session["admin_real_email"]    = session.get("user_email", "")
+    session["admin_real_id"]       = session.get("user_id", "")
+    # Fazer "login" como o cliente
+    session["user_id"]    = user.id
+    session["user_email"] = user.email
+    flash(f"Visualizando como {user.name or user.email}. Use o banner para voltar.", "info")
+    return redirect(url_for("main.painel"))
+
+
+@auth_bp.route("/admin/sair-impersonation")
+def sair_impersonation():
+    """Volta para a sessão do admin."""
+    from flask import session
+    if not session.get("admin_impersonating"):
+        return redirect(url_for("main.index"))
+    # Restaurar sessão do admin
+    session["user_id"]    = session.pop("admin_real_id", "")
+    session["user_email"] = session.pop("admin_real_email", "")
+    session.pop("admin_impersonating", None)
+    return redirect(url_for("auth.admin"))
+
 # ─── Editar / Excluir Cliente ─────────────────────────────────
 
 @auth_bp.route("/admin/clientes/editar/<int:uid>", methods=["GET", "POST"])
