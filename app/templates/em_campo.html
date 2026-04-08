@@ -141,7 +141,7 @@
         {# Cabeçalho #}
         <div class="ec-card__head">
           <div class="ec-card__avatar">
-            <img src="{{ url_for('static', filename='img/logo.png') }}"
+            <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
                  alt="Combate Rasante"
                  onerror="this.style.display='none';this.parentNode.innerHTML='<span style=\'font-weight:900;font-size:12px;color:#22c55e;\'>CR</span>'">
           </div>
@@ -159,7 +159,7 @@
         <div class="ec-card__desc">{{ post.descricao }}</div>
         {% endif %}
 
-        {# Fotos #}
+        {# Fotos — CORRIGIDO: "equalto" no lugar de "eq" #}
         {% set fotos = post.midias | selectattr("tipo","equalto","foto") | list %}
         {% set n = fotos | length %}
         {% if n > 0 %}
@@ -167,7 +167,6 @@
              data-post="{{ post.id }}">
           {% for m in fotos %}
             {% if loop.index == 5 and n > 5 %}
-              {# Badge +N na última foto visível #}
               <div class="ec-gallery__item js-lb"
                    data-src="{{ m.url }}" data-idx="{{ loop.index0 }}"
                    data-post="{{ post.id }}">
@@ -186,7 +185,7 @@
         </div>
         {% endif %}
 
-        {# Vídeos #}
+        {# Vídeos — CORRIGIDO: "equalto" no lugar de "eq" #}
         {% set videos = post.midias | selectattr("tipo","equalto","video") | list %}
         {% if videos %}
         <div class="ec-videos" style="margin-top:{{ '2px' if fotos else '0' }};">
@@ -251,11 +250,9 @@
 {% block scripts %}
 <script>
 (function(){
-  // Coletar todas as fotos agrupadas por post
   var postFotos = {};
   document.querySelectorAll(".js-lb").forEach(function(el){
     var pid = el.dataset.post;
-    var idx = parseInt(el.dataset.idx);
     var src = el.dataset.src;
     if (!postFotos[pid]) postFotos[pid] = [];
     postFotos[pid].push(src);
