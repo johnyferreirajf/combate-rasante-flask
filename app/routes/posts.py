@@ -1,6 +1,9 @@
 """
 Rotas de "Em Campo" — feed público + CRUD admin de posts com fotos/vídeos.
 """
+from __future__ import annotations
+from typing import Optional
+
 import re
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, abort, current_app)
@@ -13,7 +16,7 @@ posts_bp = Blueprint("posts", __name__)
 
 # ─── Helpers ──────────────────────────────────────────────────
 
-def _youtube_embed(url: str) -> str | None:
+def _youtube_embed(url: str) -> Optional[str]:
     """Converte URL do YouTube para URL de embed."""
     patterns = [
         r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{11})",
@@ -21,7 +24,7 @@ def _youtube_embed(url: str) -> str | None:
     for p in patterns:
         m = re.search(p, url)
         if m:
-            return f"https://www.youtube.com/embed/{m.group(1)}?rel=0"
+            return "https://www.youtube.com/embed/{}?rel=0".format(m.group(1))
     return None
 
 
@@ -48,17 +51,16 @@ def _upload_cloudinary(file_stream, folder="combaterasante/emcampo"):
 @posts_bp.route("/em-campo")
 def em_campo():
     page = request.args.get("page", 1, type=int)
+    posts = None
     try:
-        posts = (Post.query
-                 .filter_by(ativo=True)
-                 .order_by(Post.created_at.desc())
-                 .paginate(page=page, per_page=10, error_out=False))
-        # Garante que posts.items existe (algumas versões retornam None)
-        if posts is None or not hasattr(posts, "items"):
-            posts = None
+        resultado = (Post.query
+                     .filter_by(ativo=True)
+                     .order_by(Post.created_at.desc())
+                     .paginate(page=page, per_page=10, error_out=False))
+        if resultado is not None and resultado.items:
+            posts = resultado
     except Exception:
         posts = None
-
     return render_template("em_campo.html", posts=posts)
 
 
@@ -78,11 +80,9 @@ def admin_emcampo():
 
         post = Post(titulo=titulo, descricao=descricao)
         db.session.add(post)
-        db.session.flush()   # gera post.id antes do commit
+        db.session.flush()
 
         ordem = 0
-
-        # Fotos (múltiplas)
         fotos = request.files.getlist("fotos")
         use_cloud = current_app.config.get("USE_CLOUDINARY", False)
         for foto in fotos:
@@ -95,9 +95,8 @@ def admin_emcampo():
                                             url=url, public_id=pid, ordem=ordem))
                     ordem += 1
                 except Exception as e:
-                    flash(f"Erro ao enviar foto: {e}", "error")
+                    flash("Erro ao enviar foto: {}".format(e), "error")
 
-        # Vídeos YouTube (URLs em textarea, uma por linha)
         videos_raw = (request.form.get("videos") or "")
         for line in videos_raw.splitlines():
             line = line.strip()
@@ -109,13 +108,12 @@ def admin_emcampo():
                                         url=embed, ordem=ordem))
                 ordem += 1
             else:
-                flash(f"URL de vídeo inválida (só YouTube): {line}", "error")
+                flash("URL de vídeo inválida (só YouTube): {}".format(line), "error")
 
         db.session.commit()
         flash("Post publicado com sucesso!", "success")
         return redirect(url_for("posts.admin_emcampo"))
 
-    # GET
     posts = Post.query.order_by(Post.created_at.desc()).all()
     return render_template("admin_emcampo.html",
                            current_user=get_current_user(),
@@ -138,7 +136,6 @@ def admin_emcampo_editar(pid):
         use_cloud = current_app.config.get("USE_CLOUDINARY", False)
         ordem = max((m.ordem for m in post.midias), default=-1) + 1
 
-        # Novas fotos
         fotos = request.files.getlist("fotos")
         for foto in fotos:
             if not foto or not foto.filename:
@@ -150,9 +147,8 @@ def admin_emcampo_editar(pid):
                                             url=url, public_id=pid2, ordem=ordem))
                     ordem += 1
                 except Exception as e:
-                    flash(f"Erro ao enviar foto: {e}", "error")
+                    flash("Erro ao enviar foto: {}".format(e), "error")
 
-        # Novos vídeos
         videos_raw = (request.form.get("videos") or "")
         for line in videos_raw.splitlines():
             line = line.strip()
@@ -164,7 +160,7 @@ def admin_emcampo_editar(pid):
                                         url=embed, ordem=ordem))
                 ordem += 1
             else:
-                flash(f"URL inválida: {line}", "error")
+                flash("URL inválida: {}".format(line), "error")
 
         db.session.commit()
         flash("Post atualizado!", "success")

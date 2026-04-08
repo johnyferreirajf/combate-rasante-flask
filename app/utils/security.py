@@ -1,3 +1,6 @@
+from __future__ import annotations
+from typing import Optional
+
 from functools import wraps
 from flask import session, redirect, url_for, request, flash, current_app
 from app.models import User, Employee
@@ -15,7 +18,7 @@ def login_required(view):
     return wrapped
 
 
-def get_current_user() -> User | None:
+def get_current_user() -> Optional[User]:
     user_id = session.get("user_id")
     if not user_id:
         return None
@@ -51,7 +54,7 @@ def employee_login_required(view):
     return wrapped
 
 
-def get_current_employee() -> Employee | None:
+def get_current_employee() -> Optional[Employee]:
     emp_id = session.get("employee_id")
     if not emp_id:
         return None
