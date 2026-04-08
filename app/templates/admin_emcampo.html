@@ -33,7 +33,7 @@
            style="display:flex;align-items:center;gap:16px;padding:14px 18px;flex-wrap:wrap;">
 
         {# Thumb da primeira foto #}
-        {% set primeira_foto = post.midias | selectattr("tipo","eq","foto") | first %}
+        {% set primeira_foto = post.midias | selectattr("tipo","equalto","foto") | first %}
         <div style="width:64px;height:64px;border-radius:12px;overflow:hidden;
                     flex-shrink:0;background:rgba(255,255,255,.08);
                     display:flex;align-items:center;justify-content:center;">
@@ -58,9 +58,9 @@
           <div style="font-size:12px;color:var(--color-text-muted);margin-top:3px;">
             {{ post.created_at.strftime("%d/%m/%Y às %H:%M") }}
             &nbsp;·&nbsp;
-            {{ post.midias | selectattr("tipo","eq","foto") | list | length }} foto(s)
+            {{ post.midias | selectattr("tipo","equalto","foto") | list | length }} foto(s)
             &nbsp;·&nbsp;
-            {{ post.midias | selectattr("tipo","eq","video") | list | length }} vídeo(s)
+            {{ post.midias | selectattr("tipo","equalto","video") | list | length }} vídeo(s)
           </div>
         </div>
 

@@ -160,7 +160,7 @@
         {% endif %}
 
         {# Fotos #}
-        {% set fotos = post.midias | selectattr("tipo","eq","foto") | list %}
+        {% set fotos = post.midias | selectattr("tipo","equalto","foto") | list %}
         {% set n = fotos | length %}
         {% if n > 0 %}
         <div class="ec-gallery ec-gallery--{{ n if n <= 4 else 'many' }}"
@@ -187,7 +187,7 @@
         {% endif %}
 
         {# Vídeos #}
-        {% set videos = post.midias | selectattr("tipo","eq","video") | list %}
+        {% set videos = post.midias | selectattr("tipo","equalto","video") | list %}
         {% if videos %}
         <div class="ec-videos" style="margin-top:{{ '2px' if fotos else '0' }};">
           {% for v in videos %}
