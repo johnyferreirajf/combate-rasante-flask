@@ -636,7 +636,6 @@ def admin_pasta_upload():
         subpasta_rel = partes[0] if len(partes) > 1 else ""
         nome_arquivo = partes[-1]
 
-        # secure_filename pode zerar nomes com acentos — fallback manual
         nome_seguro = secure_filename(nome_arquivo)
         if not nome_seguro:
             nome_seguro = nome_arquivo.replace("/", "_").replace("\\", "_").lstrip(".")
@@ -644,7 +643,6 @@ def admin_pasta_upload():
             ignorados += 1
             continue
 
-        # Pasta destino
         if subpasta_rel:
             segs         = subpasta_rel.split("/")
             sub_sem_raiz = "/".join(segs[1:]) if len(segs) > 1 else ""
@@ -658,29 +656,35 @@ def admin_pasta_upload():
         folder     = "combaterasante/cliente_{}/{}".format(cliente_id, chave)
 
         try:
-            # Ler TUDO para bytes — evita problema de stream já consumido
             conteudo  = arquivo.read()
             file_size = len(conteudo)
 
-            # Imagens usam "image", todo o resto usa "raw" (mais confiável para KMZ/KML/PDF)
-            img_exts = {"png", "jpg", "jpeg", "webp", "gif", "bmp", "svg"}
+            img_exts = {"png","jpg","jpeg","webp","gif","bmp","svg"}
             rtype    = "image" if ext in img_exts else "raw"
 
-            result = cloudinary.uploader.upload(
-                io.BytesIO(conteudo),
-                folder=folder,
-                resource_type=rtype,
-                use_filename=True,
-                unique_filename=True,
-                filename_override=nome_seguro,
-            )
+            # Arquivo vazio: Cloudinary rejeita — salva registro sem URL
+            if file_size == 0:
+                url_final = ""
+                pub_id    = ""
+            else:
+                result    = cloudinary.uploader.upload(
+                    io.BytesIO(conteudo),
+                    folder=folder,
+                    resource_type=rtype,
+                    use_filename=True,
+                    unique_filename=True,
+                    filename_override=nome_seguro,
+                )
+                url_final = result["secure_url"]
+                pub_id    = result["public_id"]
+
             cf = ClientFile(
                 user_id=cliente_id,
                 original_filename=nome_seguro,
                 title=nome_seguro,
                 folder_path=pasta_dest,
-                url=result["secure_url"],
-                public_id=result["public_id"],
+                url=url_final,
+                public_id=pub_id,
                 source="cloudinary",
                 file_ext=ext,
                 file_size=file_size,

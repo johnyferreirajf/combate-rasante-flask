@@ -573,7 +573,6 @@ def upload():
     return redirect(url_for("employee.files", path=relpath))
 
 
-
 @employee_bp.route("/upload-pasta", methods=["POST"])
 @employee_login_required
 def upload_pasta():
@@ -603,15 +602,13 @@ def upload_pasta():
                 api_secret=current_app.config["CLOUDINARY_API_SECRET"],
                 secure=True,
             )
-            cloud_ok = True
         except Exception as e:
-            flash("Erro ao conectar Cloudinary: {}".format(e), "error")
+            flash("Erro Cloudinary: {}".format(e), "error")
             return redirect(url_for("employee.files", path=relpath))
-    else:
-        cloud_ok = False
 
-    enviados = 0
-    erros    = 0
+    enviados  = 0
+    ignorados = 0
+    erros_msg = []
 
     for i, arquivo in enumerate(arquivos):
         if not arquivo or not arquivo.filename:
@@ -625,10 +622,12 @@ def upload_pasta():
         nome_arquivo = partes[-1]
 
         original = secure_filename(nome_arquivo)
-        if not _allowed_file(original):
+        if not original:
+            original = nome_arquivo.replace("/", "_").replace("\\", "_").lstrip(".")
+        if not original or not _allowed_file(original):
+            ignorados += 1
             continue
 
-        # Pasta destino: relpath + subpastas internas sem o 1o segmento
         if subpasta_rel:
             segs         = subpasta_rel.split("/")
             sub_sem_raiz = "/".join(segs[1:]) if len(segs) > 1 else ""
@@ -645,26 +644,36 @@ def upload_pasta():
         file_size            = None
 
         try:
-            if use_cloud and cloud_ok:
-                mime, _ = mimetypes.guess_type(original)
-                rtype   = "image" if (mime and mime.startswith("image")) else "raw"
+            import io
+            conteudo  = arquivo.read()
+            file_size = len(conteudo)
+
+            if use_cloud:
                 folder_cloud = "combaterasante/funcionarios/{}".format(cat_path or "raiz")
-                content   = arquivo.stream.read()
-                file_size = len(content)
-                arquivo.stream.seek(0)
-                result               = cloudinary.uploader.upload(
-                    arquivo.stream,
-                    folder=folder_cloud,
-                    resource_type=rtype,
-                    use_filename=True,
-                    unique_filename=True,
-                )
-                cloudinary_url       = result["secure_url"]
-                cloudinary_public_id = result["public_id"]
+                img_exts = {"png","jpg","jpeg","webp","gif","bmp","svg"}
+                rtype    = "image" if ext in img_exts else "raw"
+
+                # Arquivo vazio: Cloudinary rejeita — salva registro sem URL
+                if file_size == 0:
+                    cloudinary_url       = ""
+                    cloudinary_public_id = ""
+                else:
+                    result = cloudinary.uploader.upload(
+                        io.BytesIO(conteudo),
+                        folder=folder_cloud,
+                        resource_type=rtype,
+                        use_filename=True,
+                        unique_filename=True,
+                        filename_override=original,
+                    )
+                    cloudinary_url       = result["secure_url"]
+                    cloudinary_public_id = result["public_id"]
             else:
                 abs_folder = _safe_abs_path(cat_path)
                 os.makedirs(abs_folder, exist_ok=True)
-                arquivo.save(_safe_abs_path(stored_rel))
+                abs_file = _safe_abs_path(stored_rel)
+                with open(abs_file, "wb") as fout:
+                    fout.write(conteudo)
 
             item = EmployeeFile(
                 stored_filename=stored_rel,
@@ -681,18 +690,22 @@ def upload_pasta():
             enviados += 1
 
         except Exception as e:
-            erros += 1
+            erros_msg.append("{}: {}".format(original, str(e)[:120]))
 
     if enviados:
         db.session.commit()
-        _log("upload_pasta", "{} arquivo(s) → {}".format(enviados, relpath or "raiz"))
+        _log("upload_pasta", "{} arquivo(s) enviado(s) → {}".format(enviados, relpath or "raiz"))
         flash("{} arquivo(s) enviado(s) com sucesso!".format(enviados), "success")
-    if erros:
-        flash("{} arquivo(s) falharam no envio.".format(erros), "error")
-    if not enviados and not erros:
-        flash("Nenhum arquivo válido encontrado na pasta.", "error")
+    if ignorados:
+        flash("{} arquivo(s) ignorado(s) (tipo não permitido).".format(ignorados), "error")
+    if erros_msg:
+        for msg in erros_msg[:5]:
+            flash("Erro: {}".format(msg), "error")
+    if not enviados and not erros_msg and not ignorados:
+        flash("Nenhum arquivo válido encontrado.", "error")
 
     return redirect(url_for("employee.files", path=relpath))
+
 
 @employee_bp.route("/rename_file/<int:file_id>", methods=["POST"])
 @employee_login_required
