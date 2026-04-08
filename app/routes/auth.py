@@ -588,6 +588,109 @@ def admin_arquivo_upload():
     return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
 
 
+
+@auth_bp.route("/admin/arquivos/upload-pasta", methods=["POST"])
+@login_required
+@admin_required
+def admin_pasta_upload():
+    """Recebe múltiplos arquivos com seus caminhos relativos e recria a estrutura de subpastas."""
+    import cloudinary, cloudinary.uploader
+    from flask import current_app
+    from app.models.client_file import ClientFile
+
+    cliente_id  = request.form.get("cliente_id", type=int)
+    pasta_atual = _clean_path(request.form.get("pasta_atual", ""))
+    arquivos    = request.files.getlist("arquivos_pasta")
+    caminhos    = request.form.getlist("caminhos_relativos")
+
+    if not arquivos or not any(f.filename for f in arquivos):
+        flash("Nenhum arquivo selecionado.", "error")
+        return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+
+    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+    if not use_cloud:
+        flash("Configure o Cloudinary para uploads permanentes.", "error")
+        return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+
+    cloudinary.config(
+        cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+        api_key=current_app.config["CLOUDINARY_API_KEY"],
+        api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+        secure=True,
+    )
+
+    enviados = 0
+    erros    = 0
+
+    for i, arquivo in enumerate(arquivos):
+        if not arquivo or not arquivo.filename:
+            continue
+
+        # caminho relativo enviado pelo JS (ex: "Safra2025/Janeiro/foto.jpg")
+        caminho_rel = caminhos[i] if i < len(caminhos) else arquivo.filename
+        caminho_rel = caminho_rel.replace("\\", "/").strip("/")
+
+        # separa pasta interna e nome do arquivo
+        partes        = caminho_rel.rsplit("/", 1)
+        subpasta_rel  = partes[0] if len(partes) > 1 else ""
+        nome_arquivo  = partes[-1]
+
+        if not _admin_allowed(nome_arquivo):
+            continue
+
+        # pasta final = pasta_atual + subpasta dentro da pasta selecionada
+        if subpasta_rel:
+            # Remove o nome da pasta raiz escolhida (primeiro segmento) pois já estamos em pasta_atual
+            segmentos = subpasta_rel.split("/")
+            sub_sem_raiz = "/".join(segmentos[1:]) if len(segmentos) > 1 else ""
+            pasta_destino = "/".join(filter(None, [pasta_atual, sub_sem_raiz]))
+        else:
+            pasta_destino = pasta_atual
+
+        pasta_destino = _clean_path(pasta_destino)
+
+        filename  = secure_filename(nome_arquivo)
+        ext       = _ext(filename)
+        rtype     = "image" if ext in {"png","jpg","jpeg","webp","gif"} else "raw"
+        pasta_cloud_key = pasta_destino.replace("/", "_") if pasta_destino else "raiz"
+        folder    = "combaterasante/cliente_{}/{}".format(cliente_id, pasta_cloud_key)
+
+        try:
+            content   = arquivo.stream.read()
+            file_size = len(content)
+            arquivo.stream.seek(0)
+            result = cloudinary.uploader.upload(
+                arquivo.stream,
+                folder=folder,
+                resource_type=rtype,
+                use_filename=True,
+                unique_filename=True,
+            )
+            cf = ClientFile(
+                user_id=cliente_id,
+                original_filename=filename,
+                title=filename,
+                folder_path=pasta_destino,
+                url=result["secure_url"],
+                public_id=result["public_id"],
+                source="cloudinary",
+                file_ext=ext,
+                file_size=file_size,
+            )
+            db.session.add(cf)
+            enviados += 1
+        except Exception:
+            erros += 1
+
+    db.session.commit()
+
+    if enviados:
+        flash("{} arquivo(s) enviado(s) com sucesso!".format(enviados), "success")
+    if erros:
+        flash("{} arquivo(s) falharam no envio.".format(erros), "error")
+
+    return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
+
 @auth_bp.route("/admin/arquivos/excluir/<int:file_id>", methods=["POST"])
 @login_required
 @admin_required

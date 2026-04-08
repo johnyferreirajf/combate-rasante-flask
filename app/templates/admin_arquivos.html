@@ -12,32 +12,27 @@
 
 .af-wrap { width: min(1180px, calc(100% - 24px)); margin-inline: auto; padding-block: 16px 40px; }
 
-/* card */
 .af-card { background:var(--g1); border:1px solid var(--b); border-radius:var(--rl);
            backdrop-filter:blur(10px); padding:14px 18px; margin-bottom:12px; color:var(--t); }
 .af-card-label { font-size:10px; font-weight:900; letter-spacing:.07em; text-transform:uppercase;
                  color:var(--m); margin-bottom:10px; }
 
-/* botões de cliente */
 .af-cbtn { display:inline-flex; align-items:center; padding:7px 15px; border-radius:10px;
            font-size:13px; font-weight:800; text-decoration:none; border:1px solid var(--b);
            background:rgba(255,255,255,.07); color:var(--m); transition:.15s; }
 .af-cbtn:hover, .af-cbtn.on { background:var(--as); border-color:var(--bh); color:var(--t); }
 
-/* explorador */
 .af-box { background:var(--g1); border:1px solid var(--b); border-radius:var(--rl);
           backdrop-filter:blur(10px); overflow:hidden; color:var(--t); }
 
-/* topbar */
 .af-top { display:flex; align-items:center; justify-content:space-between; gap:10px;
           flex-wrap:wrap; padding:12px 16px; background:var(--g2); border-bottom:1px solid var(--b); }
 .af-bc  { display:flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:13px; }
 .af-bc a { color:var(--m); font-weight:800; text-decoration:none; transition:color .15s; }
 .af-bc a:hover { color:var(--t); }
 .af-bc span { color:var(--m); opacity:.45; }
-.af-btns { display:flex; gap:7px; }
+.af-btns { display:flex; gap:7px; flex-wrap:wrap; }
 
-/* botão genérico */
 .af-b { display:inline-flex; align-items:center; gap:4px; padding:7px 13px;
         border-radius:10px; font-size:12px; font-weight:800; cursor:pointer;
         border:1px solid var(--b); background:rgba(255,255,255,.08);
@@ -48,7 +43,6 @@
 .af-b.d  { background:var(--ds); border-color:rgba(239,68,68,.35); color:#fca5a5; }
 .af-b.d:hover { background:rgba(239,68,68,.28); }
 
-/* tabela */
 .af-head { display:grid; grid-template-columns:1.8fr .45fr .5fr .6fr 1fr;
            gap:8px; padding:9px 16px; background:rgba(4,105,64,.35);
            font-size:10px; font-weight:900; letter-spacing:.06em;
@@ -75,7 +69,7 @@
 .af-modal { position:fixed; inset:0; display:none; z-index:9999; }
 .af-modal.on { display:block; }
 .af-mbg { position:absolute; inset:0; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); }
-.af-mc  { position:relative; width:min(460px,calc(100% - 24px)); margin:7vh auto 0;
+.af-mc  { position:relative; width:min(500px,calc(100% - 24px)); margin:7vh auto 0;
           background:rgba(3,40,24,.97); border:1px solid var(--b); border-radius:var(--rl);
           box-shadow:0 20px 56px rgba(0,0,0,.55); padding:16px 18px;
           backdrop-filter:blur(16px); }
@@ -96,6 +90,24 @@
 .af-in:focus { border-color:var(--bh); }
 .af-fa { display:flex; justify-content:flex-end; gap:7px; padding-top:3px; }
 
+/* preview da pasta selecionada */
+.af-folder-preview {
+  background:rgba(255,255,255,.06); border:1px solid var(--b);
+  border-radius:10px; padding:10px 12px; font-size:12px;
+  color:var(--m); max-height:120px; overflow-y:auto; display:none;
+}
+.af-folder-preview.show { display:block; }
+.af-progress { display:none; margin-top:8px; }
+.af-progress.show { display:block; }
+.af-progress-bar {
+  height:6px; border-radius:999px; background:rgba(255,255,255,.12);
+  overflow:hidden; margin-top:4px;
+}
+.af-progress-fill {
+  height:100%; background:var(--ac); border-radius:999px;
+  width:0%; transition:width .3s;
+}
+
 @media(max-width:900px){
   .af-head,.af-row { grid-template-columns:1.5fr .5fr 1fr; }
   .af-head > *:nth-child(3),.af-head > *:nth-child(4),
@@ -114,12 +126,13 @@
 
   {# ── Navegação ── #}
   <div style="display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;">
-    <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+    <a href="{{ url_for('auth.admin') }}"              class="btn btn--ghost">👤 Clientes</a>
     <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
-    <a href="{{ url_for('auth.admin_arquivos') }}" class="btn btn--primary">📁 Arquivos</a>
-    <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
-    <a href="{{ url_for('auth.admin_restore') }}" class="btn btn--ghost">💾 Backup</a>
-    <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
+    <a href="{{ url_for('auth.admin_arquivos') }}"     class="btn btn--primary">📁 Arquivos</a>
+    <a href="{{ url_for('posts.admin_emcampo') }}"     class="btn btn--ghost">📸 Em Campo</a>
+    <a href="{{ url_for('auth.admin_mensagens') }}"    class="btn btn--ghost">✉ Mensagens</a>
+    <a href="{{ url_for('auth.admin_restore') }}"      class="btn btn--ghost">💾 Backup</a>
+    <a href="{{ url_for('auth.trocar_senha') }}"       class="btn btn--ghost">🔑 Trocar Senha</a>
   </div>
 
   {# ── Selecionar cliente ── #}
@@ -157,7 +170,8 @@
       </div>
       <div class="af-btns">
         <button class="af-b" onclick="abrirModal('mPasta')">+ Nova pasta</button>
-        <button class="af-b p" onclick="abrirModal('mUpload')">⬆ Upload</button>
+        <button class="af-b p" onclick="abrirModal('mUpload')">⬆ Upload arquivo</button>
+        <button class="af-b p" onclick="abrirModal('mUploadPasta')" style="background:rgba(22,163,74,.35);">📁 Enviar pasta</button>
       </div>
     </div>
 
@@ -256,7 +270,7 @@
     </div>
   </div>
 
-  {# ── Modal Upload ── #}
+  {# ── Modal Upload arquivo único ── #}
   <div class="af-modal" id="mUpload">
     <div class="af-mbg" onclick="fecharModal('mUpload')"></div>
     <div class="af-mc">
@@ -283,6 +297,51 @@
         <div class="af-fa">
           <button class="af-b" type="button" onclick="fecharModal('mUpload')">Cancelar</button>
           <button class="af-b p" type="submit">⬆ Enviar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── Modal Upload de PASTA INTEIRA ── #}
+  <div class="af-modal" id="mUploadPasta">
+    <div class="af-mbg" onclick="fecharModal('mUploadPasta')"></div>
+    <div class="af-mc">
+      <div class="af-mh">
+        <div>
+          <div class="af-mt">📁 Enviar pasta inteira</div>
+          <div class="af-ms">A estrutura de subpastas será recriada em: {{ cliente_sel.name }} / {{ pasta or 'raiz' }}</div>
+        </div>
+        <button class="af-xb" onclick="fecharModal('mUploadPasta')">✕</button>
+      </div>
+      <form method="POST" action="{{ url_for('auth.admin_pasta_upload') }}"
+            enctype="multipart/form-data" class="af-fm" id="formUploadPasta">
+        <input type="hidden" name="cliente_id" value="{{ cliente_sel.id }}">
+        <input type="hidden" name="pasta_atual" value="{{ pasta }}">
+        <div id="caminhosContainer"></div>
+
+        <div>
+          <label class="af-lb">Selecionar pasta</label>
+          <input class="af-in" type="file" name="arquivos_pasta" id="inputPastaAdmin"
+                 multiple webkitdirectory mozdirectory>
+        </div>
+
+        <div class="af-folder-preview" id="previewPastaAdmin"></div>
+
+        <div class="af-progress" id="progressPastaAdmin">
+          <div class="af-lb" id="progressTextAdmin">Enviando...</div>
+          <div class="af-progress-bar">
+            <div class="af-progress-fill" id="progressFillAdmin"></div>
+          </div>
+        </div>
+
+        <div style="font-size:11px;color:var(--m);line-height:1.6;">
+          ⚠️ Apenas arquivos permitidos serão enviados (PDF, imagens, Excel, Word, KML, ZIP, TXT).
+          Subpastas são recriadas automaticamente.
+        </div>
+
+        <div class="af-fa">
+          <button class="af-b" type="button" onclick="fecharModal('mUploadPasta')">Cancelar</button>
+          <button class="af-b p" type="submit" id="btnEnviarPastaAdmin">📁 Enviar pasta</button>
         </div>
       </form>
     </div>
@@ -330,7 +389,58 @@ function abrirRenomear(fileId, nome){
   setTimeout(function(){ i.focus(); i.select(); },120);
 }
 document.addEventListener('keydown',function(e){
-  if(e.key==='Escape') ['mPasta','mUpload','mRenomear'].forEach(fecharModal);
+  if(e.key==='Escape') ['mPasta','mUpload','mUploadPasta','mRenomear'].forEach(fecharModal);
 });
+
+/* ── Upload de pasta com preview e caminhos relativos ── */
+(function(){
+  var input    = document.getElementById('inputPastaAdmin');
+  var preview  = document.getElementById('previewPastaAdmin');
+  var container= document.getElementById('caminhosContainer');
+  var progress = document.getElementById('progressPastaAdmin');
+  var fill     = document.getElementById('progressFillAdmin');
+  var pText    = document.getElementById('progressTextAdmin');
+  var form     = document.getElementById('formUploadPasta');
+
+  if (!input) return;
+
+  input.addEventListener('change', function(){
+    var files = Array.from(this.files);
+    if (!files.length) { preview.classList.remove('show'); return; }
+
+    // Mostra preview dos arquivos
+    var lista = files.slice(0,8).map(function(f){
+      return '📄 ' + (f.webkitRelativePath || f.name);
+    });
+    if (files.length > 8) lista.push('... e mais ' + (files.length - 8) + ' arquivo(s)');
+    preview.innerHTML = '<strong style="color:#fff;">' + files.length + ' arquivo(s) selecionado(s):</strong><br>' + lista.join('<br>');
+    preview.classList.add('show');
+  });
+
+  form.addEventListener('submit', function(e){
+    var files = Array.from(input.files);
+    if (!files.length) return;
+
+    // Injeta os caminhos relativos como campos hidden
+    container.innerHTML = '';
+    files.forEach(function(f){
+      var inp = document.createElement('input');
+      inp.type  = 'hidden';
+      inp.name  = 'caminhos_relativos';
+      inp.value = f.webkitRelativePath || f.name;
+      container.appendChild(inp);
+    });
+
+    // Mostra barra de progresso fake
+    progress.classList.add('show');
+    fill.style.width = '0%';
+    pText.textContent = 'Enviando ' + files.length + ' arquivo(s)...';
+    var pct = 0;
+    var iv = setInterval(function(){
+      pct = Math.min(pct + 2, 90);
+      fill.style.width = pct + '%';
+    }, 200);
+  });
+})();
 </script>
 {% endblock %}

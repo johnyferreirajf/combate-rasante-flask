@@ -3,23 +3,19 @@
 
 {% block head_extra %}
 <style>
-/* ── Feed Em Campo ── */
 .ec-section { padding-block: 48px 80px; }
 .ec-header   { text-align:center; margin-bottom:40px; }
 .ec-header h1 { font-size:clamp(1.6rem,4vw,2.4rem); font-weight:900; color:var(--color-text); }
 .ec-header p  { color:var(--color-text-muted); margin-top:8px; font-size:15px; }
 
-/* Feed */
 .ec-feed { display:flex; flex-direction:column; gap:28px;
            width:min(680px,calc(100% - 24px)); margin-inline:auto; }
 
-/* Card de post */
 .ec-card {
-  background: var(--color-brand-glass);
-  border: 1px solid var(--color-border);
-  border-radius: 20px; overflow: hidden;
-  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-md);
+  background:var(--color-brand-glass); border:1px solid var(--color-border);
+  border-radius:20px; overflow:hidden;
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  box-shadow:var(--shadow-md);
 }
 .ec-card__head { display:flex; align-items:center; gap:12px; padding:16px 18px 12px; }
 .ec-card__avatar {
@@ -33,7 +29,6 @@
 .ec-card__data   { font-size:12px; color:var(--color-text-muted); margin-top:2px; }
 .ec-card__desc   { padding:0 18px 14px; font-size:14px; color:var(--color-text-muted); line-height:1.7; white-space:pre-wrap; }
 
-/* Galeria */
 .ec-gallery { display:grid; gap:2px; }
 .ec-gallery--1    { grid-template-columns:1fr; }
 .ec-gallery--2    { grid-template-columns:1fr 1fr; }
@@ -52,22 +47,17 @@
   font-size:24px; font-weight:900; color:#fff; pointer-events:none;
 }
 
-/* Vídeos */
 .ec-videos { display:flex; flex-direction:column; gap:2px; }
 .ec-video { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; }
 .ec-video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 
-/* Rodapé */
 .ec-card__foot {
   padding:10px 18px; border-top:1px solid var(--color-border);
   font-size:12px; color:var(--color-text-muted);
   display:flex; align-items:center; gap:6px;
 }
-
-/* Paginação */
 .ec-pagination { display:flex; gap:10px; justify-content:center; margin-top:32px; }
 
-/* Lightbox */
 .ec-lightbox {
   position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.92);
   display:none; align-items:center; justify-content:center; flex-direction:column; gap:12px;
@@ -93,36 +83,42 @@
 .ec-construcao {
   display:flex; flex-direction:column; align-items:center;
   padding:40px 24px 80px; text-align:center;
-  width:min(700px,calc(100% - 24px)); margin-inline:auto;
+  width:min(760px,calc(100% - 24px)); margin-inline:auto;
 }
 .ec-construcao__card {
-  background:var(--color-brand-glass,rgba(3,58,36,.60));
+  background:var(--color-brand-glass,rgba(3,58,36,.55));
   border:1px solid var(--color-border,rgba(255,255,255,.12));
-  border-radius:28px; backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  box-shadow:0 8px 48px rgba(0,0,0,.35); padding:40px 36px 44px; width:100%;
+  border-radius:28px; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  box-shadow:0 8px 56px rgba(0,0,0,.40); padding:44px 40px 48px; width:100%;
 }
 .ec-construcao__badge {
   display:inline-block; background:rgba(234,179,8,.18); border:1px solid rgba(234,179,8,.40);
   color:#fde68a; font-size:11px; font-weight:900; letter-spacing:.10em;
-  padding:5px 14px; border-radius:999px; margin-bottom:20px;
+  padding:5px 16px; border-radius:999px; margin-bottom:22px;
 }
 .ec-construcao h2 {
-  font-size:clamp(1.4rem,4vw,2rem); font-weight:900; color:var(--color-text,#fff);
-  margin-bottom:10px; line-height:1.2;
+  font-size:clamp(1.5rem,4vw,2.1rem); font-weight:900; color:var(--color-text,#fff);
+  margin-bottom:12px; line-height:1.2;
 }
-.ec-construcao p { color:var(--color-text-muted,rgba(255,255,255,.60)); font-size:15px; line-height:1.7; max-width:420px; margin-inline:auto; }
-.ec-construcao__svg { width:min(340px,90%); margin:32px auto 0; filter:drop-shadow(0 8px 24px rgba(0,0,0,.40)); }
+.ec-construcao > .ec-construcao__card > p {
+  color:var(--color-text-muted,rgba(255,255,255,.60)); font-size:15px;
+  line-height:1.8; max-width:440px; margin-inline:auto;
+}
+.ec-construcao__scene { width:min(480px,100%); margin:36px auto 0; }
 
-@keyframes ec-spin  { to{ transform:rotate(360deg); } }
-@keyframes ec-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
-@keyframes ec-wrench{ 0%,100%{transform:rotate(-18deg)} 50%{transform:rotate(18deg)} }
-@keyframes ec-blink { 0%,90%,100%{transform:scaleY(1)} 95%{transform:scaleY(.08)} }
+/* Animações */
+@keyframes ec-prop   { to{ transform:rotate(360deg); } }
+@keyframes ec-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes ec-tool   { 0%,100%{transform:rotate(-22deg)} 50%{transform:rotate(14deg)} }
+@keyframes ec-blink  { 0%,88%,100%{transform:scaleY(1)} 93%{transform:scaleY(.07)} }
+@keyframes ec-breath { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.04)} }
 
-.ec-svg-prop   { animation:ec-spin 1.8s linear infinite; transform-origin:245px 118px; }
-.ec-svg-aviao  { animation:ec-float 3.2s ease-in-out infinite; }
-.ec-svg-wrench { animation:ec-wrench 1.1s ease-in-out infinite; transform-origin:215px 178px; }
-.ec-svg-olho-l { animation:ec-blink 3.5s ease-in-out infinite; transform-origin:89px 116px; }
-.ec-svg-olho-r { animation:ec-blink 3.5s ease-in-out infinite .05s; transform-origin:103px 116px; }
+.ec-aviao  { animation:ec-float 3.6s ease-in-out infinite; }
+.ec-prop   { animation:ec-prop 1.4s linear infinite; transform-origin:318px 124px; }
+.ec-tool   { animation:ec-tool 1.0s ease-in-out infinite; transform-origin:158px 212px; }
+.ec-olhoL  { animation:ec-blink 4s ease-in-out infinite; transform-origin:170px 158px; }
+.ec-olhoR  { animation:ec-blink 4s ease-in-out infinite .06s; transform-origin:188px 158px; }
+.ec-torso  { animation:ec-breath 2.8s ease-in-out infinite; transform-origin:175px 200px; }
 </style>
 {% endblock %}
 
@@ -141,7 +137,6 @@
       {% for post in posts.items %}
       <article class="ec-card">
 
-        {# Cabeçalho #}
         <div class="ec-card__head">
           <div class="ec-card__avatar">
             <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
@@ -155,26 +150,20 @@
           </div>
         </div>
 
-        {# Descrição #}
         {% if post.descricao %}
         <div class="ec-card__desc">{{ post.descricao }}</div>
         {% endif %}
 
-        {# ── Galeria de fotos ── sem {% break %}, usando slice [:5] #}
         {% set fotos = post.midias | selectattr("tipo","equalto","foto") | list %}
         {% set n = fotos | length %}
         {% if n > 0 %}
-          {# Mostra no máximo 5 fotos; na 5ª exibe badge "+N" se houver mais #}
           {% set fotos_visiveis = fotos[:5] %}
           {% set classe_grid = n if n <= 4 else 'many' %}
         <div class="ec-gallery ec-gallery--{{ classe_grid }}" data-post="{{ post.id }}">
           {% for m in fotos_visiveis %}
             <div class="ec-gallery__item js-lb"
-                 data-src="{{ m.url }}"
-                 data-idx="{{ loop.index0 }}"
-                 data-post="{{ post.id }}">
+                 data-src="{{ m.url }}" data-idx="{{ loop.index0 }}" data-post="{{ post.id }}">
               <img src="{{ m.url }}" alt="foto {{ loop.index }}" loading="lazy">
-              {# Badge só na última foto visível quando há mais de 5 #}
               {% if loop.last and n > 5 %}
               <div class="ec-gallery__more">+{{ n - 5 }}</div>
               {% endif %}
@@ -183,7 +172,6 @@
         </div>
         {% endif %}
 
-        {# Vídeos #}
         {% set videos = post.midias | selectattr("tipo","equalto","video") | list %}
         {% if videos %}
         <div class="ec-videos" style="margin-top:{{ '2px' if fotos else '0' }};">
@@ -197,7 +185,6 @@
         </div>
         {% endif %}
 
-        {# Rodapé #}
         <div class="ec-card__foot">
           📷 {{ fotos | length }} foto{{ 's' if fotos|length != 1 else '' }}
           {% if videos %}&nbsp;·&nbsp; 🎬 {{ videos | length }} vídeo{{ 's' if videos|length != 1 else '' }}{% endif %}
@@ -207,7 +194,6 @@
       {% endfor %}
     </div>
 
-    {# Paginação #}
     {% if posts.pages > 1 %}
     <div class="ec-pagination">
       {% if posts.has_prev %}
@@ -231,102 +217,324 @@
         <h2>Novidades chegando em breve!</h2>
         <p>Nossa equipe está preparando os bastidores das operações, fotos do campo e muito mais. Volte em breve!</p>
 
-        <div class="ec-construcao__svg">
-          <svg viewBox="0 0 340 260" xmlns="http://www.w3.org/2000/svg" aria-label="Piloto fazendo manutenção no avião">
-            <!-- Sombra chão -->
-            <ellipse cx="170" cy="245" rx="130" ry="10" fill="rgba(0,0,0,.18)"/>
+        <!-- SVG: Personagem realista estilo Pixar + avião agrícola detalhado -->
+        <div class="ec-construcao__scene">
+          <svg viewBox="0 0 480 340" xmlns="http://www.w3.org/2000/svg" aria-label="Mecânico fazendo manutenção em avião agrícola">
+            <defs>
+              <!-- Gradientes para o avião -->
+              <linearGradient id="gAviao" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f5c842"/>
+                <stop offset="100%" stop-color="#d4962a"/>
+              </linearGradient>
+              <linearGradient id="gAsa" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#e8b830"/>
+                <stop offset="100%" stop-color="#b8820a"/>
+              </linearGradient>
+              <linearGradient id="gCabine" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="#aee4f8"/>
+                <stop offset="60%" stop-color="#5bbfe0"/>
+                <stop offset="100%" stop-color="#2a8cb8"/>
+              </linearGradient>
+              <linearGradient id="gMotor" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#444"/>
+                <stop offset="100%" stop-color="#666"/>
+              </linearGradient>
+              <linearGradient id="gPele" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#c8864a"/>
+                <stop offset="100%" stop-color="#a0622a"/>
+              </linearGradient>
+              <linearGradient id="gCamisa" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#e8e0c8"/>
+                <stop offset="100%" stop-color="#cfc8a8"/>
+              </linearGradient>
+              <linearGradient id="gCalca" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#4a5568"/>
+                <stop offset="100%" stop-color="#2d3748"/>
+              </linearGradient>
+              <filter id="sombra" x="-10%" y="-10%" width="120%" height="130%">
+                <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="rgba(0,0,0,.35)"/>
+              </filter>
+              <filter id="sombra2" x="-5%" y="-5%" width="110%" height="120%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(0,0,0,.25)"/>
+              </filter>
+              <radialGradient id="gCabecaRad" cx="40%" cy="35%">
+                <stop offset="0%" stop-color="#d89a58"/>
+                <stop offset="100%" stop-color="#a0622a"/>
+              </radialGradient>
+            </defs>
 
-            <!-- AVIÃO -->
-            <g class="ec-svg-aviao">
-              <path d="M65 118 Q80 90 155 90 Q230 90 245 118 Q230 146 155 146 Q80 146 65 118Z" fill="#e8bc55" stroke="#c49030" stroke-width="1.5"/>
-              <ellipse cx="205" cy="108" rx="22" ry="14" fill="#7dd3fc" stroke="#38bdf8" stroke-width="1.5" opacity=".9"/>
-              <ellipse cx="208" cy="106" rx="9" ry="7" fill="#bae6fd" opacity=".5"/>
-              <path d="M140 100 Q160 60 220 58 Q240 58 240 68 Q200 80 155 104Z" fill="#c49030" stroke="#a07820" stroke-width="1"/>
-              <path d="M140 136 Q160 168 220 170 Q240 170 240 160 Q200 150 155 134Z" fill="#c49030" stroke="#a07820" stroke-width="1"/>
-              <path d="M72 115 L68 80 L90 100 L85 118Z" fill="#b8892a" stroke="#a07820" stroke-width="1"/>
-              <path d="M70 120 L50 108 L68 114Z" fill="#c49030"/>
-              <path d="M70 116 L50 128 L68 122Z" fill="#c49030"/>
-              <g class="ec-svg-prop">
-                <ellipse cx="245" cy="118" rx="4" ry="4" fill="#555"/>
-                <rect x="241" y="106" width="8" height="24" rx="3" fill="#3a3a3a" transform="rotate(0 245 118)"/>
-                <rect x="241" y="106" width="8" height="24" rx="3" fill="#3a3a3a" transform="rotate(90 245 118)"/>
+            <!-- Sombra no chão -->
+            <ellipse cx="240" cy="332" rx="195" ry="10" fill="rgba(0,0,0,.20)"/>
+
+            <!-- ═══════════ AVIÃO AGRÍCOLA ═══════════ -->
+            <g class="ec-aviao" filter="url(#sombra)">
+
+              <!-- Fuselagem principal — forma aerodinâmica -->
+              <path d="M80 124 C80 94 110 80 200 78 C290 76 340 88 360 108
+                       C375 122 370 138 355 148 C335 160 290 166 200 166
+                       C110 166 80 154 80 124Z"
+                    fill="url(#gAviao)" stroke="#b8820a" stroke-width="1.5"/>
+
+              <!-- Linha de pintura lateral -->
+              <path d="M85 124 C90 108 120 98 200 96 C280 94 330 104 352 116"
+                    fill="none" stroke="rgba(255,255,255,.35)" stroke-width="2.5"/>
+              <path d="M85 130 C90 144 120 152 200 154 C280 156 330 148 352 136"
+                    fill="none" stroke="rgba(255,255,255,.20)" stroke-width="1.5"/>
+
+              <!-- Texto CR na fuselagem -->
+              <text x="160" y="130" font-family="Arial Black,Arial" font-weight="900"
+                    font-size="16" fill="rgba(255,255,255,.90)" letter-spacing="2">COMBATE RASANTE</text>
+              <text x="175" y="148" font-family="Arial Black,Arial" font-weight="900"
+                    font-size="11" fill="rgba(255,255,255,.60)" letter-spacing="1">Aviação Agrícola</text>
+
+              <!-- Cabine / cúpula de vidro -->
+              <ellipse cx="270" cy="104" rx="38" ry="26" fill="url(#gCabine)"
+                       stroke="#1a6a9a" stroke-width="1.5" opacity=".92"/>
+              <!-- Reflexo na cabine -->
+              <ellipse cx="258" cy="96" rx="16" ry="9" fill="rgba(255,255,255,.28)"
+                       transform="rotate(-15 258 96)"/>
+
+              <!-- Asa superior -->
+              <path d="M180 88 C200 50 270 34 340 30 C368 28 375 36 372 48
+                       C340 58 270 72 210 92Z"
+                    fill="url(#gAsa)" stroke="#a07010" stroke-width="1.5"/>
+              <!-- Detalhe borda asa -->
+              <path d="M185 86 C208 52 272 38 338 34" fill="none"
+                    stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
+
+              <!-- Asa inferior -->
+              <path d="M180 158 C200 192 270 208 340 212 C368 214 375 206 372 194
+                       C340 184 270 170 210 152Z"
+                    fill="url(#gAsa)" stroke="#a07010" stroke-width="1.5"/>
+
+              <!-- Cauda vertical -->
+              <path d="M90 120 L82 68 L115 88 L108 130Z"
+                    fill="#e8b830" stroke="#a07010" stroke-width="1.5"/>
+              <path d="M86 90 L88 72 L105 82" fill="none"
+                    stroke="rgba(255,255,255,.25)" stroke-width="1"/>
+
+              <!-- Cauda horizontal esquerda -->
+              <path d="M88 126 L52 108 L76 120Z" fill="#d4962a" stroke="#a07010" stroke-width="1"/>
+              <path d="M88 122 L52 138 L76 128Z" fill="#d4962a" stroke="#a07010" stroke-width="1"/>
+
+              <!-- Motor / nacela -->
+              <ellipse cx="318" cy="124" rx="22" ry="22" fill="url(#gMotor)"
+                       stroke="#333" stroke-width="2"/>
+              <ellipse cx="318" cy="124" rx="14" ry="14" fill="#555" stroke="#444" stroke-width="1"/>
+              <ellipse cx="318" cy="124" rx="6"  ry="6"  fill="#3a3a3a"/>
+
+              <!-- Hélice (animada) -->
+              <g class="ec-prop">
+                <!-- Cubo -->
+                <circle cx="318" cy="124" r="7" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
+                <!-- Pá 1 -->
+                <path d="M314 124 L312 76 Q318 70 322 76 L318 124Z"
+                      fill="#222" stroke="#444" stroke-width="1" opacity=".9"/>
+                <!-- Pá 2 -->
+                <path d="M314 124 L312 172 Q318 178 322 172 L318 124Z"
+                      fill="#222" stroke="#444" stroke-width="1" opacity=".9"/>
+                <!-- Pá 3 -->
+                <path d="M318 120 L366 118 Q372 124 366 130 L318 128Z"
+                      fill="#222" stroke="#444" stroke-width="1" opacity=".9"/>
+                <!-- Pá 4 -->
+                <path d="M318 120 L270 118 Q264 124 270 130 L318 128Z"
+                      fill="#222" stroke="#444" stroke-width="1" opacity=".9"/>
               </g>
-              <line x1="150" y1="146" x2="148" y2="168" stroke="#888" stroke-width="3" stroke-linecap="round"/>
-              <ellipse cx="148" cy="170" rx="10" ry="5" fill="#555"/>
-              <line x1="175" y1="146" x2="176" y2="168" stroke="#888" stroke-width="3" stroke-linecap="round"/>
-              <ellipse cx="176" cy="170" rx="10" ry="5" fill="#555"/>
-              <text x="115" y="122" font-family="Arial" font-weight="900" font-size="11" fill="rgba(255,255,255,.85)" letter-spacing="1">CR</text>
+
+              <!-- Trem de pouso -->
+              <line x1="210" y1="166" x2="206" y2="208" stroke="#888" stroke-width="4" stroke-linecap="round"/>
+              <path d="M190 208 L225 208" stroke="#777" stroke-width="5" stroke-linecap="round"/>
+              <ellipse cx="207" cy="211" rx="16" ry="7" fill="#444" stroke="#333" stroke-width="1"/>
+
+              <line x1="245" y1="166" x2="248" y2="208" stroke="#888" stroke-width="4" stroke-linecap="round"/>
+              <path d="M232 208 L265 208" stroke="#777" stroke-width="5" stroke-linecap="round"/>
+              <ellipse cx="248" cy="211" rx="16" ry="7" fill="#444" stroke="#333" stroke-width="1"/>
+
+              <!-- Bicos/bocal de pulverização sob a asa -->
+              <line x1="220" y1="168" x2="220" y2="180" stroke="#666" stroke-width="2"/>
+              <line x1="235" y1="170" x2="235" y2="182" stroke="#666" stroke-width="2"/>
+              <line x1="250" y1="170" x2="250" y2="182" stroke="#666" stroke-width="2"/>
+              <line x1="265" y1="168" x2="265" y2="180" stroke="#666" stroke-width="2"/>
+
+            </g>{# /aviao #}
+
+            <!-- ═══════════ ESCADA DE MANUTENÇÃO ═══════════ -->
+            <g filter="url(#sombra2)">
+              <!-- Pernas da escada -->
+              <line x1="105" y1="220" x2="100" y2="305" stroke="#7a5c2a" stroke-width="6" stroke-linecap="round"/>
+              <line x1="130" y1="220" x2="135" y2="305" stroke="#7a5c2a" stroke-width="6" stroke-linecap="round"/>
+              <!-- Degraus -->
+              <line x1="101" y1="240" x2="134" y2="240" stroke="#6a4c1e" stroke-width="4" stroke-linecap="round"/>
+              <line x1="101" y1="258" x2="134" y2="258" stroke="#6a4c1e" stroke-width="4" stroke-linecap="round"/>
+              <line x1="100" y1="276" x2="135" y2="276" stroke="#6a4c1e" stroke-width="4" stroke-linecap="round"/>
+              <line x1="100" y1="294" x2="135" y2="294" stroke="#6a4c1e" stroke-width="4" stroke-linecap="round"/>
+              <!-- Plataforma topo -->
+              <rect x="93" y="212" width="52" height="10" rx="4" fill="#9a7a3a" stroke="#7a5c1a" stroke-width="1.5"/>
             </g>
 
-            <!-- ESCADA -->
-            <rect x="82" y="168" width="8" height="60" rx="3" fill="#8b5e3c"/>
-            <rect x="102" y="168" width="8" height="60" rx="3" fill="#8b5e3c"/>
-            <rect x="80" y="185" width="32" height="5" rx="2" fill="#6b4423"/>
-            <rect x="80" y="200" width="32" height="5" rx="2" fill="#6b4423"/>
-            <rect x="80" y="215" width="32" height="5" rx="2" fill="#6b4423"/>
-            <rect x="74" y="163" width="48" height="8" rx="3" fill="#a0714a"/>
+            <!-- ═══════════ PERSONAGEM: MECÂNICO CARECA MORENO MEIA-IDADE ═══════════ -->
+            <g filter="url(#sombra2)">
 
-            <!-- PILOTO -->
-            <!-- Corpo macacão laranja -->
-            <rect x="78" y="140" width="36" height="28" rx="8" fill="#e07b20"/>
-            <rect x="88" y="143" width="12" height="4" rx="2" fill="rgba(0,0,0,.2)"/>
-            <rect x="80" y="150" width="10" height="8" rx="2" fill="rgba(0,0,0,.15)" stroke="rgba(0,0,0,.2)" stroke-width=".5"/>
-            <rect x="78" y="161" width="36" height="6" rx="2" fill="#7a4e1a"/>
-            <!-- Braço esquerdo levantado -->
-            <path d="M78 148 Q60 138 58 125" stroke="#c06818" stroke-width="10" stroke-linecap="round" fill="none"/>
-            <circle cx="57" cy="123" r="6" fill="#8B5E3C"/>
-            <!-- Chave de fenda animada -->
-            <g class="ec-svg-wrench">
-              <rect x="206" y="160" width="18" height="5" rx="2" fill="#aaa"/>
-              <circle cx="215" cy="183" r="8" fill="none" stroke="#888" stroke-width="4"/>
-              <circle cx="215" cy="183" r="3" fill="#777"/>
+              <!-- Pernas / calça -->
+              <path d="M148 255 L148 305 Q148 314 158 314 Q168 314 168 305 L168 255Z"
+                    fill="url(#gCalca)" stroke="#1e2535" stroke-width="1"/>
+              <path d="M172 255 L172 305 Q172 314 182 314 Q192 314 192 305 L192 255Z"
+                    fill="url(#gCalca)" stroke="#1e2535" stroke-width="1"/>
+
+              <!-- Botas -->
+              <path d="M148 305 Q148 318 160 320 Q172 322 172 310 L168 305Z"
+                    fill="#2a2a2a" stroke="#111" stroke-width="1"/>
+              <path d="M172 305 Q172 318 184 320 Q196 322 196 310 L192 305Z"
+                    fill="#2a2a2a" stroke="#111" stroke-width="1"/>
+
+              <!-- Cinto com ferramentas -->
+              <rect x="144" y="252" width="52" height="8" rx="3" fill="#8B6914" stroke="#6a4a0a" stroke-width="1"/>
+              <rect x="152" y="250" width="12" height="12" rx="2" fill="#a07820" stroke="#8a5c0a" stroke-width="1"/>
+              <rect x="170" y="251" width="8"  height="10" rx="2" fill="#888" stroke="#666" stroke-width="1"/>
+              <rect x="181" y="251" width="8"  height="10" rx="2" fill="#888" stroke="#666" stroke-width="1"/>
+
+              <!-- Torso / camisa (com respiração animada) -->
+              <g class="ec-torso">
+                <path d="M140 175 Q138 220 140 255 L200 255 Q202 220 200 175
+                         Q195 168 170 165 Q145 168 140 175Z"
+                      fill="url(#gCamisa)" stroke="#bdb098" stroke-width="1"/>
+                <!-- Bolso no peito -->
+                <rect x="145" y="188" width="18" height="14" rx="3"
+                      fill="rgba(0,0,0,.10)" stroke="#bdb098" stroke-width="1"/>
+                <!-- Bordado / logo na camisa -->
+                <text x="149" y="224" font-family="Arial" font-weight="900" font-size="7"
+                      fill="rgba(0,80,20,.60)">COMBATE</text>
+                <text x="151" y="232" font-family="Arial" font-weight="900" font-size="7"
+                      fill="rgba(0,80,20,.60)">RASANTE</text>
+              </g>
+
+              <!-- Braço direito (estendido para o motor) -->
+              <path d="M200 190 Q230 178 270 162"
+                    stroke="url(#gPele)" stroke-width="14" stroke-linecap="round" fill="none"/>
+              <!-- Manga camisa braço D -->
+              <path d="M200 188 Q220 178 248 168"
+                    stroke="#e0d8b8" stroke-width="9" stroke-linecap="round" fill="none"/>
+              <!-- Luva direita -->
+              <ellipse cx="272" cy="161" rx="11" ry="9" fill="#7a5a20" stroke="#5a3a08" stroke-width="1.5"/>
+              <!-- Chave de fenda na mão -->
+              <g class="ec-tool">
+                <rect x="278" y="152" width="5" height="30" rx="2" fill="#bbb" stroke="#999" stroke-width="1"/>
+                <ellipse cx="280" cy="148" rx="9" ry="7" fill="none" stroke="#888" stroke-width="5"/>
+                <ellipse cx="280" cy="148" rx="4" ry="3" fill="#666"/>
+              </g>
+
+              <!-- Braço esquerdo (levantado, apoiado na escada) -->
+              <path d="M140 190 Q110 175 95 155"
+                    stroke="url(#gPele)" stroke-width="14" stroke-linecap="round" fill="none"/>
+              <!-- Manga camisa braço E -->
+              <path d="M140 188 Q115 175 100 158"
+                    stroke="#e0d8b8" stroke-width="9" stroke-linecap="round" fill="none"/>
+              <!-- Luva esquerda -->
+              <ellipse cx="93" cy="152" rx="11" ry="9" fill="#7a5a20" stroke="#5a3a08" stroke-width="1.5"/>
+
+              <!-- Pescoço -->
+              <rect x="161" y="152" width="18" height="18" rx="6" fill="url(#gPele)"/>
+
+              <!-- ── CABEÇA REALISTA ESTILO PIXAR ── -->
+              <!-- Crânio careca moreno -->
+              <ellipse cx="170" cy="136" rx="26" ry="24" fill="url(#gCabecaRad)"
+                       filter="url(#sombra2)"/>
+              <!-- Brilho careca (reflexo de luz) -->
+              <ellipse cx="160" cy="122" rx="10" ry="6" fill="rgba(255,255,255,.22)"
+                       transform="rotate(-25 160 122)"/>
+              <ellipse cx="155" cy="118" rx="5"  ry="3"  fill="rgba(255,255,255,.35)"
+                       transform="rotate(-25 155 118)"/>
+
+              <!-- Orelha esquerda -->
+              <path d="M144 136 Q138 130 139 138 Q138 146 144 142Z"
+                    fill="#b87840" stroke="#9a6020" stroke-width="1"/>
+              <!-- Orelha direita -->
+              <path d="M196 136 Q202 130 201 138 Q202 146 196 142Z"
+                    fill="#b87840" stroke="#9a6020" stroke-width="1"/>
+
+              <!-- Sobrancelhas grossas levemente grisalhas -->
+              <path d="M152 126 Q160 121 168 124" stroke="#5a3a10" stroke-width="4"
+                    stroke-linecap="round" fill="none"/>
+              <path d="M172 124 Q180 121 188 126" stroke="#5a3a10" stroke-width="4"
+                    stroke-linecap="round" fill="none"/>
+              <!-- Fios grisalhos nas sobrancelhas -->
+              <path d="M155 125 Q161 122 166 124" stroke="#aaa" stroke-width="1.5"
+                    stroke-linecap="round" fill="none" opacity=".7"/>
+              <path d="M174 124 Q180 122 185 125" stroke="#aaa" stroke-width="1.5"
+                    stroke-linecap="round" fill="none" opacity=".7"/>
+
+              <!-- Óculos de grau (armação preta quadrada) -->
+              <rect x="151" y="128" width="20" height="16" rx="3"
+                    fill="rgba(120,200,240,.25)" stroke="#1a1a1a" stroke-width="2.5"/>
+              <rect x="169" y="128" width="20" height="16" rx="3"
+                    fill="rgba(120,200,240,.25)" stroke="#1a1a1a" stroke-width="2.5"/>
+              <!-- Aro nasal dos óculos -->
+              <line x1="171" y1="136" x2="169" y2="136" stroke="#1a1a1a" stroke-width="2.5"/>
+              <!-- Hastes dos óculos -->
+              <line x1="151" y1="136" x2="144" y2="136" stroke="#1a1a1a" stroke-width="2"/>
+              <line x1="189" y1="136" x2="196" y2="136" stroke="#1a1a1a" stroke-width="2"/>
+              <!-- Reflexo nas lentes -->
+              <line x1="154" y1="130" x2="157" y2="133" stroke="rgba(255,255,255,.6)"
+                    stroke-width="1.5" stroke-linecap="round"/>
+              <line x1="172" y1="130" x2="175" y2="133" stroke="rgba(255,255,255,.6)"
+                    stroke-width="1.5" stroke-linecap="round"/>
+
+              <!-- Olhos (por cima dos óculos, animados) -->
+              <ellipse class="ec-olhoL" cx="161" cy="138" rx="6" ry="6.5" fill="#3a2010"/>
+              <ellipse class="ec-olhoR" cx="179" cy="138" rx="6" ry="6.5" fill="#3a2010"/>
+              <!-- Íris marrom -->
+              <circle cx="162" cy="138" r="3.5" fill="#7a4820"/>
+              <circle cx="180" cy="138" r="3.5" fill="#7a4820"/>
+              <!-- Pupila -->
+              <circle cx="162" cy="138" r="2" fill="#111"/>
+              <circle cx="180" cy="138" r="2" fill="#111"/>
+              <!-- Brilho olho -->
+              <circle cx="164" cy="136" r="1.2" fill="rgba(255,255,255,.85)"/>
+              <circle cx="182" cy="136" r="1.2" fill="rgba(255,255,255,.85)"/>
+
+              <!-- Nariz -->
+              <path d="M168 142 Q170 150 172 142" fill="#b07038" stroke="#9a5a28" stroke-width="1"/>
+              <ellipse cx="166" cy="148" rx="3.5" ry="2.5" fill="#c08040"/>
+              <ellipse cx="174" cy="148" rx="3.5" ry="2.5" fill="#c08040"/>
+
+              <!-- Sorriso satisfeito (meia-idade com bigode) -->
+              <path d="M157 154 Q170 162 183 154" fill="none" stroke="#7a4818" stroke-width="2.5"
+                    stroke-linecap="round"/>
+              <!-- Bigode grisalho -->
+              <path d="M158 151 Q165 155 170 152 Q175 155 182 151"
+                    fill="#9a8878" stroke="none"/>
+              <path d="M159 151 Q165 154 170 151 Q175 154 181 151"
+                    fill="none" stroke="#8a7868" stroke-width="2"/>
+
+              <!-- Linhas de expressão meia-idade -->
+              <path d="M145 132 Q143 138 145 144" stroke="rgba(150,80,30,.25)" stroke-width="1.5" fill="none"/>
+              <path d="M195 132 Q197 138 195 144" stroke="rgba(150,80,30,.25)" stroke-width="1.5" fill="none"/>
+              <!-- Pés de galinha nos olhos -->
+              <path d="M148 133 Q145 130 148 127" stroke="rgba(150,80,30,.20)" stroke-width="1" fill="none"/>
+              <path d="M192 133 Q195 130 192 127" stroke="rgba(150,80,30,.20)" stroke-width="1" fill="none"/>
+
+            </g>{# /personagem #}
+
+            <!-- ═══════════ CAIXA DE FERRAMENTAS ═══════════ -->
+            <g filter="url(#sombra2)">
+              <rect x="210" y="286" width="55" height="32" rx="5" fill="#c49030"
+                    stroke="#9a6a10" stroke-width="2"/>
+              <rect x="213" y="278" width="49" height="11" rx="4" fill="#b88020"
+                    stroke="#9a6a10" stroke-width="1.5"/>
+              <rect x="226" y="274" width="23" height="8" rx="3" fill="#888" stroke="#666" stroke-width="1"/>
+              <!-- Ferramentas dentro -->
+              <rect x="216" y="294" width="4" height="18" rx="2" fill="#777"/>
+              <rect x="223" y="292" width="4" height="20" rx="2" fill="#888"/>
+              <rect x="230" y="294" width="4" height="18" rx="2" fill="#777"/>
+              <rect x="237" y="290" width="4" height="22" rx="2" fill="#999"/>
+              <rect x="244" y="294" width="4" height="18" rx="2" fill="#777"/>
+              <rect x="251" y="293" width="4" height="19" rx="2" fill="#888"/>
             </g>
-            <!-- Braço direito estendido -->
-            <path d="M114 150 Q130 143 140 138" stroke="#c06818" stroke-width="10" stroke-linecap="round" fill="none"/>
-            <circle cx="141" cy="137" r="6" fill="#8B5E3C"/>
-            <!-- Pernas e botas -->
-            <rect x="82" y="165" width="13" height="18" rx="5" fill="#d06010"/>
-            <rect x="97" y="165" width="13" height="18" rx="5" fill="#d06010"/>
-            <rect x="80" y="178" width="16" height="8" rx="3" fill="#333"/>
-            <rect x="95" y="178" width="16" height="8" rx="3" fill="#333"/>
-            <!-- Pescoço -->
-            <rect x="90" y="126" width="12" height="16" rx="4" fill="#8B5E3C"/>
-            <!-- Cabeça careca morena -->
-            <ellipse cx="96" cy="116" rx="17" ry="15" fill="#8B5E3C"/>
-            <ellipse cx="91" cy="107" rx="7" ry="4" fill="rgba(255,255,255,.12)" transform="rotate(-20 91 107)"/>
-            <ellipse cx="79" cy="118" rx="4" ry="5" fill="#7a5030"/>
-            <ellipse cx="113" cy="118" rx="4" ry="5" fill="#7a5030"/>
-            <!-- Sobrancelhas -->
-            <path d="M83 110 Q89 107 95 110" stroke="#5a4020" stroke-width="3" stroke-linecap="round" fill="none"/>
-            <path d="M97 110 Q103 107 109 110" stroke="#5a4020" stroke-width="3" stroke-linecap="round" fill="none"/>
-            <!-- Olhos com piscar -->
-            <ellipse class="ec-svg-olho-l" cx="89" cy="116" rx="4.5" ry="5" fill="#1a0a00"/>
-            <ellipse class="ec-svg-olho-r" cx="103" cy="116" rx="4.5" ry="5" fill="#1a0a00"/>
-            <circle cx="91" cy="114" r="1.5" fill="rgba(255,255,255,.7)"/>
-            <circle cx="105" cy="114" r="1.5" fill="rgba(255,255,255,.7)"/>
-            <!-- Bigode -->
-            <path d="M88 124 Q96 128 104 124" stroke="#9a8070" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-            <path d="M90 121 Q96 123 102 121" stroke="#9a8070" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-            <!-- Rugas meia-idade -->
-            <path d="M82 114 Q80 118 82 122" stroke="rgba(100,60,20,.35)" stroke-width="1" fill="none"/>
-            <path d="M110 114 Q112 118 110 122" stroke="rgba(100,60,20,.35)" stroke-width="1" fill="none"/>
 
-            <!-- CAIXA DE FERRAMENTAS -->
-            <rect x="120" y="218" width="36" height="22" rx="4" fill="#c49030" stroke="#a07820" stroke-width="1.5"/>
-            <rect x="122" y="212" width="32" height="8" rx="3" fill="#b8892a" stroke="#a07820" stroke-width="1"/>
-            <rect x="133" y="210" width="10" height="5" rx="2" fill="#888"/>
-            <line x1="127" y1="224" x2="127" y2="234" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="134" y1="224" x2="134" y2="234" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="141" y1="224" x2="141" y2="234" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="148" y1="224" x2="148" y2="234" stroke="#888" stroke-width="2.5" stroke-linecap="round"/>
-
-            <!-- Gotinhas de suor -->
-            <ellipse cx="114" cy="104" rx="2" ry="3" fill="#7ec8e3" opacity=".7"/>
-            <ellipse cx="118" cy="100" rx="1.5" ry="2.5" fill="#7ec8e3" opacity=".5"/>
           </svg>
         </div>
 
-        <p style="margin-top:24px;font-size:13px;color:var(--color-text-muted,rgba(255,255,255,.45));">
+        <p style="margin-top:28px;font-size:13px;color:var(--color-text-muted,rgba(255,255,255,.45));font-style:italic;">
           "Tudo nos conformes em breve — assim como nossos aviões!"
         </p>
 
@@ -338,7 +546,6 @@
   </div>
 </section>
 
-{# Lightbox #}
 <div class="ec-lightbox" id="ecLightbox">
   <button class="ec-lightbox__close" id="ecLbClose">✕</button>
   <button class="ec-lightbox__nav ec-lightbox__prev" id="ecLbPrev">‹</button>
@@ -352,52 +559,34 @@
 (function(){
   var postFotos = {};
   document.querySelectorAll(".js-lb").forEach(function(el){
-    var pid = el.dataset.post;
-    var src = el.dataset.src;
-    if (!postFotos[pid]) postFotos[pid] = [];
+    var pid=el.dataset.post, src=el.dataset.src;
+    if(!postFotos[pid]) postFotos[pid]=[];
     postFotos[pid].push(src);
   });
-
-  var lb     = document.getElementById("ecLightbox");
-  var lbImg  = document.getElementById("ecLbImg");
-  var lbPrev = document.getElementById("ecLbPrev");
-  var lbNext = document.getElementById("ecLbNext");
-  var curPost, curIdx;
-
-  if (!lb) return;
-
-  function openLb(pid, idx){
-    curPost = pid; curIdx = idx;
-    lbImg.src = postFotos[pid][idx];
-    lb.classList.add("on");
-    updateNav();
-  }
-  function closeLb(){ lb.classList.remove("on"); lbImg.src=""; }
+  var lb=document.getElementById("ecLightbox"),lbImg=document.getElementById("ecLbImg"),
+      lbPrev=document.getElementById("ecLbPrev"),lbNext=document.getElementById("ecLbNext"),
+      curPost,curIdx;
+  if(!lb) return;
+  function openLb(pid,idx){ curPost=pid;curIdx=idx;lbImg.src=postFotos[pid][idx];lb.classList.add("on");updateNav(); }
+  function closeLb(){ lb.classList.remove("on");lbImg.src=""; }
   function updateNav(){
-    var arr = postFotos[curPost];
-    lbPrev.style.display = curIdx > 0 ? "" : "none";
-    lbNext.style.display = curIdx < arr.length - 1 ? "" : "none";
+    var arr=postFotos[curPost];
+    lbPrev.style.display=curIdx>0?"":"none";
+    lbNext.style.display=curIdx<arr.length-1?"":"none";
   }
-  function navigate(dir){
-    curIdx += dir;
-    lbImg.src = postFotos[curPost][curIdx];
-    updateNav();
-  }
-
+  function navigate(d){ curIdx+=d;lbImg.src=postFotos[curPost][curIdx];updateNav(); }
   document.querySelectorAll(".js-lb").forEach(function(el){
-    el.addEventListener("click", function(){
-      openLb(el.dataset.post, parseInt(el.dataset.idx));
-    });
+    el.addEventListener("click",function(){ openLb(el.dataset.post,parseInt(el.dataset.idx)); });
   });
-  document.getElementById("ecLbClose").addEventListener("click", closeLb);
-  lb.addEventListener("click", function(e){ if(e.target===lb) closeLb(); });
-  lbPrev.addEventListener("click", function(e){ e.stopPropagation(); navigate(-1); });
-  lbNext.addEventListener("click", function(e){ e.stopPropagation(); navigate(1); });
-  document.addEventListener("keydown", function(e){
-    if (!lb.classList.contains("on")) return;
-    if (e.key==="Escape") closeLb();
-    if (e.key==="ArrowLeft")  navigate(-1);
-    if (e.key==="ArrowRight") navigate(1);
+  document.getElementById("ecLbClose").addEventListener("click",closeLb);
+  lb.addEventListener("click",function(e){ if(e.target===lb) closeLb(); });
+  lbPrev.addEventListener("click",function(e){ e.stopPropagation();navigate(-1); });
+  lbNext.addEventListener("click",function(e){ e.stopPropagation();navigate(1); });
+  document.addEventListener("keydown",function(e){
+    if(!lb.classList.contains("on")) return;
+    if(e.key==="Escape") closeLb();
+    if(e.key==="ArrowLeft") navigate(-1);
+    if(e.key==="ArrowRight") navigate(1);
   });
 })();
 </script>
