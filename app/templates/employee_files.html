@@ -4,20 +4,6 @@
 {% block content %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/employee_portal.css') }}">
 
-<style>
-.ep-folder-preview {
-  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.15);
-  border-radius:10px; padding:10px 12px; font-size:12px;
-  color:rgba(255,255,255,.65); max-height:130px; overflow-y:auto; display:none;
-  margin-top:6px; line-height:1.7;
-}
-.ep-folder-preview.show { display:block; }
-.ep-progress { display:none; margin-top:8px; }
-.ep-progress.show { display:block; }
-.ep-progress-bar { height:6px; border-radius:999px; background:rgba(255,255,255,.12); overflow:hidden; margin-top:4px; }
-.ep-progress-fill { height:100%; background:#22c55e; border-radius:999px; width:0%; transition:width .3s; }
-</style>
-
 <div class="sp-page">
   <div class="sp-wrap">
     <!-- Sidebar -->
@@ -38,6 +24,7 @@
 
       <div class="sp-sidebar-footer">
         <div class="sp-user">
+          {# Avatar com foto ou inicial — clique abre o input de foto #}
           <label for="fotoInput" title="Clique para trocar sua foto"
                  style="cursor:pointer;position:relative;flex-shrink:0;">
             {% if employee.foto_url %}
@@ -113,6 +100,7 @@
           <h2>Arquivos</h2>
           <div class="sp-muted">{{ items|length }} itens</div>
         </div>
+
         <div class="sp-sort">
           <label class="sp-muted">Ordenar:</label>
           <select id="spSort">
@@ -130,7 +118,7 @@
           <div class="sp-col-name" role="columnheader">Nome</div>
           <div class="sp-col-type" role="columnheader">Tipo</div>
           <div class="sp-col-size" role="columnheader">Tamanho</div>
-          <div class="sp-col-mod"  role="columnheader">Modificado</div>
+          <div class="sp-col-mod" role="columnheader">Modificado</div>
           <div class="sp-col-actions" role="columnheader">Ações</div>
         </div>
 
@@ -177,7 +165,7 @@
 
             <div class="sp-col-type" role="cell"><span class="sp-pill">{{ it.type }}</span></div>
             <div class="sp-col-size" role="cell"><span class="sp-muted">{{ it.size_human }}</span></div>
-            <div class="sp-col-mod"  role="cell"><span class="sp-muted">{{ it.modified_human }}</span></div>
+            <div class="sp-col-mod" role="cell"><span class="sp-muted">{{ it.modified_human }}</span></div>
 
             <div class="sp-col-actions" role="cell">
               {% if it.is_folder %}
@@ -232,10 +220,12 @@
       </div>
       <button class="sp-icon-btn" type="button" data-modal-close>✕</button>
     </div>
+
     <form method="post" action="{{ url_for('employee.mkdir') }}" class="sp-form">
       <input type="hidden" name="path" value="{{ current_path }}">
       <label class="sp-label">Nome da pasta</label>
       <input class="sp-input" type="text" name="name" placeholder="Ex: Relatórios" required>
+
       <div class="sp-form-actions">
         <button class="sp-btn sp-btn-secondary" type="button" data-modal-close>Cancelar</button>
         <button class="sp-btn sp-btn-primary" type="submit">Criar</button>
@@ -244,7 +234,7 @@
   </div>
 </div>
 
-<!-- Modal: Upload arquivo único -->
+<!-- Modal: Upload -->
 <div class="sp-modal" id="modalUpload" aria-hidden="true">
   <div class="sp-modal-backdrop" data-modal-close></div>
   <div class="sp-modal-card" role="dialog" aria-modal="true" aria-labelledby="modalUploadTitle">
@@ -255,14 +245,19 @@
       </div>
       <button class="sp-icon-btn" type="button" data-modal-close>✕</button>
     </div>
+
     <form method="post" action="{{ url_for('employee.upload') }}" enctype="multipart/form-data" class="sp-form">
       <input type="hidden" name="path" value="{{ current_path }}">
+
       <label class="sp-label">Arquivo</label>
       <input class="sp-input" type="file" name="file" required>
+
       <label class="sp-label">Nome exibido (opcional)</label>
       <input class="sp-input" type="text" name="title" placeholder="Ex: Relatório semanal">
+
       <label class="sp-label">Descrição (opcional)</label>
       <textarea class="sp-textarea" name="description" rows="3" placeholder="Observações..."></textarea>
+
       <div class="sp-form-actions">
         <button class="sp-btn sp-btn-secondary" type="button" data-modal-close>Cancelar</button>
         <button class="sp-btn sp-btn-primary" type="submit">Enviar</button>
@@ -270,6 +265,7 @@
     </form>
   </div>
 </div>
+
 
 <!-- Modal: Upload de PASTA INTEIRA -->
 <div class="sp-modal" id="modalUploadPasta" aria-hidden="true">
@@ -286,24 +282,16 @@
           enctype="multipart/form-data" class="sp-form" id="formUploadPastaEmp">
       <input type="hidden" name="path" value="{{ current_path }}">
       <div id="caminhosContainerEmp"></div>
-
       <label class="sp-label">Selecionar pasta</label>
       <input class="sp-input" type="file" name="arquivos_pasta" id="inputPastaEmp"
              multiple webkitdirectory mozdirectory>
-
-      <div class="ep-folder-preview" id="previewPastaEmp"></div>
-
-      <div class="ep-progress" id="progressPastaEmp">
-        <div class="sp-label" id="progressTextEmp">Enviando...</div>
-        <div class="ep-progress-bar">
-          <div class="ep-progress-fill" id="progressFillEmp"></div>
-        </div>
-      </div>
-
+      <div id="previewPastaEmp" style="display:none;background:rgba(255,255,255,.07);
+           border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:10px 12px;
+           font-size:12px;color:rgba(255,255,255,.65);max-height:130px;overflow-y:auto;
+           margin-top:4px;line-height:1.7;"></div>
       <div style="font-size:11px;color:rgba(255,255,255,.5);line-height:1.6;margin-top:4px;">
         ⚠️ Apenas arquivos permitidos serão enviados. Subpastas são recriadas automaticamente.
       </div>
-
       <div class="sp-form-actions">
         <button class="sp-btn sp-btn-secondary" type="button" data-modal-close>Cancelar</button>
         <button class="sp-btn sp-btn-primary" type="submit">📁 Enviar pasta</button>
@@ -312,7 +300,7 @@
   </div>
 </div>
 
-<!-- Modal: Pré-visualização -->
+<!-- Modal: Pré-visualização de arquivo -->
 <div id="previewModal" style="
   display:none; position:fixed; inset:0; background:rgba(0,0,0,.60);
   z-index:9999; align-items:center; justify-content:center; padding:20px;">
@@ -335,17 +323,20 @@
         Fechar ✕
       </button>
     </div>
-    <div id="previewBody" style="flex:1; background:rgba(0,0,0,.22);"></div>
+
+    <div id="previewBody" style="flex:1; background:rgba(0,0,0,.22);">
+      <!-- conteúdo entra aqui -->
+    </div>
   </div>
 </div>
 
 <script>
 (function () {
-  var modal = document.getElementById("previewModal");
-  var body = document.getElementById("previewBody");
-  var title = document.getElementById("previewTitle");
-  var closeBtn = document.getElementById("closePreview");
-  var openNewTab = document.getElementById("previewOpenNewTab");
+  const modal = document.getElementById("previewModal");
+  const body = document.getElementById("previewBody");
+  const title = document.getElementById("previewTitle");
+  const closeBtn = document.getElementById("closePreview");
+  const openNewTab = document.getElementById("previewOpenNewTab");
 
   function openModal() { modal.style.display = "flex"; }
   function closeModal() {
@@ -356,76 +347,91 @@
   }
 
   closeBtn.addEventListener("click", closeModal);
-  modal.addEventListener("click", function(e){ if(e.target===modal) closeModal(); });
-  document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeModal(); });
+  modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
 
-  function extOf(f){ var p=(f||"").toLowerCase().split("."); return p.length>1?p.pop():""; }
-  function isImage(e){ return ["png","jpg","jpeg","gif","webp","bmp","svg"].includes(e); }
-  function isPdf(e){ return e==="pdf"; }
+  function extOf(filename) {
+    const parts = (filename || "").toLowerCase().split(".");
+    return parts.length > 1 ? parts.pop() : "";
+  }
+  function isImage(ext) { return ["png","jpg","jpeg","gif","webp","bmp","svg"].includes(ext); }
+  function isPdf(ext) { return ext === "pdf"; }
 
-  document.addEventListener("click", function(e){
-    var a = e.target.closest(".file-preview-link");
+  // Delegação: funciona mesmo se a lista atualizar
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest(".file-preview-link");
     if (!a) return;
-    if (e.ctrlKey||e.metaKey||e.shiftKey||e.button===1) return;
+
+    // se o usuário clicou com Ctrl/Command/Mouse middle, deixa abrir em nova aba
+    if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
+
     e.preventDefault();
-    var url = a.getAttribute("href");
-    var displayName = a.dataset.name || a.textContent.trim() || "Arquivo";
-    var filename = a.dataset.filename || displayName;
-    var ext = (a.dataset.ext||"").toLowerCase() || extOf(filename);
+
+    const url = a.getAttribute("href");
+    const displayName = a.dataset.name || a.textContent.trim() || "Arquivo";
+    const filename = a.dataset.filename || displayName;
+    const extHint = (a.dataset.ext || "").toLowerCase();
+    const ext = extHint || extOf(filename);
+
     title.textContent = displayName;
     openNewTab.href = url;
+
     if (isImage(ext)) {
-      body.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"><img src="'+url+'" alt="'+displayName+'" style="max-width:100%;max-height:100%;object-fit:contain;"></div>';
-      openModal(); return;
+      body.innerHTML = `
+        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center;">
+          <img src="${url}" alt="${displayName}" style="max-width:100%; max-height:100%; object-fit:contain;">
+        </div>`;
+      openModal();
+      return;
     }
+
     if (isPdf(ext)) {
-      body.innerHTML = '<iframe src="'+url+'" style="width:100%;height:100%;border:0;"></iframe>';
-      openModal(); return;
+      body.innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:0;"></iframe>`;
+      openModal();
+      return;
     }
-    body.innerHTML = '<div style="padding:16px;color:#fff;line-height:1.4;"><p>Este tipo não tem pré-visualização. Use <strong>Abrir em nova aba</strong>.</p></div>';
+
+    // Outros tipos: tenta abrir em iframe (alguns browsers suportam), senão o usuário tem a opção de nova aba/baixar
+    body.innerHTML = `
+      <div style="padding:16px; color:#fff; line-height:1.4;">
+        <p style="margin:0 0 10px 0;">
+          Este tipo de arquivo pode não ter pré-visualização embutida.
+        </p>
+        <p style="margin:0;">
+          Tente <strong>Abrir em nova aba</strong>. Se não abrir, use o botão <strong>Baixar</strong> na lista.
+        </p>
+      </div>`;
     openModal();
-  });
-})();
-
-/* ── Upload de pasta com preview ── */
-(function(){
-  var input     = document.getElementById('inputPastaEmp');
-  var preview   = document.getElementById('previewPastaEmp');
-  var container = document.getElementById('caminhosContainerEmp');
-  var progress  = document.getElementById('progressPastaEmp');
-  var fill      = document.getElementById('progressFillEmp');
-  var pText     = document.getElementById('progressTextEmp');
-  var form      = document.getElementById('formUploadPastaEmp');
-
-  if (!input) return;
-
-  input.addEventListener('change', function(){
-    var files = Array.from(this.files);
-    if (!files.length) { preview.classList.remove('show'); return; }
-    var lista = files.slice(0,8).map(function(f){ return '📄 ' + (f.webkitRelativePath||f.name); });
-    if (files.length > 8) lista.push('... e mais ' + (files.length-8) + ' arquivo(s)');
-    preview.innerHTML = '<strong style="color:#fff;">'+files.length+' arquivo(s) selecionado(s):</strong><br>'+lista.join('<br>');
-    preview.classList.add('show');
-  });
-
-  form.addEventListener('submit', function(){
-    var files = Array.from(input.files);
-    if (!files.length) return;
-    container.innerHTML = '';
-    files.forEach(function(f){
-      var inp = document.createElement('input');
-      inp.type='hidden'; inp.name='caminhos_relativos';
-      inp.value = f.webkitRelativePath || f.name;
-      container.appendChild(inp);
-    });
-    progress.classList.add('show');
-    fill.style.width='0%';
-    pText.textContent='Enviando '+files.length+' arquivo(s)...';
-    var pct=0;
-    setInterval(function(){ pct=Math.min(pct+2,90); fill.style.width=pct+'%'; }, 200);
   });
 })();
 </script>
 
+<script>
+(function(){
+  var input     = document.getElementById('inputPastaEmp');
+  var preview   = document.getElementById('previewPastaEmp');
+  var container = document.getElementById('caminhosContainerEmp');
+  var form      = document.getElementById('formUploadPastaEmp');
+  if(!input) return;
+  input.addEventListener('change', function(){
+    var files = Array.from(this.files);
+    if(!files.length){ preview.style.display='none'; return; }
+    var lista = files.slice(0,8).map(function(f){ return '📄 '+(f.webkitRelativePath||f.name); });
+    if(files.length>8) lista.push('... e mais '+(files.length-8)+' arquivo(s)');
+    preview.innerHTML = '<strong style="color:#fff;">'+files.length+' arquivo(s):</strong><br>'+lista.join('<br>');
+    preview.style.display = 'block';
+  });
+  form.addEventListener('submit', function(){
+    var files = Array.from(input.files);
+    container.innerHTML = '';
+    files.forEach(function(f){
+      var inp = document.createElement('input');
+      inp.type='hidden'; inp.name='caminhos_relativos';
+      inp.value = f.webkitRelativePath||f.name;
+      container.appendChild(inp);
+    });
+  });
+})();
+</script>
 <script src="{{ url_for('static', filename='js/employee_portal.js') }}"></script>
 {% endblock %}

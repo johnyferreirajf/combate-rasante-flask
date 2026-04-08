@@ -577,7 +577,7 @@ def upload():
 @employee_bp.route("/upload-pasta", methods=["POST"])
 @employee_login_required
 def upload_pasta():
-    """Recebe múltiplos arquivos com caminhos relativos e recria a estrutura de subpastas."""
+    """Recebe pasta inteira e recria estrutura de subpastas."""
     current_employee = get_current_employee()
     if not current_employee or not current_employee.is_admin:
         flash("Apenas administradores do painel podem realizar esta ação.", "error")
@@ -592,18 +592,23 @@ def upload_pasta():
         return redirect(url_for("employee.files", path=relpath))
 
     use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+
     if use_cloud:
         try:
-            import cloudinary, cloudinary.uploader
+            import cloudinary
+            import cloudinary.uploader
             cloudinary.config(
                 cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
                 api_key=current_app.config["CLOUDINARY_API_KEY"],
                 api_secret=current_app.config["CLOUDINARY_API_SECRET"],
                 secure=True,
             )
+            cloud_ok = True
         except Exception as e:
-            flash("Erro Cloudinary: {}".format(e), "error")
+            flash("Erro ao conectar Cloudinary: {}".format(e), "error")
             return redirect(url_for("employee.files", path=relpath))
+    else:
+        cloud_ok = False
 
     enviados = 0
     erros    = 0
@@ -612,7 +617,7 @@ def upload_pasta():
         if not arquivo or not arquivo.filename:
             continue
 
-        caminho_rel = caminhos[i] if i < len(caminhos) else arquivo.filename
+        caminho_rel = (caminhos[i] if i < len(caminhos) else arquivo.filename)
         caminho_rel = caminho_rel.replace("\\", "/").strip("/")
 
         partes       = caminho_rel.rsplit("/", 1)
@@ -623,31 +628,31 @@ def upload_pasta():
         if not _allowed_file(original):
             continue
 
-        # pasta destino: remove o 1º segmento (nome da pasta escolhida, já em relpath)
+        # Pasta destino: relpath + subpastas internas sem o 1o segmento
         if subpasta_rel:
-            segmentos    = subpasta_rel.split("/")
-            sub_sem_raiz = "/".join(segmentos[1:]) if len(segmentos) > 1 else ""
-            cat_path     = "/".join(filter(None, [relpath, sub_sem_raiz]))
+            segs         = subpasta_rel.split("/")
+            sub_sem_raiz = "/".join(segs[1:]) if len(segs) > 1 else ""
+            cat_path     = "/".join(x for x in [relpath, sub_sem_raiz] if x)
         else:
             cat_path = relpath
 
-        cat_path = _clean_relpath(cat_path)
-        ext      = original.rsplit(".", 1)[1].lower() if "." in original else ""
+        cat_path   = _clean_relpath(cat_path)
+        ext        = original.rsplit(".", 1)[1].lower() if "." in original else ""
+        stored_rel = "{}/{}.{}".format(cat_path, uuid.uuid4().hex, ext).strip("/")
 
         cloudinary_url       = None
         cloudinary_public_id = None
         file_size            = None
-        stored_rel           = "{}/{}.{}".format(cat_path, uuid.uuid4().hex, ext).strip("/")
 
-        if use_cloud:
-            try:
+        try:
+            if use_cloud and cloud_ok:
                 mime, _ = mimetypes.guess_type(original)
                 rtype   = "image" if (mime and mime.startswith("image")) else "raw"
                 folder_cloud = "combaterasante/funcionarios/{}".format(cat_path or "raiz")
                 content   = arquivo.stream.read()
                 file_size = len(content)
                 arquivo.stream.seek(0)
-                result = cloudinary.uploader.upload(
+                result               = cloudinary.uploader.upload(
                     arquivo.stream,
                     folder=folder_cloud,
                     resource_type=rtype,
@@ -656,40 +661,36 @@ def upload_pasta():
                 )
                 cloudinary_url       = result["secure_url"]
                 cloudinary_public_id = result["public_id"]
-            except Exception:
-                erros += 1
-                continue
-        else:
-            try:
+            else:
                 abs_folder = _safe_abs_path(cat_path)
                 os.makedirs(abs_folder, exist_ok=True)
-                abs_file = _safe_abs_path(stored_rel)
-                arquivo.save(abs_file)
-            except Exception:
-                erros += 1
-                continue
+                arquivo.save(_safe_abs_path(stored_rel))
 
-        item = EmployeeFile(
-            stored_filename=stored_rel,
-            original_filename=original,
-            title=None,
-            description=None,
-            category=cat_path,
-            uploader_id=current_employee.id,
-            cloudinary_url=cloudinary_url,
-            cloudinary_public_id=cloudinary_public_id,
-            file_size=file_size,
-        )
-        db.session.add(item)
-        enviados += 1
+            item = EmployeeFile(
+                stored_filename=stored_rel,
+                original_filename=original,
+                title=None,
+                description=None,
+                category=cat_path,
+                uploader_id=current_employee.id,
+                cloudinary_url=cloudinary_url,
+                cloudinary_public_id=cloudinary_public_id,
+                file_size=file_size,
+            )
+            db.session.add(item)
+            enviados += 1
 
-    db.session.commit()
-    _log("upload_pasta", "{} arquivo(s) → {}".format(enviados, relpath or "raiz"))
+        except Exception as e:
+            erros += 1
 
     if enviados:
+        db.session.commit()
+        _log("upload_pasta", "{} arquivo(s) → {}".format(enviados, relpath or "raiz"))
         flash("{} arquivo(s) enviado(s) com sucesso!".format(enviados), "success")
     if erros:
-        flash("{} arquivo(s) falharam.".format(erros), "error")
+        flash("{} arquivo(s) falharam no envio.".format(erros), "error")
+    if not enviados and not erros:
+        flash("Nenhum arquivo válido encontrado na pasta.", "error")
 
     return redirect(url_for("employee.files", path=relpath))
 

@@ -593,8 +593,8 @@ def admin_arquivo_upload():
 @login_required
 @admin_required
 def admin_pasta_upload():
-    """Recebe múltiplos arquivos com seus caminhos relativos e recria a estrutura de subpastas."""
-    import cloudinary, cloudinary.uploader
+    """Recebe pasta inteira e recria estrutura de subpastas no Cloudinary."""
+    import cloudinary.uploader
     from flask import current_app
     from app.models.client_file import ClientFile
 
@@ -612,6 +612,7 @@ def admin_pasta_upload():
         flash("Configure o Cloudinary para uploads permanentes.", "error")
         return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
 
+    import cloudinary
     cloudinary.config(
         cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
         api_key=current_app.config["CLOUDINARY_API_KEY"],
@@ -626,34 +627,30 @@ def admin_pasta_upload():
         if not arquivo or not arquivo.filename:
             continue
 
-        # caminho relativo enviado pelo JS (ex: "Safra2025/Janeiro/foto.jpg")
-        caminho_rel = caminhos[i] if i < len(caminhos) else arquivo.filename
+        caminho_rel = (caminhos[i] if i < len(caminhos) else arquivo.filename)
         caminho_rel = caminho_rel.replace("\\", "/").strip("/")
 
-        # separa pasta interna e nome do arquivo
-        partes        = caminho_rel.rsplit("/", 1)
-        subpasta_rel  = partes[0] if len(partes) > 1 else ""
-        nome_arquivo  = partes[-1]
+        partes       = caminho_rel.rsplit("/", 1)
+        subpasta_rel = partes[0] if len(partes) > 1 else ""
+        nome_arquivo = partes[-1]
 
         if not _admin_allowed(nome_arquivo):
             continue
 
-        # pasta final = pasta_atual + subpasta dentro da pasta selecionada
+        # Monta pasta destino: pasta_atual + subpastas internas (sem o 1o segmento = nome da pasta escolhida)
         if subpasta_rel:
-            # Remove o nome da pasta raiz escolhida (primeiro segmento) pois já estamos em pasta_atual
-            segmentos = subpasta_rel.split("/")
-            sub_sem_raiz = "/".join(segmentos[1:]) if len(segmentos) > 1 else ""
-            pasta_destino = "/".join(filter(None, [pasta_atual, sub_sem_raiz]))
+            segs         = subpasta_rel.split("/")
+            sub_sem_raiz = "/".join(segs[1:]) if len(segs) > 1 else ""
+            pasta_dest   = "/".join(x for x in [pasta_atual, sub_sem_raiz] if x)
         else:
-            pasta_destino = pasta_atual
+            pasta_dest = pasta_atual
 
-        pasta_destino = _clean_path(pasta_destino)
-
-        filename  = secure_filename(nome_arquivo)
-        ext       = _ext(filename)
-        rtype     = "image" if ext in {"png","jpg","jpeg","webp","gif"} else "raw"
-        pasta_cloud_key = pasta_destino.replace("/", "_") if pasta_destino else "raiz"
-        folder    = "combaterasante/cliente_{}/{}".format(cliente_id, pasta_cloud_key)
+        pasta_dest = _clean_path(pasta_dest)
+        filename   = secure_filename(nome_arquivo)
+        ext        = _ext(filename)
+        rtype      = "image" if ext in {"png","jpg","jpeg","webp","gif"} else "raw"
+        chave      = pasta_dest.replace("/", "_") if pasta_dest else "raiz"
+        folder     = "combaterasante/cliente_{}/{}".format(cliente_id, chave)
 
         try:
             content   = arquivo.stream.read()
@@ -670,7 +667,7 @@ def admin_pasta_upload():
                 user_id=cliente_id,
                 original_filename=filename,
                 title=filename,
-                folder_path=pasta_destino,
+                folder_path=pasta_dest,
                 url=result["secure_url"],
                 public_id=result["public_id"],
                 source="cloudinary",
@@ -679,12 +676,11 @@ def admin_pasta_upload():
             )
             db.session.add(cf)
             enviados += 1
-        except Exception:
+        except Exception as e:
             erros += 1
 
-    db.session.commit()
-
     if enviados:
+        db.session.commit()
         flash("{} arquivo(s) enviado(s) com sucesso!".format(enviados), "success")
     if erros:
         flash("{} arquivo(s) falharam no envio.".format(erros), "error")

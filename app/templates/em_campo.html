@@ -223,7 +223,6 @@
     {% endif %}
 
     {% else %}
-    {# ════════ PÁGINA EM CONSTRUÇÃO ════════ #}
     <div style="display:flex;flex-direction:column;align-items:center;
                 padding:40px 24px 80px;text-align:center;
                 width:min(700px,calc(100% - 24px));margin-inline:auto;">
@@ -232,14 +231,12 @@
                   border-radius:28px;backdrop-filter:blur(16px);
                   box-shadow:0 8px 56px rgba(0,0,0,.40);
                   padding:44px 40px 48px;width:100%;">
-
         <div style="display:inline-block;background:rgba(234,179,8,.18);
                     border:1px solid rgba(234,179,8,.40);color:#fde68a;
                     font-size:11px;font-weight:900;letter-spacing:.10em;
                     padding:5px 16px;border-radius:999px;margin-bottom:22px;">
           🚧 EM CONSTRUÇÃO
         </div>
-
         <h2 style="font-size:clamp(1.5rem,4vw,2.1rem);font-weight:900;
                    color:var(--color-text,#fff);margin-bottom:12px;line-height:1.2;">
           Novidades chegando em breve!
@@ -249,22 +246,16 @@
           Nossa equipe está preparando os bastidores das operações,
           fotos do campo e muito mais. Volte em breve!
         </p>
-
         <img src="{{ url_for('static', filename='img/piloto-manutencao.png') }}"
              alt="Piloto fazendo manutenção no avião agrícola"
-             style="width:min(420px,90%);border-radius:20px;
-                    margin-top:32px;
+             style="width:min(420px,90%);border-radius:20px;margin-top:32px;
                     box-shadow:0 12px 40px rgba(0,0,0,.50);">
-
-        <p style="margin-top:24px;font-size:13px;
-                  color:var(--color-text-muted,rgba(255,255,255,.45));
-                  font-style:italic;">
+        <p style="margin-top:24px;font-size:13px;font-style:italic;
+                  color:var(--color-text-muted,rgba(255,255,255,.45));">
           "Tudo nos conformes em breve — assim como nossos aviões!"
         </p>
-
       </div>
     </div>
-    {# ════════ FIM EM CONSTRUÇÃO ════════ #}
     {% endif %}
 
   </div>
