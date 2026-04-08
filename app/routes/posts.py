@@ -47,11 +47,18 @@ def _upload_cloudinary(file_stream, folder="combaterasante/emcampo"):
 
 @posts_bp.route("/em-campo")
 def em_campo():
-    page  = request.args.get("page", 1, type=int)
-    posts = (Post.query
-             .filter_by(ativo=True)
-             .order_by(Post.created_at.desc())
-             .paginate(page=page, per_page=10, error_out=False))
+    page = request.args.get("page", 1, type=int)
+    try:
+        posts = (Post.query
+                 .filter_by(ativo=True)
+                 .order_by(Post.created_at.desc())
+                 .paginate(page=page, per_page=10, error_out=False))
+        # Garante que posts.items existe (algumas versões retornam None)
+        if posts is None or not hasattr(posts, "items"):
+            posts = None
+    except Exception:
+        posts = None
+
     return render_template("em_campo.html", posts=posts)
 
 
@@ -177,7 +184,6 @@ def admin_emcampo_midia_excluir(mid):
     midia = PostMidia.query.get_or_404(mid)
     post_id = midia.post_id
 
-    # Remover do Cloudinary se for foto
     if midia.tipo == "foto" and midia.public_id:
         try:
             import cloudinary, cloudinary.uploader
@@ -205,7 +211,6 @@ def admin_emcampo_midia_excluir(mid):
 def admin_emcampo_excluir(pid):
     post = Post.query.get_or_404(pid)
 
-    # Remover fotos do Cloudinary
     use_cloud = current_app.config.get("USE_CLOUDINARY", False)
     if use_cloud:
         try:
