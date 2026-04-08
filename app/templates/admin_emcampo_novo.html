@@ -1,0 +1,153 @@
+{% extends "layout.html" %}
+{% block title %}Novo Post — Em Campo{% endblock %}
+
+{% block head_extra %}
+<style>
+.ep-wrap{width:min(720px,calc(100% - 24px));margin-inline:auto;padding-block:16px 40px;}
+.ep-card{background:rgba(3,58,36,.80);border:1px solid rgba(255,255,255,.13);
+         border-radius:20px;backdrop-filter:blur(10px);padding:24px 26px;color:#fff;}
+.ep-title{font-size:17px;font-weight:900;margin-bottom:20px;}
+.ef{display:flex;flex-direction:column;gap:14px;}
+.el{font-size:11px;font-weight:900;color:rgba(255,255,255,.60);display:block;margin-bottom:4px;}
+.ei{width:100%;padding:10px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.10);color:#fff;font-size:13px;font-family:inherit;
+    outline:none;transition:border-color .15s;box-sizing:border-box;}
+.ei::placeholder{color:rgba(255,255,255,.35);}
+.ei:focus{border-color:rgba(34,197,94,.55);}
+textarea.ei{min-height:100px;resize:vertical;}
+.er{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:6px;}
+
+/* Drop zone de fotos */
+.drop-zone{
+  border:2px dashed rgba(255,255,255,.25);border-radius:12px;
+  padding:28px;text-align:center;cursor:pointer;transition:.2s;
+  background:rgba(255,255,255,.05);
+}
+.drop-zone:hover,.drop-zone.over{
+  border-color:rgba(34,197,94,.6);background:rgba(34,197,94,.08);
+}
+.drop-zone input{display:none;}
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+              gap:8px;margin-top:12px;}
+.preview-item{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;}
+.preview-item img{width:100%;height:100%;object-fit:cover;}
+.preview-item button{position:absolute;top:4px;right:4px;
+  background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;
+  width:22px;height:22px;cursor:pointer;font-size:11px;font-weight:900;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ep-wrap">
+  <div style="margin-bottom:14px;">
+    <a href="{{ url_for('posts.admin_emcampo') }}" class="btn btn--ghost">← Voltar</a>
+  </div>
+
+  <div class="ep-card">
+    <div class="ep-title">📸 Novo Post — Em Campo</div>
+
+    <form method="POST" enctype="multipart/form-data" class="ef" id="postForm">
+
+      <div>
+        <label class="el">Título *</label>
+        <input class="ei" type="text" name="titulo" placeholder="Ex: Dia de Campo em Vicentinópolis" required>
+      </div>
+
+      <div>
+        <label class="el">Descrição</label>
+        <textarea class="ei" name="descricao"
+                  placeholder="Conte o que aconteceu, local, equipe envolvida..."></textarea>
+      </div>
+
+      <div>
+        <label class="el">Fotos</label>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('fotosInput').click()">
+          <input type="file" id="fotosInput" name="fotos" multiple
+                 accept="image/jpeg,image/png,image/webp,image/gif">
+          <div style="font-size:2rem;margin-bottom:8px;">🖼️</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.60);">
+            Clique ou arraste as fotos aqui<br>
+            <span style="font-size:11px;">JPG, PNG, WEBP — múltiplas permitidas</span>
+          </div>
+          <div class="preview-grid" id="previewGrid"></div>
+        </div>
+      </div>
+
+      <div>
+        <label class="el">Vídeos do YouTube (uma URL por linha)</label>
+        <textarea class="ei" name="videos" rows="3"
+                  placeholder="https://www.youtube.com/watch?v=...&#10;https://youtu.be/..."></textarea>
+        <div style="font-size:11px;color:rgba(255,255,255,.40);margin-top:4px;">
+          Cole o link do YouTube — o vídeo será embutido no post
+        </div>
+      </div>
+
+      <div class="er">
+        <a href="{{ url_for('posts.admin_emcampo') }}"
+           style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;">
+          Cancelar
+        </a>
+        <button type="submit"
+                style="padding:10px 24px;border-radius:10px;font-size:14px;font-weight:800;
+                       background:rgba(22,163,74,.25);border:1px solid rgba(34,197,94,.55);
+                       color:#22c55e;cursor:pointer;font-family:inherit;">
+          🚀 Publicar post
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var input = document.getElementById("fotosInput");
+var grid  = document.getElementById("previewGrid");
+var drop  = document.getElementById("dropZone");
+var files = [];
+
+input.addEventListener("change", function(){
+  addFiles(Array.from(this.files));
+});
+
+drop.addEventListener("dragover", function(e){
+  e.preventDefault(); drop.classList.add("over");
+});
+drop.addEventListener("dragleave", function(){
+  drop.classList.remove("over");
+});
+drop.addEventListener("drop", function(e){
+  e.preventDefault(); drop.classList.remove("over");
+  addFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/")));
+});
+
+function addFiles(newFiles){
+  newFiles.forEach(function(f){ files.push(f); });
+  renderPreviews();
+  syncInput();
+}
+
+function removeFile(idx){
+  files.splice(idx,1);
+  renderPreviews();
+  syncInput();
+}
+
+function renderPreviews(){
+  grid.innerHTML = "";
+  files.forEach(function(f, i){
+    var url = URL.createObjectURL(f);
+    var div = document.createElement("div");
+    div.className = "preview-item";
+    div.innerHTML = '<img src="'+url+'" alt=""><button type="button" onclick="removeFile('+i+')">✕</button>';
+    grid.appendChild(div);
+  });
+}
+
+function syncInput(){
+  var dt = new DataTransfer();
+  files.forEach(function(f){ dt.items.add(f); });
+  input.files = dt.files;
+}
+</script>
+{% endblock %}

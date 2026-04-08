@@ -74,6 +74,7 @@
         <a href="{{ url_for('main.servicos') }}"    class="navbar__link">Serviços</a>
         <a href="{{ url_for('main.tecnologia') }}"  class="navbar__link">Tecnologia</a>
         <a href="{{ url_for('main.equipe') }}"      class="navbar__link">Equipe</a>
+        <a href="{{ url_for('posts.em_campo') }}"   class="navbar__link">Em Campo</a>
         <a href="{{ url_for('main.contato') }}"     class="navbar__link">Contato</a>
 
         {% if session.get('employee_id') %}

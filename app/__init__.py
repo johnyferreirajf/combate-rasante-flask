@@ -37,7 +37,7 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-        # ── Migration segura: adicionar colunas novas sem apagar dados ──
+        # ── Migration segura: adicionar colunas/tabelas novas sem apagar dados ──
         try:
             from sqlalchemy import text as _text
             with db.engine.connect() as _conn:
@@ -46,6 +46,21 @@ def create_app():
                     "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS cloudinary_url TEXT",
                     "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS cloudinary_public_id VARCHAR(255)",
                     "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS file_size INTEGER",
+                    """CREATE TABLE IF NOT EXISTS posts (
+                        id SERIAL PRIMARY KEY,
+                        titulo VARCHAR(200) NOT NULL,
+                        descricao TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        ativo BOOLEAN DEFAULT TRUE
+                    )""",
+                    """CREATE TABLE IF NOT EXISTS post_midias (
+                        id SERIAL PRIMARY KEY,
+                        post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+                        tipo VARCHAR(10) NOT NULL,
+                        url TEXT NOT NULL,
+                        public_id VARCHAR(255),
+                        ordem INTEGER DEFAULT 0
+                    )""",
                 ]
                 for _sql in _migrations:
                     try:
@@ -121,12 +136,11 @@ def create_app():
         # Admin funcionário padrão
         if not Employee.query.filter_by(username="admin123").first():
             admin_employee = Employee(
-   		 name="Admin",
-   		 username="admin123",
-   		 password_hash=generate_password_hash("123456"),
-  		 is_admin=True,
-		)
-
+                name="Admin",
+                username="admin123",
+                password_hash=generate_password_hash("123456"),
+                is_admin=True,
+            )
             db.session.add(admin_employee)
             db.session.commit()
 
@@ -134,10 +148,12 @@ def create_app():
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
     from app.routes.employee import employee_bp
+    from app.routes.posts import posts_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(employee_bp)
+    app.register_blueprint(posts_bp)
 
     # Context: current_user (cliente)
     from app.utils.security import get_current_user, get_current_employee

@@ -1,0 +1,152 @@
+{% extends "layout.html" %}
+{% block title %}Editar Post — Em Campo{% endblock %}
+
+{% block head_extra %}
+<style>
+.ep-wrap{width:min(720px,calc(100% - 24px));margin-inline:auto;padding-block:16px 40px;}
+.ep-card{background:rgba(3,58,36,.80);border:1px solid rgba(255,255,255,.13);
+         border-radius:20px;backdrop-filter:blur(10px);padding:24px 26px;color:#fff;margin-bottom:14px;}
+.ep-title{font-size:17px;font-weight:900;margin-bottom:20px;}
+.ef{display:flex;flex-direction:column;gap:14px;}
+.el{font-size:11px;font-weight:900;color:rgba(255,255,255,.60);display:block;margin-bottom:4px;}
+.ei{width:100%;padding:10px 13px;border-radius:10px;border:1px solid rgba(255,255,255,.18);
+    background:rgba(255,255,255,.10);color:#fff;font-size:13px;font-family:inherit;
+    outline:none;transition:border-color .15s;box-sizing:border-box;}
+.ei::placeholder{color:rgba(255,255,255,.35);}
+.ei:focus{border-color:rgba(34,197,94,.55);}
+textarea.ei{min-height:100px;resize:vertical;}
+.er{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:6px;}
+.midia-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:12px;}
+.midia-item{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1;background:rgba(0,0,0,.3);}
+.midia-item img{width:100%;height:100%;object-fit:cover;}
+.midia-item .del{
+  position:absolute;top:6px;right:6px;
+  background:rgba(239,68,68,.85);border:none;color:#fff;
+  border-radius:6px;padding:3px 8px;font-size:11px;font-weight:800;cursor:pointer;
+}
+.midia-item.video{display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.1);}
+.drop-zone{border:2px dashed rgba(255,255,255,.25);border-radius:12px;
+  padding:20px;text-align:center;cursor:pointer;transition:.2s;background:rgba(255,255,255,.05);}
+.drop-zone:hover{border-color:rgba(34,197,94,.6);background:rgba(34,197,94,.08);}
+.drop-zone input{display:none;}
+.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-top:10px;}
+.preview-item{position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;}
+.preview-item img{width:100%;height:100%;object-fit:cover;}
+.preview-item button{position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);
+  border:none;color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ep-wrap">
+  <div style="margin-bottom:14px;">
+    <a href="{{ url_for('posts.admin_emcampo') }}" class="btn btn--ghost">← Voltar</a>
+  </div>
+
+  {# Mídias existentes #}
+  {% if post.midias %}
+  <div class="ep-card">
+    <div class="ep-title">📎 Mídias do post</div>
+    <div class="midia-grid">
+      {% for m in post.midias %}
+        <div class="midia-item {{ 'video' if m.tipo == 'video' else '' }}">
+          {% if m.tipo == "foto" %}
+            <img src="{{ m.url }}" alt="foto">
+          {% else %}
+            <span style="font-size:2rem;">🎬</span>
+          {% endif %}
+          <form method="POST"
+                action="{{ url_for('posts.admin_emcampo_midia_excluir', mid=m.id) }}"
+                onsubmit="return confirm('Remover esta mídia?')">
+            <button class="del" type="submit">🗑</button>
+          </form>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {# Formulário de edição #}
+  <div class="ep-card">
+    <div class="ep-title">✏ Editar post</div>
+    <form method="POST" enctype="multipart/form-data" class="ef">
+
+      <div>
+        <label class="el">Título</label>
+        <input class="ei" type="text" name="titulo" value="{{ post.titulo }}" required>
+      </div>
+
+      <div>
+        <label class="el">Descrição</label>
+        <textarea class="ei" name="descricao">{{ post.descricao or '' }}</textarea>
+      </div>
+
+      <div>
+        <label class="el" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <input type="checkbox" name="ativo" value="1"
+                 {% if post.ativo %}checked{% endif %} style="width:auto;">
+          Post visível no site
+        </label>
+      </div>
+
+      <div>
+        <label class="el">Adicionar mais fotos</label>
+        <div class="drop-zone" onclick="document.getElementById('fotosInput').click()">
+          <input type="file" id="fotosInput" name="fotos" multiple
+                 accept="image/jpeg,image/png,image/webp,image/gif">
+          <div style="font-size:13px;color:rgba(255,255,255,.60);">
+            🖼️ Clique ou arraste novas fotos
+          </div>
+          <div class="preview-grid" id="previewGrid"></div>
+        </div>
+      </div>
+
+      <div>
+        <label class="el">Adicionar vídeos do YouTube (uma URL por linha)</label>
+        <textarea class="ei" name="videos" rows="3"
+                  placeholder="https://www.youtube.com/watch?v=..."></textarea>
+      </div>
+
+      <div class="er">
+        <a href="{{ url_for('posts.admin_emcampo') }}"
+           style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;">
+          Cancelar
+        </a>
+        <button type="submit"
+                style="padding:10px 24px;border-radius:10px;font-size:14px;font-weight:800;
+                       background:rgba(22,163,74,.25);border:1px solid rgba(34,197,94,.55);
+                       color:#22c55e;cursor:pointer;font-family:inherit;">
+          💾 Salvar alterações
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var input = document.getElementById("fotosInput");
+var grid  = document.getElementById("previewGrid");
+var files = [];
+input.addEventListener("change", function(){
+  files = Array.from(this.files);
+  renderPreviews(); syncInput();
+});
+function renderPreviews(){
+  grid.innerHTML = "";
+  files.forEach(function(f,i){
+    var url = URL.createObjectURL(f);
+    var div = document.createElement("div"); div.className="preview-item";
+    div.innerHTML='<img src="'+url+'"><button type="button" onclick="removeFile('+i+')">✕</button>';
+    grid.appendChild(div);
+  });
+}
+function removeFile(i){ files.splice(i,1); renderPreviews(); syncInput(); }
+function syncInput(){
+  var dt=new DataTransfer();
+  files.forEach(function(f){dt.items.add(f);}); input.files=dt.files;
+}
+</script>
+{% endblock %}
