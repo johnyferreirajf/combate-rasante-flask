@@ -55,31 +55,19 @@ def em_campo():
     return render_template("em_campo.html", posts=posts)
 
 
-# ─── Admin: listar posts ───────────────────────────────────────
+# ─── Admin: listar posts + criar novo post (formulário inline) ─
 
-@posts_bp.route("/admin/emcampo")
+@posts_bp.route("/admin/emcampo", methods=["GET", "POST"])
 @login_required
 @admin_required
 def admin_emcampo():
-    posts = Post.query.order_by(Post.created_at.desc()).all()
-    return render_template("admin_emcampo.html",
-                           current_user=get_current_user(),
-                           posts=posts)
-
-
-# ─── Admin: criar post ────────────────────────────────────────
-
-@posts_bp.route("/admin/emcampo/novo", methods=["GET", "POST"])
-@login_required
-@admin_required
-def admin_emcampo_novo():
     if request.method == "POST":
         titulo    = (request.form.get("titulo")   or "").strip()
         descricao = (request.form.get("descricao") or "").strip()
 
         if not titulo:
             flash("Informe o título do post.", "error")
-            return redirect(url_for("posts.admin_emcampo_novo"))
+            return redirect(url_for("posts.admin_emcampo"))
 
         post = Post(titulo=titulo, descricao=descricao)
         db.session.add(post)
@@ -120,8 +108,11 @@ def admin_emcampo_novo():
         flash("Post publicado com sucesso!", "success")
         return redirect(url_for("posts.admin_emcampo"))
 
-    return render_template("admin_emcampo_novo.html",
-                           current_user=get_current_user())
+    # GET
+    posts = Post.query.order_by(Post.created_at.desc()).all()
+    return render_template("admin_emcampo.html",
+                           current_user=get_current_user(),
+                           posts=posts)
 
 
 # ─── Admin: editar post ───────────────────────────────────────
