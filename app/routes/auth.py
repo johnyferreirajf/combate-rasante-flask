@@ -594,6 +594,7 @@ def admin_arquivo_upload():
 @admin_required
 def admin_pasta_upload():
     """Recebe pasta inteira e recria estrutura de subpastas no Cloudinary."""
+    import cloudinary
     import cloudinary.uploader
     from flask import current_app
     from app.models.client_file import ClientFile
@@ -612,7 +613,6 @@ def admin_pasta_upload():
         flash("Configure o Cloudinary para uploads permanentes.", "error")
         return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
 
-    import cloudinary
     cloudinary.config(
         cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
         api_key=current_app.config["CLOUDINARY_API_KEY"],
@@ -620,13 +620,15 @@ def admin_pasta_upload():
         secure=True,
     )
 
-    enviados = 0
-    erros    = 0
+    enviados  = 0
+    ignorados = 0
+    erros_msg = []
 
     for i, arquivo in enumerate(arquivos):
         if not arquivo or not arquivo.filename:
             continue
 
+        # Caminho relativo enviado pelo JS
         caminho_rel = (caminhos[i] if i < len(caminhos) else arquivo.filename)
         caminho_rel = caminho_rel.replace("\\", "/").strip("/")
 
@@ -634,10 +636,22 @@ def admin_pasta_upload():
         subpasta_rel = partes[0] if len(partes) > 1 else ""
         nome_arquivo = partes[-1]
 
-        if not _admin_allowed(nome_arquivo):
+        # FIX 1: secure_filename pode esvaziar nomes com acentos.
+        # Usamos o nome original e só sanitizamos caracteres perigosos.
+        nome_seguro = secure_filename(nome_arquivo)
+        if not nome_seguro:
+            # Fallback: remove apenas barras e pontos iniciais
+            nome_seguro = nome_arquivo.replace("/", "_").replace("\\", "_").lstrip(".")
+        if not nome_seguro:
+            ignorados += 1
             continue
 
-        # Monta pasta destino: pasta_atual + subpastas internas (sem o 1o segmento = nome da pasta escolhida)
+        ext = _ext(nome_seguro)
+        if not _admin_allowed(nome_seguro):
+            ignorados += 1
+            continue
+
+        # Pasta destino: pasta_atual + subpastas internas (sem 1o segmento = raiz da pasta escolhida)
         if subpasta_rel:
             segs         = subpasta_rel.split("/")
             sub_sem_raiz = "/".join(segs[1:]) if len(segs) > 1 else ""
@@ -646,9 +660,6 @@ def admin_pasta_upload():
             pasta_dest = pasta_atual
 
         pasta_dest = _clean_path(pasta_dest)
-        filename   = secure_filename(nome_arquivo)
-        ext        = _ext(filename)
-        rtype      = "image" if ext in {"png","jpg","jpeg","webp","gif"} else "raw"
         chave      = pasta_dest.replace("/", "_") if pasta_dest else "raiz"
         folder     = "combaterasante/cliente_{}/{}".format(cliente_id, chave)
 
@@ -656,17 +667,20 @@ def admin_pasta_upload():
             content   = arquivo.stream.read()
             file_size = len(content)
             arquivo.stream.seek(0)
+
+            # FIX 2: resource_type="auto" — Cloudinary detecta PDF, DOCX, XLSX etc. corretamente
             result = cloudinary.uploader.upload(
                 arquivo.stream,
                 folder=folder,
-                resource_type=rtype,
+                resource_type="auto",
                 use_filename=True,
                 unique_filename=True,
+                filename_override=nome_seguro,
             )
             cf = ClientFile(
                 user_id=cliente_id,
-                original_filename=filename,
-                title=filename,
+                original_filename=nome_seguro,
+                title=nome_seguro,
                 folder_path=pasta_dest,
                 url=result["secure_url"],
                 public_id=result["public_id"],
@@ -676,14 +690,18 @@ def admin_pasta_upload():
             )
             db.session.add(cf)
             enviados += 1
+
         except Exception as e:
-            erros += 1
+            # FIX 3: captura e exibe o erro real
+            erros_msg.append("{}: {}".format(nome_seguro, str(e)[:80]))
 
     if enviados:
         db.session.commit()
         flash("{} arquivo(s) enviado(s) com sucesso!".format(enviados), "success")
-    if erros:
-        flash("{} arquivo(s) falharam no envio.".format(erros), "error")
+    if ignorados:
+        flash("{} arquivo(s) ignorado(s) (tipo não permitido).".format(ignorados), "error")
+    if erros_msg:
+        flash("Falhas: " + " | ".join(erros_msg[:3]), "error")
 
     return redirect(url_for("auth.admin_arquivos", cliente_id=cliente_id, path=pasta_atual))
 
