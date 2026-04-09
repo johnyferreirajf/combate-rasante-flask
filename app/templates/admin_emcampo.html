@@ -3,13 +3,14 @@
 
 {% block head_extra %}
 <style>
+/* ── Drop zone de fotos ── */
 .drop-zone {
-  border: 2px dashed rgba(255,255,255,.25); border-radius: 12px;
+  border: 2px dashed rgba(255,255,255,.30); border-radius: 12px;
   padding: 24px; text-align: center; cursor: pointer; transition: .2s;
-  background: rgba(255,255,255,.05);
+  background: rgba(0,0,0,.25);
 }
 .drop-zone:hover, .drop-zone.over {
-  border-color: rgba(34,197,94,.6); background: rgba(34,197,94,.08);
+  border-color: rgba(34,197,94,.7); background: rgba(34,197,94,.10);
 }
 .drop-zone input { display: none; }
 .preview-grid {
@@ -20,20 +21,51 @@
 .preview-item img { width: 100%; height: 100%; object-fit: cover; }
 .preview-item button {
   position: absolute; top: 4px; right: 4px;
-  background: rgba(0,0,0,.65); border: none; color: #fff;
+  background: rgba(0,0,0,.70); border: none; color: #fff;
   border-radius: 50%; width: 22px; height: 22px;
   cursor: pointer; font-size: 11px; font-weight: 900;
 }
-.ec-form-input {
-  width: 100%; padding: 10px 13px; border-radius: 10px;
-  border: 1px solid var(--color-border);
-  background: rgba(255,255,255,.07); color: var(--color-text);
-  font-size: 13px; font-family: inherit; outline: none; box-sizing: border-box;
+
+/* ── Campos do formulário com contraste legível ── */
+.ec-label {
+  font-size: 11px; font-weight: 900; color: rgba(255,255,255,.80);
+  display: block; margin-bottom: 5px; letter-spacing: .05em; text-transform: uppercase;
 }
-.ec-form-input:focus { border-color: rgba(34,197,94,.55); }
-.ec-form-label {
-  font-size: 11px; font-weight: 900; color: var(--color-text-muted);
-  display: block; margin-bottom: 4px; letter-spacing: .04em;
+.ec-input {
+  width: 100%;
+  padding: 10px 13px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.35);
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color .15s;
+  box-sizing: border-box;
+}
+.ec-input::placeholder {
+  color: rgba(255,255,255,.50);
+  font-style: italic;
+}
+.ec-input:focus {
+  border-color: rgba(34,197,94,.70);
+  background: rgba(0,0,0,.45);
+}
+textarea.ec-input { resize: vertical; }
+
+/* ── Card do formulário ── */
+.ec-form-card {
+  background: rgba(0,30,15,.75);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 18px;
+  backdrop-filter: blur(12px);
+  padding: 24px 26px;
+  margin-bottom: var(--space-lg);
+}
+.ec-form-title {
+  font-size: 15px; font-weight: 900; color: #fff;
+  margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
 }
 </style>
 {% endblock %}
@@ -74,65 +106,80 @@
       {% endif %}
     {% endwith %}
 
-    {# ── Formulário de novo post (inline) ── #}
-    <div class="glass-card glass-card--standard" style="margin-bottom:var(--space-lg);padding:24px 26px;">
-      <div style="font-size:16px;font-weight:900;margin-bottom:18px;color:var(--color-text);">
-        + Novo Post
+    {# ── Formulário de novo post ── #}
+    <div class="ec-form-card">
+      <div class="ec-form-title">
+        ✏️ Novo Post
+        <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);margin-left:4px;">
+          — Você pode adicionar fotos, vídeo ou ambos na mesma postagem
+        </span>
       </div>
 
       <form method="POST" enctype="multipart/form-data" id="postForm"
-            style="display:flex;flex-direction:column;gap:14px;">
+            style="display:flex;flex-direction:column;gap:16px;">
 
+        {# Linha 1: Título #}
+        <div>
+          <label class="ec-label">Título *</label>
+          <input type="text" name="titulo" required class="ec-input"
+                 placeholder="Ex: Dia de Campo em Vicentinópolis — 08/04/2026">
+        </div>
+
+        {# Linha 2: Descrição #}
+        <div>
+          <label class="ec-label">Descrição</label>
+          <textarea name="descricao" rows="4" class="ec-input"
+                    placeholder="Ex: Operação realizada na Fazenda Santa Rita, equipe de 3 pilotos, aplicação de defensivo em 450 ha de soja."></textarea>
+        </div>
+
+        {# Linha 3: Fotos + Vídeos lado a lado #}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
 
-          {# Coluna esquerda: título, descrição, vídeos #}
-          <div style="display:flex;flex-direction:column;gap:14px;">
-            <div>
-              <label class="ec-form-label">TÍTULO *</label>
-              <input type="text" name="titulo" required
-                     class="ec-form-input"
-                     placeholder="Ex: Dia de Campo em Vicentinópolis">
-            </div>
-            <div>
-              <label class="ec-form-label">DESCRIÇÃO</label>
-              <textarea name="descricao" rows="5"
-                        class="ec-form-input"
-                        style="resize:vertical;"
-                        placeholder="Conte o que aconteceu, local, equipe envolvida..."></textarea>
-            </div>
-            <div>
-              <label class="ec-form-label">VÍDEOS DO YOUTUBE (uma URL por linha)</label>
-              <textarea name="videos" rows="3"
-                        class="ec-form-input"
-                        style="resize:vertical;"
-                        placeholder="https://www.youtube.com/watch?v=...&#10;https://youtu.be/..."></textarea>
-            </div>
-          </div>
-
-          {# Coluna direita: drop de fotos #}
+          {# Fotos #}
           <div>
-            <label class="ec-form-label">FOTOS</label>
+            <label class="ec-label">📷 Fotos (múltiplas)</label>
             <div class="drop-zone" id="dropZone"
                  onclick="document.getElementById('fotosInput').click()"
-                 style="min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                 style="min-height:180px;display:flex;flex-direction:column;
+                        align-items:center;justify-content:center;">
               <input type="file" id="fotosInput" name="fotos" multiple
                      accept="image/jpeg,image/png,image/webp,image/gif">
               <div id="dropHint">
-                <div style="font-size:2.5rem;margin-bottom:8px;">🖼️</div>
-                <div style="font-size:13px;color:var(--color-text-muted);">
-                  Clique ou arraste as fotos aqui<br>
-                  <span style="font-size:11px;">JPG, PNG, WEBP — múltiplas permitidas</span>
+                <div style="font-size:2rem;margin-bottom:6px;">🖼️</div>
+                <div style="font-size:13px;color:rgba(255,255,255,.65);">
+                  Clique ou arraste as fotos aqui
+                </div>
+                <div style="font-size:11px;color:rgba(255,255,255,.40);margin-top:4px;">
+                  JPG, PNG, WEBP — múltiplas permitidas
                 </div>
               </div>
               <div class="preview-grid" id="previewGrid"></div>
             </div>
           </div>
 
+          {# Vídeos #}
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div>
+              <label class="ec-label">🎬 Vídeos do YouTube</label>
+              <textarea name="videos" rows="5" class="ec-input"
+                        placeholder="Cole uma URL por linha:&#10;&#10;https://www.youtube.com/watch?v=xXxXxXxXxXx&#10;https://youtu.be/xXxXxXxXxXx&#10;&#10;Aceita links normais e links curtos (youtu.be)"></textarea>
+            </div>
+            <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+                        border-radius:10px;padding:10px 12px;font-size:11px;
+                        color:rgba(255,255,255,.55);line-height:1.7;">
+              💡 <strong style="color:rgba(255,255,255,.75);">Dica:</strong>
+              Você pode adicionar <strong style="color:rgba(255,255,255,.75);">fotos E vídeos</strong>
+              na mesma postagem. Preencha os dois campos e clique em Publicar.
+            </div>
+          </div>
+
         </div>
 
-        <div style="display:flex;justify-content:flex-end;padding-top:6px;border-top:1px solid var(--color-border);margin-top:4px;">
+        {# Botão publicar #}
+        <div style="display:flex;justify-content:flex-end;padding-top:8px;
+                    border-top:1px solid rgba(255,255,255,.12);margin-top:4px;">
           <button type="submit" class="btn btn--primary"
-                  style="padding:10px 32px;font-size:14px;font-weight:800;">
+                  style="padding:11px 36px;font-size:14px;font-weight:800;">
             🚀 Publicar post
           </button>
         </div>
@@ -146,7 +193,6 @@
       <div class="glass-card glass-card--standard"
            style="display:flex;align-items:center;gap:16px;padding:14px 18px;flex-wrap:wrap;">
 
-        {# Thumb da primeira foto — CORRIGIDO: "equalto" não "eq" #}
         {% set primeira_foto = post.midias | selectattr("tipo","equalto","foto") | first %}
         <div style="width:64px;height:64px;border-radius:12px;overflow:hidden;
                     flex-shrink:0;background:rgba(255,255,255,.08);
@@ -236,7 +282,9 @@
   });
   drop.addEventListener("drop", function(e){
     e.preventDefault(); drop.classList.remove("over");
-    addFiles(Array.from(e.dataTransfer.files).filter(function(f){ return f.type.startsWith("image/"); }));
+    addFiles(Array.from(e.dataTransfer.files).filter(function(f){
+      return f.type.startsWith("image/");
+    }));
   });
 
   function addFiles(newFiles){
@@ -253,8 +301,7 @@
 
   function renderPreviews(){
     grid.innerHTML = "";
-    if (files.length > 0 && hint) hint.style.display = "none";
-    if (files.length === 0 && hint) hint.style.display = "";
+    if (hint) hint.style.display = files.length > 0 ? "none" : "";
     files.forEach(function(f, i){
       var url = URL.createObjectURL(f);
       var div = document.createElement("div");
@@ -270,7 +317,6 @@
     input.files = dt.files;
   }
 
-  // expor removeFile globalmente para os botões inline
   window.removeFile = removeFile;
 })();
 </script>

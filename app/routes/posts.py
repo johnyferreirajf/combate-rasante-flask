@@ -82,6 +82,7 @@ def admin_emcampo():
         db.session.add(post)
         db.session.flush()
 
+        import io as _io
         ordem = 0
         fotos = request.files.getlist("fotos")
         use_cloud = current_app.config.get("USE_CLOUDINARY", False)
@@ -90,12 +91,16 @@ def admin_emcampo():
                 continue
             if use_cloud:
                 try:
-                    url, pid = _upload_cloudinary(foto.stream)
+                    # Lê bytes completos antes de enviar (evita stream consumido)
+                    conteudo = foto.read()
+                    url, pid = _upload_cloudinary(_io.BytesIO(conteudo))
                     db.session.add(PostMidia(post_id=post.id, tipo="foto",
                                             url=url, public_id=pid, ordem=ordem))
                     ordem += 1
                 except Exception as e:
-                    flash("Erro ao enviar foto: {}".format(e), "error")
+                    flash("Erro ao enviar foto '{}': {}".format(foto.filename, str(e)[:100]), "error")
+            else:
+                flash("Cloudinary não configurado — foto não enviada.", "error")
 
         videos_raw = (request.form.get("videos") or "")
         for line in videos_raw.splitlines():
@@ -136,18 +141,22 @@ def admin_emcampo_editar(pid):
         use_cloud = current_app.config.get("USE_CLOUDINARY", False)
         ordem = max((m.ordem for m in post.midias), default=-1) + 1
 
+        import io as _io
         fotos = request.files.getlist("fotos")
         for foto in fotos:
             if not foto or not foto.filename:
                 continue
             if use_cloud:
                 try:
-                    url, pid2 = _upload_cloudinary(foto.stream)
+                    conteudo2 = foto.read()
+                    url, pid2 = _upload_cloudinary(_io.BytesIO(conteudo2))
                     db.session.add(PostMidia(post_id=post.id, tipo="foto",
                                             url=url, public_id=pid2, ordem=ordem))
                     ordem += 1
                 except Exception as e:
-                    flash("Erro ao enviar foto: {}".format(e), "error")
+                    flash("Erro ao enviar foto '{}': {}".format(foto.filename, str(e)[:100]), "error")
+            else:
+                flash("Cloudinary não configurado — foto não enviada.", "error")
 
         videos_raw = (request.form.get("videos") or "")
         for line in videos_raw.splitlines():
