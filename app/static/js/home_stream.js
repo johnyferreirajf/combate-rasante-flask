@@ -50,30 +50,26 @@
     }
   ];
 
-  /* Tile especial: último post Em Campo — PRIMEIRO no carrossel */
-  (function() {
+  /* Tile "Em Campo" — sempre primeiro no carrossel */
+  (function () {
     var p = window.ULTIMO_POST;
-    if (!p) {
-      TILES.unshift({
-        badge: "EM CAMPO",
-        icon:  "📸",
-        title: "EM CAMPO",
-        desc:  "Acompanhe nossas operações",
-        items: ["Fotos do campo", "Vídeos das aplicações", "Novidades da equipe"],
-        url:   "/em-campo",
-        emcampo: true
-      });
-    } else {
-      TILES.unshift({
-        badge:   "EM CAMPO",
-        icon:    "📸",
-        title:   p.titulo,
-        desc:    p.data,
-        foto:    p.foto,
-        url:     "/em-campo",
-        emcampo: true
-      });
-    }
+    TILES.unshift(p ? {
+      badge:  "EM CAMPO",
+      icon:   "📸",
+      title:  p.titulo,
+      desc:   p.data,
+      foto:   p.foto,   // pode ser foto real ou thumbnail de vídeo Cloudinary
+      url:    "/em-campo",
+      emcampo: true
+    } : {
+      badge:  "EM CAMPO",
+      icon:   "📸",
+      title:  "EM CAMPO",
+      desc:   "Acompanhe nossas operações",
+      items:  ["Fotos do campo", "Vídeos das aplicações", "Novidades da equipe"],
+      url:    "/em-campo",
+      emcampo: true
+    });
   })();
 
   /* ── DOM ─────────────────────────────────────────────────── */
@@ -87,20 +83,23 @@
   /* ── Render das tiles ────────────────────────────────────── */
   track.innerHTML = TILES.map(function (t) {
     if (t.emcampo && t.foto) {
+      /* Tile com imagem de fundo (foto real ou thumbnail de vídeo) */
       return (
-        '<a class="stream-tile stream-tile--foto" href="' + t.url + '" ' +
+        '<a class="stream-tile" href="' + t.url + '" ' +
         'style="padding:0;overflow:hidden;position:relative;min-height:180px;">' +
           '<img src="' + t.foto + '" alt="Em Campo" ' +
-          'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.75;">' +
-          '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.80) 0%,rgba(0,0,0,.10) 60%);"></div>' +
+          'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.80;">' +
+          '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.82) 0%,rgba(0,0,0,.08) 60%);"></div>' +
           '<div style="position:relative;padding:12px;display:flex;flex-direction:column;height:100%;justify-content:space-between;">' +
-            '<span class="stream-tile__badge">' + t.badge + "</span>" +
+            '<div style="display:flex;justify-content:flex-end;">' +
+              '<span class="stream-tile__badge">' + t.badge + '</span>' +
+            '</div>' +
             '<div>' +
-              '<h3 class="stream-tile__title" style="font-size:14px;margin-bottom:3px;line-height:1.3;">' + t.title + "</h3>" +
-              '<p class="stream-tile__desc" style="font-size:12px;margin:0;color:rgba(255,255,255,.80);">📅 ' + t.desc + "</p>" +
-            "</div>" +
-          "</div>" +
-        "</a>"
+              '<h3 class="stream-tile__title" style="font-size:14px;margin-bottom:4px;line-height:1.3;text-shadow:0 1px 4px rgba(0,0,0,.9);">' + t.title + '</h3>' +
+              '<p class="stream-tile__desc" style="font-size:12px;margin:0;color:rgba(255,255,255,.85);">📅 ' + t.desc + '</p>' +
+            '</div>' +
+          '</div>' +
+        '</a>'
       );
     }
     var items = (t.items || []).map(function (i) { return "<li>" + i + "</li>"; }).join("");

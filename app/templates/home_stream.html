@@ -43,16 +43,11 @@
 
 {% block scripts %}
 <script>
-/* Último post Em Campo — injetado pelo servidor */
-window.ULTIMO_POST = {% if ultimo_post %}
-{
-  titulo: {{ ultimo_post.titulo | tojson }},
-  data:   "{{ ultimo_post.created_at.strftime('%d/%m/%Y') }}",
-  foto:   {% set _fp = ultimo_post.midias | selectattr("tipo","equalto","foto") | first %}
-          {% if _fp %} {{ _fp.url | tojson }} {% else %} null {% endif %},
-  url:    "/em-campo"
-}
-{% else %} null {% endif %};
+window.ULTIMO_POST = {% if ultimo_titulo %}{
+  titulo: {{ ultimo_titulo | tojson }},
+  data:   {{ ultimo_data   | tojson }},
+  foto:   {% if ultimo_thumb %}{{ ultimo_thumb | tojson }}{% else %}null{% endif %}
+}{% else %}null{% endif %};
 </script>
 <script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
 <script>
