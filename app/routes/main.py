@@ -12,7 +12,15 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
-    return render_template("home_stream.html")
+    from app.models.post import Post, PostMidia
+    try:
+        ultimo_post = (Post.query
+                       .filter_by(ativo=True)
+                       .order_by(Post.created_at.desc())
+                       .first())
+    except Exception:
+        ultimo_post = None
+    return render_template("home_stream.html", ultimo_post=ultimo_post)
 
 
 @main_bp.route("/servicos")

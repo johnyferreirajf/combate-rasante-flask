@@ -3,92 +3,119 @@
 
 {% block head_extra %}
 <style>
-/* ── Feed Em Campo ── */
-.ec-section { padding-block: 48px 80px; }
+/* ── Overlay escuro para legibilidade (igual outras páginas) ── */
+.ec-section {
+  padding-block: 48px 80px;
+  position: relative;
+}
+.ec-section::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 0;
+  pointer-events: none;
+}
+.ec-section > .container {
+  position: relative;
+  z-index: 1;
+}
+
 .ec-header   { text-align:center; margin-bottom:40px; }
-.ec-header h1 { font-size:clamp(1.6rem,4vw,2.4rem); font-weight:900; color:var(--color-text); }
-.ec-header p  { color:var(--color-text-muted); margin-top:8px; font-size:15px; }
+.ec-header h1 { font-size:clamp(1.6rem,4vw,2.4rem); font-weight:900; color:#fff; text-shadow:0 2px 8px rgba(0,0,0,.6); }
+.ec-header p  { color:rgba(255,255,255,.80); margin-top:8px; font-size:15px; }
 
 /* Feed */
-.ec-feed { display:flex; flex-direction:column; gap:28px;
+.ec-feed { display:flex; flex-direction:column; gap:24px;
            width:min(680px,calc(100% - 24px)); margin-inline:auto; }
 
 /* Card de post */
 .ec-card {
-  background: var(--color-brand-glass);
-  border: 1px solid var(--color-border);
+  background: rgba(0,20,10,.75);
+  border: 1px solid rgba(255,255,255,.18);
   border-radius: 20px;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px rgba(0,0,0,.50);
 }
 
 /* Cabeçalho do post */
 .ec-card__head {
   display: flex; align-items: center; gap: 12px;
-  padding: 16px 18px 12px;
+  padding: 14px 16px 12px;
+  cursor: pointer;
+  user-select: none;
 }
+.ec-card__head:hover { background: rgba(255,255,255,.04); }
+
 .ec-card__avatar {
   width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
   background: rgba(34,197,94,.20);
-  border: 2px solid rgba(34,197,94,.50);
+  border: 2px solid rgba(34,197,94,.55);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
 }
 .ec-card__avatar img { width:100%; height:100%; object-fit:cover; }
-.ec-card__logo { font-weight:900; font-size:13px; color:var(--color-accent,#22c55e); }
-.ec-card__titulo { font-weight:900; font-size:15px; color:var(--color-text); line-height:1.3; }
-.ec-card__data   { font-size:12px; color:var(--color-text-muted); margin-top:2px; }
+.ec-card__logo   { font-weight:900; font-size:12px; color:#22c55e; }
+.ec-card__titulo { font-weight:900; font-size:15px; color:#fff; line-height:1.3; }
+.ec-card__data   { font-size:12px; color:rgba(255,255,255,.60); margin-top:2px; }
+
+/* Botão minimizar */
+.ec-card__toggle {
+  margin-left:auto; flex-shrink:0;
+  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
+  border-radius:8px; width:28px; height:28px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; color:rgba(255,255,255,.70);
+  transition:.15s;
+}
+.ec-card__head:hover .ec-card__toggle { background:rgba(255,255,255,.18); }
+
+/* Corpo colapsável */
+.ec-card__body { overflow:hidden; transition:max-height .35s ease, opacity .25s ease; }
+.ec-card__body.collapsed { max-height:0 !important; opacity:0; }
 
 /* Descrição */
 .ec-card__desc {
-  padding: 0 18px 14px;
-  font-size:14px; color:var(--color-text-muted);
-  line-height: 1.7; white-space: pre-wrap;
+  padding: 0 16px 12px;
+  font-size:14px; color:rgba(255,255,255,.85);
+  line-height: 1.75; white-space: pre-wrap;
 }
 
 /* Galeria de fotos */
-.ec-gallery {
-  display: grid;
-  gap: 2px;
-}
-.ec-gallery--1 { grid-template-columns: 1fr; }
-.ec-gallery--2 { grid-template-columns: 1fr 1fr; }
-.ec-gallery--3 { grid-template-columns: 1fr 1fr; }
-.ec-gallery--3 .ec-gallery__item:first-child { grid-column: 1 / -1; }
-.ec-gallery--4 { grid-template-columns: 1fr 1fr; }
-.ec-gallery--many { grid-template-columns: repeat(3, 1fr); }
+.ec-gallery { display:grid; gap:2px; }
+.ec-gallery--1    { grid-template-columns:1fr; }
+.ec-gallery--2    { grid-template-columns:1fr 1fr; }
+.ec-gallery--3    { grid-template-columns:1fr 1fr; }
+.ec-gallery--3 .ec-gallery__item:first-child { grid-column:1/-1; }
+.ec-gallery--4    { grid-template-columns:1fr 1fr; }
+.ec-gallery--many { grid-template-columns:repeat(3,1fr); }
 
 .ec-gallery__item { position:relative; overflow:hidden; cursor:pointer; }
 .ec-gallery__item img {
   width:100%; height:200px; object-fit:cover;
   display:block; transition:transform .3s;
 }
-.ec-gallery--1 .ec-gallery__item img { height: 380px; }
-.ec-gallery--2 .ec-gallery__item img { height: 240px; }
+.ec-gallery--1 .ec-gallery__item img { height:380px; }
+.ec-gallery--2 .ec-gallery__item img { height:240px; }
 .ec-gallery__item:hover img { transform:scale(1.03); }
-
-/* Badge "+N" na última foto quando tem muitas */
 .ec-gallery__more {
-  position:absolute; inset:0;
-  background:rgba(0,0,0,.55);
+  position:absolute; inset:0; background:rgba(0,0,0,.55);
   display:flex; align-items:center; justify-content:center;
-  font-size:24px; font-weight:900; color:#fff;
+  font-size:24px; font-weight:900; color:#fff; pointer-events:none;
 }
 
 /* Vídeos */
 .ec-videos { display:flex; flex-direction:column; gap:2px; }
-.ec-video   { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; }
-.ec-video iframe {
-  position:absolute; inset:0; width:100%; height:100%; border:0;
-}
+.ec-video { position:relative; padding-bottom:56.25%; height:0; overflow:hidden; }
+.ec-video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
 
 /* Rodapé do post */
 .ec-card__foot {
-  padding: 10px 18px;
-  border-top: 1px solid var(--color-border);
-  font-size:12px; color:var(--color-text-muted);
+  padding: 10px 16px;
+  border-top: 1px solid rgba(255,255,255,.12);
+  font-size:12px; color:rgba(255,255,255,.55);
   display:flex; align-items:center; gap:6px;
 }
 
@@ -103,10 +130,7 @@
   flex-direction:column; gap:12px;
 }
 .ec-lightbox.on { display:flex; }
-.ec-lightbox img {
-  max-width:90vw; max-height:80vh;
-  border-radius:12px; object-fit:contain;
-}
+.ec-lightbox img { max-width:90vw; max-height:80vh; border-radius:12px; object-fit:contain; }
 .ec-lightbox__close {
   position:absolute; top:16px; right:16px;
   background:rgba(255,255,255,.15); border:none; color:#fff;
@@ -133,73 +157,75 @@
       <p>Acompanhe o cotidiano, operações, treinamentos e muito mais.</p>
     </div>
 
-    {% if posts.items %}
+    {% if posts and posts.items %}
     <div class="ec-feed">
       {% for post in posts.items %}
       <article class="ec-card">
 
-        {# Cabeçalho #}
-        <div class="ec-card__head">
+        {# Cabeçalho clicável para minimizar #}
+        <div class="ec-card__head" onclick="togglePost({{ post.id }})" title="Clique para minimizar/expandir">
           <div class="ec-card__avatar">
             <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
                  alt="Combate Rasante"
                  onerror="this.style.display='none';this.parentNode.innerHTML='<span style=\'font-weight:900;font-size:12px;color:#22c55e;\'>CR</span>'">
           </div>
-          <div>
+          <div style="flex:1;min-width:0;">
             <div class="ec-card__logo">COMBATE RASANTE</div>
             <div class="ec-card__titulo">{{ post.titulo }}</div>
-            <div class="ec-card__data">
-              {{ post.created_at.strftime("%d/%m/%Y às %H:%M") }}
-            </div>
+            <div class="ec-card__data">{{ post.created_at.strftime("%d/%m/%Y às %H:%M") }}</div>
           </div>
+          <div class="ec-card__toggle" id="toggle-{{ post.id }}">▾</div>
         </div>
 
-        {# Descrição #}
-        {% if post.descricao %}
-        <div class="ec-card__desc">{{ post.descricao }}</div>
-        {% endif %}
+        {# Corpo colapsável #}
+        <div class="ec-card__body" id="body-{{ post.id }}">
 
-        {# Fotos — CORRIGIDO: "equalto" no lugar de "eq" #}
-        {% set fotos = post.midias | selectattr("tipo","equalto","foto") | list %}
-        {% set n = fotos | length %}
-        {% if n > 0 %}
-          {% set fotos_visiveis = fotos[:5] %}
-        <div class="ec-gallery ec-gallery--{{ n if n <= 4 else 'many' }}"
-             data-post="{{ post.id }}">
-          {% for m in fotos_visiveis %}
-            <div class="ec-gallery__item js-lb"
-                 data-src="{{ m.url }}" data-idx="{{ loop.index0 }}"
-                 data-post="{{ post.id }}">
-              <img src="{{ m.url }}" alt="foto {{ loop.index }}" loading="lazy">
-              {% if loop.last and n > 5 %}
-              <div class="ec-gallery__more">+{{ n - 5 }}</div>
-              {% endif %}
-            </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
-        {# Vídeos — CORRIGIDO: "equalto" no lugar de "eq" #}
-        {% set videos = post.midias | selectattr("tipo","equalto","video") | list %}
-        {% if videos %}
-        <div class="ec-videos" style="margin-top:{{ '2px' if fotos else '0' }};">
-          {% for v in videos %}
-          <div class="ec-video">
-            <iframe src="{{ v.url }}" allowfullscreen loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-            </iframe>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
-        {# Rodapé #}
-        <div class="ec-card__foot">
-          📷 {{ fotos | length }} foto{{ 's' if fotos|length != 1 else '' }}
-          {% if videos %}
-            &nbsp;·&nbsp; 🎬 {{ videos | length }} vídeo{{ 's' if videos|length != 1 else '' }}
+          {# Descrição #}
+          {% if post.descricao %}
+          <div class="ec-card__desc">{{ post.descricao }}</div>
           {% endif %}
-        </div>
+
+          {# Fotos — sem break, usando slice #}
+          {% set fotos = post.midias | selectattr("tipo","equalto","foto") | list %}
+          {% set n = fotos | length %}
+          {% if n > 0 %}
+            {% set fotos_visiveis = fotos[:5] %}
+          <div class="ec-gallery ec-gallery--{{ n if n <= 4 else 'many' }}"
+               data-post="{{ post.id }}">
+            {% for m in fotos_visiveis %}
+              <div class="ec-gallery__item js-lb"
+                   data-src="{{ m.url }}" data-idx="{{ loop.index0 }}"
+                   data-post="{{ post.id }}">
+                <img src="{{ m.url }}" alt="foto {{ loop.index }}" loading="lazy">
+                {% if loop.last and n > 5 %}
+                <div class="ec-gallery__more">+{{ n - 5 }}</div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {# Vídeos #}
+          {% set videos = post.midias | selectattr("tipo","equalto","video") | list %}
+          {% if videos %}
+          <div class="ec-videos" style="margin-top:{{ '2px' if fotos else '0' }};">
+            {% for v in videos %}
+            <div class="ec-video">
+              <iframe src="{{ v.url }}" allowfullscreen loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+              </iframe>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {# Rodapé #}
+          <div class="ec-card__foot">
+            📷 {{ fotos | length }} foto{{ 's' if fotos|length != 1 else '' }}
+            {% if videos %}&nbsp;·&nbsp; 🎬 {{ videos | length }} vídeo{{ 's' if videos|length != 1 else '' }}{% endif %}
+          </div>
+
+        </div>{# /body #}
 
       </article>
       {% endfor %}
@@ -209,27 +235,26 @@
     {% if posts.pages > 1 %}
     <div class="ec-pagination">
       {% if posts.has_prev %}
-        <a href="{{ url_for('posts.em_campo', page=posts.prev_num) }}"
-           class="btn btn--ghost">← Mais recentes</a>
+        <a href="{{ url_for('posts.em_campo', page=posts.prev_num) }}" class="btn btn--ghost">← Mais recentes</a>
       {% endif %}
-      <span style="color:var(--color-text-muted);font-size:13px;align-self:center;">
+      <span style="color:rgba(255,255,255,.70);font-size:13px;align-self:center;">
         Página {{ posts.page }} de {{ posts.pages }}
       </span>
       {% if posts.has_next %}
-        <a href="{{ url_for('posts.em_campo', page=posts.next_num) }}"
-           class="btn btn--ghost">Anteriores →</a>
+        <a href="{{ url_for('posts.em_campo', page=posts.next_num) }}" class="btn btn--ghost">Anteriores →</a>
       {% endif %}
     </div>
     {% endif %}
 
     {% else %}
+    {# Estado vazio — foto do piloto #}
     <div style="display:flex;flex-direction:column;align-items:center;
                 padding:40px 24px 60px;text-align:center;
                 width:min(700px,calc(100% - 24px));margin-inline:auto;">
-      <div style="background:var(--color-brand-glass,rgba(3,58,36,.55));
-                  border:1px solid var(--color-border,rgba(255,255,255,.12));
+      <div style="background:rgba(0,20,10,.75);
+                  border:1px solid rgba(255,255,255,.18);
                   border-radius:28px;backdrop-filter:blur(16px);
-                  box-shadow:0 8px 56px rgba(0,0,0,.40);
+                  box-shadow:0 8px 56px rgba(0,0,0,.50);
                   padding:44px 40px 48px;width:100%;">
         <div style="display:inline-block;background:rgba(234,179,8,.18);
                     border:1px solid rgba(234,179,8,.40);color:#fde68a;
@@ -237,21 +262,17 @@
                     padding:5px 16px;border-radius:999px;margin-bottom:22px;">
           🚧 EM CONSTRUÇÃO
         </div>
-        <h2 style="font-size:clamp(1.5rem,4vw,2.1rem);font-weight:900;
-                   color:var(--color-text,#fff);margin-bottom:12px;line-height:1.2;">
+        <h2 style="font-size:clamp(1.5rem,4vw,2.1rem);font-weight:900;color:#fff;margin-bottom:12px;line-height:1.2;">
           Novidades chegando em breve!
         </h2>
-        <p style="color:var(--color-text-muted,rgba(255,255,255,.60));font-size:15px;
-                  line-height:1.8;max-width:440px;margin-inline:auto;">
-          Nossa equipe está preparando os bastidores das operações,
-          fotos do campo e muito mais. Volte em breve!
+        <p style="color:rgba(255,255,255,.75);font-size:15px;line-height:1.8;max-width:440px;margin-inline:auto;">
+          Nossa equipe está preparando os bastidores das operações, fotos do campo e muito mais. Volte em breve!
         </p>
         <img src="{{ url_for('static', filename='img/piloto-manutencao.png') }}"
              alt="Piloto fazendo manutenção no avião agrícola"
              style="width:min(420px,90%);border-radius:20px;margin-top:32px;
                     box-shadow:0 12px 40px rgba(0,0,0,.50);">
-        <p style="margin-top:24px;font-size:13px;font-style:italic;
-                  color:var(--color-text-muted,rgba(255,255,255,.45));">
+        <p style="margin-top:24px;font-size:13px;font-style:italic;color:rgba(255,255,255,.45);">
           "Tudo nos conformes em breve — assim como nossos aviões!"
         </p>
       </div>
@@ -272,11 +293,38 @@
 
 {% block scripts %}
 <script>
+/* ── Minimizar / expandir post ── */
+function togglePost(pid) {
+  var body   = document.getElementById("body-"   + pid);
+  var toggle = document.getElementById("toggle-" + pid);
+  if (!body) return;
+
+  var collapsed = body.classList.contains("collapsed");
+  if (collapsed) {
+    // Expandir: define max-height para a altura real primeiro
+    body.style.maxHeight = body.scrollHeight + "px";
+    body.classList.remove("collapsed");
+    toggle.textContent = "▾";
+    // Remove max-height inline após a transição para permitir crescimento livre
+    setTimeout(function(){ body.style.maxHeight = ""; }, 360);
+  } else {
+    // Colapsar: fixa altura atual antes de animar para 0
+    body.style.maxHeight = body.scrollHeight + "px";
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        body.classList.add("collapsed");
+        body.style.maxHeight = "";
+        toggle.textContent = "▸";
+      });
+    });
+  }
+}
+
+/* ── Lightbox ── */
 (function(){
   var postFotos = {};
   document.querySelectorAll(".js-lb").forEach(function(el){
-    var pid = el.dataset.post;
-    var src = el.dataset.src;
+    var pid = el.dataset.post, src = el.dataset.src;
     if (!postFotos[pid]) postFotos[pid] = [];
     postFotos[pid].push(src);
   });
@@ -286,29 +334,19 @@
   var lbPrev = document.getElementById("ecLbPrev");
   var lbNext = document.getElementById("ecLbNext");
   var curPost, curIdx;
+  if (!lb) return;
 
-  function openLb(pid, idx){
-    curPost = pid; curIdx = idx;
-    lbImg.src = postFotos[pid][idx];
-    lb.classList.add("on");
-    updateNav();
-  }
+  function openLb(pid, idx){ curPost=pid; curIdx=idx; lbImg.src=postFotos[pid][idx]; lb.classList.add("on"); updateNav(); }
   function closeLb(){ lb.classList.remove("on"); lbImg.src=""; }
   function updateNav(){
     var arr = postFotos[curPost];
     lbPrev.style.display = curIdx > 0 ? "" : "none";
     lbNext.style.display = curIdx < arr.length - 1 ? "" : "none";
   }
-  function navigate(dir){
-    curIdx += dir;
-    lbImg.src = postFotos[curPost][curIdx];
-    updateNav();
-  }
+  function navigate(d){ curIdx += d; lbImg.src = postFotos[curPost][curIdx]; updateNav(); }
 
   document.querySelectorAll(".js-lb").forEach(function(el){
-    el.addEventListener("click", function(){
-      openLb(el.dataset.post, parseInt(el.dataset.idx));
-    });
+    el.addEventListener("click", function(){ openLb(el.dataset.post, parseInt(el.dataset.idx)); });
   });
   document.getElementById("ecLbClose").addEventListener("click", closeLb);
   lb.addEventListener("click", function(e){ if(e.target===lb) closeLb(); });
@@ -317,7 +355,7 @@
   document.addEventListener("keydown", function(e){
     if (!lb.classList.contains("on")) return;
     if (e.key==="Escape") closeLb();
-    if (e.key==="ArrowLeft")  navigate(-1);
+    if (e.key==="ArrowLeft") navigate(-1);
     if (e.key==="ArrowRight") navigate(1);
   });
 })();

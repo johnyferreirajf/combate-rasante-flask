@@ -50,6 +50,32 @@
     }
   ];
 
+  /* Tile especial: último post Em Campo */
+  (function() {
+    var p = window.ULTIMO_POST;
+    if (!p) {
+      TILES.push({
+        badge: "EM CAMPO",
+        icon:  "📸",
+        title: "EM CAMPO",
+        desc:  "Acompanhe nossas operações",
+        items: ["Fotos do campo", "Vídeos das aplicações", "Novidades da equipe"],
+        url:   "/em-campo",
+        emcampo: true
+      });
+    } else {
+      TILES.push({
+        badge:    "EM CAMPO",
+        icon:     "📸",
+        title:    p.titulo,
+        desc:     p.data,
+        foto:     p.foto,
+        url:      "/em-campo",
+        emcampo:  true
+      });
+    }
+  })();
+
   /* ── DOM ─────────────────────────────────────────────────── */
   var track    = document.getElementById("streamTrack");
   var dotsWrap = document.getElementById("streamDots");
@@ -60,7 +86,25 @@
 
   /* ── Render das tiles ────────────────────────────────────── */
   track.innerHTML = TILES.map(function (t) {
-    var items = t.items.map(function (i) { return "<li>" + i + "</li>"; }).join("");
+    // Tile especial "Em Campo" com foto do último post
+    if (t.emcampo && t.foto) {
+      return (
+        '<a class="stream-tile stream-tile--foto" href="' + t.url + '" ' +
+        'style="padding:0;overflow:hidden;position:relative;min-height:180px;">' +
+          '<img src="' + t.foto + '" alt="Em Campo" ' +
+          'style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.75;">' +
+          '<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.80) 0%,rgba(0,0,0,.10) 60%);"></div>' +
+          '<div style="position:relative;padding:12px;display:flex;flex-direction:column;height:100%;justify-content:space-between;">' +
+            '<span class="stream-tile__badge">' + t.badge + "</span>" +
+            '<div>' +
+              '<h3 class="stream-tile__title" style="font-size:14px;margin-bottom:3px;line-height:1.3;">' + t.title + "</h3>" +
+              '<p class="stream-tile__desc" style="font-size:12px;margin:0;color:rgba(255,255,255,.80);">📅 ' + t.desc + "</p>" +
+            "</div>" +
+          "</div>" +
+        "</a>"
+      );
+    }
+    var items = (t.items || []).map(function (i) { return "<li>" + i + "</li>"; }).join("");
     return (
       '<a class="stream-tile" href="' + t.url + '">' +
         '<div class="stream-tile__top">' +
