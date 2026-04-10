@@ -61,6 +61,7 @@ def create_app():
                         public_id VARCHAR(255),
                         ordem INTEGER DEFAULT 0
                     )""",
+                    "ALTER TABLE post_midias ALTER COLUMN tipo TYPE VARCHAR(20)",
                 ]
                 for _sql in _migrations:
                     try:

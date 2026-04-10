@@ -14,12 +14,10 @@ from app.utils.security import login_required, admin_required, get_current_user
 
 posts_bp = Blueprint("posts", __name__)
 
-VIDEO_EXTS = {"mp4", "mov", "avi", "mkv", "webm", "m4v", "3gp"}
-IMAGE_EXTS = {"jpg", "jpeg", "png", "webp", "gif", "bmp"}
+VIDEO_EXTS    = {"mp4", "mov", "avi", "mkv", "webm", "m4v", "3gp"}
+IMAGE_EXTS    = {"jpg", "jpeg", "png", "webp", "gif", "bmp"}
 VIDEO_MAX_BYTES = 100 * 1024 * 1024  # 100 MB
 
-
-# ─── Helpers ──────────────────────────────────────────────────
 
 def _youtube_embed(url: str) -> Optional[str]:
     patterns = [r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([A-Za-z0-9_-]{11})"]
@@ -46,10 +44,9 @@ def _cloudinary_config():
 
 
 def _processar_midias(post, ordem):
-    """Processa arquivos (foto/vídeo) + URLs YouTube de um request POST."""
     use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+    arquivos  = request.files.getlist("midias")
 
-    arquivos = request.files.getlist("midias")
     for arq in arquivos:
         if not arq or not arq.filename:
             continue
@@ -65,10 +62,12 @@ def _processar_midias(post, ordem):
             if ext in VIDEO_EXTS and len(conteudo) > VIDEO_MAX_BYTES:
                 flash("Vídeo '{}' excede 100 MB.".format(arq.filename), "error")
                 continue
-            cld = _cloudinary_config()
             import cloudinary.uploader
+            _cloudinary_config()
             rtype = "video" if ext in VIDEO_EXTS else "image"
-            tipo  = "video_direto" if ext in VIDEO_EXTS else "foto"
+            # IMPORTANTE: tipo curto para caber em VARCHAR(20)
+            # "foto" = imagem, "vid" = vídeo direto upload
+            tipo  = "vid" if ext in VIDEO_EXTS else "foto"
             result = cloudinary.uploader.upload(
                 io.BytesIO(conteudo),
                 folder="combaterasante/emcampo",
@@ -101,8 +100,6 @@ def _processar_midias(post, ordem):
     return ordem
 
 
-# ─── Página pública ────────────────────────────────────────────
-
 @posts_bp.route("/em-campo")
 def em_campo():
     page = request.args.get("page", 1, type=int)
@@ -117,8 +114,6 @@ def em_campo():
         posts = None
     return render_template("em_campo.html", posts=posts)
 
-
-# ─── Admin: listar + criar ──────────────────────────────────────
 
 @posts_bp.route("/admin/emcampo", methods=["GET", "POST"])
 @login_required
@@ -147,8 +142,6 @@ def admin_emcampo():
                            posts=posts)
 
 
-# ─── Admin: editar ─────────────────────────────────────────────
-
 @posts_bp.route("/admin/emcampo/editar/<int:pid>", methods=["GET", "POST"])
 @login_required
 @admin_required
@@ -168,19 +161,17 @@ def admin_emcampo_editar(pid):
                            post=post)
 
 
-# ─── Admin: excluir mídia ──────────────────────────────────────
-
 @posts_bp.route("/admin/emcampo/midia/excluir/<int:mid>", methods=["POST"])
 @login_required
 @admin_required
 def admin_emcampo_midia_excluir(mid):
-    midia = PostMidia.query.get_or_404(mid)
+    midia   = PostMidia.query.get_or_404(mid)
     post_id = midia.post_id
-    if midia.public_id and midia.tipo in ("foto", "video_direto"):
+    if midia.public_id and midia.tipo in ("foto", "vid"):
         try:
             import cloudinary.uploader
-            cld = _cloudinary_config()
-            rtype = "video" if midia.tipo == "video_direto" else "image"
+            _cloudinary_config()
+            rtype = "video" if midia.tipo == "vid" else "image"
             cloudinary.uploader.destroy(midia.public_id, resource_type=rtype)
         except Exception:
             pass
@@ -190,22 +181,19 @@ def admin_emcampo_midia_excluir(mid):
     return redirect(url_for("posts.admin_emcampo_editar", pid=post_id))
 
 
-# ─── Admin: excluir post ───────────────────────────────────────
-
 @posts_bp.route("/admin/emcampo/excluir/<int:pid>", methods=["POST"])
 @login_required
 @admin_required
 def admin_emcampo_excluir(pid):
     post = Post.query.get_or_404(pid)
-    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
-    if use_cloud:
+    if current_app.config.get("USE_CLOUDINARY", False):
         try:
             import cloudinary.uploader
-            cld = _cloudinary_config()
+            _cloudinary_config()
             for m in post.midias:
-                if m.public_id and m.tipo in ("foto", "video_direto"):
+                if m.public_id and m.tipo in ("foto", "vid"):
                     try:
-                        rtype = "video" if m.tipo == "video_direto" else "image"
+                        rtype = "video" if m.tipo == "vid" else "image"
                         cloudinary.uploader.destroy(m.public_id, resource_type=rtype)
                     except Exception:
                         pass

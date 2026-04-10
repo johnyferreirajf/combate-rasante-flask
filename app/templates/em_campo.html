@@ -11,17 +11,17 @@
 
 /* Feed */
 .ec-feed { display:flex; flex-direction:column; gap:28px;
-           width:min(860px,calc(100% - 24px)); margin-inline:auto; }
+           width:min(940px,calc(100% - 24px)); margin-inline:auto; }
 
 /* Card de post */
 .ec-card {
-  background: rgba(0,22,10,.72);
+  background: rgba(5,30,15,.62);
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 20px;
   overflow: hidden;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 8px 32px rgba(0,0,0,.55);
+  box-shadow: 0 8px 32px rgba(0,0,0,.40);
 }
 
 /* Cabeçalho do post */
@@ -83,10 +83,6 @@
 .ec-video iframe {
   position:absolute; inset:0; width:100%; height:100%; border:0;
 }
-.ec-video video {
-  position:absolute; inset:0; width:100%; height:100%;
-  background:#000; object-fit:contain;
-}
 
 /* Rodapé do post */
 .ec-card__foot {
@@ -98,6 +94,25 @@
 
 /* Paginação */
 .ec-pagination { display:flex; gap:10px; justify-content:center; margin-top:32px; }
+
+/* Botão minimizar */
+.ec-card__head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px 12px;
+  cursor: pointer; user-select: none;
+}
+.ec-card__head:hover { background: rgba(255,255,255,.04); }
+.ec-card__toggle {
+  margin-left:auto; flex-shrink:0;
+  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22);
+  border-radius:8px; width:28px; height:28px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; color:rgba(255,255,255,.80); transition:.15s;
+}
+.ec-card__head:hover .ec-card__toggle { background:rgba(255,255,255,.22); }
+/* Corpo colapsável */
+.ec-card__body { overflow:hidden; transition:max-height .35s ease, opacity .25s ease; }
+.ec-card__body.collapsed { max-height:0 !important; opacity:0; }
 
 /* Lightbox */
 .ec-lightbox {
@@ -142,21 +157,22 @@
       {% for post in posts.items %}
       <article class="ec-card">
 
-        {# Cabeçalho #}
-        <div class="ec-card__head">
+        {# Cabeçalho clicável — minimizar/expandir #}
+        <div class="ec-card__head" onclick="togglePost({{ post.id }})" title="Minimizar/expandir">
           <div class="ec-card__avatar">
             <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
                  alt="Combate Rasante"
-                 onerror="this.style.display='none';this.parentNode.innerHTML='<span style=\'font-weight:900;font-size:12px;color:#22c55e;\'>CR</span>'">
+                 onerror="this.style.display='none';this.parentNode.innerHTML='<span style='font-weight:900;font-size:12px;color:#22c55e;'>CR</span>'">
           </div>
-          <div>
+          <div style="flex:1;min-width:0;">
             <div class="ec-card__logo">COMBATE RASANTE</div>
             <div class="ec-card__titulo">{{ post.titulo }}</div>
-            <div class="ec-card__data">
-              {{ post.created_at.strftime("%d/%m/%Y às %H:%M") }}
-            </div>
+            <div class="ec-card__data">{{ post.created_at.strftime("%d/%m/%Y às %H:%M") }}</div>
           </div>
+          <div class="ec-card__toggle" id="toggle-{{ post.id }}">▾</div>
         </div>
+        {# Corpo colapsável #}
+        <div class="ec-card__body" id="body-{{ post.id }}">
 
         {# Descrição #}
         {% if post.descricao %}
@@ -183,16 +199,16 @@
         </div>
         {% endif %}
 
-        {# Vídeos YouTube e diretos #}
-        {% set videos_yt  = post.midias | selectattr("tipo","equalto","video")        | list %}
-        {% set videos_dir = post.midias | selectattr("tipo","equalto","video_direto") | list %}
+        {# Vídeos YouTube (tipo="video") e diretos (tipo="vid") #}
+        {% set videos_yt  = post.midias | selectattr("tipo","equalto","video") | list %}
+        {% set videos_dir = post.midias | selectattr("tipo","equalto","vid")   | list %}
         {% set todos_videos = videos_yt + videos_dir %}
         {% if todos_videos %}
         <div class="ec-videos" style="margin-top:{{ '2px' if fotos else '0' }};">
           {% for v in todos_videos %}
           <div class="ec-video">
-            {% if v.tipo == "video_direto" %}
-              <video controls preload="metadata">
+            {% if v.tipo == "vid" %}
+              <video controls preload="metadata" style="position:absolute;inset:0;width:100%;height:100%;background:#000;object-fit:contain;">
                 <source src="{{ v.url }}">
               </video>
             {% else %}
@@ -212,6 +228,7 @@
             &nbsp;·&nbsp; 🎬 {{ todos_videos | length }} vídeo{{ 's' if todos_videos|length != 1 else '' }}
           {% endif %}
         </div>
+        </div>{# /ec-card__body #}
 
       </article>
       {% endfor %}
@@ -235,30 +252,12 @@
     {% endif %}
 
     {% else %}
-    <div style="display:flex;flex-direction:column;align-items:center;
-                padding:40px 24px 60px;text-align:center;
-                width:min(700px,calc(100% - 24px));margin-inline:auto;">
-      <div style="background:rgba(0,22,10,.72);
-                  border:1px solid rgba(255,255,255,.18);
-                  border-radius:28px;backdrop-filter:blur(16px);
-                  box-shadow:0 8px 56px rgba(0,0,0,.50);
-                  padding:44px 40px 48px;width:100%;">
-        <div style="display:inline-block;background:rgba(234,179,8,.18);
-                    border:1px solid rgba(234,179,8,.40);color:#fde68a;
-                    font-size:11px;font-weight:900;letter-spacing:.10em;
-                    padding:5px 16px;border-radius:999px;margin-bottom:22px;">
-          🚧 EM CONSTRUÇÃO
-        </div>
-        <h2 style="font-size:clamp(1.5rem,4vw,2.1rem);font-weight:900;color:#fff;margin-bottom:12px;">
-          Novidades chegando em breve!
-        </h2>
-        <p style="color:rgba(255,255,255,.80);font-size:15px;line-height:1.8;max-width:440px;margin-inline:auto;">
-          Nossa equipe está preparando os bastidores das operações, fotos do campo e muito mais.
-        </p>
-        <img src="{{ url_for('static', filename='img/piloto-manutencao.png') }}"
-             alt="Piloto fazendo manutenção"
-             style="width:min(420px,90%);border-radius:20px;margin-top:32px;
-                    box-shadow:0 12px 40px rgba(0,0,0,.50);">
+    <div style="display:flex;flex-direction:column;align-items:center;padding:40px 24px 60px;text-align:center;width:min(700px,calc(100% - 24px));margin-inline:auto;">
+      <div style="background:rgba(5,30,15,.62);border:1px solid rgba(255,255,255,.18);border-radius:28px;backdrop-filter:blur(16px);box-shadow:0 8px 56px rgba(0,0,0,.50);padding:44px 40px 48px;width:100%;">
+        <div style="display:inline-block;background:rgba(234,179,8,.18);border:1px solid rgba(234,179,8,.40);color:#fde68a;font-size:11px;font-weight:900;letter-spacing:.10em;padding:5px 16px;border-radius:999px;margin-bottom:22px;">🚧 EM CONSTRUÇÃO</div>
+        <h2 style="font-size:clamp(1.5rem,4vw,2.1rem);font-weight:900;color:#fff;margin-bottom:12px;">Novidades chegando em breve!</h2>
+        <p style="color:rgba(255,255,255,.80);font-size:15px;line-height:1.8;max-width:440px;margin-inline:auto;">Nossa equipe está preparando os bastidores das operações, fotos do campo e muito mais.</p>
+        <img src="{{ url_for('static', filename='img/piloto-manutencao.png') }}" alt="Piloto" style="width:min(420px,90%);border-radius:20px;margin-top:32px;box-shadow:0 12px 40px rgba(0,0,0,.50);">
       </div>
     </div>
     {% endif %}
@@ -276,6 +275,29 @@
 {% endblock %}
 
 {% block scripts %}
+<script>
+function togglePost(pid) {
+  var body   = document.getElementById("body-"   + pid);
+  var toggle = document.getElementById("toggle-" + pid);
+  if (!body) return;
+  var collapsed = body.classList.contains("collapsed");
+  if (collapsed) {
+    body.style.maxHeight = body.scrollHeight + "px";
+    body.classList.remove("collapsed");
+    toggle.textContent = "▾";
+    setTimeout(function(){ body.style.maxHeight = ""; }, 360);
+  } else {
+    body.style.maxHeight = body.scrollHeight + "px";
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        body.classList.add("collapsed");
+        body.style.maxHeight = "";
+        toggle.textContent = "▸";
+      });
+    });
+  }
+}
+</script>
 <script>
 (function(){
   var postFotos = {};

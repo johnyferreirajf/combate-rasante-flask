@@ -24,7 +24,7 @@ class PostMidia(db.Model):
 
     id        = db.Column(db.Integer,      primary_key=True)
     post_id   = db.Column(db.Integer,      db.ForeignKey("posts.id"), nullable=False)
-    tipo      = db.Column(db.String(10),   nullable=False)    # "foto" | "video"
+    tipo      = db.Column(db.String(20),   nullable=False)    # "foto" | "video"
     url       = db.Column(db.Text,         nullable=False)    # URL Cloudinary ou YouTube
     public_id = db.Column(db.String(255),  nullable=True)     # Cloudinary public_id
     ordem     = db.Column(db.Integer,      default=0)
