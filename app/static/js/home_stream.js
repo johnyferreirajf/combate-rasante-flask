@@ -50,11 +50,11 @@
     }
   ];
 
-  /* Tile especial: último post Em Campo */
+  /* Tile especial: último post Em Campo — PRIMEIRO no carrossel */
   (function() {
     var p = window.ULTIMO_POST;
     if (!p) {
-      TILES.push({
+      TILES.unshift({
         badge: "EM CAMPO",
         icon:  "📸",
         title: "EM CAMPO",
@@ -64,14 +64,14 @@
         emcampo: true
       });
     } else {
-      TILES.push({
-        badge:    "EM CAMPO",
-        icon:     "📸",
-        title:    p.titulo,
-        desc:     p.data,
-        foto:     p.foto,
-        url:      "/em-campo",
-        emcampo:  true
+      TILES.unshift({
+        badge:   "EM CAMPO",
+        icon:    "📸",
+        title:   p.titulo,
+        desc:    p.data,
+        foto:    p.foto,
+        url:     "/em-campo",
+        emcampo: true
       });
     }
   })();
@@ -86,7 +86,6 @@
 
   /* ── Render das tiles ────────────────────────────────────── */
   track.innerHTML = TILES.map(function (t) {
-    // Tile especial "Em Campo" com foto do último post
     if (t.emcampo && t.foto) {
       return (
         '<a class="stream-tile stream-tile--foto" href="' + t.url + '" ' +
