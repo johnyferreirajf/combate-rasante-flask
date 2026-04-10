@@ -6,14 +6,8 @@
 /* ── Feed Em Campo ── */
 .ec-section { padding-block: 48px 80px; }
 .ec-header   { text-align:center; margin-bottom:40px; }
-.ec-header h1 {
-  font-size:clamp(1.6rem,4vw,2.4rem); font-weight:900; color:#fff;
-  text-shadow: 0 0 18px rgba(0,0,0,.9), 0 2px 6px rgba(0,0,0,.9);
-}
-.ec-header p  {
-  color:rgba(255,255,255,.90); margin-top:8px; font-size:15px;
-  text-shadow: 0 1px 6px rgba(0,0,0,.85);
-}
+.ec-header h1 { font-size:clamp(1.6rem,4vw,2.4rem); font-weight:900; color:var(--color-text); }
+.ec-header p  { color:var(--color-text-muted); margin-top:8px; font-size:15px; }
 
 /* Feed */
 .ec-feed { display:flex; flex-direction:column; gap:28px;
@@ -21,37 +15,20 @@
 
 /* Card de post */
 .ec-card {
-  background: rgba(10,35,18,.55);
-  border: 1px solid rgba(255,255,255,.18);
+  background: var(--color-brand-glass);
+  border: 1px solid var(--color-border);
   border-radius: 20px;
   overflow: hidden;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 8px 32px rgba(0,0,0,.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-md);
 }
 
 /* Cabeçalho do post */
 .ec-card__head {
   display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px 12px;
-  cursor: pointer; user-select: none;
+  padding: 16px 18px 12px;
 }
-.ec-card__head:hover { background: rgba(255,255,255,.04); }
-
-/* Botão minimizar */
-.ec-card__toggle {
-  margin-left:auto; flex-shrink:0;
-  background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.20);
-  border-radius:8px; width:28px; height:28px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:14px; color:rgba(255,255,255,.80);
-  transition:.15s;
-}
-.ec-card__head:hover .ec-card__toggle { background:rgba(255,255,255,.22); }
-
-/* Corpo colapsável */
-.ec-card__body { overflow:hidden; transition:max-height .35s ease, opacity .25s ease; }
-.ec-card__body.collapsed { max-height:0 !important; opacity:0; }
 .ec-card__avatar {
   width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
   background: rgba(34,197,94,.20);
@@ -60,14 +37,14 @@
   overflow: hidden;
 }
 .ec-card__avatar img { width:100%; height:100%; object-fit:cover; }
-.ec-card__logo { font-weight:900; font-size:13px; color:#22c55e; }
-.ec-card__titulo { font-weight:900; font-size:15px; color:#fff; line-height:1.3; }
-.ec-card__data   { font-size:12px; color:rgba(255,255,255,.65); margin-top:2px; }
+.ec-card__logo { font-weight:900; font-size:13px; color:var(--color-accent,#22c55e); }
+.ec-card__titulo { font-weight:900; font-size:15px; color:var(--color-text); line-height:1.3; }
+.ec-card__data   { font-size:12px; color:var(--color-text-muted); margin-top:2px; }
 
 /* Descrição */
 .ec-card__desc {
   padding: 0 18px 14px;
-  font-size:14px; color:rgba(255,255,255,.88);
+  font-size:14px; color:var(--color-text-muted);
   line-height: 1.7; white-space: pre-wrap;
 }
 
@@ -106,12 +83,17 @@
 .ec-video iframe {
   position:absolute; inset:0; width:100%; height:100%; border:0;
 }
+/* Vídeo direto (upload) */
+.ec-video video {
+  position:absolute; inset:0; width:100%; height:100%;
+  background:#000; object-fit:contain;
+}
 
 /* Rodapé do post */
 .ec-card__foot {
   padding: 10px 18px;
-  border-top: 1px solid rgba(255,255,255,.12);
-  font-size:12px; color:rgba(255,255,255,.55);
+  border-top: 1px solid var(--color-border);
+  font-size:12px; color:var(--color-text-muted);
   display:flex; align-items:center; gap:6px;
 }
 
@@ -161,23 +143,21 @@
       {% for post in posts.items %}
       <article class="ec-card">
 
-        {# Cabeçalho clicável para minimizar #}
-        <div class="ec-card__head" onclick="togglePost({{ post.id }})" title="Minimizar/expandir">
+        {# Cabeçalho #}
+        <div class="ec-card__head">
           <div class="ec-card__avatar">
             <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
                  alt="Combate Rasante"
-                 onerror="this.style.display='none';this.parentNode.innerHTML='<span style='font-weight:900;font-size:12px;color:#22c55e;'>CR</span>'">
+                 onerror="this.style.display='none';this.parentNode.innerHTML='<span style=\'font-weight:900;font-size:12px;color:#22c55e;\'>CR</span>'">
           </div>
-          <div style="flex:1;min-width:0;">
+          <div>
             <div class="ec-card__logo">COMBATE RASANTE</div>
             <div class="ec-card__titulo">{{ post.titulo }}</div>
-            <div class="ec-card__data">{{ post.created_at.strftime("%d/%m/%Y às %H:%M") }}</div>
+            <div class="ec-card__data">
+              {{ post.created_at.strftime("%d/%m/%Y às %H:%M") }}
+            </div>
           </div>
-          <div class="ec-card__toggle" id="toggle-{{ post.id }}">▾</div>
         </div>
-
-        {# Corpo colapsável #}
-        <div class="ec-card__body" id="body-{{ post.id }}">
 
         {# Descrição #}
         {% if post.descricao %}
@@ -204,15 +184,23 @@
         </div>
         {% endif %}
 
-        {# Vídeos — CORRIGIDO: "equalto" no lugar de "eq" #}
-        {% set videos = post.midias | selectattr("tipo","equalto","video") | list %}
-        {% if videos %}
+        {# Vídeos YouTube e diretos #}
+        {% set videos_yt    = post.midias | selectattr("tipo","equalto","video")        | list %}
+        {% set videos_dir   = post.midias | selectattr("tipo","equalto","video_direto") | list %}
+        {% set todos_videos = videos_yt + videos_dir %}
+        {% if todos_videos %}
         <div class="ec-videos" style="margin-top:{{ '2px' if fotos else '0' }};">
-          {% for v in videos %}
+          {% for v in todos_videos %}
           <div class="ec-video">
-            <iframe src="{{ v.url }}" allowfullscreen loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-            </iframe>
+            {% if v.tipo == "video_direto" %}
+              <video controls preload="metadata">
+                <source src="{{ v.url }}">
+              </video>
+            {% else %}
+              <iframe src="{{ v.url }}" allowfullscreen loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+              </iframe>
+            {% endif %}
           </div>
           {% endfor %}
         </div>
@@ -221,12 +209,10 @@
         {# Rodapé #}
         <div class="ec-card__foot">
           📷 {{ fotos | length }} foto{{ 's' if fotos|length != 1 else '' }}
-          {% if videos %}
-            &nbsp;·&nbsp; 🎬 {{ videos | length }} vídeo{{ 's' if videos|length != 1 else '' }}
+          {% if todos_videos is defined and todos_videos %}
+            &nbsp;·&nbsp; 🎬 {{ todos_videos | length }} vídeo{{ 's' if todos_videos|length != 1 else '' }}
           {% endif %}
         </div>
-
-        </div>{# /ec-card__body #}
 
       </article>
       {% endfor %}
@@ -239,7 +225,7 @@
         <a href="{{ url_for('posts.em_campo', page=posts.prev_num) }}"
            class="btn btn--ghost">← Mais recentes</a>
       {% endif %}
-      <span style="color:rgba(255,255,255,.75);font-size:13px;align-self:center;text-shadow:0 1px 4px rgba(0,0,0,.8);">
+      <span style="color:var(--color-text-muted);font-size:13px;align-self:center;">
         Página {{ posts.page }} de {{ posts.pages }}
       </span>
       {% if posts.has_next %}
@@ -294,30 +280,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-/* ── Minimizar / expandir post ── */
-function togglePost(pid) {
-  var body   = document.getElementById("body-"   + pid);
-  var toggle = document.getElementById("toggle-" + pid);
-  if (!body) return;
-  var collapsed = body.classList.contains("collapsed");
-  if (collapsed) {
-    body.style.maxHeight = body.scrollHeight + "px";
-    body.classList.remove("collapsed");
-    toggle.textContent = "▾";
-    setTimeout(function(){ body.style.maxHeight = ""; }, 360);
-  } else {
-    body.style.maxHeight = body.scrollHeight + "px";
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        body.classList.add("collapsed");
-        body.style.maxHeight = "";
-        toggle.textContent = "▸";
-      });
-    });
-  }
-}
-</script>
 <script>
 (function(){
   var postFotos = {};

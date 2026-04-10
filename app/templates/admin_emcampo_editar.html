@@ -53,6 +53,9 @@ textarea.ei{min-height:100px;resize:vertical;}
         <div class="midia-item {{ 'video' if m.tipo == 'video' else '' }}">
           {% if m.tipo == "foto" %}
             <img src="{{ m.url }}" alt="foto">
+          {% elif m.tipo == "video_direto" %}
+            <video src="{{ m.url }}" style="width:100%;height:100%;object-fit:cover;" muted></video>
+            <span style="position:absolute;bottom:4px;left:4px;font-size:10px;background:rgba(0,0,0,.6);color:#fff;padding:1px 5px;border-radius:4px;">MP4</span>
           {% else %}
             <span style="font-size:2rem;">🎬</span>
           {% endif %}
@@ -91,12 +94,17 @@ textarea.ei{min-height:100px;resize:vertical;}
       </div>
 
       <div>
-        <label class="el">Adicionar mais fotos</label>
-        <div class="drop-zone" onclick="document.getElementById('fotosInput').click()">
-          <input type="file" id="fotosInput" name="fotos" multiple
-                 accept="image/jpeg,image/png,image/webp,image/gif">
+        <label class="el">Adicionar fotos e/ou vídeos (máx. 100 MB cada)</label>
+        <div class="drop-zone" onclick="document.getElementById('midiasInput').click()">
+          <input type="file" id="midiasInput" name="midias" multiple
+                 accept="image/jpeg,image/png,image/webp,image/gif,
+                         video/mp4,video/quicktime,video/x-msvideo,
+                         video/webm,video/x-matroska,video/3gpp">
           <div style="font-size:13px;color:rgba(255,255,255,.60);">
-            🖼️ Clique ou arraste novas fotos
+            🖼️🎬 Clique ou arraste fotos e vídeos<br>
+            <span style="font-size:11px;color:rgba(255,255,255,.40);">
+              JPG, PNG, WEBP &nbsp;·&nbsp; MP4, MOV, AVI — máx. 100 MB cada
+            </span>
           </div>
           <div class="preview-grid" id="previewGrid"></div>
         </div>
@@ -127,19 +135,33 @@ textarea.ei{min-height:100px;resize:vertical;}
 
 {% block scripts %}
 <script>
-var input = document.getElementById("fotosInput");
+var input = document.getElementById("midiasInput");
 var grid  = document.getElementById("previewGrid");
 var files = [];
+var VIDEO_MAX = 100 * 1024 * 1024;
 input.addEventListener("change", function(){
-  files = Array.from(this.files);
+  Array.from(this.files).forEach(function(f){
+    if (f.type.startsWith("video/") && f.size > VIDEO_MAX) {
+      alert("Vídeo \"" + f.name + "\" excede 100 MB.");
+      return;
+    }
+    files.push(f);
+  });
   renderPreviews(); syncInput();
 });
 function renderPreviews(){
   grid.innerHTML = "";
   files.forEach(function(f,i){
-    var url = URL.createObjectURL(f);
     var div = document.createElement("div"); div.className="preview-item";
-    div.innerHTML='<img src="'+url+'"><button type="button" onclick="removeFile('+i+')">✕</button>';
+    if (f.type.startsWith("video/")) {
+      div.style.cssText="display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);";
+      div.innerHTML='<span style="font-size:1.8rem;">🎬</span>'+
+        '<span style="font-size:9px;color:rgba(255,255,255,.7);text-align:center;padding:0 4px;">'+f.name+'</span>'+
+        '<button type="button" onclick="removeFile('+i+')" style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:none;color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;">✕</button>';
+    } else {
+      var url = URL.createObjectURL(f);
+      div.innerHTML='<img src="'+url+'"><button type="button" onclick="removeFile('+i+')">✕</button>';
+    }
     grid.appendChild(div);
   });
 }

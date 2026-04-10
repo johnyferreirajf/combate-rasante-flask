@@ -3,14 +3,13 @@
 
 {% block head_extra %}
 <style>
-/* ── Drop zone de fotos ── */
 .drop-zone {
-  border: 2px dashed rgba(255,255,255,.30); border-radius: 12px;
+  border: 2px dashed rgba(255,255,255,.25); border-radius: 12px;
   padding: 24px; text-align: center; cursor: pointer; transition: .2s;
-  background: rgba(0,0,0,.25);
+  background: rgba(255,255,255,.05);
 }
 .drop-zone:hover, .drop-zone.over {
-  border-color: rgba(34,197,94,.7); background: rgba(34,197,94,.10);
+  border-color: rgba(34,197,94,.6); background: rgba(34,197,94,.08);
 }
 .drop-zone input { display: none; }
 .preview-grid {
@@ -21,51 +20,20 @@
 .preview-item img { width: 100%; height: 100%; object-fit: cover; }
 .preview-item button {
   position: absolute; top: 4px; right: 4px;
-  background: rgba(0,0,0,.70); border: none; color: #fff;
+  background: rgba(0,0,0,.65); border: none; color: #fff;
   border-radius: 50%; width: 22px; height: 22px;
   cursor: pointer; font-size: 11px; font-weight: 900;
 }
-
-/* ── Campos do formulário com contraste legível ── */
-.ec-label {
-  font-size: 11px; font-weight: 900; color: rgba(255,255,255,.80);
-  display: block; margin-bottom: 5px; letter-spacing: .05em; text-transform: uppercase;
+.ec-form-input {
+  width: 100%; padding: 10px 13px; border-radius: 10px;
+  border: 1px solid var(--color-border);
+  background: rgba(255,255,255,.07); color: var(--color-text);
+  font-size: 13px; font-family: inherit; outline: none; box-sizing: border-box;
 }
-.ec-input {
-  width: 100%;
-  padding: 10px 13px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,.25);
-  background: rgba(0,0,0,.35);
-  color: #fff;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color .15s;
-  box-sizing: border-box;
-}
-.ec-input::placeholder {
-  color: rgba(255,255,255,.50);
-  font-style: italic;
-}
-.ec-input:focus {
-  border-color: rgba(34,197,94,.70);
-  background: rgba(0,0,0,.45);
-}
-textarea.ec-input { resize: vertical; }
-
-/* ── Card do formulário ── */
-.ec-form-card {
-  background: rgba(0,30,15,.75);
-  border: 1px solid rgba(255,255,255,.18);
-  border-radius: 18px;
-  backdrop-filter: blur(12px);
-  padding: 24px 26px;
-  margin-bottom: var(--space-lg);
-}
-.ec-form-title {
-  font-size: 15px; font-weight: 900; color: #fff;
-  margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+.ec-form-input:focus { border-color: rgba(34,197,94,.55); }
+.ec-form-label {
+  font-size: 11px; font-weight: 900; color: var(--color-text-muted);
+  display: block; margin-bottom: 4px; letter-spacing: .04em;
 }
 </style>
 {% endblock %}
@@ -106,80 +74,67 @@ textarea.ec-input { resize: vertical; }
       {% endif %}
     {% endwith %}
 
-    {# ── Formulário de novo post ── #}
-    <div class="ec-form-card">
-      <div class="ec-form-title">
-        ✏️ Novo Post
-        <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,.55);margin-left:4px;">
-          — Você pode adicionar fotos, vídeo ou ambos na mesma postagem
-        </span>
+    {# ── Formulário de novo post (inline) ── #}
+    <div class="glass-card glass-card--standard" style="margin-bottom:var(--space-lg);padding:24px 26px;">
+      <div style="font-size:16px;font-weight:900;margin-bottom:18px;color:var(--color-text);">
+        + Novo Post
       </div>
 
       <form method="POST" enctype="multipart/form-data" id="postForm"
-            style="display:flex;flex-direction:column;gap:16px;">
+            style="display:flex;flex-direction:column;gap:14px;">
 
-        {# Linha 1: Título #}
-        <div>
-          <label class="ec-label">Título *</label>
-          <input type="text" name="titulo" required class="ec-input"
-                 placeholder="Ex: Dia de Campo em Vicentinópolis — 08/04/2026">
-        </div>
-
-        {# Linha 2: Descrição #}
-        <div>
-          <label class="ec-label">Descrição</label>
-          <textarea name="descricao" rows="4" class="ec-input"
-                    placeholder="Ex: Operação realizada na Fazenda Santa Rita, equipe de 3 pilotos, aplicação de defensivo em 450 ha de soja."></textarea>
-        </div>
-
-        {# Linha 3: Fotos + Vídeos lado a lado #}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
 
-          {# Fotos #}
+          {# Coluna esquerda: título, descrição, vídeos #}
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div>
+              <label class="ec-form-label">TÍTULO *</label>
+              <input type="text" name="titulo" required
+                     class="ec-form-input"
+                     placeholder="Ex: Dia de Campo em Vicentinópolis">
+            </div>
+            <div>
+              <label class="ec-form-label">DESCRIÇÃO</label>
+              <textarea name="descricao" rows="5"
+                        class="ec-form-input"
+                        style="resize:vertical;"
+                        placeholder="Conte o que aconteceu, local, equipe envolvida..."></textarea>
+            </div>
+            <div>
+              <label class="ec-form-label">VÍDEOS DO YOUTUBE (uma URL por linha)</label>
+              <textarea name="videos" rows="3"
+                        class="ec-form-input"
+                        style="resize:vertical;"
+                        placeholder="https://www.youtube.com/watch?v=...&#10;https://youtu.be/..."></textarea>
+            </div>
+          </div>
+
+          {# Coluna direita: fotos + vídeos diretos #}
           <div>
-            <label class="ec-label">📷 Fotos (múltiplas)</label>
+            <label class="ec-form-label">📷 FOTOS &amp; 🎬 VÍDEOS (até 100 MB cada)</label>
             <div class="drop-zone" id="dropZone"
-                 onclick="document.getElementById('fotosInput').click()"
-                 style="min-height:180px;display:flex;flex-direction:column;
-                        align-items:center;justify-content:center;">
-              <input type="file" id="fotosInput" name="fotos" multiple
-                     accept="image/jpeg,image/png,image/webp,image/gif">
+                 onclick="document.getElementById('midiasInput').click()"
+                 style="min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+              <input type="file" id="midiasInput" name="midias" multiple
+                     accept="image/jpeg,image/png,image/webp,image/gif,
+                             video/mp4,video/quicktime,video/x-msvideo,
+                             video/webm,video/x-matroska,video/3gpp">
               <div id="dropHint">
-                <div style="font-size:2rem;margin-bottom:6px;">🖼️</div>
-                <div style="font-size:13px;color:rgba(255,255,255,.65);">
-                  Clique ou arraste as fotos aqui
-                </div>
-                <div style="font-size:11px;color:rgba(255,255,255,.40);margin-top:4px;">
-                  JPG, PNG, WEBP — múltiplas permitidas
+                <div style="font-size:2.5rem;margin-bottom:8px;">🖼️🎬</div>
+                <div style="font-size:13px;color:var(--color-text-muted);">
+                  Clique ou arraste fotos e vídeos aqui<br>
+                  <span style="font-size:11px;">JPG, PNG, WEBP &nbsp;·&nbsp; MP4, MOV, AVI — máx. 100 MB cada</span>
                 </div>
               </div>
               <div class="preview-grid" id="previewGrid"></div>
             </div>
           </div>
 
-          {# Vídeos #}
-          <div style="display:flex;flex-direction:column;gap:10px;">
-            <div>
-              <label class="ec-label">🎬 Vídeos do YouTube</label>
-              <textarea name="videos" rows="5" class="ec-input"
-                        placeholder="Cole uma URL por linha:&#10;&#10;https://www.youtube.com/watch?v=xXxXxXxXxXx&#10;https://youtu.be/xXxXxXxXxXx&#10;&#10;Aceita links normais e links curtos (youtu.be)"></textarea>
-            </div>
-            <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
-                        border-radius:10px;padding:10px 12px;font-size:11px;
-                        color:rgba(255,255,255,.55);line-height:1.7;">
-              💡 <strong style="color:rgba(255,255,255,.75);">Dica:</strong>
-              Você pode adicionar <strong style="color:rgba(255,255,255,.75);">fotos E vídeos</strong>
-              na mesma postagem. Preencha os dois campos e clique em Publicar.
-            </div>
-          </div>
-
         </div>
 
-        {# Botão publicar #}
-        <div style="display:flex;justify-content:flex-end;padding-top:8px;
-                    border-top:1px solid rgba(255,255,255,.12);margin-top:4px;">
+        <div style="display:flex;justify-content:flex-end;padding-top:6px;border-top:1px solid var(--color-border);margin-top:4px;">
           <button type="submit" class="btn btn--primary"
-                  style="padding:11px 36px;font-size:14px;font-weight:800;">
+                  style="padding:10px 32px;font-size:14px;font-weight:800;">
             🚀 Publicar post
           </button>
         </div>
@@ -193,6 +148,7 @@ textarea.ec-input { resize: vertical; }
       <div class="glass-card glass-card--standard"
            style="display:flex;align-items:center;gap:16px;padding:14px 18px;flex-wrap:wrap;">
 
+        {# Thumb da primeira foto — CORRIGIDO: "equalto" não "eq" #}
         {% set primeira_foto = post.midias | selectattr("tipo","equalto","foto") | first %}
         <div style="width:64px;height:64px;border-radius:12px;overflow:hidden;
                     flex-shrink:0;background:rgba(255,255,255,.08);
@@ -262,7 +218,7 @@ textarea.ec-input { resize: vertical; }
 {% block scripts %}
 <script>
 (function(){
-  var input = document.getElementById("fotosInput");
+  var input = document.getElementById("midiasInput");
   var grid  = document.getElementById("previewGrid");
   var drop  = document.getElementById("dropZone");
   var hint  = document.getElementById("dropHint");
@@ -282,13 +238,21 @@ textarea.ec-input { resize: vertical; }
   });
   drop.addEventListener("drop", function(e){
     e.preventDefault(); drop.classList.remove("over");
-    addFiles(Array.from(e.dataTransfer.files).filter(function(f){
-      return f.type.startsWith("image/");
-    }));
+    var TIPOS_OK = ["image/jpeg","image/png","image/webp","image/gif",
+      "video/mp4","video/quicktime","video/x-msvideo","video/webm","video/x-matroska","video/3gpp"];
+    addFiles(Array.from(e.dataTransfer.files).filter(function(f){ return TIPOS_OK.indexOf(f.type) !== -1; }));
   });
 
+  var VIDEO_MAX = 100 * 1024 * 1024;
+
   function addFiles(newFiles){
-    newFiles.forEach(function(f){ files.push(f); });
+    newFiles.forEach(function(f){
+      if (f.type.startsWith("video/") && f.size > VIDEO_MAX) {
+        alert("Vídeo \"" + f.name + "\" excede 100 MB e não será adicionado.");
+        return;
+      }
+      files.push(f);
+    });
     renderPreviews();
     syncInput();
   }
@@ -303,10 +267,22 @@ textarea.ec-input { resize: vertical; }
     grid.innerHTML = "";
     if (hint) hint.style.display = files.length > 0 ? "none" : "";
     files.forEach(function(f, i){
-      var url = URL.createObjectURL(f);
       var div = document.createElement("div");
       div.className = "preview-item";
-      div.innerHTML = '<img src="'+url+'" alt=""><button type="button" onclick="removeFile('+i+')">✕</button>';
+      if (f.type.startsWith("video/")) {
+        div.style.cssText = "display:flex;flex-direction:column;align-items:center;" +
+          "justify-content:center;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.15);gap:4px;";
+        div.innerHTML =
+          '<span style="font-size:1.8rem;">🎬</span>' +
+          '<span style="font-size:9px;color:rgba(255,255,255,.7);text-align:center;padding:0 4px;' +
+          'word-break:break-all;max-height:32px;overflow:hidden;">' + f.name + '</span>' +
+          '<button type="button" onclick="removeFile('+i+')" ' +
+          'style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,.6);border:none;' +
+          'color:#fff;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:10px;">✕</button>';
+      } else {
+        var url = URL.createObjectURL(f);
+        div.innerHTML = '<img src="'+url+'" alt=""><button type="button" onclick="removeFile('+i+')">✕</button>';
+      }
       grid.appendChild(div);
     });
   }

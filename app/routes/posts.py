@@ -4,6 +4,7 @@ Rotas de "Em Campo" — feed público + CRUD admin de posts com fotos/vídeos.
 from __future__ import annotations
 from typing import Optional
 
+import io
 import re
 from flask import (Blueprint, render_template, request, redirect,
                    url_for, flash, abort, current_app)
@@ -12,6 +13,13 @@ from app.models.post import Post, PostMidia
 from app.utils.security import login_required, admin_required, get_current_user
 
 posts_bp = Blueprint("posts", __name__)
+
+# Extensões de vídeo aceitas para upload direto
+VIDEO_EXTS = {"mp4", "mov", "avi", "mkv", "webm", "m4v", "3gp"}
+# Extensões de imagem aceitas
+IMAGE_EXTS = {"jpg", "jpeg", "png", "webp", "gif", "bmp"}
+# Limite de 100 MB por arquivo de vídeo
+VIDEO_MAX_BYTES = 100 * 1024 * 1024
 
 
 # ─── Helpers ──────────────────────────────────────────────────
@@ -28,8 +36,12 @@ def _youtube_embed(url: str) -> Optional[str]:
     return None
 
 
-def _upload_cloudinary(file_stream, folder="combaterasante/emcampo"):
-    """Faz upload para Cloudinary e retorna (url, public_id)."""
+def _ext(filename: str) -> str:
+    return filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+
+def _upload_midia(conteudo: bytes, filename: str, folder: str = "combaterasante/emcampo"):
+    """Faz upload de foto OU vídeo para Cloudinary. Retorna (url, public_id, tipo)."""
     import cloudinary, cloudinary.uploader
     cloudinary.config(
         cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
@@ -37,13 +49,79 @@ def _upload_cloudinary(file_stream, folder="combaterasante/emcampo"):
         api_secret=current_app.config["CLOUDINARY_API_SECRET"],
         secure=True,
     )
+    ext = _ext(filename)
+    if ext in IMAGE_EXTS:
+        rtype = "image"
+        tipo  = "foto"
+    elif ext in VIDEO_EXTS:
+        rtype = "video"
+        tipo  = "video_direto"   # diferencia de embed YouTube
+    else:
+        rtype = "auto"
+        tipo  = "foto"
+
     result = cloudinary.uploader.upload(
-        file_stream,
+        io.BytesIO(conteudo),
         folder=folder,
-        resource_type="image",
-        transformation=[{"quality": "auto", "fetch_format": "auto"}],
+        resource_type=rtype,
+        use_filename=True,
+        unique_filename=True,
     )
-    return result["secure_url"], result["public_id"]
+    return result["secure_url"], result["public_id"], tipo
+
+
+def _processar_midias(post, ordem: int) -> int:
+    """
+    Processa fotos + vídeos diretos + YouTube de um request POST.
+    Retorna o próximo valor de ordem.
+    """
+    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+
+    # ── Fotos e vídeos diretos (campo "midias") ──
+    arquivos = request.files.getlist("midias")
+    for arq in arquivos:
+        if not arq or not arq.filename:
+            continue
+        ext = _ext(arq.filename)
+        if ext not in IMAGE_EXTS and ext not in VIDEO_EXTS:
+            flash("Tipo '{}' não suportado — use JPG, PNG, MP4, MOV etc.".format(arq.filename), "error")
+            continue
+        if use_cloud:
+            try:
+                conteudo = arq.read()
+                if ext in VIDEO_EXTS and len(conteudo) > VIDEO_MAX_BYTES:
+                    flash("Vídeo '{}' excede 100 MB.".format(arq.filename), "error")
+                    continue
+                url, pid, tipo = _upload_midia(conteudo, arq.filename)
+                # Para vídeo direto, salva como tipo="video" com URL do Cloudinary
+                db.session.add(PostMidia(
+                    post_id=post.id,
+                    tipo="foto" if tipo == "foto" else "video_direto",
+                    url=url,
+                    public_id=pid,
+                    ordem=ordem,
+                ))
+                ordem += 1
+            except Exception as e:
+                flash("Erro ao enviar '{}': {}".format(arq.filename, str(e)[:100]), "error")
+        else:
+            flash("Cloudinary não configurado — arquivo não enviado.", "error")
+
+    # ── YouTube (campo "videos") ──
+    videos_raw = (request.form.get("videos") or "")
+    for line in videos_raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        embed = _youtube_embed(line)
+        if embed:
+            db.session.add(PostMidia(post_id=post.id, tipo="video",
+                                     url=embed, ordem=ordem))
+            ordem += 1
+        else:
+            flash("URL inválida (só YouTube): {}".format(line), "error")
+
+    return ordem
 
 
 # ─── Página pública: feed "Em Campo" ──────────────────────────
@@ -64,7 +142,7 @@ def em_campo():
     return render_template("em_campo.html", posts=posts)
 
 
-# ─── Admin: listar posts + criar novo post (formulário inline) ─
+# ─── Admin: listar posts + criar novo post ─────────────────────
 
 @posts_bp.route("/admin/emcampo", methods=["GET", "POST"])
 @login_required
@@ -82,38 +160,7 @@ def admin_emcampo():
         db.session.add(post)
         db.session.flush()
 
-        import io as _io
-        ordem = 0
-        fotos = request.files.getlist("fotos")
-        use_cloud = current_app.config.get("USE_CLOUDINARY", False)
-        for foto in fotos:
-            if not foto or not foto.filename:
-                continue
-            if use_cloud:
-                try:
-                    # Lê bytes completos antes de enviar (evita stream consumido)
-                    conteudo = foto.read()
-                    url, pid = _upload_cloudinary(_io.BytesIO(conteudo))
-                    db.session.add(PostMidia(post_id=post.id, tipo="foto",
-                                            url=url, public_id=pid, ordem=ordem))
-                    ordem += 1
-                except Exception as e:
-                    flash("Erro ao enviar foto '{}': {}".format(foto.filename, str(e)[:100]), "error")
-            else:
-                flash("Cloudinary não configurado — foto não enviada.", "error")
-
-        videos_raw = (request.form.get("videos") or "")
-        for line in videos_raw.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            embed = _youtube_embed(line)
-            if embed:
-                db.session.add(PostMidia(post_id=post.id, tipo="video",
-                                        url=embed, ordem=ordem))
-                ordem += 1
-            else:
-                flash("URL de vídeo inválida (só YouTube): {}".format(line), "error")
+        _processar_midias(post, ordem=0)
 
         db.session.commit()
         flash("Post publicado com sucesso!", "success")
@@ -138,38 +185,8 @@ def admin_emcampo_editar(pid):
         post.descricao = (request.form.get("descricao") or "").strip()
         post.ativo     = request.form.get("ativo") == "1"
 
-        use_cloud = current_app.config.get("USE_CLOUDINARY", False)
         ordem = max((m.ordem for m in post.midias), default=-1) + 1
-
-        import io as _io
-        fotos = request.files.getlist("fotos")
-        for foto in fotos:
-            if not foto or not foto.filename:
-                continue
-            if use_cloud:
-                try:
-                    conteudo2 = foto.read()
-                    url, pid2 = _upload_cloudinary(_io.BytesIO(conteudo2))
-                    db.session.add(PostMidia(post_id=post.id, tipo="foto",
-                                            url=url, public_id=pid2, ordem=ordem))
-                    ordem += 1
-                except Exception as e:
-                    flash("Erro ao enviar foto '{}': {}".format(foto.filename, str(e)[:100]), "error")
-            else:
-                flash("Cloudinary não configurado — foto não enviada.", "error")
-
-        videos_raw = (request.form.get("videos") or "")
-        for line in videos_raw.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            embed = _youtube_embed(line)
-            if embed:
-                db.session.add(PostMidia(post_id=post.id, tipo="video",
-                                        url=embed, ordem=ordem))
-                ordem += 1
-            else:
-                flash("URL inválida: {}".format(line), "error")
+        _processar_midias(post, ordem=ordem)
 
         db.session.commit()
         flash("Post atualizado!", "success")
@@ -189,7 +206,7 @@ def admin_emcampo_midia_excluir(mid):
     midia = PostMidia.query.get_or_404(mid)
     post_id = midia.post_id
 
-    if midia.tipo == "foto" and midia.public_id:
+    if midia.public_id and midia.tipo in ("foto", "video_direto"):
         try:
             import cloudinary, cloudinary.uploader
             cloudinary.config(
@@ -198,7 +215,8 @@ def admin_emcampo_midia_excluir(mid):
                 api_secret=current_app.config["CLOUDINARY_API_SECRET"],
                 secure=True,
             )
-            cloudinary.uploader.destroy(midia.public_id, resource_type="image")
+            rtype = "video" if midia.tipo == "video_direto" else "image"
+            cloudinary.uploader.destroy(midia.public_id, resource_type=rtype)
         except Exception:
             pass
 
@@ -227,9 +245,10 @@ def admin_emcampo_excluir(pid):
                 secure=True,
             )
             for m in post.midias:
-                if m.tipo == "foto" and m.public_id:
+                if m.public_id and m.tipo in ("foto", "video_direto"):
                     try:
-                        cloudinary.uploader.destroy(m.public_id, resource_type="image")
+                        rtype = "video" if m.tipo == "video_direto" else "image"
+                        cloudinary.uploader.destroy(m.public_id, resource_type=rtype)
                     except Exception:
                         pass
         except Exception:
