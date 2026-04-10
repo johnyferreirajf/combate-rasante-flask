@@ -75,7 +75,7 @@
     {% endwith %}
 
     {# ── Formulário de novo post (inline) ── #}
-    <div class="glass-card glass-card--standard" style="margin-bottom:var(--space-lg);padding:24px 26px;background:rgba(8,45,22,.65);border:1px solid rgba(255,255,255,.18);">
+    <div class="glass-card glass-card--standard" style="margin-bottom:var(--space-lg);padding:24px 26px;background:rgba(10,55,28,.50);border:1px solid rgba(255,255,255,.16);">
       <div style="font-size:16px;font-weight:900;margin-bottom:18px;color:var(--color-text);">
         + Novo Post
       </div>
@@ -88,20 +88,20 @@
           {# Coluna esquerda: título, descrição, vídeos #}
           <div style="display:flex;flex-direction:column;gap:14px;">
             <div>
-              <label class="ec-form-label" style="color:#d1fae5;font-size:12px;">TÍTULO *</label>
+              <label class="ec-form-label">TÍTULO *</label>
               <input type="text" name="titulo" required
                      class="ec-form-input"
                      placeholder="Ex: Dia de Campo em Vicentinópolis">
             </div>
             <div>
-              <label class="ec-form-label" style="color:#d1fae5;font-size:12px;">DESCRIÇÃO</label>
+              <label class="ec-form-label">DESCRIÇÃO</label>
               <textarea name="descricao" rows="5"
                         class="ec-form-input"
                         style="resize:vertical;"
                         placeholder="Conte o que aconteceu, local, equipe envolvida..."></textarea>
             </div>
             <div>
-              <label class="ec-form-label" style="color:#d1fae5;font-size:12px;">🎬 YOUTUBE (uma URL por linha)</label>
+              <label class="ec-form-label">🎬 YOUTUBE (uma URL por linha)</label>
               <textarea name="videos" rows="3"
                         class="ec-form-input"
                         style="resize:vertical;"
@@ -111,7 +111,7 @@
 
           {# Coluna direita: fotos + vídeos diretos #}
           <div>
-            <label class="ec-form-label" style="color:#d1fae5;font-size:12px;">📷 FOTOS &amp; 🎬 VÍDEOS (máx. 100 MB)</label>
+            <label class="ec-form-label">📷 FOTOS &amp; 🎬 VÍDEOS (máx. 100 MB)</label>
             <div class="drop-zone" id="dropZone"
                  onclick="document.getElementById('midiasInput').click()"
                  style="min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
@@ -174,7 +174,7 @@
             &nbsp;·&nbsp;
             {{ post.midias | selectattr("tipo","equalto","foto") | list | length }} foto(s)
             &nbsp;·&nbsp;
-            {{ post.midias | selectattr("tipo","equalto","video") | list | length }} vídeo(s)
+            {{ (post.midias | selectattr("tipo","equalto","video") | list) | length + (post.midias | selectattr("tipo","equalto","vid") | list) | length }} vídeo(s)
           </div>
         </div>
 
