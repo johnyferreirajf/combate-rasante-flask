@@ -340,10 +340,16 @@ Máximo de 3 parágrafos por resposta."""
                 mensagens_api.append({"role": h["role"], "content": h["content"]})
         mensagens_api.append({"role": "user", "content": mensagem})
 
+        import os
+        api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if not api_key:
+            return jsonify({"resposta": "Assistente temporariamente indisponível. A chave de API não está configurada.", "visitante": False})
+
         resp = _req.post(
             "https://api.anthropic.com/v1/messages",
             headers={
                 "Content-Type": "application/json",
+                "x-api-key": api_key,
                 "anthropic-version": "2023-06-01",
             },
             json={
@@ -360,6 +366,9 @@ Máximo de 3 parágrafos por resposta."""
         return jsonify({"resposta": texto, "visitante": False})
 
     except Exception as e:
+        erro_msg = str(e)[:200]
+        import os, logging
+        logging.error("Chatbot erro: %s", erro_msg)
         return jsonify({"resposta": "Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente em instantes.", "visitante": False})
 
 
