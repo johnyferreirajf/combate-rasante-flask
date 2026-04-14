@@ -1,28 +1,29 @@
 /**
- * COMBATE RASANTE — Chatbot Flutuante
+ * COMBATE RASANTE — Weikren Bot
  * Visitantes: menu interativo por balões
- * Autenticados: chat com IA (Claude via API backend)
+ * Autenticados: chat livre com IA
  */
 (function () {
   "use strict";
 
-  /* ── Detectar se o usuário está autenticado ── */
   var IS_AUTH = document.body.dataset.crAuth === "1";
+  var AVATAR  = "/static/img/weikren-avatar.png";
+  var VIDEO   = "/static/video/weikren-bot.mp4";
 
   /* ── Conteúdo do menu de visitantes ── */
   var MENU_PRINCIPAL = [
-    { id: "agricultura",  label: "🌿 Aviação Agrícola"        },
-    { id: "precisao",     label: "🎯 Precisão na Aplicação"   },
-    { id: "seguranca",    label: "🛡️ Segurança Operacional"   },
-    { id: "tecnologia",   label: "📡 Tecnologia Embarcada"    },
-    { id: "cultura",      label: "🌾 Culturas Atendidas"      },
-    { id: "manutencao",   label: "🔧 Manutenção Preventiva"   },
-    { id: "contato",      label: "📞 Falar com a Equipe"      },
+    { id: "agricultura",  label: "🌿 Aviação Agrícola"       },
+    { id: "precisao",     label: "🎯 Precisão na Aplicação"  },
+    { id: "seguranca",    label: "🛡️ Segurança Operacional"  },
+    { id: "tecnologia",   label: "📡 Tecnologia Embarcada"   },
+    { id: "cultura",      label: "🌾 Culturas Atendidas"     },
+    { id: "manutencao",   label: "🔧 Manutenção Preventiva"  },
+    { id: "contato",      label: "📞 Falar com a Equipe"     },
   ];
 
   var CONTEUDO = {
     agricultura: {
-      texto: "A aviação agrícola é hoje uma das ferramentas mais eficientes do agronegócio. Com capacidade de cobrir centenas de hectares por dia, as aeronaves agrícolas permitem aplicações de defensivos, fertilizantes e fungicidas com rapidez e uniformidade impossíveis de atingir por equipamentos terrestres — especialmente em lavouras densas ou em condições de solo úmido.",
+      texto: "A aviação agrícola é hoje uma das ferramentas mais eficientes do agronegócio. Com capacidade de cobrir centenas de hectares por dia, as aeronaves permitem aplicações de defensivos, fertilizantes e fungicidas com rapidez e uniformidade impossíveis de atingir por equipamentos terrestres — especialmente em lavouras densas ou em condições de solo úmido.",
       subs: [
         { id: "produtividade", label: "🚀 Produtividade no Campo" },
         { id: "vantagens",     label: "✅ Vantagens vs Terrestre" },
@@ -33,14 +34,14 @@
       subs: []
     },
     seguranca: {
-      texto: "A segurança é a base de cada voo. Todos os pilotos são certificados pela ANAC, as operações são licenciadas pelo MAPA, e seguimos rigorosamente as faixas de segurança, ART e respeito às áreas de proteção ambiental. O checklist antes de cada voo é obrigatório e auditado. Cultura de segurança não é opção — é compromisso.",
+      texto: "A segurança é a base de cada voo. Todos os pilotos são certificados pela ANAC, as operações são licenciadas pelo MAPA, e seguimos rigorosamente as faixas de segurança, ART e respeito às áreas de proteção ambiental. Cultura de segurança não é opção — é compromisso.",
       subs: [
-        { id: "checklist",  label: "📋 Checklist Pré-Voo" },
+        { id: "checklist",  label: "📋 Checklist Pré-Voo"    },
         { id: "manutencao", label: "🔧 Manutenção Preventiva" },
       ]
     },
     tecnologia: {
-      texto: "Nossas aeronaves são equipadas com GPS de alta precisão, controle automático de faixa e bicos de pulverização controlados eletronicamente. Monitoramos em tempo real a velocidade, altitude, largura de faixa e volume aplicado. Ao final da operação, o produtor recebe um relatório completo com rastreabilidade total.",
+      texto: "Nossas aeronaves são equipadas com GPS de alta precisão, controle automático de faixa e bicos de pulverização controlados eletronicamente. Monitoramos em tempo real a velocidade, altitude, largura de faixa e volume aplicado. O produtor recebe um relatório completo com rastreabilidade total.",
       subs: []
     },
     cultura: {
@@ -48,21 +49,19 @@
       subs: []
     },
     manutencao: {
-      texto: "Manutenção preventiva é sinônimo de segurança e disponibilidade. Seguimos rigorosos planos de manutenção homologados pela ANAC, com inspeções periódicas de motor, sistemas de pulverização, estrutura e aviônicos. Aeronaves bem mantidas garantem regularidade operacional e proteção máxima ao piloto e ao produtor.",
-      subs: [
-        { id: "checklist", label: "📋 Checklist Pré-Voo" },
-      ]
+      texto: "Manutenção preventiva é sinônimo de segurança e disponibilidade. Seguimos rigorosos planos de manutenção homologados pela ANAC, com inspeções periódicas de motor, sistemas de pulverização, estrutura e aviônicos. Aeronaves bem mantidas garantem regularidade operacional e proteção máxima ao piloto.",
+      subs: [{ id: "checklist", label: "📋 Checklist Pré-Voo" }]
     },
     checklist: {
-      texto: "O checklist pré-voo é uma lista sistemática de verificações realizadas antes de cada decolagem. Inclui:\n\n• Verificação de combustível e óleo\n• Inspeção visual do motor e fuselagem\n• Teste dos sistemas de pulverização\n• Verificação do GPS e comunicação\n• Confirmação das condições meteorológicas\n• Briefing com a equipe de apoio\n\nNenhum voo parte sem a conclusão completa do checklist.",
+      texto: "O checklist pré-voo inclui:\n\n• Verificação de combustível e óleo\n• Inspeção visual do motor e fuselagem\n• Teste dos sistemas de pulverização\n• Verificação do GPS e comunicação\n• Confirmação das condições meteorológicas\n• Briefing com a equipe de apoio\n\nNenhum voo parte sem a conclusão completa do checklist.",
       subs: []
     },
     produtividade: {
-      texto: "A aviação agrícola potencializa resultados ao aplicar defensivos na janela ideal de eficácia — mesmo quando o solo está úmido ou a lavoura já fechou. Isso reduz perdas por doença ou praga, melhora a uniformidade de maturação e eleva a produtividade. Estudos comprovam ganhos de 8 a 15% na produtividade com aplicações aéreas no momento certo.",
+      texto: "A aviação agrícola potencializa resultados ao aplicar defensivos na janela ideal de eficácia — mesmo quando o solo está úmido ou a lavoura já fechou. Estudos comprovam ganhos de 8 a 15% na produtividade com aplicações aéreas no momento certo.",
       subs: []
     },
     vantagens: {
-      texto: "Comparado aos equipamentos terrestres, a aviação agrícola oferece:\n\n✅ Velocidade — centenas de ha/dia sem depender do solo\n✅ Acesso — funciona mesmo em lavouras fechadas ou encharcadas\n✅ Uniformidade — cobertura regular sem compactar o solo\n✅ Agilidade — aplicação na janela ideal de eficiência\n✅ Rastreabilidade — relatório georreferenciado de cada voo",
+      texto: "Comparado aos equipamentos terrestres:\n\n✅ Velocidade — centenas de ha/dia sem depender do solo\n✅ Acesso — funciona em lavouras fechadas ou encharcadas\n✅ Uniformidade — cobertura regular sem compactar o solo\n✅ Agilidade — aplicação na janela ideal\n✅ Rastreabilidade — relatório georreferenciado de cada voo",
       subs: []
     },
     contato: {
@@ -72,70 +71,101 @@
     },
   };
 
-  /* ── Construir DOM ── */
+  /* ── Criar elementos ── */
+
+  // Vídeo intro
+  var intro = document.createElement("div");
+  intro.id = "cr-intro";
+  intro.innerHTML = '<video id="crIntroVid" muted playsinline>' +
+    '<source src="' + VIDEO + '" type="video/mp4"></video>';
+  document.body.appendChild(intro);
+
+  // Botão flutuante com avatar
   var btn = document.createElement("button");
   btn.id = "cr-chat-btn";
-  btn.setAttribute("aria-label", "Abrir assistente virtual");
-  btn.innerHTML = '<span>✈</span><span class="cr-notif" id="crNotif"></span>';
+  btn.setAttribute("aria-label", "Abrir assistente Weikren");
+  btn.innerHTML =
+    '<img src="' + AVATAR + '" alt="Weikren">' +
+    '<span class="cr-notif" id="crNotif"></span>';
+  document.body.appendChild(btn);
 
+  // Balão de saudação
+  var hello = document.createElement("div");
+  hello.id = "cr-hello-bubble";
+  hello.textContent = "👋 Oi! Sou o Weikren. Posso te ajudar?";
+  hello.onclick = abrir;
+  document.body.appendChild(hello);
+
+  // Janela do chat
   var win = document.createElement("div");
   win.id = "cr-chat-win";
   win.setAttribute("role", "dialog");
-  win.setAttribute("aria-label", "Assistente Combate Rasante");
-
   win.innerHTML =
     '<div class="cr-header">' +
       '<div class="cr-header-avatar">' +
-        '<img src="/static/img/logo-combate.jpeg" alt="CR" onerror="this.style.display=\'none\'">' +
+        '<img src="' + AVATAR + '" alt="Weikren">' +
       '</div>' +
       '<div class="cr-header-info">' +
-        '<div class="cr-header-name">Assistente CR</div>' +
-        '<div class="cr-header-status">Online — Aviação Agrícola</div>' +
+        '<div class="cr-header-name">Weikren</div>' +
+        '<div class="cr-header-role">Assistente Combate Rasante</div>' +
+        '<div class="cr-header-status">Online</div>' +
       '</div>' +
       '<button class="cr-close" id="crClose" aria-label="Fechar">✕</button>' +
     '</div>' +
     '<div class="cr-msgs" id="crMsgs"></div>' +
     (IS_AUTH
-      ? '<div class="cr-input-row" id="crInputRow">' +
+      ? '<div class="cr-input-row">' +
           '<textarea id="crInput" placeholder="Digite sua pergunta sobre aviação agrícola..." rows="1"></textarea>' +
           '<button class="cr-send" id="crSend" aria-label="Enviar">➤</button>' +
         '</div>'
-      : '<div class="cr-visitor-footer">Visitante? <a href="/login">Faça login</a> para chat completo com IA.</div>');
-
-  document.body.appendChild(btn);
+      : '<div class="cr-visitor-footer">Visitante? <a href="/login">Faça login</a> para chat com IA.</div>');
   document.body.appendChild(win);
 
   /* ── Referências ── */
-  var msgs    = document.getElementById("crMsgs");
-  var notif   = document.getElementById("crNotif");
-  var input   = document.getElementById("crInput");
-  var sendBtn = document.getElementById("crSend");
+  var msgs      = document.getElementById("crMsgs");
+  var notif     = document.getElementById("crNotif");
+  var input     = document.getElementById("crInput");
+  var sendBtn   = document.getElementById("crSend");
+  var introVid  = document.getElementById("crIntroVid");
   var historico = [];
   var aberto    = false;
 
-  /* ── Funções helpers ── */
+  /* ── Helpers ── */
   function scroll() {
-    setTimeout(function () { msgs.scrollTop = msgs.scrollHeight; }, 50);
+    setTimeout(function () { msgs.scrollTop = msgs.scrollHeight; }, 60);
   }
 
-  function addMsg(texto, quem) {
+  // Bolha do bot com mini avatar do Weikren
+  function addBotMsg(texto) {
+    var row = document.createElement("div");
+    row.className = "cr-bot-row";
+    row.innerHTML =
+      '<div class="cr-bot-mini"><img src="' + AVATAR + '" alt="W"></div>' +
+      '<div class="cr-bubble bot" style="white-space:pre-wrap">' + texto + '</div>';
+    msgs.appendChild(row);
+    scroll();
+    return row;
+  }
+
+  // Bolha do usuário
+  function addUserMsg(texto) {
     var b = document.createElement("div");
-    b.className = "cr-bubble " + quem;
-    b.style.whiteSpace = "pre-wrap";
+    b.className = "cr-bubble user";
     b.textContent = texto;
     msgs.appendChild(b);
     scroll();
-    return b;
   }
 
+  // Typing com mini avatar
   function addTyping() {
-    var t = document.createElement("div");
-    t.className = "cr-typing";
-    t.id = "crTyping";
-    t.innerHTML = "<span></span><span></span><span></span>";
-    msgs.appendChild(t);
+    var row = document.createElement("div");
+    row.className = "cr-typing-row";
+    row.id = "crTyping";
+    row.innerHTML =
+      '<div class="cr-bot-mini"><img src="' + AVATAR + '" alt="W"></div>' +
+      '<div class="cr-typing"><span></span><span></span><span></span></div>';
+    msgs.appendChild(row);
     scroll();
-    return t;
   }
 
   function removeTyping() {
@@ -143,10 +173,11 @@
     if (t) t.remove();
   }
 
+  // Botões de opção
   function addOptions(lista, onBack) {
-    // Botão voltar (se não for menu principal)
+    var back = null;
     if (onBack) {
-      var back = document.createElement("button");
+      back = document.createElement("button");
       back.className = "cr-back-btn";
       back.textContent = "← Voltar ao menu";
       back.onclick = onBack;
@@ -169,10 +200,10 @@
     scroll();
   }
 
-  /* ── Lógica visitante ── */
+  /* ── Menu de visitantes ── */
   function menuPrincipal() {
     setTimeout(function () {
-      addMsg("O que você gostaria de saber?", "bot");
+      addBotMsg("O que você gostaria de saber?");
       addOptions(MENU_PRINCIPAL, null);
     }, 300);
   }
@@ -181,28 +212,28 @@
     var dados = CONTEUDO[id];
     if (!dados) return menuPrincipal();
 
-    addMsg(dados.texto, "bot");
+    addBotMsg(dados.texto);
 
     if (dados.link) {
       var a = document.createElement("a");
       a.href = dados.link.href;
-      a.style.cssText = "display:inline-block;margin-top:6px;padding:9px 16px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;";
+      a.style.cssText = "display:inline-block;margin:6px 0 0 33px;padding:9px 16px;" +
+        "background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;" +
+        "border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;";
       a.textContent = dados.link.label;
       msgs.appendChild(a);
     }
 
     var prox = dados.subs && dados.subs.length ? dados.subs : null;
-    if (prox) {
-      setTimeout(function () {
-        addMsg("Deseja saber mais sobre:", "bot");
+    setTimeout(function () {
+      if (prox) {
+        addBotMsg("Deseja saber mais?");
         addOptions(prox, menuPrincipal);
-      }, 500);
-    } else {
-      setTimeout(function () {
-        addMsg("Posso te ajudar com mais alguma informação?", "bot");
+      } else {
+        addBotMsg("Posso te ajudar com mais alguma informação?");
         addOptions(MENU_PRINCIPAL, null);
-      }, 700);
-    }
+      }
+    }, 500);
     scroll();
   }
 
@@ -211,31 +242,51 @@
     msgs.innerHTML = "";
     historico = [];
     setTimeout(function () {
-      addMsg("Olá! Sou o assistente virtual da Combate Rasante Aviação Agrícola. ✈️", "bot");
+      addBotMsg("Olá! Sou o Weikren, assistente virtual da Combate Rasante Aviação Agrícola! ✈️");
     }, 200);
-
     if (IS_AUTH) {
       setTimeout(function () {
-        addMsg("Pode me perguntar qualquer coisa sobre aviação agrícola, culturas, tecnologia, segurança e muito mais!", "bot");
-      }, 700);
+        addBotMsg("Pode me perguntar qualquer coisa sobre aviação agrícola, culturas, tecnologia e segurança!");
+      }, 800);
     } else {
-      setTimeout(menuPrincipal, 700);
+      setTimeout(menuPrincipal, 800);
     }
   }
 
-  /* ── Enviar mensagem (autenticados) ── */
+  /* ── Vídeo intro ── */
+  function playIntro(callback) {
+    intro.classList.add("show");
+    introVid.currentTime = 0;
+    introVid.play().catch(function () {
+      intro.classList.remove("show");
+      if (callback) callback();
+    });
+    introVid.onended = function () {
+      intro.classList.remove("show");
+      if (callback) callback();
+    };
+    // Fallback: se demorar demais
+    setTimeout(function () {
+      if (intro.classList.contains("show")) {
+        intro.classList.remove("show");
+        if (callback) callback();
+      }
+    }, 4000);
+  }
+
+  /* ── Enviar (autenticados) ── */
   function enviar() {
     if (!input) return;
     var texto = input.value.trim();
     if (!texto) return;
 
-    addMsg(texto, "user");
+    addUserMsg(texto);
     historico.push({ role: "user", content: texto });
     input.value = "";
     input.style.height = "auto";
     if (sendBtn) sendBtn.disabled = true;
 
-    var typing = addTyping();
+    addTyping();
 
     fetch("/api/chatbot", {
       method: "POST",
@@ -246,62 +297,65 @@
       .then(function (d) {
         removeTyping();
         var resp = d.resposta || "Desculpe, não consegui processar sua pergunta.";
-        addMsg(resp, "bot");
+        addBotMsg(resp);
         historico.push({ role: "assistant", content: resp });
         if (sendBtn) sendBtn.disabled = false;
-        input.focus();
+        if (input) input.focus();
       })
       .catch(function () {
         removeTyping();
-        addMsg("Erro de conexão. Verifique sua internet e tente novamente.", "bot");
+        addBotMsg("Erro de conexão. Verifique sua internet e tente novamente.");
         if (sendBtn) sendBtn.disabled = false;
       });
   }
 
   /* ── Abrir / fechar ── */
   function abrir() {
+    if (aberto) return;
     aberto = true;
-    win.classList.add("open");
-    btn.style.transform = "rotate(10deg) scale(.92)";
+    hello.classList.add("hide");
     notif.classList.remove("show");
-    if (msgs.children.length === 0) bemVindo();
-    if (input) setTimeout(function () { input.focus(); }, 300);
+
+    // Toca vídeo intro na primeira abertura, depois abre direto
+    if (msgs.children.length === 0) {
+      playIntro(function () {
+        win.classList.add("open");
+        bemVindo();
+        if (input) setTimeout(function () { input.focus(); }, 300);
+      });
+    } else {
+      win.classList.add("open");
+      if (input) setTimeout(function () { input.focus(); }, 300);
+    }
   }
 
   function fechar() {
     aberto = false;
     win.classList.remove("open");
-    btn.style.transform = "";
+    intro.classList.remove("show");
+    if (introVid) { introVid.pause(); introVid.currentTime = 0; }
   }
 
-  btn.addEventListener("click", function () {
-    aberto ? fechar() : abrir();
-  });
-
+  /* ── Eventos ── */
+  btn.addEventListener("click", function () { aberto ? fechar() : abrir(); });
   document.getElementById("crClose").addEventListener("click", fechar);
-
+  hello.addEventListener("click", abrir);
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && aberto) fechar();
   });
 
-  /* ── Input autenticados ── */
   if (input) {
     input.addEventListener("keydown", function (e) {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        enviar();
-      }
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(); }
     });
     input.addEventListener("input", function () {
       this.style.height = "auto";
       this.style.height = Math.min(this.scrollHeight, 90) + "px";
     });
   }
-  if (sendBtn) {
-    sendBtn.addEventListener("click", enviar);
-  }
+  if (sendBtn) sendBtn.addEventListener("click", enviar);
 
-  /* ── Notificação inicial após 3s ── */
+  /* ── Notificação após 3s ── */
   setTimeout(function () {
     if (!aberto) notif.classList.add("show");
   }, 3000);
