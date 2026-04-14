@@ -12,19 +12,40 @@
 
   /* ── Conteúdo do menu de visitantes ── */
   var MENU_PRINCIPAL = [
-    { id: "agricultura",  label: "🌿 Aviação Agrícola"       },
-    { id: "frota",        label: "✈️ Conheça Nossa Frota"    },
-    { id: "precisao",     label: "🎯 Precisão na Aplicação"  },
-    { id: "seguranca",    label: "🛡️ Segurança Operacional"  },
-    { id: "tecnologia",   label: "📡 Tecnologia Embarcada"   },
-    { id: "cultura",      label: "🌾 Culturas Atendidas"     },
-    { id: "manutencao",   label: "🔧 Manutenção Preventiva"  },
-    { id: "contato",      label: "📞 Falar com a Equipe"     },
+    { id: "sobre",        label: "🏢 Sobre a Combate Rasante" },
+    { id: "agricultura",  label: "🌿 Aviação Agrícola"        },
+    { id: "frota",        label: "✈️ Conheça Nossa Frota"     },
+    { id: "precisao",     label: "🎯 Precisão na Aplicação"   },
+    { id: "seguranca",    label: "🛡️ Segurança Operacional"   },
+    { id: "tecnologia",   label: "📡 Tecnologia Embarcada"    },
+    { id: "cultura",      label: "🌾 Culturas Atendidas"      },
+    { id: "manutencao",   label: "🔧 Manutenção Preventiva"   },
+    { id: "contato",      label: "📞 Falar com a Equipe"      },
   ];
 
   var CONTEUDO = {
+    sobre: {
+      texto: "A Combate Rasante Aviação Agrícola é uma empresa especializada em aplicação aérea de defensivos e insumos agrícolas, referência no cerrado goiano e Triângulo Mineiro.\n\nAtuamos com foco em eficiência operacional, rastreabilidade total e comprometimento com o resultado do produtor — levando tecnologia, segurança e agilidade para o campo.",
+      subs: [
+        { id: "sobre_missao",      label: "🎯 Nossa Missão e Diferenciais" },
+        { id: "sobre_localizacao", label: "📍 Onde Estamos"                },
+        { id: "frota",             label: "✈️ Nossa Frota"                 },
+      ]
+    },
+    sobre_missao: {
+      texto: "Nossos principais diferenciais:\n\n✅ Pilotos e aeronaves certificados pela ANAC\n✅ Operações licenciadas pelo MAPA\n✅ Receituário agronômico e ART em todas as operações\n✅ GPS de bordo com sobreposição inferior a 3% entre passadas\n✅ Voo entre 2 e 5m do dossel — mínima deriva\n✅ Relatório georreferenciado entregue após cada operação\n✅ Sem compactação do solo\n✅ Centenas de hectares por dia, independente das condições do terreno",
+      subs: [
+        { id: "sobre_localizacao", label: "📍 Onde Estamos" },
+      ]
+    },
+    sobre_localizacao: {
+      texto: "Nossas unidades:\n\n📍 Matriz\nRod. GO 320, Km 82\nVicentinópolis / GO — CEP 75.555-000\n\n📍 Filial\nAeroporto Municipal, Hangar 10\nItuiutaba / MG",
+      subs: [
+        { id: "contato", label: "📞 Falar com a Equipe" },
+      ]
+    },
     frota: {
-      texto: "Nossa frota é composta por aeronaves com perfis complementares, formando uma estrutura versátil e preparada para diferentes operações no campo:",
+      texto: "Contamos com uma frota composta por aeronaves de perfis complementares, formando uma estrutura versátil e preparada para diferentes perfis de operação no campo. São elas: Cessna 188 Agtruck, Piper PA-36-375, Neiva EMB-201A e, na categoria de grande porte, o Air Tractor AT402B.",
       subs: [
         { id: "frota_padrao", label: "🛩️ Perfil Padrão/Médio" },
         { id: "frota_grande", label: "✈️ Perfil Grande Porte"  },
@@ -32,7 +53,7 @@
       ]
     },
     frota_padrao: {
-      texto: "Aeronaves de perfil padrão e médio:\n\n🛩️ Cessna A188B Agtruck — agilidade e eficiência operacional\n🛩️ Neiva EMB-201A — tradição, precisão e consistência\n\nEssas aeronaves reúnem equilíbrio entre agilidade, eficiência e segurança, atendendo com qualidade diferentes demandas da aplicação aérea. Trabalham com faixa de aplicação de 21 metros, com ajustes conforme a necessidade de cada operação.",
+      texto: "Aeronaves de perfil padrão e médio:\n\n🛩️ Cessna A188B Agtruck — agilidade e eficiência operacional\n🛩️ Neiva EMB-201A — tradição, precisão e consistência\n\nEssas aeronaves reúnem equilíbrio entre agilidade, eficiência e segurança, atendendo com qualidade diferentes demandas da aplicação aérea. Trabalham com faixa de aplicação de 21 metros, com ajustes realizados conforme a regulagem e necessidade específica de cada operação.",
       subs: [
         { id: "frota_grande", label: "✈️ Ver Perfil Grande Porte" },
       ]
