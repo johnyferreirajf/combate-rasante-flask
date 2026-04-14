@@ -1,5 +1,5 @@
 /**
- * COMBATE RASANTE — Weikren Bot
+ * COMBATE RASANTE — Piloto Bot
  * Visitantes: menu interativo por balões
  * Autenticados: chat livre com IA
  */
@@ -83,16 +83,16 @@
   // Botão flutuante com avatar
   var btn = document.createElement("button");
   btn.id = "cr-chat-btn";
-  btn.setAttribute("aria-label", "Abrir assistente Weikren");
+  btn.setAttribute("aria-label", "Abrir assistente Piloto");
   btn.innerHTML =
-    '<img src="' + AVATAR + '" alt="Weikren">' +
+    '<img src="' + AVATAR + '" alt="Piloto">' +
     '<span class="cr-notif" id="crNotif"></span>';
   document.body.appendChild(btn);
 
   // Balão de saudação
   var hello = document.createElement("div");
   hello.id = "cr-hello-bubble";
-  hello.textContent = "👋 Oi! Sou o Weikren. Posso te ajudar?";
+  hello.textContent = "👋 Oi! Sou o Piloto. Posso te ajudar?";
   hello.onclick = abrir;
   document.body.appendChild(hello);
 
@@ -103,10 +103,10 @@
   win.innerHTML =
     '<div class="cr-header">' +
       '<div class="cr-header-avatar">' +
-        '<img src="' + AVATAR + '" alt="Weikren">' +
+        '<img src="' + AVATAR + '" alt="Piloto">' +
       '</div>' +
       '<div class="cr-header-info">' +
-        '<div class="cr-header-name">Weikren</div>' +
+        '<div class="cr-header-name">Piloto</div>' +
         '<div class="cr-header-role">Assistente Combate Rasante</div>' +
         '<div class="cr-header-status">Online</div>' +
       '</div>' +
@@ -135,12 +135,12 @@
     setTimeout(function () { msgs.scrollTop = msgs.scrollHeight; }, 60);
   }
 
-  // Bolha do bot com mini avatar do Weikren
+  // Bolha do bot com mini avatar do Piloto
   function addBotMsg(texto) {
     var row = document.createElement("div");
     row.className = "cr-bot-row";
     row.innerHTML =
-      '<div class="cr-bot-mini"><img src="' + AVATAR + '" alt="W"></div>' +
+      '<div class="cr-bot-mini"><img src="' + AVATAR + '" alt="P"></div>' +
       '<div class="cr-bubble bot" style="white-space:pre-wrap">' + texto + '</div>';
     msgs.appendChild(row);
     scroll();
@@ -162,7 +162,7 @@
     row.className = "cr-typing-row";
     row.id = "crTyping";
     row.innerHTML =
-      '<div class="cr-bot-mini"><img src="' + AVATAR + '" alt="W"></div>' +
+      '<div class="cr-bot-mini"><img src="' + AVATAR + '" alt="P"></div>' +
       '<div class="cr-typing"><span></span><span></span><span></span></div>';
     msgs.appendChild(row);
     scroll();
@@ -242,7 +242,7 @@
     msgs.innerHTML = "";
     historico = [];
     setTimeout(function () {
-      addBotMsg("Olá! Sou o Weikren, assistente virtual da Combate Rasante Aviação Agrícola! ✈️");
+      addBotMsg("Olá! Sou o Piloto, assistente virtual da Combate Rasante Aviação Agrícola! ✈️");
     }, 200);
     if (IS_AUTH) {
       setTimeout(function () {
