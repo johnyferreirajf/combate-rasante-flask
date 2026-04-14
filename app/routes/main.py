@@ -12,35 +12,7 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
-    ultimo_post  = None
-    ultimo_thumb = None
-    ultimo_titulo = None
-    ultimo_data   = None
-    try:
-        from app.models.post import Post, PostMidia
-        post = (Post.query.filter_by(ativo=True)
-                .order_by(Post.created_at.desc()).first())
-        if post:
-            ultimo_titulo = post.titulo
-            ultimo_data   = post.created_at.strftime("%d/%m/%Y")
-            # Tentar foto primeiro
-            foto = next((m for m in post.midias if m.tipo == "foto"), None)
-            if foto:
-                ultimo_thumb = foto.url
-            else:
-                # Sem foto: tentar thumbnail de vídeo Cloudinary (tipo="vid")
-                vid = next((m for m in post.midias if m.tipo == "vid"), None)
-                if vid and vid.url:
-                    # Cloudinary gera thumbnail trocando /video/upload/ por /video/upload/f_jpg,so_0/
-                    ultimo_thumb = vid.url.replace(
-                        "/video/upload/", "/video/upload/f_jpg,so_0/"
-                    ).rsplit(".", 1)[0] + ".jpg"
-    except Exception:
-        pass
-    return render_template("home_stream.html",
-                           ultimo_titulo=ultimo_titulo,
-                           ultimo_data=ultimo_data,
-                           ultimo_thumb=ultimo_thumb)
+    return render_template("home_stream.html")
 
 
 @main_bp.route("/servicos")
@@ -322,3 +294,72 @@ def _build_dashboard_tree():
         })
 
     return tree
+
+@main_bp.route("/api/chatbot", methods=["POST"])
+def chatbot_api():
+    """Endpoint do chatbot — usa Claude API para autenticados, menu guiado para visitantes."""
+    import json
+    from flask import jsonify
+    from app.utils.security import get_current_user, get_current_employee
+
+    data = request.get_json(silent=True) or {}
+    mensagem  = (data.get("mensagem") or "").strip()
+    historico = data.get("historico") or []  # lista de {role, content}
+
+    if not mensagem:
+        return jsonify({"erro": "Mensagem vazia"}), 400
+
+    usuario   = get_current_user()
+    funcionario = get_current_employee()
+    autenticado = bool(usuario or funcionario)
+
+    if not autenticado:
+        # Visitante: resposta simples sem IA (segurança e custo)
+        return jsonify({"resposta": None, "visitante": True})
+
+    # Usuário autenticado: chama Claude API
+    try:
+        import requests as _req
+
+        SYSTEM_PROMPT = """Você é o assistente virtual da Combate Rasante Aviação Agrícola.
+Responda APENAS sobre aviação agrícola, agricultura, agronegócio, defensivos, pulverização aérea,
+manutenção de aeronaves agrícolas, segurança de voo agrícola, GPS e tecnologia no campo,
+culturas agrícolas (soja, milho, cana-de-açúcar, café, algodão etc.), pragas e doenças,
+e temas diretamente relacionados.
+
+Se a pergunta NÃO for sobre esses temas, responda educadamente que você foi treinado
+apenas para temas de aviação agrícola e agronegócio, e convide o usuário a perguntar
+algo relacionado.
+
+Seja objetivo, técnico quando necessário, e sempre em português brasileiro.
+Máximo de 3 parágrafos por resposta."""
+
+        mensagens_api = []
+        for h in historico[-8:]:  # máx 8 mensagens de contexto
+            if h.get("role") in ("user", "assistant") and h.get("content"):
+                mensagens_api.append({"role": h["role"], "content": h["content"]})
+        mensagens_api.append({"role": "user", "content": mensagem})
+
+        resp = _req.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "Content-Type": "application/json",
+                "anthropic-version": "2023-06-01",
+            },
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 600,
+                "system": SYSTEM_PROMPT,
+                "messages": mensagens_api,
+            },
+            timeout=25,
+        )
+        resp.raise_for_status()
+        dados = resp.json()
+        texto = dados["content"][0]["text"]
+        return jsonify({"resposta": texto, "visitante": False})
+
+    except Exception as e:
+        return jsonify({"resposta": "Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente em instantes.", "visitante": False})
+
+

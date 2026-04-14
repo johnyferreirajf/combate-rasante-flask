@@ -26,10 +26,11 @@
   <link rel="preload" href="{{ url_for('static', filename='css/main.css') }}" as="style">
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
 
   {% block head_extra %}{% endblock %}
 </head>
-<body>
+<body data-cr-auth="{{ '1' if session.get('user_id') or session.get('employee_id') else '0' }}">
 
   {# ── NAVBAR ─────────────────────────────────────────────── #}
 
@@ -183,6 +184,7 @@
   {# ── SCRIPTS ─────────────────────────────────────────────── #}
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
   {% block scripts %}{% endblock %}
+  <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
 
 </body>
 </html>
