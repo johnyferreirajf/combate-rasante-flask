@@ -13,6 +13,7 @@
   /* ── Conteúdo do menu de visitantes ── */
   var MENU_PRINCIPAL = [
     { id: "agricultura",  label: "🌿 Aviação Agrícola"       },
+    { id: "frota",        label: "✈️ Conheça Nossa Frota"    },
     { id: "precisao",     label: "🎯 Precisão na Aplicação"  },
     { id: "seguranca",    label: "🛡️ Segurança Operacional"  },
     { id: "tecnologia",   label: "📡 Tecnologia Embarcada"   },
@@ -22,6 +23,48 @@
   ];
 
   var CONTEUDO = {
+    frota: {
+      texto: "Nossa frota é composta por aeronaves com perfis complementares, formando uma estrutura versátil e preparada para diferentes operações no campo:",
+      subs: [
+        { id: "frota_padrao", label: "🛩️ Perfil Padrão/Médio" },
+        { id: "frota_grande", label: "✈️ Perfil Grande Porte"  },
+        { id: "frota_faixas", label: "📏 Faixas de Aplicação"  },
+      ]
+    },
+    frota_padrao: {
+      texto: "Aeronaves de perfil padrão e médio:
+
+🛩️ Cessna A188B Agtruck — agilidade e eficiência operacional
+🛩️ Neiva EMB-201A — tradição, precisão e consistência
+
+Essas aeronaves reúnem equilíbrio entre agilidade, eficiência e segurança, atendendo com qualidade diferentes demandas da aplicação aérea. Trabalham com faixa de aplicação de 21 metros, com ajustes conforme a necessidade de cada operação.",
+      subs: [
+        { id: "frota_grande", label: "✈️ Ver Perfil Grande Porte" },
+      ]
+    },
+    frota_grande: {
+      texto: "Aeronaves de grande porte:
+
+✈️ Piper PA-36-375 Brave — potência e robustez operacional
+✈️ Air Tractor AT402B — capacidade máxima de trabalho
+
+Essas aeronaves representam maior porte e potência dentro da operação, agregando robustez, presença operacional e capacidade de atendimento ampliada. Trabalham com faixa de aplicação de 28 metros, fortalecendo a frota para diferentes cenários do campo.",
+      subs: [
+        { id: "frota_faixas", label: "📏 Ver Faixas de Aplicação" },
+      ]
+    },
+    frota_faixas: {
+      texto: "Faixas de aplicação da frota:
+
+📏 Perfil padrão/médio (Cessna A188B e Neiva EMB-201A)
+→ Faixa de 21 metros
+
+📏 Perfil grande porte (Piper PA-36-375 e Air Tractor AT402B)
+→ Faixa de 28 metros
+
+Todos os ajustes são realizados conforme a regulagem e a necessidade específica de cada operação, garantindo precisão e eficiência em campo.",
+      subs: []
+    },
     agricultura: {
       texto: "A aviação agrícola é hoje uma das ferramentas mais eficientes do agronegócio. Com capacidade de cobrir centenas de hectares por dia, as aeronaves permitem aplicações de defensivos, fertilizantes e fungicidas com rapidez e uniformidade impossíveis de atingir por equipamentos terrestres — especialmente em lavouras densas ou em condições de solo úmido.",
       subs: [
