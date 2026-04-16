@@ -163,6 +163,7 @@
       ? '<div class="cr-input-row">' +
           '<textarea id="crInput" placeholder="Digite sua pergunta sobre aviação agrícola..." rows="1"></textarea>' +
           '<button class="cr-send" id="crSend" aria-label="Enviar">➤</button>' +
+          '<button class="cr-pdf-btn" id="crPdfBtn" aria-label="Salvar conversa em PDF" title="Salvar conversa em PDF">📄</button>' +
         '</div>'
       : '<div class="cr-visitor-footer">Visitante? <a href="/login">Faça login</a> para chat com IA.</div>');
   document.body.appendChild(win);
@@ -172,8 +173,10 @@
   var notif     = document.getElementById("crNotif");
   var input     = document.getElementById("crInput");
   var sendBtn   = document.getElementById("crSend");
+  var pdfBtn    = document.getElementById("crPdfBtn");
   var introVid  = document.getElementById("crIntroVid");
-  var historico = [];
+  var historico    = [];   // contexto para a API
+  var historicoLog = [];   // log completo para PDF {tipo, texto, hora}
   var aberto    = false;
 
   /* ── Helpers ── */
@@ -287,6 +290,7 @@
   function bemVindo() {
     msgs.innerHTML = "";
     historico = [];
+    historicoLog = [];
     setTimeout(function () {
       addBotMsg("Olá! Sou o Piloto, assistente virtual da Combate Rasante Aviação Agrícola! ✈️");
     }, 200);
@@ -328,6 +332,7 @@
 
     addUserMsg(texto);
     historico.push({ role: "user", content: texto });
+    historicoLog.push({ tipo: "user", texto: texto, hora: new Date() });
     input.value = "";
     input.style.height = "auto";
     if (sendBtn) sendBtn.disabled = true;
@@ -345,6 +350,9 @@
         var resp = d.resposta || "Desculpe, não consegui processar sua pergunta.";
         addBotMsg(resp);
         historico.push({ role: "assistant", content: resp });
+        historicoLog.push({ tipo: "bot", texto: resp, hora: new Date() });
+        // Mostrar botão de salvar na última bolha do bot
+        adicionarBotaoSalvar(resp, historicoLog.length - 2);
         if (sendBtn) sendBtn.disabled = false;
         if (input) input.focus();
       })
@@ -353,6 +361,227 @@
         addBotMsg("Erro de conexão. Verifique sua internet e tente novamente.");
         if (sendBtn) sendBtn.disabled = false;
       });
+  }
+
+  /* ── Botão salvar par pergunta/resposta ── */
+  function adicionarBotaoSalvar(respostaTexto, idxUser) {
+    var lastRow = msgs.lastElementChild;
+    if (!lastRow || !lastRow.classList.contains("cr-bot-row")) return;
+
+    var btnSave = document.createElement("button");
+    btnSave.className   = "cr-save-pair-btn";
+    btnSave.title       = "Salvar esta pergunta e resposta como PDF";
+    btnSave.textContent = "💾 Salvar";
+    btnSave.onclick = function () {
+      var userLog = idxUser >= 0 ? historicoLog[idxUser] : null;
+      var botLog  = { tipo: "bot", texto: respostaTexto, hora: new Date() };
+      gerarPdfPar(userLog, botLog);
+    };
+
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;justify-content:flex-start;padding-left:33px;margin-top:2px;";
+    wrap.appendChild(btnSave);
+    msgs.appendChild(wrap);
+    scroll();
+  }
+
+  /* ── Gerar PDF de um par pergunta/resposta ── */
+  function gerarPdfPar(userLog, botLog) {
+    var linhas = [];
+    linhas.push({ tipo: "titulo", texto: "Combate Rasante — Assistente Piloto" });
+    linhas.push({ tipo: "sub",    texto: "Consulta salva em " + formatarData(botLog.hora) });
+    linhas.push({ tipo: "sep" });
+    if (userLog) {
+      linhas.push({ tipo: "label", texto: "Sua pergunta:" });
+      linhas.push({ tipo: "user",  texto: userLog.texto, hora: userLog.hora });
+    }
+    linhas.push({ tipo: "label", texto: "Resposta do Piloto:" });
+    linhas.push({ tipo: "bot",   texto: botLog.texto, hora: botLog.hora });
+    renderizarPdf(linhas, "consulta-piloto-" + Date.now() + ".pdf");
+  }
+
+  /* ── Gerar PDF de toda a conversa ── */
+  function gerarPdfConversa() {
+    if (historicoLog.length === 0) {
+      alert("Nenhuma conversa para salvar ainda.");
+      return;
+    }
+    var linhas = [];
+    linhas.push({ tipo: "titulo", texto: "Combate Rasante — Assistente Piloto" });
+    linhas.push({ tipo: "sub",    texto: "Conversa completa — " + formatarData(new Date()) });
+    linhas.push({ tipo: "sep" });
+    historicoLog.forEach(function (m) {
+      if (m.tipo === "user") {
+        linhas.push({ tipo: "label", texto: "Você perguntou:" });
+        linhas.push({ tipo: "user",  texto: m.texto, hora: m.hora });
+      } else {
+        linhas.push({ tipo: "label", texto: "Piloto respondeu:" });
+        linhas.push({ tipo: "bot",   texto: m.texto, hora: m.hora });
+        linhas.push({ tipo: "sep" });
+      }
+    });
+    renderizarPdf(linhas, "conversa-piloto-" + Date.now() + ".pdf");
+  }
+
+  /* ── Renderizar PDF via canvas (sem biblioteca externa) ── */
+  function renderizarPdf(linhas, nomeArquivo) {
+    // Página A4 em pontos (72dpi): 595 x 842
+    var W = 595, H = 842, margin = 40, lineW = W - margin * 2;
+    var pages = [[]]; // array de páginas, cada uma tem array de blocos {y, draw}
+    var y = margin + 10;
+    var pageIdx = 0;
+
+    function novaPagina() {
+      pages.push([]);
+      pageIdx++;
+      y = margin + 10;
+    }
+
+    function checkSpace(needed) {
+      if (y + needed > H - margin) novaPagina();
+    }
+
+    // Quebra texto em linhas de largura máxima (aproximação proporcional)
+    function quebrarTexto(texto, maxChars) {
+      var palavras = texto.split(" ");
+      var linhasQ = [], cur = "";
+      palavras.forEach(function (p) {
+        if ((cur + " " + p).trim().length > maxChars) {
+          if (cur) linhasQ.push(cur.trim());
+          cur = p;
+        } else {
+          cur = cur ? cur + " " + p : p;
+        }
+      });
+      if (cur) linhasQ.push(cur.trim());
+      return linhasQ;
+    }
+
+    // Desenhar texto com quebra automática — retorna y final
+    function addTexto(page, xPos, yPos, texto, maxChars, fontSize) {
+      var linhasQ = quebrarTexto(String(texto), maxChars);
+      linhasQ.forEach(function (ln, idx) {
+        page.push({ y: yPos + idx * (fontSize + 3), x: xPos, texto: ln, fontSize: fontSize });
+      });
+      return yPos + linhasQ.length * (fontSize + 3);
+    }
+
+    linhas.forEach(function (bloco) {
+      if (bloco.tipo === "titulo") {
+        checkSpace(28);
+        pages[pageIdx].push({ y: y, x: margin, texto: bloco.texto, fontSize: 16, bold: true, color: [20, 83, 45] });
+        y += 24;
+      } else if (bloco.tipo === "sub") {
+        checkSpace(18);
+        pages[pageIdx].push({ y: y, x: margin, texto: bloco.texto, fontSize: 9, color: [120, 120, 120] });
+        y += 16;
+      } else if (bloco.tipo === "sep") {
+        checkSpace(14);
+        pages[pageIdx].push({ y: y, x: margin, w: lineW, tipo: "linha" });
+        y += 12;
+      } else if (bloco.tipo === "label") {
+        checkSpace(16);
+        pages[pageIdx].push({ y: y, x: margin, texto: bloco.texto, fontSize: 10, bold: true, color: [34, 120, 60] });
+        y += 15;
+      } else if (bloco.tipo === "user" || bloco.tipo === "bot") {
+        var isUser = bloco.tipo === "user";
+        var bgColor = isUser ? [220, 252, 231] : [241, 245, 249];
+        var textColor = isUser ? [20, 83, 45] : [30, 41, 59];
+        var maxChars = 78;
+        var linhasQ = quebrarTexto(String(bloco.texto), maxChars);
+        var boxH = linhasQ.length * 14 + 16;
+        checkSpace(boxH + 14);
+        pages[pageIdx].push({ y: y, x: margin, w: lineW, h: boxH, bg: bgColor, tipo: "box", radius: 6 });
+        var ty = y + 10;
+        linhasQ.forEach(function (ln) {
+          pages[pageIdx].push({ y: ty, x: margin + 8, texto: ln, fontSize: 10, color: textColor });
+          ty += 14;
+        });
+        if (bloco.hora) {
+          pages[pageIdx].push({ y: ty - 2, x: margin + 8, texto: formatarData(bloco.hora), fontSize: 8, color: [160, 160, 160] });
+        }
+        y += boxH + 10;
+      }
+    });
+
+    // Montar PDF usando canvas
+    var pdf = buildPdf(pages, W, H, margin);
+    downloadBlob(pdf, nomeArquivo, "application/pdf");
+  }
+
+  /* ── Builder PDF mínimo (formato PDF puro, sem biblioteca) ── */
+  function buildPdf(pages, W, H, margin) {
+    // Usa a API de canvas para gerar imagens de cada página e montar PDF
+    // Fallback: gera HTML para impressão em nova aba
+    var html = "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
+      "<title>Combate Rasante — Piloto</title>" +
+      "<style>" +
+      "body{font-family:Arial,sans-serif;margin:0;padding:32px;color:#1e293b;font-size:13px;}" +
+      "h1{color:#14532d;font-size:20px;margin-bottom:4px;}" +
+      ".sub{color:#888;font-size:10px;margin-bottom:20px;}" +
+      "hr{border:none;border-top:1px solid #e2e8f0;margin:16px 0;}" +
+      ".label{font-weight:bold;color:#166534;font-size:11px;margin-bottom:6px;margin-top:14px;}" +
+      ".box{padding:12px 14px;border-radius:8px;margin-bottom:8px;line-height:1.6;}" +
+      ".user{background:#dcfce7;color:#14532d;}" +
+      ".bot{background:#f1f5f9;color:#1e293b;}" +
+      ".hora{font-size:9px;color:#aaa;margin-top:6px;}" +
+      "@media print{body{padding:16px}}" +
+      "</style></head><body>";
+
+    pages.forEach(function (page) {
+      page.forEach(function (el) {
+        if (el.tipo === "linha") {
+          html += "<hr>";
+        } else if (el.tipo === "box") {
+          // não usado no HTML — as caixas são montadas por tipo user/bot
+        } else if (el.bold && el.color && el.color[0] < 50) {
+          html += "<h1>" + escapeHtml(el.texto) + "</h1>";
+        } else if (el.color && el.color[0] > 100 && !el.bold) {
+          html += "<div class='sub'>" + escapeHtml(el.texto) + "</div>";
+        } else if (el.bold) {
+          html += "<div class='label'>" + escapeHtml(el.texto) + "</div>";
+        } else if (el.color && el.color[0] < 50) {
+          // texto de caixa user
+          html += "<div class='box user'>" + escapeHtml(el.texto) + "</div>";
+        } else {
+          // texto de caixa bot
+          html += "<div class='box bot'>" + escapeHtml(el.texto) + "</div>";
+        }
+      });
+    });
+
+    html += "<script>window.onload=function(){window.print();}<\/script></body></html>";
+    return html;
+  }
+
+  function downloadBlob(content, filename, type) {
+    // Para HTML: abre em nova aba para imprimir/salvar como PDF
+    var blob = new Blob([content], { type: "text/html;charset=utf-8" });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement("a");
+    a.href   = url;
+    a.target = "_blank";
+    a.rel    = "noopener";
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+  }
+
+  function formatarData(d) {
+    if (!d) return "";
+    var dd = String(d.getDate()).padStart(2,"0");
+    var mm = String(d.getMonth()+1).padStart(2,"0");
+    var yy = d.getFullYear();
+    var hh = String(d.getHours()).padStart(2,"0");
+    var mi = String(d.getMinutes()).padStart(2,"0");
+    return dd+"/"+mm+"/"+yy+" às "+hh+":"+mi;
+  }
+
+  function escapeHtml(t) {
+    return String(t)
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/\n/g,"<br>");
   }
 
   /* ── Abrir / fechar ── */
@@ -400,6 +629,7 @@
     });
   }
   if (sendBtn) sendBtn.addEventListener("click", enviar);
+  if (pdfBtn)  pdfBtn.addEventListener("click", gerarPdfConversa);
 
   /* ── Notificação após 3s ── */
   setTimeout(function () {
