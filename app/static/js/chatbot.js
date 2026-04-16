@@ -424,197 +424,108 @@
   }
 
   /* ── Renderizar PDF via canvas (sem biblioteca externa) ── */
+  /* ── Renderizar e exportar conversa como HTML para impressão/PDF ── */
   function renderizarPdf(linhas, nomeArquivo) {
-    // Página A4 em pontos (72dpi): 595 x 842
-    var W = 595, H = 842, margin = 40, lineW = W - margin * 2;
-    var pages = [[]]; // array de páginas, cada uma tem array de blocos {y, draw}
-    var y = margin + 10;
-    var pageIdx = 0;
+    var css =
+      "*{box-sizing:border-box;margin:0;padding:0;}" +
+      "body{font-family:Arial,sans-serif;padding:20px 28px;color:#1e293b;font-size:11px;line-height:1.4;}" +
+      "h1{color:#14532d;font-size:16px;font-weight:bold;margin-bottom:2px;}" +
+      ".sub{color:#999;font-size:9px;margin-bottom:12px;}" +
+      "hr{border:none;border-top:1px solid #dde;margin:8px 0;}" +
+      ".lbl{font-weight:bold;color:#166534;font-size:9px;text-transform:uppercase;letter-spacing:.05em;margin:10px 0 3px;}" +
+      ".box{padding:7px 10px;border-radius:5px;margin-bottom:5px;font-size:11px;line-height:1.4;}" +
+      ".user{background:#dcfce7;color:#14532d;}" +
+      ".bot{background:#f1f5f9;color:#1e293b;}" +
+      ".hora{font-size:8px;color:#bbb;margin-top:3px;}" +
+      "p{margin:0 0 3px;}" +
+      "strong{font-weight:bold;}" +
+      "em{font-style:italic;}" +
+      "h2,h3{font-size:11px;font-weight:bold;color:#14532d;margin:3px 0 1px;}" +
+      "ul,ol{margin:2px 0 2px 16px;padding:0;}" +
+      "li{margin-bottom:0;line-height:1.35;}" +
+      "@media print{@page{margin:14mm 16mm;}body{padding:0;font-size:10px;}}";
 
-    function novaPagina() {
-      pages.push([]);
-      pageIdx++;
-      y = margin + 10;
-    }
-
-    function checkSpace(needed) {
-      if (y + needed > H - margin) novaPagina();
-    }
-
-    // Quebra texto em linhas de largura máxima (aproximação proporcional)
-    function quebrarTexto(texto, maxChars) {
-      var palavras = texto.split(" ");
-      var linhasQ = [], cur = "";
-      palavras.forEach(function (p) {
-        if ((cur + " " + p).trim().length > maxChars) {
-          if (cur) linhasQ.push(cur.trim());
-          cur = p;
-        } else {
-          cur = cur ? cur + " " + p : p;
-        }
-      });
-      if (cur) linhasQ.push(cur.trim());
-      return linhasQ;
-    }
-
-    // Desenhar texto com quebra automática — retorna y final
-    function addTexto(page, xPos, yPos, texto, maxChars, fontSize) {
-      var linhasQ = quebrarTexto(String(texto), maxChars);
-      linhasQ.forEach(function (ln, idx) {
-        page.push({ y: yPos + idx * (fontSize + 3), x: xPos, texto: ln, fontSize: fontSize });
-      });
-      return yPos + linhasQ.length * (fontSize + 3);
-    }
-
-    linhas.forEach(function (bloco) {
-      if (bloco.tipo === "titulo") {
-        checkSpace(28);
-        pages[pageIdx].push({ y: y, x: margin, texto: bloco.texto, fontSize: 16, bold: true, color: [20, 83, 45] });
-        y += 24;
-      } else if (bloco.tipo === "sub") {
-        checkSpace(18);
-        pages[pageIdx].push({ y: y, x: margin, texto: bloco.texto, fontSize: 9, color: [120, 120, 120] });
-        y += 16;
-      } else if (bloco.tipo === "sep") {
-        checkSpace(14);
-        pages[pageIdx].push({ y: y, x: margin, w: lineW, tipo: "linha" });
-        y += 12;
-      } else if (bloco.tipo === "label") {
-        checkSpace(16);
-        pages[pageIdx].push({ y: y, x: margin, texto: bloco.texto, fontSize: 10, bold: true, color: [34, 120, 60] });
-        y += 15;
-      } else if (bloco.tipo === "user" || bloco.tipo === "bot") {
-        var isUser = bloco.tipo === "user";
-        var bgColor = isUser ? [220, 252, 231] : [241, 245, 249];
-        var textColor = isUser ? [20, 83, 45] : [30, 41, 59];
-        var maxChars = 78;
-        var linhasQ = quebrarTexto(String(bloco.texto), maxChars);
-        var boxH = linhasQ.length * 14 + 16;
-        checkSpace(boxH + 14);
-        pages[pageIdx].push({ y: y, x: margin, w: lineW, h: boxH, bg: bgColor, tipo: "box", radius: 6 });
-        var ty = y + 10;
-        linhasQ.forEach(function (ln) {
-          pages[pageIdx].push({ y: ty, x: margin + 8, texto: ln, fontSize: 10, color: textColor });
-          ty += 14;
-        });
-        if (bloco.hora) {
-          pages[pageIdx].push({ y: ty - 2, x: margin + 8, texto: formatarData(bloco.hora), fontSize: 8, color: [160, 160, 160] });
-        }
-        y += boxH + 10;
+    var body = "";
+    linhas.forEach(function (b) {
+      if (b.tipo === "titulo") {
+        body += "<h1>" + esc(b.texto) + "</h1>";
+      } else if (b.tipo === "sub") {
+        body += "<div class='sub'>" + esc(b.texto) + "</div>";
+      } else if (b.tipo === "sep") {
+        body += "<hr>";
+      } else if (b.tipo === "label") {
+        body += "<div class='lbl'>" + esc(b.texto) + "</div>";
+      } else if (b.tipo === "user") {
+        body += "<div class='box user'>" + renderMd(b.texto) +
+                (b.hora ? "<div class='hora'>" + formatarData(b.hora) + "</div>" : "") +
+                "</div>";
+      } else if (b.tipo === "bot") {
+        body += "<div class='box bot'>" + renderMd(b.texto) +
+                (b.hora ? "<div class='hora'>" + formatarData(b.hora) + "</div>" : "") +
+                "</div>";
       }
     });
 
-    // Montar PDF usando canvas
-    var pdf = buildPdf(pages, W, H, margin);
-    downloadBlob(pdf, nomeArquivo, "application/pdf");
-  }
-
-  /* ── Builder PDF mínimo (formato PDF puro, sem biblioteca) ── */
-  function buildPdf(pages, W, H, margin) {
     var html = "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
-      "<title>Combate Rasante — Piloto</title>" +
-      "<style>" +
-      "*{box-sizing:border-box;}" +
-      "body{font-family:Arial,sans-serif;margin:0;padding:24px 32px;color:#1e293b;font-size:12px;line-height:1.45;}" +
-      "h1{color:#14532d;font-size:17px;margin:0 0 2px;}" +
-      ".sub{color:#888;font-size:9px;margin-bottom:14px;}" +
-      "hr{border:none;border-top:1px solid #e2e8f0;margin:10px 0;}" +
-      ".label{font-weight:bold;color:#166534;font-size:10px;margin:10px 0 3px;text-transform:uppercase;letter-spacing:.04em;}" +
-      ".box{padding:8px 12px;border-radius:6px;margin-bottom:6px;font-size:11px;line-height:1.5;}" +
-      ".user{background:#dcfce7;color:#14532d;}" +
-      ".bot{background:#f1f5f9;color:#1e293b;}" +
-      ".hora{font-size:8px;color:#aaa;margin-top:4px;display:block;}" +
-      /* Markdown rendererizado */
-      "strong{font-weight:bold;}" +
-      "em{font-style:italic;}" +
-      "h2,h3{font-size:12px;font-weight:bold;color:#14532d;margin:4px 0 2px;}" +
-      "ul,ol{margin:3px 0 3px 18px;padding:0;}" +
-      "li{margin-bottom:1px;}" +
-      "@media print{" +
-      "  body{padding:12px 20px;font-size:11px;}" +
-      "  .box{padding:6px 10px;margin-bottom:4px;}" +
-      "  .label{margin:7px 0 2px;}" +
-      "  hr{margin:7px 0;}" +
-      "}" +
-      "</style></head><body>";
+      "<title>Combate Rasante \u2014 Piloto</title>" +
+      "<style>" + css + "</style></head><body>" + body +
+      "<script>window.onload=function(){window.print();}<\/script></body></html>";
 
-    pages.forEach(function (page) {
-      page.forEach(function (el) {
-        if (el.tipo === "linha") {
-          html += "<hr>";
-        } else if (el.tipo === "box") {
-          // montado por tipo user/bot abaixo
-        } else if (el.bold && el.color && el.color[0] < 50) {
-          html += "<h1>" + escapeHtml(el.texto) + "</h1>";
-        } else if (el.color && el.color[0] > 100 && !el.bold) {
-          html += "<div class='sub'>" + escapeHtml(el.texto) + "</div>";
-        } else if (el.bold) {
-          html += "<div class='label'>" + escapeHtml(el.texto) + "</div>";
-        } else if (el.color && el.color[0] < 50) {
-          html += "<div class='box user'>" + renderMd(el.texto) + "</div>";
-        } else {
-          html += "<div class='box bot'>" + renderMd(el.texto) + "</div>";
-        }
-      });
-    });
-
-    html += "<script>window.onload=function(){window.print();}<\/script></body></html>";
-    return html;
-  }
-
-  function downloadBlob(content, filename, type) {
-    // Para HTML: abre em nova aba para imprimir/salvar como PDF
-    var blob = new Blob([content], { type: "text/html;charset=utf-8" });
+    var blob = new Blob([html], { type: "text/html;charset=utf-8" });
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement("a");
-    a.href   = url;
-    a.target = "_blank";
-    a.rel    = "noopener";
+    a.href = url; a.target = "_blank"; a.rel = "noopener";
     a.click();
     setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
   }
 
-  function formatarData(d) {
-    if (!d) return "";
-    var dd = String(d.getDate()).padStart(2,"0");
-    var mm = String(d.getMonth()+1).padStart(2,"0");
-    var yy = d.getFullYear();
-    var hh = String(d.getHours()).padStart(2,"0");
-    var mi = String(d.getMinutes()).padStart(2,"0");
-    return dd+"/"+mm+"/"+yy+" às "+hh+":"+mi;
-  }
-
-  function escapeHtml(t) {
+  function esc(t) {
     return String(t)
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;");
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
   }
 
-  /* Renderiza markdown básico para HTML compacto */
+  function escapeHtml(t) { return esc(t); }
+
+  /* Converte markdown simples em HTML compacto */
   function renderMd(t) {
-    var s = escapeHtml(t);
-    // Títulos # ## ###
+    var s = esc(t);
+    // Títulos
     s = s.replace(/^### (.+)$/gm, "<h3>$1</h3>");
     s = s.replace(/^## (.+)$/gm,  "<h2>$1</h2>");
     s = s.replace(/^# (.+)$/gm,   "<h2>$1</h2>");
     // Negrito e itálico
-    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    s = s.replace(/\*([^*]+)\*/g,      "<em>$1</em>");
-    s = s.replace(/__([^_]+)__/g,        "<strong>$1</strong>");
-    s = s.replace(/_([^_]+)_/g,          "<em>$1</em>");
-    // Listas com - ou *
-    s = s.replace(/^[-*•] (.+)$/gm, "<li>$1</li>");
-    s = s.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
-    // Listas numeradas
-    s = s.replace(/^\d+\. (.+)$/gm, "<li>$1</li>");
-    // Quebras de linha → apenas espaço se linha seguinte tem conteúdo
-    // Linha em branco → parágrafo
-    s = s.replace(/\n\n+/g, "</p><p>").replace(/\n/g, " ");
-    s = "<p>" + s + "</p>";
-    // Limpar <p> vazios
-    s = s.replace(/<p>\s*<\/p>/g, "");
+    s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/\*([^*\n]+)\*/g,      "<em>$1</em>");
+    s = s.replace(/__([^_\n]+)__/g,      "<strong>$1</strong>");
+    s = s.replace(/_([^_\n]+)_/g,        "<em>$1</em>");
+    // Listas
+    s = s.replace(/^[-*\u2022] (.+)$/gm, "<li>$1</li>");
+    s = s.replace(/^\d+\. (.+)$/gm,      "<li>$1</li>");
+    // Agrupar <li> consecutivos em <ul>
+    s = s.replace(/(<li>[\s\S]*?<\/li>)(\n<li>[\s\S]*?<\/li>)*/g, function(m){ return "<ul>" + m + "</ul>"; });
+    // Parágrafos: linha em branco = novo parágrafo; linha simples = espaço
+    var paragrafos = s.split(/\n{2,}/);
+    s = paragrafos.map(function(p){
+      // dentro do parágrafo, quebras simples viram espaço
+      p = p.replace(/\n/g, " ").trim();
+      if (!p) return "";
+      // Se já é tag de bloco, não envolver em <p>
+      if (/^<(h[123]|ul|ol|li|hr)/.test(p)) return p;
+      return "<p>" + p + "</p>";
+    }).filter(Boolean).join("");
     return s;
+  }
+
+  function formatarData(d) {
+    if (!d) return "";
+    var dd = String(d.getDate()).padStart(2, "0");
+    var mm = String(d.getMonth() + 1).padStart(2, "0");
+    var yy = d.getFullYear();
+    var hh = String(d.getHours()).padStart(2, "0");
+    var mi = String(d.getMinutes()).padStart(2, "0");
+    return dd + "/" + mm + "/" + yy + " \u00e0s " + hh + ":" + mi;
   }
 
   /* ── Abrir / fechar ── */
