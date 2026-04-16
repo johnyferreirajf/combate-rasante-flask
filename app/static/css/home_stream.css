@@ -206,6 +206,83 @@ body.intro-lock {
 
 .stream-tile__list li + li { margin-top: 3px; }
 
+/* ─── TILE COM FOTO DE FUNDO (Em Campo) ──────────────────── */
+.stream-tile--foto {
+  padding: 0;
+  overflow: hidden;
+  position: relative;
+  /* aspect-ratio garante altura proporcional em qualquer tela */
+  aspect-ratio: 4 / 3;
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+.stream-tile__foto-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: .82;
+  display: block;
+}
+
+.stream-tile__foto-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.85) 0%, rgba(0,0,0,.05) 60%);
+}
+
+.stream-tile__foto-content {
+  position: relative;
+  z-index: 1;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.stream-tile__title--foto {
+  font-size: 14px !important;
+  margin-bottom: 3px !important;
+  line-height: 1.3 !important;
+  text-shadow: 0 1px 4px rgba(0,0,0,.9);
+  color: #fff !important;
+}
+
+.stream-tile__desc--foto {
+  font-size: 12px !important;
+  margin: 0 !important;
+  color: rgba(255,255,255,.85) !important;
+}
+
+/* Mobile: manter aspect-ratio e forçar altura mínima visível */
+@media (max-width: 768px) {
+  .stream-tile--foto {
+    aspect-ratio: 4 / 3;
+    min-height: 120px !important;
+    height: auto !important;
+  }
+  .stream-tile__foto-content {
+    padding: 7px 9px;
+  }
+  .stream-tile__title--foto {
+    font-size: 11px !important;
+  }
+  .stream-tile__desc--foto {
+    font-size: 10px !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .stream-tile--foto {
+    min-height: 110px !important;
+  }
+}
+
 /* ─── SETAS ─────────────────────────────────────────────────── */
 .stream-carousel__btn {
   position: absolute;

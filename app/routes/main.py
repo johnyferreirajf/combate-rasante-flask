@@ -12,7 +12,35 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/")
 def index():
-    return render_template("home_stream.html")
+    ultimo_titulo = None
+    ultimo_data   = None
+    ultimo_thumb  = None
+    try:
+        from app.models.post import Post
+        post = (Post.query
+                .filter_by(ativo=True)
+                .order_by(Post.created_at.desc())
+                .first())
+        if post:
+            ultimo_titulo = post.titulo
+            ultimo_data   = post.created_at.strftime("%d/%m/%Y")
+            # Tentar foto primeiro
+            foto = next((m for m in post.midias if m.tipo == "foto"), None)
+            if foto:
+                ultimo_thumb = foto.url
+            else:
+                # Vídeo direto do Cloudinary (tipo="vid") — gerar thumbnail
+                vid = next((m for m in post.midias if m.tipo == "vid"), None)
+                if vid and vid.url:
+                    ultimo_thumb = vid.url.replace(
+                        "/video/upload/", "/video/upload/f_jpg,so_0/"
+                    ).rsplit(".", 1)[0] + ".jpg"
+    except Exception:
+        pass
+    return render_template("home_stream.html",
+                           ultimo_titulo=ultimo_titulo,
+                           ultimo_data=ultimo_data,
+                           ultimo_thumb=ultimo_thumb)
 
 
 @main_bp.route("/servicos")
