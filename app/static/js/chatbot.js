@@ -511,21 +511,31 @@
 
   /* ── Builder PDF mínimo (formato PDF puro, sem biblioteca) ── */
   function buildPdf(pages, W, H, margin) {
-    // Usa a API de canvas para gerar imagens de cada página e montar PDF
-    // Fallback: gera HTML para impressão em nova aba
     var html = "<!DOCTYPE html><html><head><meta charset='utf-8'>" +
       "<title>Combate Rasante — Piloto</title>" +
       "<style>" +
-      "body{font-family:Arial,sans-serif;margin:0;padding:32px;color:#1e293b;font-size:13px;}" +
-      "h1{color:#14532d;font-size:20px;margin-bottom:4px;}" +
-      ".sub{color:#888;font-size:10px;margin-bottom:20px;}" +
-      "hr{border:none;border-top:1px solid #e2e8f0;margin:16px 0;}" +
-      ".label{font-weight:bold;color:#166534;font-size:11px;margin-bottom:6px;margin-top:14px;}" +
-      ".box{padding:12px 14px;border-radius:8px;margin-bottom:8px;line-height:1.6;}" +
+      "*{box-sizing:border-box;}" +
+      "body{font-family:Arial,sans-serif;margin:0;padding:24px 32px;color:#1e293b;font-size:12px;line-height:1.45;}" +
+      "h1{color:#14532d;font-size:17px;margin:0 0 2px;}" +
+      ".sub{color:#888;font-size:9px;margin-bottom:14px;}" +
+      "hr{border:none;border-top:1px solid #e2e8f0;margin:10px 0;}" +
+      ".label{font-weight:bold;color:#166534;font-size:10px;margin:10px 0 3px;text-transform:uppercase;letter-spacing:.04em;}" +
+      ".box{padding:8px 12px;border-radius:6px;margin-bottom:6px;font-size:11px;line-height:1.5;}" +
       ".user{background:#dcfce7;color:#14532d;}" +
       ".bot{background:#f1f5f9;color:#1e293b;}" +
-      ".hora{font-size:9px;color:#aaa;margin-top:6px;}" +
-      "@media print{body{padding:16px}}" +
+      ".hora{font-size:8px;color:#aaa;margin-top:4px;display:block;}" +
+      /* Markdown rendererizado */
+      "strong{font-weight:bold;}" +
+      "em{font-style:italic;}" +
+      "h2,h3{font-size:12px;font-weight:bold;color:#14532d;margin:4px 0 2px;}" +
+      "ul,ol{margin:3px 0 3px 18px;padding:0;}" +
+      "li{margin-bottom:1px;}" +
+      "@media print{" +
+      "  body{padding:12px 20px;font-size:11px;}" +
+      "  .box{padding:6px 10px;margin-bottom:4px;}" +
+      "  .label{margin:7px 0 2px;}" +
+      "  hr{margin:7px 0;}" +
+      "}" +
       "</style></head><body>";
 
     pages.forEach(function (page) {
@@ -533,7 +543,7 @@
         if (el.tipo === "linha") {
           html += "<hr>";
         } else if (el.tipo === "box") {
-          // não usado no HTML — as caixas são montadas por tipo user/bot
+          // montado por tipo user/bot abaixo
         } else if (el.bold && el.color && el.color[0] < 50) {
           html += "<h1>" + escapeHtml(el.texto) + "</h1>";
         } else if (el.color && el.color[0] > 100 && !el.bold) {
@@ -541,11 +551,9 @@
         } else if (el.bold) {
           html += "<div class='label'>" + escapeHtml(el.texto) + "</div>";
         } else if (el.color && el.color[0] < 50) {
-          // texto de caixa user
-          html += "<div class='box user'>" + escapeHtml(el.texto) + "</div>";
+          html += "<div class='box user'>" + renderMd(el.texto) + "</div>";
         } else {
-          // texto de caixa bot
-          html += "<div class='box bot'>" + escapeHtml(el.texto) + "</div>";
+          html += "<div class='box bot'>" + renderMd(el.texto) + "</div>";
         }
       });
     });
@@ -580,8 +588,33 @@
     return String(t)
       .replace(/&/g,"&amp;")
       .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/\n/g,"<br>");
+      .replace(/>/g,"&gt;");
+  }
+
+  /* Renderiza markdown básico para HTML compacto */
+  function renderMd(t) {
+    var s = escapeHtml(t);
+    // Títulos # ## ###
+    s = s.replace(/^### (.+)$/gm, "<h3>$1</h3>");
+    s = s.replace(/^## (.+)$/gm,  "<h2>$1</h2>");
+    s = s.replace(/^# (.+)$/gm,   "<h2>$1</h2>");
+    // Negrito e itálico
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/\*([^*]+)\*/g,      "<em>$1</em>");
+    s = s.replace(/__([^_]+)__/g,        "<strong>$1</strong>");
+    s = s.replace(/_([^_]+)_/g,          "<em>$1</em>");
+    // Listas com - ou *
+    s = s.replace(/^[-*•] (.+)$/gm, "<li>$1</li>");
+    s = s.replace(/(<li>.*<\/li>)/s, "<ul>$1</ul>");
+    // Listas numeradas
+    s = s.replace(/^\d+\. (.+)$/gm, "<li>$1</li>");
+    // Quebras de linha → apenas espaço se linha seguinte tem conteúdo
+    // Linha em branco → parágrafo
+    s = s.replace(/\n\n+/g, "</p><p>").replace(/\n/g, " ");
+    s = "<p>" + s + "</p>";
+    // Limpar <p> vazios
+    s = s.replace(/<p>\s*<\/p>/g, "");
+    return s;
   }
 
   /* ── Abrir / fechar ── */
