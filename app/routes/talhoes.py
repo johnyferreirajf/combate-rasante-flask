@@ -22,33 +22,36 @@ CULTURAS = ["Soja","Milho","Cana-de-Açúcar","Café","Algodão",
 # ── Helpers ───────────────────────────────────────────────────
 
 def _area_ha(geojson_str: str) -> float:
-    try:
-        gj    = json.loads(geojson_str)
-        geom  = gj.get("geometry", gj) if gj.get("type") == "Feature" else gj
-        coords = geom["coordinates"][0]
+    """Calcula área em ha — suporta Polygon e MultiPolygon."""
+    def _poly_area(coords):
         R = 6371000
         n = len(coords)
-        area = 0.0
+        a = 0.0
         for i in range(n):
             j = (i+1) % n
-            lon1, lat1 = math.radians(coords[i][0]), math.radians(coords[i][1])
-            lon2, lat2 = math.radians(coords[j][0]), math.radians(coords[j][1])
-            area += lon1*lat2 - lon2*lat1
-        area = abs(area)/2
+            a += math.radians(coords[i][0]) * math.radians(coords[j][1])                - math.radians(coords[j][0]) * math.radians(coords[i][1])
+        a = abs(a)/2
         lat_mid = math.radians(sum(c[1] for c in coords)/n)
-        return round(area * R * R * math.cos(lat_mid) / 10000, 4)
+        return a * R * R * math.cos(lat_mid) / 10000
+
+    try:
+        gj   = json.loads(geojson_str)
+        geom = gj.get("geometry", gj) if gj.get("type") == "Feature" else gj
+        t    = geom.get("type","")
+        if t == "Polygon":
+            return round(_poly_area(geom["coordinates"][0]), 4)
+        elif t == "MultiPolygon":
+            return round(sum(_poly_area(poly[0]) for poly in geom["coordinates"]), 4)
+        return 0.0
     except Exception:
         return 0.0
 
 
-def _parse_kml(kml_bytes: bytes):
-    import re
-    text = kml_bytes.decode("utf-8", errors="ignore")
-    matches = re.findall(r"<coordinates>(.*?)</coordinates>", text, re.DOTALL)
-    if not matches:
-        return None
+def _parse_coords(raw_str: str):
+    """Converte string de coordenadas KML em lista [[lon,lat], ...]."""
+    import re as _re
     coords = []
-    for token in matches[0].strip().split():
+    for token in raw_str.strip().split():
         p = token.split(",")
         if len(p) >= 2:
             try: coords.append([float(p[0]), float(p[1])])
@@ -57,45 +60,159 @@ def _parse_kml(kml_bytes: bytes):
         return None
     if coords[0] != coords[-1]:
         coords.append(coords[0])
-    return {"type":"Feature","geometry":{"type":"Polygon","coordinates":[coords]},"properties":{}}
+    return coords
+
+
+def _parse_kml(kml_bytes: bytes):
+    """
+    Extrai TODOS os Placemarks do KML.
+    Retorna lista de dicts: [{nome, geojson_feature}, ...]
+    Suporta Polygon simples e MultiPolygon (vários outerBoundaryIs).
+    """
+    import re as _re
+    text = kml_bytes.decode("utf-8", errors="ignore")
+
+    # Extrair Placemarks individuais
+    placemark_blocks = _re.findall(
+        r"<Placemark[^>]*>(.*?)</Placemark>", text, _re.DOTALL | _re.IGNORECASE
+    )
+
+    # Se não há blocos separados, tentar extrair todas as <coordinates> diretamente
+    if not placemark_blocks:
+        all_coords = _re.findall(r"<coordinates>(.*?)</coordinates>", text, _re.DOTALL)
+        results = []
+        for i, raw in enumerate(all_coords):
+            coords = _parse_coords(raw)
+            if coords:
+                results.append({
+                    "nome": f"Talhão {i+1}",
+                    "geojson": {"type":"Feature",
+                                "geometry":{"type":"Polygon","coordinates":[coords]},
+                                "properties":{}}
+                })
+        return results or None
+
+    results = []
+    for i, block in enumerate(placemark_blocks):
+        # Nome do placemark
+        nm = _re.search(r"<name>(.*?)</name>", block, _re.DOTALL | _re.IGNORECASE)
+        nome = nm.group(1).strip() if nm else f"Talhão {i+1}"
+        # Limpar tags CDATA
+        nome = _re.sub(r"<!\[CDATA\[(.*?)\]\]>", r"", nome).strip() or f"Talhão {i+1}"
+
+        # Todos os polígonos dentro deste placemark
+        outer_blocks = _re.findall(
+            r"<outerBoundaryIs>(.*?)</outerBoundaryIs>", block, _re.DOTALL | _re.IGNORECASE
+        )
+
+        if not outer_blocks:
+            # Tentar coordenadas diretamente sem outerBoundaryIs
+            raw_coords = _re.findall(r"<coordinates>(.*?)</coordinates>", block, _re.DOTALL)
+            if raw_coords:
+                outer_blocks = raw_coords  # tratar como lista de outer
+
+        if not outer_blocks:
+            continue
+
+        polys = []
+        for ob in outer_blocks:
+            raw = _re.search(r"<coordinates>(.*?)</coordinates>", ob, _re.DOTALL)
+            raw_str = raw.group(1) if raw else ob  # se já é coordenadas brutas
+            coords = _parse_coords(raw_str)
+            if coords:
+                polys.append(coords)
+
+        if not polys:
+            continue
+
+        if len(polys) == 1:
+            geom = {"type": "Polygon", "coordinates": polys}
+        else:
+            geom = {"type": "MultiPolygon",
+                    "coordinates": [[p] for p in polys]}
+
+        results.append({
+            "nome": nome,
+            "geojson": {"type":"Feature","geometry":geom,"properties":{}}
+        })
+
+    return results if results else None
 
 
 def _parse_geojson(raw: bytes):
+    """Retorna lista de dicts [{nome, geojson_feature}, ...] ou None."""
     try:
         gj = json.loads(raw.decode("utf-8"))
     except Exception:
         return None
     t = gj.get("type")
+
     if t == "FeatureCollection":
-        feats = gj.get("features", [])
-        gj = feats[0] if feats else None
-    if not gj:
-        return None
+        results = []
+        for i, feat in enumerate(gj.get("features", [])):
+            if feat.get("type") != "Feature":
+                continue
+            geom = feat.get("geometry", {})
+            if geom.get("type") not in ("Polygon","MultiPolygon"):
+                continue
+            nome = (feat.get("properties") or {}).get("name") or                    (feat.get("properties") or {}).get("Name") or                    (feat.get("properties") or {}).get("nome") or                    f"Talhão {i+1}"
+            results.append({"nome": str(nome), "geojson": feat})
+        return results if results else None
+
     if t in ("Polygon","MultiPolygon"):
         gj = {"type":"Feature","geometry":gj,"properties":{}}
-    return gj if gj.get("type") == "Feature" else None
+
+    if gj.get("type") == "Feature":
+        nome = (gj.get("properties") or {}).get("name") or                (gj.get("properties") or {}).get("nome") or "Talhão 1"
+        return [{"nome": str(nome), "geojson": gj}]
+
+    return None
+
+
+def _ring_kml(ring):
+    return " ".join(f"{c[0]},{c[1]},0" for c in ring)
 
 
 def _to_kml(t: Talhao) -> str:
     gj    = json.loads(t.geojson)
     geom  = gj.get("geometry", gj) if gj.get("type") == "Feature" else gj
-    coord_str = " ".join(f"{c[0]},{c[1]},0" for c in geom["coordinates"][0])
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>{t.nome}</name>
-    <Placemark>
-      <name>{t.nome}</name>
-      <description>Cultura: {t.cultura or '-'} | Área: {t.area_ha or 0:.2f} ha</description>
-      <Polygon><outerBoundaryIs><LinearRing>
-        <coordinates>{coord_str}</coordinates>
-      </LinearRing></outerBoundaryIs></Polygon>
-    </Placemark>
-  </Document>
-</kml>"""
+    gtype = geom.get("type", "")
+    desc  = f"Cultura: {t.cultura or '-'} | Area: {t.area_ha or 0:.2f} ha"
 
+    placemarks = []
+    if gtype == "Polygon":
+        rings = geom["coordinates"]
+        inner = "".join(
+            f"<innerBoundaryIs><LinearRing><coordinates>{_ring_kml(r)}</coordinates>"
+            f"</LinearRing></innerBoundaryIs>" for r in rings[1:]
+        )
+        placemarks.append(
+            f"<Placemark><n>{t.nome}</n><description>{desc}</description>"
+            f"<Polygon><outerBoundaryIs><LinearRing>"
+            f"<coordinates>{_ring_kml(rings[0])}</coordinates>"
+            f"</LinearRing></outerBoundaryIs>{inner}</Polygon></Placemark>"
+        )
+    elif gtype == "MultiPolygon":
+        for i, poly in enumerate(geom["coordinates"]):
+            nm = f"{t.nome} ({i+1})" if len(geom["coordinates"]) > 1 else t.nome
+            inner = "".join(
+                f"<innerBoundaryIs><LinearRing><coordinates>{_ring_kml(r)}</coordinates>"
+                f"</LinearRing></innerBoundaryIs>" for r in poly[1:]
+            )
+            placemarks.append(
+                f"<Placemark><n>{nm}</n><description>{desc}</description>"
+                f"<Polygon><outerBoundaryIs><LinearRing>"
+                f"<coordinates>{_ring_kml(poly[0])}</coordinates>"
+                f"</LinearRing></outerBoundaryIs>{inner}</Polygon></Placemark>"
+            )
 
-# ── Verificação: admin em impersonation OU cliente logado ─────
+    body = "\n    ".join(placemarks)
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
+        f'  <Document>\n    <n>{t.nome}</n>\n    {body}\n  </Document>\n</kml>'
+    )
+
 
 def _pode_acessar():
     """Retorna True se admin em impersonation ou cliente logado."""
@@ -202,23 +319,38 @@ def importar():
             ext = "kml"
 
         if ext == "kml":
-            gj = _parse_kml(raw)
+            features = _parse_kml(raw)
         elif ext in ("geojson","json"):
-            gj = _parse_geojson(raw)
+            features = _parse_geojson(raw)
         else:
             flash("Formato não suportado. Use KML, KMZ ou GeoJSON.", "error")
             return redirect(url_for("talhoes.importar"))
 
-        if not gj:
-            flash("Não foi possível ler o polígono do arquivo.", "error")
+        if not features:
+            flash("Não foi possível ler polígonos do arquivo. Verifique o formato.", "error")
             return redirect(url_for("talhoes.importar"))
 
-        gs  = json.dumps(gj)
-        t   = Talhao(user_id=user.id, nome=nome, cultura=cultura,
-                     geojson=gs, area_ha=_area_ha(gs))
-        db.session.add(t)
+        # Salvar cada polígono como um talhão separado
+        salvos = 0
+        area_total = 0.0
+        for feat in features:
+            # Nome: prioridade ao campo do form (só para 1 talhão), depois ao nome do arquivo
+            nome_talhao = nome if (len(features) == 1 and nome) else feat["nome"]
+            gs   = json.dumps(feat["geojson"])
+            area = _area_ha(gs)
+            t    = Talhao(user_id=user.id, nome=nome_talhao,
+                          cultura=cultura, geojson=gs, area_ha=area)
+            db.session.add(t)
+            salvos     += 1
+            area_total += area
+
         db.session.commit()
-        flash(f"Talhão '{nome}' importado! ({t.area_ha:.2f} ha)", "success")
+
+        if salvos == 1:
+            flash(f"Talhão importado com sucesso! ({area_total:.2f} ha)", "success")
+        else:
+            flash(f"{salvos} talhões importados! Área total: {area_total:.2f} ha", "success")
+
         return redirect(url_for("talhoes.mapa"))
 
     return render_template("talhoes/importar.html",
