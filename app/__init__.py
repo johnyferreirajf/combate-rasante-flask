@@ -62,6 +62,32 @@ def create_app():
                         ordem INTEGER DEFAULT 0
                     )""",
                     "ALTER TABLE post_midias ALTER COLUMN tipo TYPE VARCHAR(20)",
+                    """CREATE TABLE IF NOT EXISTS talhoes (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        nome VARCHAR(200) NOT NULL,
+                        cultura VARCHAR(100),
+                        area_ha FLOAT,
+                        geojson TEXT NOT NULL,
+                        cor VARCHAR(20) DEFAULT '#22c55e',
+                        observacoes TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )""",
+                    """CREATE TABLE IF NOT EXISTS solicitacoes_aplicacao (
+                        id SERIAL PRIMARY KEY,
+                        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+                        talhao_id INTEGER REFERENCES talhoes(id) ON DELETE CASCADE,
+                        cultura VARCHAR(100),
+                        produto VARCHAR(200),
+                        dose VARCHAR(100),
+                        data_desejada DATE,
+                        observacoes TEXT,
+                        status VARCHAR(30) DEFAULT 'pendente',
+                        resposta_admin TEXT,
+                        created_at TIMESTAMP DEFAULT NOW(),
+                        updated_at TIMESTAMP DEFAULT NOW()
+                    )""",
                 ]
                 for _sql in _migrations:
                     try:
@@ -150,11 +176,13 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.employee import employee_bp
     from app.routes.posts import posts_bp
+    from app.routes.talhoes import talhoes_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(employee_bp)
     app.register_blueprint(posts_bp)
+    app.register_blueprint(talhoes_bp)
 
     # Context: current_user (cliente)
     from app.utils.security import get_current_user, get_current_employee

@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block title %}Importar Talhão{% endblock %}
+{% block head_extra %}
+<style>
+.imp-wrap{width:min(520px,calc(100% - 24px));margin-inline:auto;padding-block:32px 60px;}
+.imp-card{background:rgba(10,40,20,.65);border:1px solid rgba(255,255,255,.16);border-radius:20px;backdrop-filter:blur(14px);padding:28px 30px;}
+.imp-card h1{font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:6px;}
+.imp-card p{color:rgba(255,255,255,.60);font-size:13px;margin-bottom:22px;}
+.fl{font-size:11px;font-weight:800;color:rgba(255,255,255,.80);display:block;margin-bottom:4px;text-transform:uppercase;}
+.fi{width:100%;padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.40);color:#fff;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;}
+.fi::placeholder{color:rgba(255,255,255,.35);font-style:italic;}
+.fi:focus{border-color:rgba(34,197,94,.60);}
+select.fi option{background:#0d2418;}
+.drop{border:2px dashed rgba(255,255,255,.25);border-radius:12px;padding:26px;text-align:center;cursor:pointer;transition:.2s;background:rgba(0,0,0,.20);}
+.drop:hover,.drop.over{border-color:rgba(34,197,94,.60);background:rgba(34,197,94,.08);}
+.drop input{display:none;}
+</style>
+{% endblock %}
+{% block content %}
+<section class="section">
+<div class="imp-wrap">
+<div class="imp-card">
+  <h1>📂 Importar Talhão</h1>
+  <p>Importe KML, KMZ ou GeoJSON do Google Earth, QGIS ou qualquer sistema de precisão.</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for cat,msg in messages %}
+    <div style="margin-bottom:12px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:700;
+      background:{{ 'rgba(22,163,74,.2)' if cat=='success' else 'rgba(239,68,68,.2)' }};
+      border:1px solid {{ 'rgba(34,197,94,.4)' if cat=='success' else 'rgba(239,68,68,.4)' }};
+      color:{{ '#86efac' if cat=='success' else '#fca5a5' }};">{{ msg }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  <form method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:14px;">
+    <div>
+      <label class="fl">Arquivo *</label>
+      <div class="drop" id="dz" onclick="document.getElementById('fi').click()">
+        <input type="file" id="fi" name="arquivo" accept=".kml,.kmz,.geojson,.json">
+        <div id="dh"><div style="font-size:2rem;margin-bottom:6px;">🗺️</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.75);">Clique ou arraste o arquivo</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.40);margin-top:4px;">KML, KMZ ou GeoJSON</div></div>
+        <div id="dc" style="display:none;color:#86efac;font-weight:700;font-size:13px;"></div>
+      </div>
+    </div>
+    <div><label class="fl">Nome do Talhão</label>
+      <input class="fi" type="text" name="nome" placeholder="Deixe em branco para usar o nome do arquivo"></div>
+    <div><label class="fl">Cultura</label>
+      <select class="fi" name="cultura"><option value="">Selecione...</option>
+        {% for c in culturas %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+      </select></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px;">
+      <a href="{{ url_for('talhoes.mapa') }}" class="btn btn--ghost">Cancelar</a>
+      <button type="submit" class="btn btn--primary">📂 Importar</button>
+    </div>
+  </form>
+</div>
+</div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+var fi=document.getElementById('fi'),dh=document.getElementById('dh'),dc=document.getElementById('dc'),dz=document.getElementById('dz');
+function setFile(f){dh.style.display='none';dc.style.display='';dc.textContent='📄 '+f.name;}
+fi.onchange=function(){if(this.files[0])setFile(this.files[0]);};
+dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('over');});
+dz.addEventListener('dragleave',function(){dz.classList.remove('over');});
+dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('over');
+  if(e.dataTransfer.files[0]){var dt=new DataTransfer();dt.items.add(e.dataTransfer.files[0]);fi.files=dt.files;setFile(e.dataTransfer.files[0]);}});
+</script>
+{% endblock %}

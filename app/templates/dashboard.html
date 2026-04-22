@@ -30,12 +30,21 @@
           </a>
         </div>
       {% endif %}
-      <div style="margin-top:8px;">
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
         <a href="{{ url_for('main.painel_trocar_senha') }}"
            class="btn btn--ghost"
            style="font-size:12px;min-height:32px;padding:0 14px;">
           🔑 Trocar senha
         </a>
+        {# Botão de talhões — visível apenas para admin em preview #}
+        {% if session.get('admin_impersonating') %}
+        <a href="{{ url_for('talhoes.mapa') }}"
+           class="btn btn--primary"
+           style="font-size:12px;min-height:32px;padding:0 14px;background:rgba(234,179,8,.25);
+                  border:1px solid rgba(234,179,8,.60);color:#fde68a;">
+          🗺️ [PREVIEW] Meus Talhões
+        </a>
+        {% endif %}
       </div>
     </div>
 

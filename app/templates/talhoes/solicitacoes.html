@@ -1,0 +1,80 @@
+{% extends "layout.html" %}
+{% block title %}Minhas Solicitações{% endblock %}
+{% block head_extra %}
+<style>
+.ss-wrap{width:min(820px,calc(100% - 24px));margin-inline:auto;padding-block:28px 60px;}
+.ss-wrap h1{font-size:1.5rem;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);}
+.sc{background:rgba(10,40,20,.60);border:1px solid rgba(255,255,255,.14);border-radius:15px;
+    backdrop-filter:blur(12px);padding:16px 18px;margin-bottom:10px;}
+.sc:hover{border-color:rgba(255,255,255,.24);}
+.sc__head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
+.sc__nome{font-weight:900;font-size:14px;color:#fff;}
+.sc__meta{font-size:11px;color:rgba(255,255,255,.50);margin-top:3px;}
+.sc__badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;
+  padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);margin-left:auto;flex-shrink:0;}
+.sc__body{margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px;}
+.sc__body span{color:rgba(255,255,255,.65);}
+.sc__body strong{color:#fff;}
+.sc__resp{margin-top:10px;padding:9px 12px;background:rgba(34,197,94,.10);
+  border:1px solid rgba(34,197,94,.25);border-radius:9px;font-size:12px;color:rgba(255,255,255,.85);}
+.empty{text-align:center;padding:50px 20px;background:rgba(10,40,20,.50);
+  border:1px solid rgba(255,255,255,.14);border-radius:18px;}
+.empty p{color:rgba(255,255,255,.55);margin-top:10px;}
+</style>
+{% endblock %}
+{% block content %}
+<section class="section">
+<div class="ss-wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+    <div>
+      <h1>📋 Minhas Solicitações</h1>
+      <p style="color:rgba(255,255,255,.50);font-size:13px;margin-top:4px;">{{ solicitacoes|length }} solicitação(ões)</p>
+    </div>
+    <a href="{{ url_for('talhoes.mapa') }}" class="btn btn--primary">🗺️ Ir para o Mapa</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for cat,msg in messages %}
+    <div style="margin-bottom:10px;padding:11px 14px;border-radius:10px;font-size:13px;font-weight:700;
+      background:{{ 'rgba(22,163,74,.2)' if cat=='success' else 'rgba(239,68,68,.2)' }};
+      border:1px solid {{ 'rgba(34,197,94,.4)' if cat=='success' else 'rgba(239,68,68,.4)' }};
+      color:{{ '#86efac' if cat=='success' else '#fca5a5' }};">{{ msg }}</div>
+    {% endfor %}{% endif %}
+  {% endwith %}
+
+  {% if solicitacoes %}
+    {% for s in solicitacoes %}
+    {% set label,color = s.status_label %}
+    <div class="sc">
+      <div class="sc__head">
+        <div>
+          <div class="sc__nome">🗺️ {{ s.talhao.nome if s.talhao else 'Talhão removido' }}</div>
+          <div class="sc__meta">Enviado em {{ s.created_at.strftime("%d/%m/%Y às %H:%M") }}
+            {% if s.data_desejada %} · Data desejada: <strong>{{ s.data_desejada.strftime("%d/%m/%Y") }}</strong>{% endif %}
+          </div>
+        </div>
+        <div class="sc__badge" style="color:{{ color }};border-color:{{ color }}40;">{{ label }}</div>
+      </div>
+      <div class="sc__body">
+        <div><span>🌱 Cultura: </span><strong>{{ s.cultura or '—' }}</strong></div>
+        <div><span>🧪 Produto: </span><strong>{{ s.produto or '—' }}</strong></div>
+        <div><span>💧 Dose: </span><strong>{{ s.dose or '—' }}</strong></div>
+        <div><span>📐 Área: </span><strong>{{ "%.2f"|format(s.talhao.area_ha or 0) if s.talhao else '—' }} ha</strong></div>
+      </div>
+      {% if s.observacoes %}<div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.45);">📝 {{ s.observacoes }}</div>{% endif %}
+      {% if s.resposta_admin %}
+      <div class="sc__resp"><strong style="color:#86efac;">💬 Retorno da equipe:</strong><br>{{ s.resposta_admin }}</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty">
+    <div style="font-size:3rem;">✈️</div>
+    <p>Nenhuma solicitação enviada ainda.</p>
+    <a href="{{ url_for('talhoes.mapa') }}" class="btn btn--primary" style="margin-top:16px;">🗺️ Abrir Mapa</a>
+  </div>
+  {% endif %}
+</div>
+</section>
+{% endblock %}
