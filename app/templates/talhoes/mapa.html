@@ -365,23 +365,66 @@ function fitAll() {
 var selectedIds  = new Set();   // ids selecionados
 var lastClickIdx = -1;          // índice do último clique (para shift)
 
+/* ── Event delegation: um único listener na lista (suporta N talhões) ── */
+function setupListListener() {
+  var list = document.getElementById('talhoes-list');
+  list.addEventListener('click', function(e) {
+    // Botão excluir individual
+    if (e.target.classList.contains('t-item__del')) {
+      var id = parseInt(e.target.dataset.id);
+      excluir(e, id);
+      return;
+    }
+    // Clique no item
+    var item = e.target.closest('.t-item');
+    if (!item) return;
+    var id  = parseInt(item.dataset.id);
+    var idx = parseInt(item.dataset.idx);
+
+    if (e.shiftKey && lastClickIdx >= 0) {
+      var from = Math.min(lastClickIdx, idx);
+      var to   = Math.max(lastClickIdx, idx);
+      for (var i = from; i <= to; i++) selectedIds.add(TALHOES[i].id);
+      lastClickIdx = idx;
+      renderSidebar(); return;
+    }
+    if (e.ctrlKey || e.metaKey) {
+      if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+      lastClickIdx = idx;
+      renderSidebar(); return;
+    }
+    if (selectedIds.size > 0) {
+      if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+      lastClickIdx = idx;
+      renderSidebar(); return;
+    }
+    lastClickIdx = idx;
+    openPanel(id);
+    if (layers[id]) map.fitBounds(layers[id].getBounds(), {padding:[20,20]});
+  });
+}
+setupListListener();
+
 function renderSidebar() {
   var list  = document.getElementById('talhoes-list');
   var empty = document.getElementById('t-empty');
-  list.querySelectorAll('.t-item').forEach(function(e){ e.remove(); });
-  if (!TALHOES.length) { empty.style.display=''; atualizarSelToolbar(); return; }
+
+  /* Usar innerHTML em bloco — muito mais rápido que criar elementos um a um */
+  if (!TALHOES.length) {
+    empty.style.display = '';
+    list.querySelectorAll('.t-item').forEach(function(e){ e.remove(); });
+    atualizarSelToolbar();
+    return;
+  }
   empty.style.display = 'none';
 
-  TALHOES.forEach(function(t, idx) {
-    var div = document.createElement('div');
+  /* Montar HTML de todos os itens de uma vez */
+  var html = TALHOES.map(function(t, idx) {
     var isSel = selectedIds.has(t.id);
-    div.className = 't-item' +
+    var cls   = 't-item' +
       (t.id == currentId ? ' active' : '') +
       (isSel ? ' selected' : '');
-    div.dataset.idx = idx;
-    div.dataset.id  = t.id;
-
-    div.innerHTML =
+    return '<div class="' + cls + '" data-id="' + t.id + '" data-idx="' + idx + '">' +
       '<span class="t-item__check">' + (isSel ? '✓' : '') + '</span>' +
       '<span class="t-item__dot" style="background:' + t.cor + '"></span>' +
       '<div class="t-item__info">' +
@@ -389,49 +432,15 @@ function renderSidebar() {
         '<div class="t-item__area">📐 ' + (t.area_ha||0).toFixed(2) + ' ha' +
           (t.cultura ? ' · ' + t.cultura : '') + '</div>' +
       '</div>' +
-      '<button class="t-item__del" onclick="excluir(event,' + t.id + ')" title="Excluir">🗑</button>';
+      '<button class="t-item__del" data-id="' + t.id + '" title="Excluir">🗑</button>' +
+    '</div>';
+  }).join('');
 
-    div.onclick = function(e) {
-      if (e.target.classList.contains('t-item__del')) return;
-
-      // Shift + click: selecionar intervalo
-      if (e.shiftKey && lastClickIdx >= 0) {
-        var from = Math.min(lastClickIdx, idx);
-        var to   = Math.max(lastClickIdx, idx);
-        for (var i = from; i <= to; i++) {
-          selectedIds.add(TALHOES[i].id);
-        }
-        lastClickIdx = idx;
-        renderSidebar();
-        return;
-      }
-
-      // Ctrl/Cmd + click: toggle individual
-      if (e.ctrlKey || e.metaKey) {
-        if (selectedIds.has(t.id)) selectedIds.delete(t.id);
-        else selectedIds.add(t.id);
-        lastClickIdx = idx;
-        renderSidebar();
-        return;
-      }
-
-      // Click normal: se tem selecionados, toggle este
-      if (selectedIds.size > 0) {
-        if (selectedIds.has(t.id)) selectedIds.delete(t.id);
-        else selectedIds.add(t.id);
-        lastClickIdx = idx;
-        renderSidebar();
-        return;
-      }
-
-      // Click normal sem seleção: abrir painel
-      lastClickIdx = idx;
-      openPanel(t.id);
-      if (layers[t.id]) map.fitBounds(layers[t.id].getBounds(), {padding:[20,20]});
-    };
-
-    list.appendChild(div);
-  });
+  /* Remover só os itens antigos (preservar #t-empty) e inserir novos */
+  list.querySelectorAll('.t-item').forEach(function(e){ e.remove(); });
+  var tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  while (tmp.firstChild) list.appendChild(tmp.firstChild);
 
   atualizarSelToolbar();
 }
