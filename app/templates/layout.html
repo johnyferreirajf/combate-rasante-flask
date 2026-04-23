@@ -30,7 +30,7 @@
 
   {% block head_extra %}{% endblock %}
 </head>
-<body data-cr-auth="{{ '1' if session.get('user_id') or session.get('employee_id') else '0' }}">
+<body data-cr-auth="{{ '1' if session.get('user_id') or session.get('employee_id') else '0' }}" class="{% block body_class %}{% endblock %}">
 
   {# ── NAVBAR ─────────────────────────────────────────────── #}
 
