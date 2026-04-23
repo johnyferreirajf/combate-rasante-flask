@@ -340,18 +340,19 @@ function spin(on, msg) {
   document.getElementById('spinner').classList.toggle('on', !!on);
 }
 
-/* ── Carregar talhões ── */
-TALHOES.forEach(function(t){ addLayer(t); });
-renderSidebar();
-if (EDIT_ID && EDIT_ID!=='null') openPanel(parseInt(EDIT_ID));
-else if (TALHOES.length) fitAll();
+/* ── Carregar talhões — executado após todas as funções ── */
+// (inicialização movida para o final do script)
 
 function addLayer(t) {
   var l = L.geoJSON(t.geojson, {
     style:{color:t.cor,fillColor:t.cor,fillOpacity:.25,weight:2}
   }).addTo(map);
   l.on('click', function(){ openPanel(t.id); });
-  l.bindTooltip(t.nome+(t.area_ha?' ('+t.area_ha.toFixed(2)+' ha)':''),{permanent:false,direction:'center'});
+  /* Tooltip só se poucos talhões — evita travamento com centenas */
+  if (TALHOES.length <= 100) {
+    l.bindTooltip(t.nome+(t.area_ha?' ('+t.area_ha.toFixed(2)+' ha)':''),
+      {permanent:false,direction:'center'});
+  }
   layers[t.id] = l;
 }
 
@@ -366,20 +367,54 @@ var selectedIds  = new Set();   // ids selecionados
 var lastClickIdx = -1;          // índice do último clique (para shift)
 
 /* ── Event delegation: um único listener na lista (suporta N talhões) ── */
-function setupListListener() {
+function renderSidebar() {
   var list = document.getElementById('talhoes-list');
-  list.addEventListener('click', function(e) {
-    // Botão excluir individual
-    if (e.target.classList.contains('t-item__del')) {
-      var id = parseInt(e.target.dataset.id);
-      excluir(e, id);
-      return;
-    }
-    // Clique no item
+
+  if (!TALHOES.length) {
+    list.innerHTML =
+      '<div id="t-empty" style="text-align:center;padding:20px 8px;' +
+      'color:rgba(255,255,255,.40);font-size:11px;">' +
+      'Nenhum talhão.<br>Use ✏️ para desenhar.</div>';
+    atualizarSelToolbar();
+    return;
+  }
+
+  /* Montar HTML completo de uma vez — sem loops de DOM */
+  var rows = TALHOES.map(function(t, idx) {
+    var isSel = selectedIds.has(t.id);
+    var cls = 't-item' +
+      (t.id == currentId ? ' active' : '') +
+      (isSel ? ' selected' : '');
+    return (
+      '<div class="' + cls + '" data-id="' + t.id + '" data-idx="' + idx + '">' +
+        '<span class="t-item__check">' + (isSel ? '&#10003;' : '') + '</span>' +
+        '<span class="t-item__dot" style="background:' + t.cor + '"></span>' +
+        '<div class="t-item__info">' +
+          '<div class="t-item__nome">' + t.nome + '</div>' +
+          '<div class="t-item__area">&#128208; ' + (t.area_ha||0).toFixed(2) + ' ha' +
+            (t.cultura ? ' &middot; ' + t.cultura : '') +
+          '</div>' +
+        '</div>' +
+        '<button class="t-item__del" data-id="' + t.id + '" title="Excluir">&#128465;</button>' +
+      '</div>'
+    );
+  });
+
+  list.innerHTML = rows.join('');
+  atualizarSelToolbar();
+}
+
+/* Event delegation — registrado após DOMContentLoaded, funciona para qualquer qtd */
+window.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('talhoes-list').addEventListener('click', function(e) {
+    var del  = e.target.closest('.t-item__del');
     var item = e.target.closest('.t-item');
     if (!item) return;
+
     var id  = parseInt(item.dataset.id);
     var idx = parseInt(item.dataset.idx);
+
+    if (del) { excluir(e, id); return; }
 
     if (e.shiftKey && lastClickIdx >= 0) {
       var from = Math.min(lastClickIdx, idx);
@@ -402,48 +437,7 @@ function setupListListener() {
     openPanel(id);
     if (layers[id]) map.fitBounds(layers[id].getBounds(), {padding:[20,20]});
   });
-}
-setupListListener();
-
-function renderSidebar() {
-  var list  = document.getElementById('talhoes-list');
-  var empty = document.getElementById('t-empty');
-
-  /* Usar innerHTML em bloco — muito mais rápido que criar elementos um a um */
-  if (!TALHOES.length) {
-    empty.style.display = '';
-    list.querySelectorAll('.t-item').forEach(function(e){ e.remove(); });
-    atualizarSelToolbar();
-    return;
-  }
-  empty.style.display = 'none';
-
-  /* Montar HTML de todos os itens de uma vez */
-  var html = TALHOES.map(function(t, idx) {
-    var isSel = selectedIds.has(t.id);
-    var cls   = 't-item' +
-      (t.id == currentId ? ' active' : '') +
-      (isSel ? ' selected' : '');
-    return '<div class="' + cls + '" data-id="' + t.id + '" data-idx="' + idx + '">' +
-      '<span class="t-item__check">' + (isSel ? '✓' : '') + '</span>' +
-      '<span class="t-item__dot" style="background:' + t.cor + '"></span>' +
-      '<div class="t-item__info">' +
-        '<div class="t-item__nome">' + t.nome + '</div>' +
-        '<div class="t-item__area">📐 ' + (t.area_ha||0).toFixed(2) + ' ha' +
-          (t.cultura ? ' · ' + t.cultura : '') + '</div>' +
-      '</div>' +
-      '<button class="t-item__del" data-id="' + t.id + '" title="Excluir">🗑</button>' +
-    '</div>';
-  }).join('');
-
-  /* Remover só os itens antigos (preservar #t-empty) e inserir novos */
-  list.querySelectorAll('.t-item').forEach(function(e){ e.remove(); });
-  var tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  while (tmp.firstChild) list.appendChild(tmp.firstChild);
-
-  atualizarSelToolbar();
-}
+});
 
 function atualizarSelToolbar() {
   var tb = document.getElementById('sel-toolbar');
@@ -807,5 +801,44 @@ function calcArea(coords) {
   var lat=coords.reduce(function(s,c){return s+c[1];},0)/n*Math.PI/180;
   return Math.abs(area)/2*R*R*Math.cos(lat)/10000;
 }
+/* ════════════════════════════════════════════════════════
+   INICIALIZAÇÃO — após todas as funções estarem definidas
+   ════════════════════════════════════════════════════════ */
+(function init() {
+  var LOTE = 50;   // carregar 50 layers por vez para não travar a UI
+
+  if (TALHOES.length <= LOTE) {
+    // Poucos talhões: carrega tudo de uma vez
+    TALHOES.forEach(function(t){ addLayer(t); });
+    renderSidebar();
+    if (EDIT_ID && EDIT_ID !== 'null') openPanel(parseInt(EDIT_ID));
+    else if (TALHOES.length) fitAll();
+    return;
+  }
+
+  // Muitos talhões: carregar em lotes assíncronos com spinner
+  spin(true, 'Carregando ' + TALHOES.length + ' talhões...');
+  renderSidebar();   // sidebar pode renderizar antes dos layers
+
+  var idx = 0;
+  function carregarLote() {
+    var fim = Math.min(idx + LOTE, TALHOES.length);
+    for (var i = idx; i < fim; i++) {
+      addLayer(TALHOES[i]);
+    }
+    idx = fim;
+    document.getElementById('spin-msg').textContent =
+      'Carregando... ' + idx + '/' + TALHOES.length;
+
+    if (idx < TALHOES.length) {
+      setTimeout(carregarLote, 0);   // libera a UI entre lotes
+    } else {
+      spin(false);
+      if (EDIT_ID && EDIT_ID !== 'null') openPanel(parseInt(EDIT_ID));
+      else fitAll();
+    }
+  }
+  setTimeout(carregarLote, 0);
+})();
 </script>
 {% endblock %}
