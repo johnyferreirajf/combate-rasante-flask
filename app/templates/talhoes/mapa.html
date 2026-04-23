@@ -227,11 +227,19 @@ select.pp-input option { background:#0d2418; }
   <div id="map-container">
     <div id="map"></div>
 
-    <!-- Spinner -->
+    <!-- Spinner com progresso -->
     <div id="spinner">
-      <div style="text-align:center;">
+      <div style="text-align:center;width:220px;">
         <div class="spin" style="margin:0 auto 12px;"></div>
-        <div style="color:#fff;font-size:13px;font-weight:700;" id="spin-msg">Processando...</div>
+        <div style="color:#fff;font-size:13px;font-weight:700;margin-bottom:10px;" id="spin-msg">Processando...</div>
+        <!-- Barra de progresso (visível só durante exclusão em massa) -->
+        <div id="prog-wrap" style="display:none;">
+          <div style="background:rgba(255,255,255,.15);border-radius:999px;height:8px;overflow:hidden;margin-bottom:6px;">
+            <div id="prog-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#16a34a);
+              border-radius:999px;transition:width .2s ease;"></div>
+          </div>
+          <div id="prog-text" style="color:rgba(255,255,255,.70);font-size:11px;font-weight:700;">0 / 0</div>
+        </div>
       </div>
     </div>
 
@@ -404,7 +412,7 @@ function renderSidebar() {
   atualizarSelToolbar();
 }
 
-/* Event delegation — registrado após DOMContentLoaded, funciona para qualquer qtd */
+/* Event delegation — um listener para toda a lista */
 window.addEventListener('DOMContentLoaded', function() {
   document.getElementById('talhoes-list').addEventListener('click', function(e) {
     var del  = e.target.closest('.t-item__del');
@@ -414,8 +422,10 @@ window.addEventListener('DOMContentLoaded', function() {
     var id  = parseInt(item.dataset.id);
     var idx = parseInt(item.dataset.idx);
 
+    /* Botão 🗑 individual — exclui apenas este */
     if (del) { excluir(e, id); return; }
 
+    /* Shift+click — seleciona intervalo */
     if (e.shiftKey && lastClickIdx >= 0) {
       var from = Math.min(lastClickIdx, idx);
       var to   = Math.max(lastClickIdx, idx);
@@ -423,19 +433,29 @@ window.addEventListener('DOMContentLoaded', function() {
       lastClickIdx = idx;
       renderSidebar(); return;
     }
+
+    /* Ctrl/Cmd+click — toggle individual, mantém outros */
     if (e.ctrlKey || e.metaKey) {
       if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
       lastClickIdx = idx;
       renderSidebar(); return;
     }
-    if (selectedIds.size > 0) {
-      if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
+
+    /* Click simples — SEMPRE entra em modo seleção (toggle deste item) */
+    /* Para abrir o painel, clicar no nome/área abre o painel SEM seleção */
+    var inInfo = e.target.closest('.t-item__info');
+    if (inInfo && selectedIds.size === 0) {
+      /* Clicou na área de info e não tem nada selecionado → abre painel */
       lastClickIdx = idx;
-      renderSidebar(); return;
+      openPanel(id);
+      if (layers[id]) map.fitBounds(layers[id].getBounds(), {padding:[20,20]});
+      return;
     }
+
+    /* Qualquer outro clique → toggle seleção */
+    if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
     lastClickIdx = idx;
-    openPanel(id);
-    if (layers[id]) map.fitBounds(layers[id].getBounds(), {padding:[20,20]});
+    renderSidebar();
   });
 });
 
@@ -463,41 +483,80 @@ function limparSelecao() {
 
 function excluirSelecionados() {
   if (!selectedIds.size) return;
-  var n = selectedIds.size;
-  if (!confirm('Excluir ' + n + ' talhão(ões) selecionado(s)? Esta ação não pode ser desfeita.')) return;
-
-  spin(true, 'Excluindo ' + n + ' talhões...');
+  var total = selectedIds.size;
+  if (!confirm('Excluir ' + total + ' talhão(ões) selecionado(s)?
+Esta ação não pode ser desfeita.')) return;
 
   var ids   = Array.from(selectedIds);
   var feito = 0;
   var erros = 0;
 
-  function proximo() {
-    if (!ids.length) {
+  /* Mostrar spinner + barra de progresso */
+  spin(true, 'Excluindo 0 de ' + total + '...');
+  var progWrap = document.getElementById('prog-wrap');
+  var progBar  = document.getElementById('prog-bar');
+  var progText = document.getElementById('prog-text');
+  progWrap.style.display = '';
+  progBar.style.width    = '0%';
+  progText.textContent   = '0 / ' + total;
+
+  function atualizarProgresso() {
+    var pct = Math.round((feito + erros) / total * 100);
+    progBar.style.width  = pct + '%';
+    progText.textContent = (feito + erros) + ' / ' + total + '  (' + pct + '%)';
+    document.getElementById('spin-msg').textContent =
+      'Excluindo... ' + pct + '%';
+  }
+
+  /* Executar em lotes paralelos de 5 para ser mais rápido */
+  var LOTE = 5;
+  var fila = ids.slice();
+  var emCurso = 0;
+  var concluido = false;
+
+  function verificarFim() {
+    if (feito + erros >= total && !concluido) {
+      concluido = true;
+      progWrap.style.display = 'none';
       spin(false);
-      if (erros) toast(erros + ' erro(s) ao excluir.', 'err');
+      if (erros) toast(erros + ' erro(s) ao excluir. ' + feito + ' removido(s).', 'err', 4000);
       else toast('✅ ' + feito + ' talhão(ões) excluído(s)!');
       selectedIds.clear();
       lastClickIdx = -1;
       renderSidebar();
       closePropPanel();
-      return;
     }
-    var id = ids.shift();
-    fetch('/talhoes/api/excluir/' + id, { method:'DELETE' })
-    .then(function(r){ return r.json(); })
+  }
+
+  function processarProximo() {
+    if (!fila.length) return;
+    var id = fila.shift();
+    emCurso++;
+    fetch('/talhoes/api/excluir/' + id, { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
     .then(function(d) {
       if (d.ok) {
         if (layers[id]) { map.removeLayer(layers[id]); delete layers[id]; }
-        TALHOES = TALHOES.filter(function(t){ return t.id != id; });
+        TALHOES = TALHOES.filter(function(t) { return t.id != id; });
         feito++;
       } else { erros++; }
-      proximo();
+      emCurso--;
+      atualizarProgresso();
+      verificarFim();
+      processarProximo(); /* puxar próximo da fila */
     })
-    .catch(function(){ erros++; proximo(); });
+    .catch(function() {
+      erros++; emCurso--;
+      atualizarProgresso();
+      verificarFim();
+      processarProximo();
+    });
   }
 
-  proximo();
+  /* Disparar LOTE requisições simultâneas */
+  for (var i = 0; i < Math.min(LOTE, fila.length + 0); i++) {
+    processarProximo();
+  }
 }
 
 /* ── Desenhar ── */
