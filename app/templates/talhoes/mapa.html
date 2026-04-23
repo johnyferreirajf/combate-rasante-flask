@@ -159,15 +159,132 @@ select.pp-input option { background:#0d2418; }
 .adm-banner { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:998; background:rgba(234,179,8,.90); color:#1a1200; font-size:11px; font-weight:800; padding:5px 14px; border-radius:9px; white-space:nowrap; }
 
 /* Mobile */
+/* ══════════════════════════════════════════════════
+   MOBILE — layout app nativo
+   ══════════════════════════════════════════════════ */
 @media (max-width:768px) {
-  #map-layout { flex-direction:column; }
-  #map-sidebar { width:100%; height:165px; flex-direction:row; }
-  #talhoes-list { display:flex; gap:6px; padding:8px; overflow-x:auto; overflow-y:hidden; }
-  .t-item { flex-shrink:0; width:130px; flex-direction:column; align-items:flex-start; }
-  #map-container { flex:1; min-height:200px; }
-  #map-toolbar { max-width:100%; top:6px; }
-  #prop-panel { width:100%; right:auto; bottom:0; top:auto; height:60vh; transform:translateY(100%); border-left:none; border-top:1px solid rgba(255,255,255,.12); }
+
+  /* ── Layout geral: mapa ocupa tudo, sidebar e painel flutuam ── */
+  #map-layout { flex-direction:column; position:relative; }
+  #map-container { flex:1; min-height:0; }
+
+  /* ── Sidebar: drawer horizontal fixo no topo do mapa ── */
+  #map-sidebar {
+    position:absolute; top:0; left:0; right:0; z-index:500;
+    width:100% !important;          /* override do localStorage */
+    height:auto; max-height:48px;
+    flex-direction:row; align-items:center;
+    background:rgba(3,20,10,.96);
+    border-right:none; border-bottom:1px solid rgba(255,255,255,.12);
+    overflow:hidden; transition:max-height .28s ease;
+    flex-shrink:0;
+  }
+  #map-sidebar.expanded { max-height:260px; }
+
+  /* Cabeçalho da sidebar vira barra tocável */
+  #map-sidebar-header {
+    padding:10px 14px;
+    border-bottom:none;
+    flex-shrink:0; width:100%;
+    display:flex; align-items:center; justify-content:space-between;
+    cursor:pointer; user-select:none;
+  }
+  #map-sidebar-header h2 { margin:0; font-size:13px; }
+
+  /* Seta indicadora de estado */
+  #map-sidebar-header::after {
+    content:'▼'; font-size:10px; color:rgba(255,255,255,.50);
+    transition:transform .25s;
+  }
+  #map-sidebar.expanded #map-sidebar-header::after { transform:rotate(180deg); }
+
+  /* Links de navegação: ficam na mesma linha do h2 */
+  #map-sidebar-header > div { display:none; } /* esconde links no collapsed */
+  #map-sidebar.expanded #map-sidebar-header > div { display:flex; }
+
+  /* Lista de talhões: scroll horizontal no collapsed, vertical no expanded */
+  #talhoes-list {
+    display:flex; gap:6px; padding:6px 10px;
+    overflow-x:auto; overflow-y:hidden;
+    flex-shrink:0; width:100%;
+  }
+  #map-sidebar.expanded #talhoes-list {
+    overflow-x:hidden; overflow-y:auto;
+    flex-direction:column; max-height:160px;
+  }
+  .t-item {
+    flex-shrink:0; min-width:120px;
+    flex-direction:column; align-items:flex-start;
+    padding:6px 8px;
+  }
+  #map-sidebar.expanded .t-item { min-width:unset; flex-direction:row; }
+
+  /* Rodapé da sidebar: esconder no collapsed */
+  #map-sidebar > div:last-child { display:none; }
+  #map-sidebar.expanded > div:last-child { display:flex; }
+
+  /* Sel toolbar: só no expanded */
+  #sel-toolbar { flex-shrink:0; }
+
+  /* Alça de resize: esconder no mobile */
+  #sidebar-resizer { display:none; }
+
+  /* ── Toolbar: duas linhas compactas ── */
+  #map-toolbar {
+    position:absolute;
+    top:52px;            /* abaixo da sidebar */
+    left:50%; transform:translateX(-50%);
+    max-width:calc(100% - 8px);
+    gap:3px;
+  }
+  #map-toolbar button {
+    padding:5px 8px; font-size:10px; border-radius:8px;
+  }
+  .tb-sep { display:none; }
+
+  /* ── Painel direito: bottom sheet ── */
+  #prop-panel {
+    position:fixed !important;   /* sai do flow do mapa */
+    left:0; right:0; bottom:0; top:auto;
+    width:100% !important;       /* override localStorage */
+    height:auto;
+    max-height:75vh;
+    border-left:none;
+    border-top:2px solid rgba(255,255,255,.15);
+    border-radius:18px 18px 0 0;
+    transform:translateY(100%);
+    transition:transform .3s cubic-bezier(.32,1,.32,1);
+    z-index:1100;
+  }
   #prop-panel.open { transform:translateY(0); }
+
+  /* Alça de drag visual no topo do painel */
+  #prop-panel::before {
+    content:''; display:block;
+    width:40px; height:4px; border-radius:2px;
+    background:rgba(255,255,255,.25);
+    margin:10px auto 4px;
+    flex-shrink:0;
+  }
+
+  /* Painel: scroll interno */
+  #pp-scroll { max-height:calc(75vh - 30px); overflow-y:auto; }
+
+  /* Alça de resize do painel: esconder no mobile */
+  #panel-resizer { display:none; }
+
+  /* ── Instrução flutuante: mover para baixo da toolbar ── */
+  #mode-hint {
+    top:auto; bottom:auto;
+    top:110px;
+    max-width:calc(100% - 16px);
+    font-size:10px;
+  }
+
+  /* Botão de fechar do painel: mais fácil de tocar */
+  #pp-scroll > button:first-child {
+    padding:6px 16px; font-size:13px; min-width:80px;
+  }
 }
 </style>
 {% endblock %}
@@ -1285,6 +1402,85 @@ function cancelarPerimetro(){
     localStorage.setItem(LS_PANEL, 290);
     if(typeof map !== 'undefined') map.invalidateSize();
   });
+})();
+
+/* ════════════════════════════════════════════════════════════
+   MOBILE UX — sidebar toggle + bottom sheet swipe + chatbot
+   ════════════════════════════════════════════════════════════ */
+(function mobileUX(){
+
+  /* ── Sidebar expandível no mobile ── */
+  var sidebar = document.getElementById('map-sidebar');
+  var sHeader = document.getElementById('map-sidebar-header');
+
+  function isMobile(){ return window.innerWidth <= 768; }
+
+  sHeader.addEventListener('click', function(){
+    if(!isMobile()) return;
+    sidebar.classList.toggle('expanded');
+    if(typeof map !== 'undefined') setTimeout(function(){ map.invalidateSize(); }, 300);
+  });
+
+  /* Fechar sidebar ao selecionar talhão no mobile */
+  document.getElementById('talhoes-list').addEventListener('click', function(e){
+    if(!isMobile()) return;
+    if(e.target.closest('.t-item__info')){
+      sidebar.classList.remove('expanded');
+    }
+  });
+
+  /* ── Bottom sheet: swipe down para fechar ── */
+  var panel = document.getElementById('prop-panel');
+  var swipeStartY = null, swipeStartTime = null;
+
+  panel.addEventListener('touchstart', function(e){
+    if(!isMobile()) return;
+    swipeStartY    = e.touches[0].clientY;
+    swipeStartTime = Date.now();
+  }, {passive:true});
+
+  panel.addEventListener('touchend', function(e){
+    if(!isMobile() || swipeStartY === null) return;
+    var dy   = e.changedTouches[0].clientY - swipeStartY;
+    var dt   = Date.now() - swipeStartTime;
+    /* Swipe rápido para baixo (>60px em <300ms) ou arrastado >120px = fechar */
+    if((dy > 60 && dt < 300) || dy > 120){
+      closePropPanel();
+    }
+    swipeStartY = null;
+  }, {passive:true});
+
+  /* ── Chatbot: na página do mapa ── */
+  /* Esconder balão de texto e reduzir botão */
+  function ajustarChatbot(){
+    /* Esconder o balão "Oi! Sou o Piloto..." */
+    var bubble = document.getElementById('cr-hello-bubble');
+    if(bubble) bubble.style.display = 'none';
+
+    /* Encolher o botão circular */
+    var btn = document.getElementById('cr-chat-btn');
+    if(btn){
+      btn.style.width  = '36px';
+      btn.style.height = '36px';
+      btn.style.bottom = '10px';
+      btn.style.right  = '10px';
+      var img = btn.querySelector('img');
+      if(img){ img.style.width='36px'; img.style.height='36px'; img.style.border='2px solid #16a34a'; }
+    }
+  }
+
+  /* Chatbot é criado dinamicamente — observar o DOM */
+  var _chatbotObserver = new MutationObserver(function(){
+    ajustarChatbot();
+    /* Se já encontrou os elementos, pode desligar */
+    if(document.getElementById('cr-chat-btn') && document.getElementById('cr-hello-bubble')){
+      _chatbotObserver.disconnect();
+    }
+  });
+  _chatbotObserver.observe(document.body, {childList:true, subtree:false});
+  /* Tentar imediatamente também */
+  ajustarChatbot();
+
 })();
 
 /* ── Init ── */
