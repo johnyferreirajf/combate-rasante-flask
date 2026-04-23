@@ -330,26 +330,53 @@ def importar():
             flash("Não foi possível ler polígonos do arquivo. Verifique o formato.", "error")
             return redirect(url_for("talhoes.importar"))
 
-        # Salvar cada polígono como um talhão separado
-        salvos = 0
-        area_total = 0.0
-        for feat in features:
-            # Nome: prioridade ao campo do form (só para 1 talhão), depois ao nome do arquivo
-            nome_talhao = nome if (len(features) == 1 and nome) else feat["nome"]
-            gs   = json.dumps(feat["geojson"])
-            area = _area_ha(gs)
-            t    = Talhao(user_id=user.id, nome=nome_talhao,
-                          cultura=cultura, geojson=gs, area_ha=area)
-            db.session.add(t)
-            salvos     += 1
-            area_total += area
+        # ── Agrupar todos os polígonos do arquivo em UMA fazenda ──
+        # Cada arquivo importado = 1 entrada na sidebar (fazenda),
+        # independente de ter 1 ou N talhões/placemarks dentro.
+        # Geometria: Polygon (1 feature) ou MultiPolygon (N features).
 
+        nome_fazenda = nome or arq.filename.rsplit(".", 1)[0]
+
+        if len(features) == 1:
+            # Arquivo com um único polígono — salvar como Polygon normal
+            geojson_final = features[0]["geojson"]
+            # Se o nome do form não foi preenchido, usar o nome do placemark
+            if not nome:
+                nome_fazenda = features[0]["nome"]
+        else:
+            # Vários placemarks → fundir em um MultiPolygon
+            # Cada feature pode ser Polygon ou MultiPolygon — normalizar tudo
+            all_rings = []
+            for feat in features:
+                geom = feat["geojson"].get("geometry", feat["geojson"])
+                gtype = geom.get("type", "")
+                if gtype == "Polygon":
+                    all_rings.append(geom["coordinates"])
+                elif gtype == "MultiPolygon":
+                    all_rings.extend(geom["coordinates"])
+
+            geojson_final = {
+                "type": "Feature",
+                "geometry": {
+                    "type": "MultiPolygon",
+                    "coordinates": all_rings
+                },
+                "properties": {}
+            }
+
+        gs         = json.dumps(geojson_final)
+        area_total = _area_ha(gs)
+        t          = Talhao(user_id=user.id, nome=nome_fazenda,
+                            cultura=cultura, geojson=gs, area_ha=area_total)
+        db.session.add(t)
         db.session.commit()
 
-        if salvos == 1:
-            flash(f"Talhão importado com sucesso! ({area_total:.2f} ha)", "success")
+        n_poligonos = len(features)
+        if n_poligonos == 1:
+            flash(f"Fazenda \"{nome_fazenda}\" importada! ({area_total:.2f} ha)", "success")
         else:
-            flash(f"{salvos} talhões importados! Área total: {area_total:.2f} ha", "success")
+            flash(f"Fazenda \"{nome_fazenda}\" importada com {n_poligonos} talhões! "
+                  f"Área total: {area_total:.2f} ha", "success")
 
         return redirect(url_for("talhoes.mapa"))
 
