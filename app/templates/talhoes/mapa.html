@@ -306,7 +306,7 @@ select.pp-input option { background:#0d2418; }
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <script>
 /* ── Dados ── */
 var TALHOES = {{ talhoes_json | safe }};
@@ -412,9 +412,10 @@ function renderSidebar() {
   atualizarSelToolbar();
 }
 
-/* Event delegation — um listener para toda a lista */
-window.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('talhoes-list').addEventListener('click', function(e) {
+/* Event delegation no document — sobrevive ao innerHTML do renderSidebar */
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#talhoes-list')) return;
+  (function() {
     var del  = e.target.closest('.t-item__del');
     var item = e.target.closest('.t-item');
     if (!item) return;
@@ -456,7 +457,7 @@ window.addEventListener('DOMContentLoaded', function() {
     if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
     lastClickIdx = idx;
     renderSidebar();
-  });
+  })();
 });
 
 function atualizarSelToolbar() {
