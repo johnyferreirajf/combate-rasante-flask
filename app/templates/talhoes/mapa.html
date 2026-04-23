@@ -9,6 +9,9 @@
 <style>
 /* Fullscreen chain fix */
 body.body--fullscreen { height:100vh; overflow:hidden; }
+/* Esconder footer e espaçador do banner na página fullscreen do mapa */
+body.body--fullscreen .footer { display:none !important; }
+body.body--fullscreen footer  { display:none !important; }
 body.body--fullscreen main#main-content {
   padding:0!important; margin:0!important;
   flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden;
@@ -86,7 +89,7 @@ body.body--fullscreen main#main-content {
   background:rgba(3,20,10,.97); border-left:1px solid rgba(255,255,255,.12);
   z-index:1001; transform:translateX(100%); transition:transform .25s ease;
   display:flex; flex-direction:column; overflow:hidden;
-  min-width:200px; max-width:500px;
+  min-width:150px; max-width:600px;
 }
 /* Alça de resize do painel direito */
 #panel-resizer {
@@ -1164,7 +1167,7 @@ function cancelarPerimetro(){
   document.addEventListener('mousemove', function(e){
     if(!pDragging) return;
     /* Painel cresce para a ESQUERDA — movimento para esquerda = maior */
-    var newW = Math.min(500, Math.max(200, pStartW + (pStartX - e.clientX)));
+    var newW = Math.min(600, Math.max(150, pStartW + (pStartX - e.clientX)));
     panel.style.width = newW + 'px';
     if(typeof map !== 'undefined') map.invalidateSize();
   });
@@ -1190,7 +1193,7 @@ function cancelarPerimetro(){
 
   document.addEventListener('touchmove', function(e){
     if(!pDragging) return;
-    var newW = Math.min(500, Math.max(200, pStartW + (pStartX - e.touches[0].clientX)));
+    var newW = Math.min(600, Math.max(150, pStartW + (pStartX - e.touches[0].clientX)));
     panel.style.width = newW + 'px';
     if(typeof map !== 'undefined') map.invalidateSize();
   }, {passive:true});

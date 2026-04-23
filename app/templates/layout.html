@@ -36,20 +36,64 @@
 
   {# ── Banner de impersonation ── #}
   {% if session.get('admin_impersonating') %}
-  <div style="position:fixed;top:0;left:0;right:0;z-index:99999;
+  <div id="imp-banner" style="position:fixed;top:0;left:0;right:0;z-index:99999;
               background:rgba(234,179,8,.95);color:#1a1200;
               padding:8px 16px;display:flex;align-items:center;
               justify-content:space-between;gap:12px;font-size:13px;
               font-weight:800;backdrop-filter:blur(4px);box-shadow:0 2px 12px rgba(0,0,0,.3);">
     <span>👁 Você está visualizando como cliente — o que você vê é exatamente o que o cliente vê</span>
-    <a href="{{ url_for('auth.sair_impersonation') }}"
-       style="background:rgba(0,0,0,.15);color:#1a1200;text-decoration:none;
-              padding:4px 14px;border-radius:8px;font-size:12px;white-space:nowrap;
-              border:1px solid rgba(0,0,0,.2);">
-      ✕ Voltar ao Admin
-    </a>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button id="imp-hide-btn" onclick="impHide()"
+        style="background:rgba(0,0,0,.15);color:#1a1200;border:1px solid rgba(0,0,0,.2);
+               padding:4px 12px;border-radius:8px;font-size:12px;font-weight:800;
+               cursor:pointer;font-family:inherit;white-space:nowrap;">
+        👁 Esconder
+      </button>
+      <a href="{{ url_for('auth.sair_impersonation') }}"
+         style="background:rgba(0,0,0,.15);color:#1a1200;text-decoration:none;
+                padding:4px 14px;border-radius:8px;font-size:12px;white-space:nowrap;
+                border:1px solid rgba(0,0,0,.2);">
+        ✕ Voltar ao Admin
+      </a>
+    </div>
   </div>
-  <div style="height:40px;"></div>
+  <!-- Botão flutuante "Mostrar" — aparece quando banner foi escondido -->
+  <button id="imp-show-btn" onclick="impShow()"
+    style="display:none;position:fixed;top:68px;right:12px;z-index:99998;
+           background:rgba(234,179,8,.95);color:#1a1200;border:none;
+           padding:4px 14px;border-radius:8px;font-size:11px;font-weight:800;
+           cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.25);
+           backdrop-filter:blur(4px);">
+    👁 Mostrar banner
+  </button>
+  <div id="imp-spacer" style="height:40px;"></div>
+  <script>
+    (function(){
+      var HIDDEN_KEY = 'cr_imp_hidden';
+      function impHide(){
+        document.getElementById('imp-banner').style.display='none';
+        document.getElementById('imp-spacer').style.display='none';
+        document.getElementById('imp-show-btn').style.display='block';
+        try{ sessionStorage.setItem(HIDDEN_KEY,'1'); }catch(e){}
+      }
+      function impShow(){
+        document.getElementById('imp-banner').style.display='flex';
+        document.getElementById('imp-spacer').style.display='block';
+        document.getElementById('imp-show-btn').style.display='none';
+        try{ sessionStorage.removeItem(HIDDEN_KEY); }catch(e){}
+      }
+      window.impHide = impHide;
+      window.impShow = impShow;
+      /* Restaurar estado escondido se usuário recarregou a página */
+      try{
+        if(sessionStorage.getItem(HIDDEN_KEY)){
+          document.getElementById('imp-banner').style.display='none';
+          document.getElementById('imp-spacer').style.display='none';
+          document.getElementById('imp-show-btn').style.display='block';
+        }
+      }catch(e){}
+    })();
+  </script>
   {% endif %}
 
   <header class="navbar" role="banner">
