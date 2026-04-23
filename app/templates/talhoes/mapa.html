@@ -89,6 +89,8 @@ body.body--fullscreen main#main-content {
 #map {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
 }
 
 /* ── Toolbar ── */
@@ -530,8 +532,7 @@ function limparSelecao() {
 function excluirSelecionados() {
   if (!selectedIds.size) return;
   var total = selectedIds.size;
-  if (!confirm('Excluir ' + total + ' talhão(ões) selecionado(s)?
-Esta ação não pode ser desfeita.')) return;
+  if (!confirm('Excluir ' + total + ' talhão(ões) selecionado(s)?\nEsta ação não pode ser desfeita.')) return;
 
   var ids   = Array.from(selectedIds);
   var feito = 0;
