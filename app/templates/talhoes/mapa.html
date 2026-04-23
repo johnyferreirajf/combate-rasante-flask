@@ -7,215 +7,122 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
-/*
- * ── Fullscreen map fix ──────────────────────────────────
- * Problema: body tem min-height:100vh mas não height:100vh,
- * então flex:1 no main não tem altura real para herdar —
- * o #map-layout colapsa para zero.
- *
- * Solução: body--fullscreen define height:100vh no body e
- * propaga a altura real por toda a cadeia com overflow:hidden
- * + min-height:0 em cada nível flex.
- * A classe é injetada só nesta página via block body_class,
- * sem afetar nenhum outro template.
- * ────────────────────────────────────────────────────────
- */
-
-/* 1) body: altura real (não só mínima) */
-body.body--fullscreen {
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* 2) main: ocupa TODO o espaço restante abaixo da navbar */
+/* Fullscreen chain fix */
+body.body--fullscreen { height:100vh; overflow:hidden; }
 body.body--fullscreen main#main-content {
-  padding: 0 !important;
-  margin: 0 !important;
-  flex: 1 1 0;          /* 0 base-size = ignora conteúdo interno */
-  min-height: 0;        /* permite encolher abaixo do conteúdo */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  padding:0!important; margin:0!important;
+  flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden;
 }
+#map-layout { display:flex; flex:1 1 0; min-height:0; overflow:hidden; }
 
-/* 3) layout do mapa: ocupa todo o main */
-#map-layout {
-  display: flex;
-  flex: 1 1 0;
-  min-height: 0;        /* CRÍTICO: sem isso flex não propaga altura */
-  overflow: hidden;
-}
-
-/* ── Sidebar ── */
+/* Sidebar */
 #map-sidebar {
-  width:270px; flex-shrink:0;
-  background:rgba(3,20,10,.97);
-  border-right:1px solid rgba(255,255,255,.12);
-  display:flex; flex-direction:column; z-index:1000;
+  width:270px; flex-shrink:0; background:rgba(3,20,10,.97);
+  border-right:1px solid rgba(255,255,255,.12); display:flex; flex-direction:column; z-index:1000;
 }
-#map-sidebar-header {
-  padding:14px 16px 10px;
-  border-bottom:1px solid rgba(255,255,255,.10);
-  flex-shrink:0;
-}
+#map-sidebar-header { padding:14px 16px 10px; border-bottom:1px solid rgba(255,255,255,.10); flex-shrink:0; }
 #map-sidebar-header h2 { font-size:13px; font-weight:900; color:#fff; margin-bottom:6px; }
 #talhoes-list { flex:1; overflow-y:auto; padding:8px; }
 #talhoes-list::-webkit-scrollbar { width:3px; }
 #talhoes-list::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:3px; }
-
-.t-item {
-  display:flex; align-items:center; gap:8px;
-  padding:8px 10px; border-radius:10px; cursor:pointer;
-  border:1px solid transparent; margin-bottom:5px; transition:background .15s;
-}
+.t-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; cursor:pointer; border:1px solid transparent; margin-bottom:5px; transition:background .15s; }
 .t-item:hover  { background:rgba(255,255,255,.06); }
 .t-item.active { background:rgba(34,197,94,.12); border-color:rgba(34,197,94,.30); }
-.t-item__dot   { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
-.t-item__info  { flex:1; min-width:0; }
-.t-item__nome  { font-size:12px; font-weight:700; color:#fff;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.t-item__area  { font-size:10px; color:rgba(255,255,255,.50); }
-.t-item__del   { background:none; border:none; color:rgba(239,68,68,.65);
-  cursor:pointer; font-size:13px; padding:2px 4px; border-radius:4px;
-  flex-shrink:0; transition:color .15s; }
+.t-item.selected { background:rgba(239,68,68,.18)!important; border-color:rgba(239,68,68,.45)!important; }
+.t-item__dot  { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+.t-item__info { flex:1; min-width:0; }
+.t-item__nome { font-size:12px; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.t-item__area { font-size:10px; color:rgba(255,255,255,.50); }
+.t-item__del  { background:none; border:none; color:rgba(239,68,68,.65); cursor:pointer; font-size:13px; padding:2px 4px; border-radius:4px; flex-shrink:0; }
 .t-item__del:hover { color:#ef4444; }
+.t-item__check { width:14px; height:14px; border-radius:3px; border:1.5px solid rgba(255,255,255,.30); background:rgba(0,0,0,.30); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; }
+.t-item.selected .t-item__check { background:#ef4444; border-color:#ef4444; }
+#sel-toolbar { display:none; padding:6px 8px; background:rgba(239,68,68,.18); border-top:1px solid rgba(239,68,68,.35); gap:6px; align-items:center; flex-shrink:0; }
+#sel-toolbar.show { display:flex; }
+#sel-count { font-size:11px; font-weight:800; color:#fca5a5; flex:1; }
+#btn-del-sel  { background:rgba(239,68,68,.85); border:none; color:#fff; border-radius:8px; padding:5px 12px; font-size:11px; font-weight:800; cursor:pointer; font-family:inherit; }
+#btn-del-sel:hover { background:#dc2626; }
+#btn-clear-sel { background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18); color:rgba(255,255,255,.65); border-radius:8px; padding:5px 10px; font-size:11px; font-weight:800; cursor:pointer; font-family:inherit; }
+#btn-sel-all { background:none; border:none; color:rgba(255,255,255,.55); font-size:10px; font-weight:700; cursor:pointer; padding:0; font-family:inherit; text-decoration:underline; }
 
-/* ── Mapa ── */
-#map-container {
-  flex: 1;
-  position: relative;
-  min-height: 0;   /* CRÍTICO para flex funcionar */
-}
-#map {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%;
-  height: 100%;
-}
+/* Mapa */
+#map-container { flex:1; position:relative; min-height:0; overflow:hidden; }
+#map { position:absolute; top:0; left:0; right:0; bottom:0; width:100%; height:100%; }
 
-/* ── Toolbar ── */
+/* Toolbar */
 #map-toolbar {
   position:absolute; top:10px; left:50%; transform:translateX(-50%);
-  z-index:999; display:flex; gap:5px; flex-wrap:wrap;
-  justify-content:center; pointer-events:none;
-  max-width:calc(100% - 300px);
+  z-index:999; display:flex; gap:4px; flex-wrap:wrap;
+  justify-content:center; pointer-events:none; max-width:calc(100% - 290px);
 }
 #map-toolbar button {
-  pointer-events:all;
-  background:rgba(3,20,10,.92); border:1px solid rgba(255,255,255,.22);
-  color:#fff; padding:6px 11px; border-radius:10px; font-size:11px;
-  font-weight:700; cursor:pointer; font-family:inherit;
-  backdrop-filter:blur(8px); transition:background .15s; white-space:nowrap;
+  pointer-events:all; background:rgba(3,20,10,.92); border:1px solid rgba(255,255,255,.22);
+  color:#fff; padding:6px 10px; border-radius:10px; font-size:11px; font-weight:700;
+  cursor:pointer; font-family:inherit; backdrop-filter:blur(8px); transition:background .15s; white-space:nowrap;
 }
-#map-toolbar button:hover  { background:rgba(34,197,94,.22); border-color:rgba(34,197,94,.55); }
-#map-toolbar button.active { background:rgba(34,197,94,.28); border-color:#22c55e; color:#86efac; }
-#map-toolbar button.warn   { background:rgba(234,179,8,.18); border-color:rgba(234,179,8,.45); color:#fde68a; }
+#map-toolbar button:hover   { background:rgba(34,197,94,.22); border-color:rgba(34,197,94,.55); }
+#map-toolbar button.active  { background:rgba(34,197,94,.28); border-color:#22c55e; color:#86efac; }
+#map-toolbar button.warn    { background:rgba(234,179,8,.18);  border-color:rgba(234,179,8,.45); color:#fde68a; }
 #map-toolbar button.warn:hover { background:rgba(234,179,8,.30); }
+.tb-sep { pointer-events:none; width:1px; background:rgba(255,255,255,.15); margin:0 2px; align-self:stretch; }
 
-/* ── Painel ── */
+/* Painel */
 #prop-panel {
-  position:absolute; right:0; top:0; bottom:0; width:280px;
+  position:absolute; right:0; top:0; bottom:0; width:290px;
   background:rgba(3,20,10,.97); border-left:1px solid rgba(255,255,255,.12);
   z-index:1001; transform:translateX(100%); transition:transform .25s ease;
-  display:flex; flex-direction:column; padding:16px; overflow-y:auto;
+  display:flex; flex-direction:column; overflow:hidden;
 }
 #prop-panel.open { transform:translateX(0); }
+#pp-scroll { flex:1; overflow-y:auto; padding:16px; }
+#pp-scroll::-webkit-scrollbar { width:3px; }
+#pp-scroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:3px; }
 #prop-panel h3 { font-size:14px; font-weight:900; color:#fff; margin-bottom:14px; }
-
-.pp-label { font-size:10px; font-weight:800; color:rgba(255,255,255,.70);
-  display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
-.pp-input { width:100%; padding:8px 11px; border-radius:9px;
-  border:1px solid rgba(255,255,255,.20); background:rgba(0,0,0,.40); color:#fff;
-  font-size:12px; font-family:inherit; outline:none; box-sizing:border-box;
-  transition:border-color .15s; }
+.pp-label { font-size:10px; font-weight:800; color:rgba(255,255,255,.70); display:block; margin-bottom:4px; text-transform:uppercase; letter-spacing:.05em; }
+.pp-input { width:100%; padding:8px 11px; border-radius:9px; border:1px solid rgba(255,255,255,.20); background:rgba(0,0,0,.40); color:#fff; font-size:12px; font-family:inherit; outline:none; box-sizing:border-box; transition:border-color .15s; }
 .pp-input::placeholder { color:rgba(255,255,255,.35); font-style:italic; }
 .pp-input:focus { border-color:rgba(34,197,94,.65); }
 select.pp-input option { background:#0d2418; }
-.pp-area { background:rgba(34,197,94,.14); border:1px solid rgba(34,197,94,.30);
-  border-radius:8px; padding:7px 11px; font-size:12px; color:#86efac;
-  font-weight:700; text-align:center; }
-.pp-sep { border:none; border-top:1px solid rgba(255,255,255,.10); margin:10px 0; }
-.pp-salvar { background:linear-gradient(135deg,#16a34a,#15803d);
-  border:none; color:#fff; border-radius:11px; padding:10px;
-  font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; width:100%; }
+.pp-area { background:rgba(34,197,94,.14); border:1px solid rgba(34,197,94,.30); border-radius:8px; padding:7px 11px; font-size:12px; color:#86efac; font-weight:700; text-align:center; }
+.pp-sep  { border:none; border-top:1px solid rgba(255,255,255,.10); margin:10px 0; }
+.pp-salvar { background:linear-gradient(135deg,#16a34a,#15803d); border:none; color:#fff; border-radius:11px; padding:10px; font-size:13px; font-weight:800; cursor:pointer; font-family:inherit; width:100%; }
 .pp-salvar:hover { opacity:.88; }
 .pp-actions { display:flex; flex-direction:column; gap:6px; }
-
-.pp-btn { display:block; text-align:center; border-radius:9px; padding:7px;
-  font-size:11px; font-weight:700; text-decoration:none; cursor:pointer;
-  font-family:inherit; transition:background .15s; border:1px solid transparent; }
+.pp-btn { display:block; text-align:center; border-radius:9px; padding:7px; font-size:11px; font-weight:700; text-decoration:none; cursor:pointer; font-family:inherit; transition:background .15s; border:1px solid transparent; }
 .pp-btn-ghost  { background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.18); color:rgba(255,255,255,.75); }
 .pp-btn-ghost:hover  { background:rgba(255,255,255,.14); color:#fff; }
-.pp-btn-green  { background:rgba(34,197,94,.18); border-color:rgba(34,197,94,.38); color:#86efac; }
-.pp-btn-green:hover  { background:rgba(34,197,94,.30); color:#fff; }
-.pp-btn-yellow { background:rgba(234,179,8,.18); border-color:rgba(234,179,8,.45); color:#fde68a; }
-.pp-btn-yellow:hover { background:rgba(234,179,8,.30); color:#fff; }
-.pp-btn-red    { background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.30); color:rgba(239,68,68,.85); }
-.pp-btn-red:hover    { background:rgba(239,68,68,.22); color:#fff; }
+.pp-btn-green  { background:rgba(34,197,94,.18);  border-color:rgba(34,197,94,.38);  color:#86efac; }
+.pp-btn-green:hover  { background:rgba(34,197,94,.30);  color:#fff; }
+.pp-btn-yellow { background:rgba(234,179,8,.18);  border-color:rgba(234,179,8,.45);  color:#fde68a; }
+.pp-btn-yellow:hover { background:rgba(234,179,8,.30);  color:#fff; }
+.pp-btn-orange { background:rgba(249,115,22,.18); border-color:rgba(249,115,22,.45); color:#fed7aa; }
+.pp-btn-orange:hover { background:rgba(249,115,22,.30); color:#fff; }
+.pp-btn-red    { background:rgba(239,68,68,.12);  border-color:rgba(239,68,68,.30);  color:rgba(239,68,68,.85); }
+.pp-btn-red:hover    { background:rgba(239,68,68,.22);  color:#fff; }
 
-/* ── Spinner ── */
-#spinner { display:none; position:absolute; inset:0; z-index:1002;
-  background:rgba(0,0,0,.50); align-items:center; justify-content:center; }
+/* Spinner */
+#spinner { display:none; position:absolute; inset:0; z-index:1002; background:rgba(0,0,0,.50); align-items:center; justify-content:center; }
 #spinner.on { display:flex; }
-.spin { width:44px; height:44px; border:4px solid rgba(255,255,255,.20);
-  border-top-color:#22c55e; border-radius:50%;
-  animation:spin .8s linear infinite; }
+.spin { width:44px; height:44px; border:4px solid rgba(255,255,255,.20); border-top-color:#22c55e; border-radius:50%; animation:spin .8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
-/* ── Toast ── */
-#toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
-  background:#16a34a; color:#fff; padding:9px 22px; border-radius:11px;
-  font-weight:800; font-size:13px; z-index:9999; display:none;
-  box-shadow:0 4px 20px rgba(0,0,0,.4); transition:opacity .3s; }
+/* Toast */
+#toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:9px 22px; border-radius:11px; font-weight:800; font-size:13px; z-index:9999; display:none; box-shadow:0 4px 20px rgba(0,0,0,.4); transition:opacity .3s; }
 #toast.warn { background:#b45309; }
 #toast.err  { background:#dc2626; }
 
-/* ── Banner admin ── */
-.adm-banner { position:absolute; bottom:12px; left:50%; transform:translateX(-50%);
-  z-index:998; background:rgba(234,179,8,.90); color:#1a1200;
-  font-size:11px; font-weight:800; padding:5px 14px; border-radius:9px; white-space:nowrap; }
+/* Instrução flutuante */
+#mode-hint {
+  position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
+  z-index:998; background:rgba(3,20,10,.92); border:1px solid rgba(255,255,255,.22);
+  color:#fde68a; font-size:11px; font-weight:700; padding:8px 18px; border-radius:10px;
+  display:none; text-align:center; backdrop-filter:blur(8px); max-width:420px; line-height:1.6;
+}
 
-/* ── Seleção múltipla ── */
-.t-item.selected {
-  background:rgba(239,68,68,.18) !important;
-  border-color:rgba(239,68,68,.45) !important;
-}
-.t-item__check {
-  width:14px; height:14px; border-radius:3px;
-  border:1.5px solid rgba(255,255,255,.30); background:rgba(0,0,0,.30);
-  flex-shrink:0; display:flex; align-items:center; justify-content:center;
-  font-size:9px; color:#fff; transition:background .15s, border-color .15s;
-  cursor:pointer;
-}
-.t-item.selected .t-item__check {
-  background:#ef4444; border-color:#ef4444;
-}
-#sel-toolbar {
-  display:none; padding:6px 8px;
-  background:rgba(239,68,68,.18); border-top:1px solid rgba(239,68,68,.35);
-  gap:6px; align-items:center; flex-shrink:0;
-}
-#sel-toolbar.show { display:flex; }
-#sel-count { font-size:11px; font-weight:800; color:#fca5a5; flex:1; }
-#btn-del-sel {
-  background:rgba(239,68,68,.85); border:none; color:#fff;
-  border-radius:8px; padding:5px 12px; font-size:11px;
-  font-weight:800; cursor:pointer; font-family:inherit;
-}
-#btn-del-sel:hover { background:#dc2626; }
-#btn-clear-sel {
-  background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.18);
-  color:rgba(255,255,255,.65); border-radius:8px; padding:5px 10px;
-  font-size:11px; font-weight:800; cursor:pointer; font-family:inherit;
-}
-#btn-sel-all {
-  background:none; border:none; color:rgba(255,255,255,.55);
-  font-size:10px; font-weight:700; cursor:pointer; padding:0; font-family:inherit;
-  text-decoration:underline;
-}
-#btn-sel-all:hover { color:#fff; }
+/* Banner admin */
+.adm-banner { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:998; background:rgba(234,179,8,.90); color:#1a1200; font-size:11px; font-weight:800; padding:5px 14px; border-radius:9px; white-space:nowrap; }
 
-/* ── Mobile ── */
+/* Mobile */
 @media (max-width:768px) {
   #map-layout { flex-direction:column; }
   #map-sidebar { width:100%; height:165px; flex-direction:row; }
@@ -223,9 +130,7 @@ select.pp-input option { background:#0d2418; }
   .t-item { flex-shrink:0; width:130px; flex-direction:column; align-items:flex-start; }
   #map-container { flex:1; min-height:200px; }
   #map-toolbar { max-width:100%; top:6px; }
-  #prop-panel { width:100%; right:auto; bottom:0; top:auto; height:55vh;
-    transform:translateY(100%); border-left:none;
-    border-top:1px solid rgba(255,255,255,.12); }
+  #prop-panel { width:100%; right:auto; bottom:0; top:auto; height:60vh; transform:translateY(100%); border-left:none; border-top:1px solid rgba(255,255,255,.12); }
   #prop-panel.open { transform:translateY(0); }
 }
 </style>
@@ -246,25 +151,15 @@ select.pp-input option { background:#0d2418; }
         <a href="{{ url_for('main.painel') }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">← Painel</a>
       </div>
     </div>
-    <!-- Toolbar de seleção múltipla (aparece quando há selecionados) -->
     <div id="sel-toolbar">
       <span id="sel-count">0 selecionados</span>
       <button id="btn-clear-sel" onclick="limparSelecao()">✕</button>
       <button id="btn-del-sel"   onclick="excluirSelecionados()">🗑 Excluir</button>
     </div>
-
-    <div id="talhoes-list">
-      <div id="t-empty" style="text-align:center;padding:20px 8px;color:rgba(255,255,255,.40);font-size:11px;">
-        Nenhum talhão.<br>Use ✏️ para desenhar.
-      </div>
-    </div>
+    <div id="talhoes-list"></div>
     <div style="padding:8px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px;">
-      <div style="display:flex;gap:6px;">
-        <button id="btn-sel-all" onclick="selecionarTodos()">☑ Selecionar todos</button>
-      </div>
-      <a href="{{ url_for('talhoes.solicitacoes') }}" style="display:block;text-align:center;
-        background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.38);
-        color:#86efac;border-radius:9px;padding:7px;font-size:11px;font-weight:700;text-decoration:none;">
+      <button id="btn-sel-all" onclick="selecionarTodos()">☑ Selecionar todos</button>
+      <a href="{{ url_for('talhoes.solicitacoes') }}" style="display:block;text-align:center;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.38);color:#86efac;border-radius:9px;padding:7px;font-size:11px;font-weight:700;text-decoration:none;">
         ✈️ Ver Solicitações
       </a>
     </div>
@@ -274,16 +169,13 @@ select.pp-input option { background:#0d2418; }
   <div id="map-container">
     <div id="map"></div>
 
-    <!-- Spinner com progresso -->
     <div id="spinner">
       <div style="text-align:center;width:220px;">
         <div class="spin" style="margin:0 auto 12px;"></div>
         <div style="color:#fff;font-size:13px;font-weight:700;margin-bottom:10px;" id="spin-msg">Processando...</div>
-        <!-- Barra de progresso (visível só durante exclusão em massa) -->
         <div id="prog-wrap" style="display:none;">
           <div style="background:rgba(255,255,255,.15);border-radius:999px;height:8px;overflow:hidden;margin-bottom:6px;">
-            <div id="prog-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#16a34a);
-              border-radius:999px;transition:width .2s ease;"></div>
+            <div id="prog-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#22c55e,#16a34a);border-radius:999px;transition:width .2s;"></div>
           </div>
           <div id="prog-text" style="color:rgba(255,255,255,.70);font-size:11px;font-weight:700;">0 / 0</div>
         </div>
@@ -294,54 +186,71 @@ select.pp-input option { background:#0d2418; }
     <div class="adm-banner">👁 Modo Preview Admin — cliente não vê ainda</div>
     {% endif %}
 
+    <div id="mode-hint"></div>
+
     <!-- Toolbar -->
     <div id="map-toolbar">
-      <button id="btn-draw"   onclick="startDraw()">✏️ Desenhar</button>
-      <button id="btn-edit"   onclick="toggleEdit()">🖊 Editar Vértices</button>
-      <button id="btn-cancel" onclick="cancelAll()" style="display:none;color:#fca5a5;">✕ Cancelar</button>
+      <button id="btn-draw"     onclick="startDraw()"    title="Desenhar novo talhão">✏️ Desenhar</button>
+      <button id="btn-edit"     onclick="toggleEdit()"   title="Mover/apagar vértices">🖊 Editar Vértices</button>
+      <div class="tb-sep"></div>
+      <button id="btn-add-part" onclick="startAddPart()" title="Adicionar polígono à camada selecionada">➕ Add Parte</button>
+      <button id="btn-hole"     onclick="startHole()"    title="Desenhar área de exclusão">⭕ Buraco</button>
+      <button id="btn-split"    onclick="startSplit()"   title="Dividir camada com linha de corte">✂️ Dividir</button>
+      <div class="tb-sep"></div>
+      <button id="btn-perimetro" onclick="gerarPerimetro()" title="Fechar carreadores (buffer duplo)">⚙️ Perímetro</button>
+      <button id="btn-cancel"   onclick="cancelAll()" style="display:none;color:#fca5a5;">✕ Cancelar</button>
       <button onclick="fitAll()">🔍 Ver Todos</button>
     </div>
 
     <!-- Painel de propriedades -->
     <div id="prop-panel">
-      <button onclick="closePropPanel()"
-        style="align-self:flex-end;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);
-               color:#fff;border-radius:7px;padding:3px 10px;cursor:pointer;font-size:11px;margin-bottom:10px;">
-        ✕ Fechar
-      </button>
-      <h3 id="pp-title">Novo Talhão</h3>
+      <div id="pp-scroll">
+        <button onclick="closePropPanel()"
+          style="display:block;margin-left:auto;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:7px;padding:3px 10px;cursor:pointer;font-size:11px;margin-bottom:10px;">
+          ✕ Fechar
+        </button>
+        <h3 id="pp-title">Novo Talhão</h3>
 
-      <div style="display:flex;flex-direction:column;gap:11px;">
-        <div>
-          <label class="pp-label">Nome *</label>
-          <input class="pp-input" id="pp-nome" type="text" placeholder="Ex: Talhão Norte — Fazenda Santa Rita">
-        </div>
-        <div>
-          <label class="pp-label">Cultura</label>
-          <select class="pp-input" id="pp-cultura">
-            <option value="">Selecione...</option>
-            {% for c in culturas %}
-            <option value="{{ c }}">{{ c }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;align-items:flex-end;">
-          <div style="flex:1;">
-            <label class="pp-label">Cor</label>
-            <input class="pp-input" id="pp-cor" type="color" value="#22c55e" style="height:36px;padding:3px 7px;cursor:pointer;">
+        <div style="display:flex;flex-direction:column;gap:11px;">
+          <div>
+            <label class="pp-label">Nome *</label>
+            <input class="pp-input" id="pp-nome" type="text" placeholder="Ex: Talhão Norte — Fazenda Santa Rita">
           </div>
-          <div class="pp-area" id="pp-area" style="flex:1.5;">📐 — ha</div>
-        </div>
-        <div>
-          <label class="pp-label">Observações</label>
-          <textarea class="pp-input" id="pp-obs" rows="2" placeholder="Informações adicionais..."></textarea>
-        </div>
+          <div>
+            <label class="pp-label">Cultura</label>
+            <select class="pp-input" id="pp-cultura">
+              <option value="">Selecione...</option>
+              {% for c in culturas %}
+              <option value="{{ c }}">{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="pp-label">Data de Voo</label>
+            <input class="pp-input" id="pp-data-voo" type="date">
+          </div>
+          <div>
+            <label class="pp-label">Pista de Voo</label>
+            <input class="pp-input" id="pp-pista-voo" type="text" placeholder="Ex: Pista Sul, Rod. GO-320 km82...">
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-end;">
+            <div style="flex:1;">
+              <label class="pp-label">Cor</label>
+              <input class="pp-input" id="pp-cor" type="color" value="#22c55e" style="height:36px;padding:3px 7px;cursor:pointer;">
+            </div>
+            <div class="pp-area" id="pp-area" style="flex:1.5;">📐 — ha</div>
+          </div>
+          <div>
+            <label class="pp-label">Observações</label>
+            <textarea class="pp-input" id="pp-obs" rows="2" placeholder="Informações adicionais..."></textarea>
+          </div>
 
-        <button class="pp-salvar" onclick="salvarTalhao()">💾 Salvar Talhão</button>
-        <hr class="pp-sep">
+          <button class="pp-salvar" onclick="salvarTalhao()">💾 Salvar Talhão</button>
+          <hr class="pp-sep">
 
-        <div class="pp-actions" id="pp-actions" style="display:none;">
-          <!-- preenchido dinamicamente -->
+          <div class="pp-actions" id="pp-actions" style="display:none;">
+            <!-- preenchido dinamicamente -->
+          </div>
         </div>
       </div>
     </div>
@@ -359,380 +268,207 @@ select.pp-input option { background:#0d2418; }
 var TALHOES = {{ talhoes_json | safe }};
 var EDIT_ID = {{ editar_id | tojson }};
 
-/* ── Mapa base ── */
-var map = L.map('map', {zoomControl:true}).setView([-18.5,-50],9);
+/* ── Mapa ── */
+var map = L.map('map',{zoomControl:true}).setView([-18.5,-50],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {attribution:'Esri',maxZoom:20}).addTo(map);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
   {maxZoom:20,opacity:0.7}).addTo(map);
 
 /* ── Estado ── */
-var layers      = {};
-var drawLayer   = null;
-var editLayer   = null;
-var editHandler = null;
-var bufferLayer = null;
-var currentId   = null;
-var drawCtrl    = null;
-var drawnGroup  = new L.FeatureGroup().addTo(map);
-var editGroup   = new L.FeatureGroup().addTo(map);
-var _periTemp   = null;
-var _periArea   = null;
+var layers       = {};
+var currentId    = null;
+var drawCtrl     = null;
+var editHandler  = null;
+var editLayer    = null;
+var bufferLayer  = null;
+var activeMode   = null;   // 'draw'|'edit'|'add-part'|'hole'|'split'|null
+var _periTemp    = null;
+var _periArea    = null;
+var _splitPoints = [];
+var _splitLine   = null;
 
-/* ── Toast ── */
-function toast(msg, tipo, ms) {
-  var el = document.getElementById('toast');
-  el.textContent = msg; el.className = tipo||''; el.style.display='block'; el.style.opacity='1';
+var drawnGroup   = new L.FeatureGroup().addTo(map);
+var editGroup    = new L.FeatureGroup().addTo(map);
+var previewGroup = new L.FeatureGroup().addTo(map);
+
+var selectedIds  = new Set();
+var lastClickIdx = -1;
+
+/* ── Utilitários ── */
+function toast(msg,tipo,ms){
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.className=tipo||''; el.style.display='block'; el.style.opacity='1';
   clearTimeout(el._t);
-  el._t = setTimeout(function(){
-    el.style.opacity='0'; setTimeout(function(){el.style.display='none';},300);
-  }, ms||2500);
+  el._t=setTimeout(function(){el.style.opacity='0';setTimeout(function(){el.style.display='none';},300);},ms||2500);
+}
+function spin(on,msg){
+  document.getElementById('spin-msg').textContent=msg||'Processando...';
+  document.getElementById('spinner').classList.toggle('on',!!on);
+}
+function hint(msg){
+  var el=document.getElementById('mode-hint');
+  if(msg){el.innerHTML=msg;el.style.display='block';}
+  else el.style.display='none';
 }
 
-/* ── Spinner ── */
-function spin(on, msg) {
-  document.getElementById('spin-msg').textContent = msg||'Processando...';
-  document.getElementById('spinner').classList.toggle('on', !!on);
+function toFeature(gj){
+  if(!gj) return null;
+  if(gj.type==='Feature') return gj;
+  return {type:'Feature',geometry:gj,properties:{}};
 }
 
-/* ── Carregar talhões — executado após todas as funções ── */
-// (inicialização movida para o final do script)
-
-function addLayer(t) {
-  var l = L.geoJSON(t.geojson, {
-    style:{color:t.cor,fillColor:t.cor,fillOpacity:.25,weight:2}
-  }).addTo(map);
-  l.on('click', function(){ openPanel(t.id); });
-  /* Tooltip só se poucos talhões — evita travamento com centenas */
-  if (TALHOES.length <= 100) {
-    l.bindTooltip(t.nome+(t.area_ha?' ('+t.area_ha.toFixed(2)+' ha)':''),
-      {permanent:false,direction:'center'});
-  }
-  layers[t.id] = l;
+/* Funde N Features (Polygon/MultiPolygon) em um único Feature */
+function featuresToMulti(feats){
+  var polys=[];
+  feats.forEach(function(f){
+    var g=f.geometry||f;
+    if(g.type==='Polygon') polys.push(g.coordinates);
+    else if(g.type==='MultiPolygon') g.coordinates.forEach(function(p){polys.push(p);});
+  });
+  if(!polys.length) return null;
+  if(polys.length===1) return {type:'Feature',geometry:{type:'Polygon',coordinates:polys[0]},properties:{}};
+  return {type:'Feature',geometry:{type:'MultiPolygon',coordinates:polys},properties:{}};
 }
 
-function fitAll() {
-  var g = L.featureGroup(Object.values(layers));
-  if (g.getLayers().length) map.fitBounds(g.getBounds(),{padding:[30,30]});
+function areaFromFeature(feat){
+  if(!feat) return 0;
+  try{return turf.area(feat)/10000;}catch(e){return 0;}
+}
+
+/* ── Camadas no mapa ── */
+function addLayer(t){
+  var l=L.geoJSON(t.geojson,{style:{color:t.cor,fillColor:t.cor,fillOpacity:.25,weight:2}}).addTo(map);
+  l.on('click',function(){openPanel(t.id);});
+  if(TALHOES.length<=100)
+    l.bindTooltip(t.nome+(t.area_ha?' ('+t.area_ha.toFixed(2)+' ha)':''),{permanent:false,direction:'center'});
+  layers[t.id]=l;
+}
+function reloadLayer(t){
+  if(layers[t.id]){map.removeLayer(layers[t.id]);delete layers[t.id];}
+  addLayer(t);
+}
+function fitAll(){
+  var g=L.featureGroup(Object.values(layers));
+  if(g.getLayers().length) map.fitBounds(g.getBounds(),{padding:[30,30]});
 }
 
 /* ── Sidebar ── */
-/* ── Seleção múltipla ── */
-var selectedIds  = new Set();   // ids selecionados
-var lastClickIdx = -1;          // índice do último clique (para shift)
-
-/* ── Event delegation: um único listener na lista (suporta N talhões) ── */
-function renderSidebar() {
-  var list = document.getElementById('talhoes-list');
-
-  if (!TALHOES.length) {
-    list.innerHTML =
-      '<div id="t-empty" style="text-align:center;padding:20px 8px;' +
-      'color:rgba(255,255,255,.40);font-size:11px;">' +
-      'Nenhum talhão.<br>Use ✏️ para desenhar.</div>';
-    atualizarSelToolbar();
-    return;
+function renderSidebar(){
+  var list=document.getElementById('talhoes-list');
+  if(!TALHOES.length){
+    list.innerHTML='<div style="text-align:center;padding:20px 8px;color:rgba(255,255,255,.40);font-size:11px;">Nenhum talhão.<br>Use ✏️ para desenhar.</div>';
+    atualizarSelToolbar(); return;
   }
-
-  /* Montar HTML completo de uma vez — sem loops de DOM */
-  var rows = TALHOES.map(function(t, idx) {
-    var isSel = selectedIds.has(t.id);
-    var cls = 't-item' +
-      (t.id == currentId ? ' active' : '') +
-      (isSel ? ' selected' : '');
-    return (
-      '<div class="' + cls + '" data-id="' + t.id + '" data-idx="' + idx + '">' +
-        '<span class="t-item__check">' + (isSel ? '&#10003;' : '') + '</span>' +
-        '<span class="t-item__dot" style="background:' + t.cor + '"></span>' +
-        '<div class="t-item__info">' +
-          '<div class="t-item__nome">' + t.nome + '</div>' +
-          '<div class="t-item__area">&#128208; ' + (t.area_ha||0).toFixed(2) + ' ha' +
-            (t.cultura ? ' &middot; ' + t.cultura : '') +
-          '</div>' +
-        '</div>' +
-        '<button class="t-item__del" data-id="' + t.id + '" title="Excluir">&#128465;</button>' +
-      '</div>'
-    );
+  var rows=TALHOES.map(function(t,idx){
+    var isSel=selectedIds.has(t.id);
+    var cls='t-item'+(t.id==currentId?' active':'')+(isSel?' selected':'');
+    var sub='📐 '+(t.area_ha||0).toFixed(2)+' ha'+(t.cultura?' · '+t.cultura:'');
+    if(t.data_voo) sub+=' · '+t.data_voo;
+    if(t.pista_voo) sub+=' · 🛬'+t.pista_voo;
+    return '<div class="'+cls+'" data-id="'+t.id+'" data-idx="'+idx+'">'+
+      '<span class="t-item__check">'+(isSel?'&#10003;':'')+'</span>'+
+      '<span class="t-item__dot" style="background:'+t.cor+'"></span>'+
+      '<div class="t-item__info">'+
+        '<div class="t-item__nome">'+t.nome+'</div>'+
+        '<div class="t-item__area">'+sub+'</div>'+
+      '</div>'+
+      '<button class="t-item__del" data-id="'+t.id+'" title="Excluir">&#128465;</button>'+
+    '</div>';
   });
-
-  list.innerHTML = rows.join('');
+  list.innerHTML=rows.join('');
   atualizarSelToolbar();
 }
 
-/* Event delegation no document — sobrevive ao innerHTML do renderSidebar */
-document.addEventListener('click', function(e) {
-  if (!e.target.closest('#talhoes-list')) return;
-  (function() {
-    var del  = e.target.closest('.t-item__del');
-    var item = e.target.closest('.t-item');
-    if (!item) return;
-
-    var id  = parseInt(item.dataset.id);
-    var idx = parseInt(item.dataset.idx);
-
-    /* Botão 🗑 individual — exclui apenas este */
-    if (del) { excluir(e, id); return; }
-
-    /* Shift+click — seleciona intervalo */
-    if (e.shiftKey && lastClickIdx >= 0) {
-      var from = Math.min(lastClickIdx, idx);
-      var to   = Math.max(lastClickIdx, idx);
-      for (var i = from; i <= to; i++) selectedIds.add(TALHOES[i].id);
-      lastClickIdx = idx;
-      renderSidebar(); return;
-    }
-
-    /* Ctrl/Cmd+click — toggle individual, mantém outros */
-    if (e.ctrlKey || e.metaKey) {
-      if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
-      lastClickIdx = idx;
-      renderSidebar(); return;
-    }
-
-    /* Click simples — SEMPRE entra em modo seleção (toggle deste item) */
-    /* Para abrir o painel, clicar no nome/área abre o painel SEM seleção */
-    var inInfo = e.target.closest('.t-item__info');
-    if (inInfo && selectedIds.size === 0) {
-      /* Clicou na área de info e não tem nada selecionado → abre painel */
-      lastClickIdx = idx;
-      openPanel(id);
-      if (layers[id]) map.fitBounds(layers[id].getBounds(), {padding:[20,20]});
-      return;
-    }
-
-    /* Qualquer outro clique → toggle seleção */
-    if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id);
-    lastClickIdx = idx;
-    renderSidebar();
-  })();
-});
-
-function atualizarSelToolbar() {
-  var tb = document.getElementById('sel-toolbar');
-  var ct = document.getElementById('sel-count');
-  if (selectedIds.size > 0) {
-    tb.classList.add('show');
-    ct.textContent = selectedIds.size + ' selecionado(s)';
-  } else {
-    tb.classList.remove('show');
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#talhoes-list')) return;
+  var del=e.target.closest('.t-item__del'), item=e.target.closest('.t-item');
+  if(!item) return;
+  var id=parseInt(item.dataset.id), idx=parseInt(item.dataset.idx);
+  if(del){excluir(e,id);return;}
+  if(e.shiftKey&&lastClickIdx>=0){
+    var from=Math.min(lastClickIdx,idx),to=Math.max(lastClickIdx,idx);
+    for(var i=from;i<=to;i++) selectedIds.add(TALHOES[i].id);
+    lastClickIdx=idx; renderSidebar(); return;
   }
-}
-
-function selecionarTodos() {
-  TALHOES.forEach(function(t){ selectedIds.add(t.id); });
-  renderSidebar();
-}
-
-function limparSelecao() {
-  selectedIds.clear();
-  lastClickIdx = -1;
-  renderSidebar();
-}
-
-function excluirSelecionados() {
-  if (!selectedIds.size) return;
-  var total = selectedIds.size;
-  if (!confirm('Excluir ' + total + ' talhão(ões) selecionado(s)?\nEsta ação não pode ser desfeita.')) return;
-
-  var ids   = Array.from(selectedIds);
-  var feito = 0;
-  var erros = 0;
-
-  /* Mostrar spinner + barra de progresso */
-  spin(true, 'Excluindo 0 de ' + total + '...');
-  var progWrap = document.getElementById('prog-wrap');
-  var progBar  = document.getElementById('prog-bar');
-  var progText = document.getElementById('prog-text');
-  progWrap.style.display = '';
-  progBar.style.width    = '0%';
-  progText.textContent   = '0 / ' + total;
-
-  function atualizarProgresso() {
-    var pct = Math.round((feito + erros) / total * 100);
-    progBar.style.width  = pct + '%';
-    progText.textContent = (feito + erros) + ' / ' + total + '  (' + pct + '%)';
-    document.getElementById('spin-msg').textContent =
-      'Excluindo... ' + pct + '%';
+  if(e.ctrlKey||e.metaKey){
+    selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id);
+    lastClickIdx=idx; renderSidebar(); return;
   }
-
-  /* Executar em lotes paralelos de 5 para ser mais rápido */
-  var LOTE = 5;
-  var fila = ids.slice();
-  var emCurso = 0;
-  var concluido = false;
-
-  function verificarFim() {
-    if (feito + erros >= total && !concluido) {
-      concluido = true;
-      progWrap.style.display = 'none';
-      spin(false);
-      if (erros) toast(erros + ' erro(s) ao excluir. ' + feito + ' removido(s).', 'err', 4000);
-      else toast('✅ ' + feito + ' talhão(ões) excluído(s)!');
-      selectedIds.clear();
-      lastClickIdx = -1;
-      renderSidebar();
-      closePropPanel();
-    }
-  }
-
-  function processarProximo() {
-    if (!fila.length) return;
-    var id = fila.shift();
-    emCurso++;
-    fetch('/talhoes/api/excluir/' + id, { method: 'DELETE' })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.ok) {
-        if (layers[id]) { map.removeLayer(layers[id]); delete layers[id]; }
-        TALHOES = TALHOES.filter(function(t) { return t.id != id; });
-        feito++;
-      } else { erros++; }
-      emCurso--;
-      atualizarProgresso();
-      verificarFim();
-      processarProximo(); /* puxar próximo da fila */
-    })
-    .catch(function() {
-      erros++; emCurso--;
-      atualizarProgresso();
-      verificarFim();
-      processarProximo();
-    });
-  }
-
-  /* Disparar LOTE requisições simultâneas */
-  for (var i = 0; i < Math.min(LOTE, fila.length + 0); i++) {
-    processarProximo();
-  }
-}
-
-/* ── Desenhar ── */
-function startDraw() {
-  if (drawCtrl||editHandler) return;
-  cancelEdit(true);
-  document.getElementById('btn-draw').classList.add('active');
-  document.getElementById('btn-cancel').style.display='';
-  drawCtrl = new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.2}});
-  drawCtrl.enable();
-}
-
-map.on(L.Draw.Event.CREATED, function(e){
-  drawnGroup.clearLayers();
-  drawLayer=e.layer; drawnGroup.addLayer(drawLayer);
-  drawCtrl=null;
-  document.getElementById('btn-draw').classList.remove('active');
-  document.getElementById('btn-cancel').style.display='none';
-  currentId=null;
-  var gj=drawLayer.toGeoJSON(), area=calcArea(gj.geometry.coordinates[0]);
-  document.getElementById('pp-area').textContent='📐 '+area.toFixed(2)+' ha';
-  document.getElementById('pp-title').textContent='Novo Talhão';
-  document.getElementById('pp-nome').value='';
-  document.getElementById('pp-cultura').value='';
-  document.getElementById('pp-cor').value='#22c55e';
-  document.getElementById('pp-obs').value='';
-  document.getElementById('pp-actions').style.display='none';
-  document.getElementById('prop-panel').classList.add('open');
-});
-
-/* ── Editar vértices ── */
-function toggleEdit() {
-  if (editHandler) {
-    // Confirmar edição
-    editHandler.save();
-    var newGJ=null;
-    editLayer.eachLayer(function(l){newGJ=l.toGeoJSON();});
-    if (newGJ && currentId) {
-      var t=TALHOES.find(function(x){return x.id==currentId;});
-      if (t) {
-        t.geojson=newGJ;
-        t.area_ha=calcArea(newGJ.geometry.coordinates[0]);
-        document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
-        map.removeLayer(layers[currentId]);
-        addLayer(t);
-      }
-    }
-    cancelEdit(false);
-    toast('✅ Vértices atualizados! Clique em Salvar para confirmar.','' ,3500);
+  var inInfo=e.target.closest('.t-item__info');
+  if(inInfo&&selectedIds.size===0){
+    lastClickIdx=idx; openPanel(id);
+    if(layers[id]) map.fitBounds(layers[id].getBounds(),{padding:[20,20]});
     return;
   }
-  if (!currentId){toast('Selecione um talhão primeiro.','warn');return;}
-  var t=TALHOES.find(function(x){return x.id==currentId;});
-  if (!t) return;
+  selectedIds.has(id)?selectedIds.delete(id):selectedIds.add(id);
+  lastClickIdx=idx; renderSidebar();
+});
 
-  editLayer=L.geoJSON(t.geojson,{
-    style:{color:'#fcd34d',fillColor:'#fcd34d',fillOpacity:.15,weight:2.5,dashArray:'4 3'}
-  });
-  editGroup.addLayer(editLayer);
-  if (layers[currentId]) map.removeLayer(layers[currentId]);
-
-  editHandler=new L.EditToolbar.Edit(map,{
-    featureGroup:editLayer,
-    selectedPathOptions:{color:'#fcd34d',fillOpacity:.25}
-  });
-  editHandler.enable();
-
-  document.getElementById('btn-edit').classList.add('active');
-  document.getElementById('btn-edit').textContent='✅ Confirmar Edição';
-  document.getElementById('btn-cancel').style.display='';
-  toast('Arraste os pontos brancos para editar. Clique em Confirmar ao terminar.','warn',5000);
+function atualizarSelToolbar(){
+  var tb=document.getElementById('sel-toolbar'),ct=document.getElementById('sel-count');
+  if(selectedIds.size>0){tb.classList.add('show');ct.textContent=selectedIds.size+' selecionado(s)';}
+  else tb.classList.remove('show');
 }
+function selecionarTodos(){ TALHOES.forEach(function(t){selectedIds.add(t.id);}); renderSidebar(); }
+function limparSelecao(){ selectedIds.clear(); lastClickIdx=-1; renderSidebar(); }
 
-function cancelEdit(silent) {
-  if (editHandler){editHandler.revertLayers();editHandler.disable();editHandler=null;}
-  if (editLayer){
-    editGroup.removeLayer(editLayer);
-    if (currentId&&layers[currentId]) layers[currentId].addTo(map);
-    editLayer=null;
+function excluirSelecionados(){
+  if(!selectedIds.size) return;
+  var total=selectedIds.size;
+  if(!confirm('Excluir '+total+' talhão(ões) selecionado(s)?\nEsta ação não pode ser desfeita.')) return;
+  var ids=Array.from(selectedIds),feito=0,erros=0;
+  spin(true,'Excluindo...');
+  var pw=document.getElementById('prog-wrap'),pb=document.getElementById('prog-bar'),pt=document.getElementById('prog-text');
+  pw.style.display=''; pb.style.width='0%'; pt.textContent='0 / '+total;
+  function up(){var p=Math.round((feito+erros)/total*100);pb.style.width=p+'%';pt.textContent=(feito+erros)+' / '+total+' ('+p+'%)';document.getElementById('spin-msg').textContent='Excluindo... '+p+'%';}
+  var LOTE=5,fila=ids.slice(),done=false;
+  function fim(){
+    if(feito+erros>=total&&!done){done=true;pw.style.display='none';spin(false);
+      if(erros)toast(erros+' erro(s). '+feito+' removido(s).','err',4000);
+      else toast('✅ '+feito+' excluído(s)!');
+      selectedIds.clear();lastClickIdx=-1;renderSidebar();closePropPanel();}
   }
-  document.getElementById('btn-edit').classList.remove('active');
-  document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
-  if (!silent) document.getElementById('btn-cancel').style.display='none';
-}
-
-function cancelAll() {
-  if (drawCtrl){drawCtrl.disable();drawCtrl=null;}
-  cancelEdit(false);
-  drawnGroup.clearLayers(); drawLayer=null;
-  cancelarPerimetro();
-  document.getElementById('btn-draw').classList.remove('active');
-  document.getElementById('btn-cancel').style.display='none';
-  closePropPanel();
+  function next(){
+    if(!fila.length) return; var id=fila.shift();
+    fetch('/talhoes/api/excluir/'+id,{method:'DELETE'}).then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){if(layers[id]){map.removeLayer(layers[id]);delete layers[id];}TALHOES=TALHOES.filter(function(t){return t.id!=id;});feito++;}
+      else erros++; up();fim();next();
+    }).catch(function(){erros++;up();fim();next();});
+  }
+  for(var i=0;i<Math.min(LOTE,fila.length);i++) next();
 }
 
 /* ── Painel ── */
-function openPanel(id) {
-  var t=TALHOES.find(function(x){return x.id==id;});
-  if (!t) return;
-  cancelEdit(true); drawnGroup.clearLayers(); drawLayer=null;
+function openPanel(id){
+  var t=TALHOES.find(function(x){return x.id==id;}); if(!t) return;
+  cancelModes(true);
   currentId=id;
-
   document.getElementById('pp-title').textContent='Editar Talhão';
   document.getElementById('pp-nome').value=t.nome;
   document.getElementById('pp-cultura').value=t.cultura||'';
   document.getElementById('pp-cor').value=t.cor||'#22c55e';
   document.getElementById('pp-obs').value=t.observacoes||'';
+  document.getElementById('pp-data-voo').value=t.data_voo||'';
+  document.getElementById('pp-pista-voo').value=t.pista_voo||'';
   document.getElementById('pp-area').textContent='📐 '+(t.area_ha||0).toFixed(2)+' ha';
   document.getElementById('pp-actions').style.display='flex';
   renderAcoes(id);
   document.getElementById('prop-panel').classList.add('open');
-
-  Object.entries(layers).forEach(function(e){
-    e[1].setStyle({weight:e[0]==id?3:2,opacity:e[0]==id?1:0.6});
-  });
+  Object.entries(layers).forEach(function(e){e[1].setStyle({weight:e[0]==id?3:2,opacity:e[0]==id?1:0.6});});
   renderSidebar();
 }
 
-function closePropPanel() {
-  cancelarPerimetro();
-  cancelEdit(true);
+function closePropPanel(){
+  cancelModes(true);
   document.getElementById('prop-panel').classList.remove('open');
-  currentId=null; drawLayer=null; drawnGroup.clearLayers();
+  currentId=null; drawnGroup.clearLayers();
   Object.values(layers).forEach(function(l){l.setStyle({weight:2,opacity:1});});
   renderSidebar();
 }
 
-/* ── Ações do painel ── */
-function renderAcoes(id) {
+function renderAcoes(id){
   document.getElementById('pp-actions').innerHTML=
     '<button class="pp-btn pp-btn-yellow" onclick="gerarPerimetro()">⚙️ Gerar Perímetro Inteiro</button>'+
     '<a class="pp-btn pp-btn-green" href="/talhoes/solicitar/'+id+'">✈️ Solicitar Aplicação</a>'+
@@ -741,43 +477,444 @@ function renderAcoes(id) {
     '<button class="pp-btn pp-btn-red" onclick="excluirAtual()">🗑 Excluir Talhão</button>';
 }
 
-/* ── Salvar ── */
-function salvarTalhao() {
-  var nome=document.getElementById('pp-nome').value.trim();
-  if (!nome){toast('Informe o nome do talhão.','err');return;}
-  var geojson=null;
-  if (currentId){var t=TALHOES.find(function(x){return x.id==currentId;});if(t)geojson=t.geojson;}
-  else if (drawLayer) geojson=drawLayer.toGeoJSON();
-  if (!geojson){toast('Nenhum polígono disponível.','err');return;}
+/* ── Cancelar TODOS os modos ── */
+function cancelModes(silent){
+  if(drawCtrl){drawCtrl.disable();drawCtrl=null;}
+  if(editHandler){editHandler.revertLayers();editHandler.disable();editHandler=null;}
+  if(editLayer){
+    editGroup.removeLayer(editLayer);
+    if(currentId&&layers[currentId]) layers[currentId].addTo(map);
+    editLayer=null;
+  }
+  previewGroup.clearLayers();
+  drawnGroup.clearLayers();
+  map.off('click',_splitClickHandler);
+  map.off('dblclick',_splitDblClick);
+  if(_splitLine){map.removeLayer(_splitLine);_splitLine=null;}
+  _splitPoints=[];
+  /* Reset toolbar */
+  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-split'].forEach(function(bid){
+    var b=document.getElementById(bid); if(b) b.classList.remove('active');
+  });
+  document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
+  document.getElementById('btn-cancel').style.display='none';
+  hint(null);
+  activeMode=null;
+}
 
+function cancelAll(){
+  cancelModes(false);
+  cancelarPerimetro();
+  closePropPanel();
+}
+
+/* ════════════════════════════════════════════════════════════
+   1. DESENHAR NOVO TALHÃO
+   ════════════════════════════════════════════════════════════ */
+function startDraw(){
+  if(activeMode) return;
+  cancelModes(true);
+  activeMode='draw';
+  document.getElementById('btn-draw').classList.add('active');
+  document.getElementById('btn-cancel').style.display='';
+  hint('Clique para adicionar vértices. Clique no primeiro ponto para fechar o polígono.');
+  drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.2}});
+  drawCtrl.enable();
+}
+
+map.on(L.Draw.Event.CREATED,function(e){
+  if(activeMode==='draw'){
+    drawnGroup.clearLayers(); drawnGroup.addLayer(e.layer); drawCtrl=null;
+    var gj=e.layer.toGeoJSON(), area=areaFromFeature(gj);
+    document.getElementById('pp-area').textContent='📐 '+area.toFixed(2)+' ha';
+    document.getElementById('pp-title').textContent='Novo Talhão';
+    document.getElementById('pp-nome').value='';
+    document.getElementById('pp-cultura').value='';
+    document.getElementById('pp-cor').value='#22c55e';
+    document.getElementById('pp-data-voo').value='';
+    document.getElementById('pp-pista-voo').value='';
+    document.getElementById('pp-obs').value='';
+    document.getElementById('pp-actions').style.display='none';
+    document.getElementById('prop-panel').classList.add('open');
+    currentId=null;
+    activeMode=null; hint(null);
+    document.getElementById('btn-draw').classList.remove('active');
+    document.getElementById('btn-cancel').style.display='none';
+  } else if(activeMode==='add-part')  _onAddPartDrawn(e.layer);
+  else if(activeMode==='hole')        _onHoleDrawn(e.layer);
+  else if(activeMode==='split-line')  _onSplitLineDrawn(e.layer);
+});
+
+/* ════════════════════════════════════════════════════════════
+   2. EDITAR VÉRTICES — suporta MultiPolygon
+      Leaflet.Draw edita cada polygon individualmente;
+      explodir o MultiPolygon em Polygons no editGroup.
+   ════════════════════════════════════════════════════════════ */
+function toggleEdit(){
+  if(activeMode==='edit'){
+    /* Confirmar */
+    editHandler.save();
+    var features=[];
+    editLayer.eachLayer(function(lg){
+      lg.eachLayer ? lg.eachLayer(function(sub){features.push(sub.toGeoJSON());})
+                   : features.push(lg.toGeoJSON());
+    });
+    var merged=featuresToMulti(features);
+    if(merged&&currentId){
+      var t=TALHOES.find(function(x){return x.id==currentId;});
+      if(t){
+        t.geojson=merged; t.area_ha=areaFromFeature(merged);
+        document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
+        reloadLayer(t);
+      }
+    }
+    cancelModes(false);
+    toast('✅ Vértices atualizados! Clique em Salvar para confirmar.','',3500);
+    return;
+  }
+  if(activeMode) return;
+  if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
+  var t=TALHOES.find(function(x){return x.id==currentId;}); if(!t) return;
+
+  /* Explodir geometria em Polygons individuais */
+  var geom=t.geojson.geometry||t.geojson, polys=[];
+  if(geom.type==='Polygon') polys.push({type:'Feature',geometry:geom,properties:{}});
+  else if(geom.type==='MultiPolygon')
+    geom.coordinates.forEach(function(rings){
+      polys.push({type:'Feature',geometry:{type:'Polygon',coordinates:rings},properties:{}});
+    });
+
+  if(layers[currentId]) map.removeLayer(layers[currentId]);
+
+  /* Criar FeatureGroup com um L.geoJSON por polígono */
+  editLayer=new L.FeatureGroup();
+  polys.forEach(function(f){
+    var lg=L.geoJSON(f,{style:{color:'#fcd34d',fillColor:'#fcd34d',fillOpacity:.15,weight:2.5,dashArray:'4 3'}});
+    editLayer.addLayer(lg);
+  });
+  editGroup.addLayer(editLayer);
+
+  editHandler=new L.EditToolbar.Edit(map,{
+    featureGroup:editLayer,
+    selectedPathOptions:{color:'#fcd34d',fillOpacity:.25}
+  });
+  editHandler.enable();
+
+  activeMode='edit';
+  document.getElementById('btn-edit').classList.add('active');
+  document.getElementById('btn-edit').textContent='✅ Confirmar Edição';
+  document.getElementById('btn-cancel').style.display='';
+  hint('Arraste os pontos brancos para mover vértices.<br><small style="opacity:.7">Passe o mouse sobre um vértice e pressione <kbd style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:4px;">Delete</kbd> para removê-lo.</small>');
+}
+
+/* ════════════════════════════════════════════════════════════
+   3. ADICIONAR PARTE (novo polígono na mesma camada)
+   ════════════════════════════════════════════════════════════ */
+function startAddPart(){
+  if(activeMode) return;
+  if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
+  activeMode='add-part';
+  document.getElementById('btn-add-part').classList.add('active');
+  document.getElementById('btn-cancel').style.display='';
+  hint('Desenhe o novo polígono que será adicionado à camada "<strong>'+
+    (TALHOES.find(function(x){return x.id==currentId;})||{nome:'?'}).nome+'</strong>".');
+  drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.25,dashArray:'6 3'}});
+  drawCtrl.enable();
+}
+
+function _onAddPartDrawn(layer){
+  var newFeat=layer.toGeoJSON();
+  var t=TALHOES.find(function(x){return x.id==currentId;});
+  if(!t){cancelModes(false);return;}
+  var merged=featuresToMulti([toFeature(t.geojson),newFeat]);
+  if(!merged){toast('Erro ao fundir geometrias.','err');cancelModes(false);return;}
+  t.geojson=merged; t.area_ha=areaFromFeature(merged);
+  document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
+  reloadLayer(t); drawCtrl=null; cancelModes(false);
+  toast('✅ Parte adicionada! Clique em Salvar.','',3500);
+}
+
+/* ════════════════════════════════════════════════════════════
+   4. BURACO (área de exclusão — turf.difference)
+   ════════════════════════════════════════════════════════════ */
+function startHole(){
+  if(activeMode) return;
+  if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
+  activeMode='hole';
+  document.getElementById('btn-hole').classList.add('active');
+  document.getElementById('btn-cancel').style.display='';
+  hint('Desenhe a área de exclusão <strong>dentro</strong> do talhão. Ela será subtraída do polígono.');
+  drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#ef4444',fillColor:'#ef4444',fillOpacity:.20,dashArray:'6 3'}});
+  drawCtrl.enable();
+}
+
+function _onHoleDrawn(layer){
+  var holeFeat=layer.toGeoJSON();
+  var t=TALHOES.find(function(x){return x.id==currentId;});
+  if(!t){cancelModes(false);return;}
+  if(typeof turf==='undefined'){toast('turf.js não carregado.','err');cancelModes(false);return;}
+  spin(true,'Calculando área de exclusão...');
+  setTimeout(function(){
+    try{
+      var base=toFeature(t.geojson);
+      var result=turf.difference(base,holeFeat);
+      if(!result) throw new Error('O buraco pode estar fora do polígono ou igual a ele.');
+      t.geojson=result; t.area_ha=turf.area(result)/10000;
+      document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
+      reloadLayer(t); spin(false); drawCtrl=null; cancelModes(false);
+      toast('✅ Área de exclusão criada! Clique em Salvar.','',3500);
+    }catch(err){
+      spin(false); cancelModes(false);
+      toast('Erro: '+err.message,'err',5000);
+    }
+  },50);
+}
+
+/* ════════════════════════════════════════════════════════════
+   5. DIVIDIR COM LINHA DE CORTE
+      Estratégia: coletar pontos no mapa → confirmar →
+      turf.lineSplit corta cada sub-polígono →
+      classificar peças por centroide vs. lado da linha
+   ════════════════════════════════════════════════════════════ */
+function startSplit(){
+  if(activeMode) return;
+  if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
+  activeMode='split';
+  _splitPoints=[];
+  if(_splitLine){map.removeLayer(_splitLine);_splitLine=null;}
+  document.getElementById('btn-split').classList.add('active');
+  document.getElementById('btn-cancel').style.display='';
+  hint('Clique para traçar a linha de corte (mínimo 2 pontos). A linha deve cruzar o talhão de ponta a ponta.<br>'+
+    '<small style="opacity:.7">Clique duplo ou use o botão para cortar.</small>');
+  map.on('click',_splitClickHandler);
+  map.on('dblclick',_splitDblClick);
+}
+
+function _splitClickHandler(e){
+  if(activeMode!=='split') return;
+  _splitPoints.push([e.latlng.lng,e.latlng.lat]);
+  if(_splitLine) map.removeLayer(_splitLine);
+  _splitLine=L.polyline(_splitPoints.map(function(p){return [p[1],p[0]];}),
+    {color:'#f97316',weight:2.5,dashArray:'8 4'}).addTo(map);
+  if(_splitPoints.length>=2)
+    hint('Linha com <strong>'+_splitPoints.length+' pontos</strong>. Clique para adicionar mais ou '+
+      '<button onclick="executarSplit()" style="background:#f97316;border:none;color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:800;cursor:pointer;">✂️ Cortar agora</button>');
+}
+
+function _splitDblClick(e){
+  L.DomEvent.stop(e);
+  if(_splitPoints.length>=2) executarSplit();
+}
+
+function executarSplit(){
+  if(_splitPoints.length<2){toast('Adicione pelo menos 2 pontos.','warn');return;}
+  var t=TALHOES.find(function(x){return x.id==currentId;});
+  if(!t){cancelModes(false);return;}
+  if(typeof turf==='undefined'){toast('turf.js não carregado.','err');cancelModes(false);return;}
+
+  map.off('click',_splitClickHandler);
+  map.off('dblclick',_splitDblClick);
+  if(_splitLine){map.removeLayer(_splitLine);_splitLine=null;}
+
+  spin(true,'Dividindo camada...');
+  setTimeout(function(){
+    try{
+      var base=toFeature(t.geojson);
+      /* Extender linha para garantir que cruze o bbox do polígono */
+      var bbox=turf.bbox(base);
+      var diag=turf.distance(turf.point([bbox[0],bbox[1]]),turf.point([bbox[2],bbox[3]]),{units:'kilometers'})*2;
+      var pts=_splitPoints;
+      var bearS=turf.bearing(turf.point(pts[1]),turf.point(pts[0]));
+      var bearE=turf.bearing(turf.point(pts[pts.length-2]),turf.point(pts[pts.length-1]));
+      var extS=turf.destination(turf.point(pts[0]),diag,bearS,{units:'kilometers'}).geometry.coordinates;
+      var extE=turf.destination(turf.point(pts[pts.length-1]),diag,bearE,{units:'kilometers'}).geometry.coordinates;
+      var extCoords=[extS].concat(pts).concat([extE]);
+      var cutLine=turf.lineString(extCoords);
+
+      /* Coletar todos os sub-polígonos da camada */
+      var geom=base.geometry||base, subPolys=[];
+      if(geom.type==='Polygon') subPolys=[base];
+      else if(geom.type==='MultiPolygon')
+        geom.coordinates.forEach(function(rings){
+          subPolys.push({type:'Feature',geometry:{type:'Polygon',coordinates:rings},properties:{}});
+        });
+
+      var partesA=[], partesB=[];
+
+      subPolys.forEach(function(poly){
+        /* Converter o perímetro do polígono em linhas e adicionar a linha de corte */
+        var polyLines=turf.polygonToLine(poly);
+        var merged=turf.lineString([]); // dummy
+        /* Usar polygonize para partir */
+        var allLines;
+        if(polyLines.type==='Feature'&&polyLines.geometry.type==='LineString')
+          allLines=turf.featureCollection([polyLines,cutLine]);
+        else
+          allLines=turf.featureCollection([cutLine].concat(
+            (polyLines.features||[polyLines])
+          ));
+
+        var pieces=turf.polygonize(allLines);
+        if(!pieces||!pieces.features.length){partesA.push(poly);return;}
+
+        /* Filtrar peças que estão dentro do polígono original */
+        var inside=pieces.features.filter(function(piece){
+          try{
+            var c=turf.centroid(piece).geometry.coordinates;
+            return turf.booleanPointInPolygon(turf.point(c),poly);
+          }catch(e){return false;}
+        });
+
+        if(inside.length<2){partesA.push(poly);return;}
+
+        /* Classificar peças pelo lado da linha usando o centroide */
+        /* "lado" = sinal do produto cruzado do vetor da linha com o vetor ponto */
+        var lp0=extCoords[0], lp1=extCoords[extCoords.length-1];
+        inside.forEach(function(piece,i){
+          var c=turf.centroid(piece).geometry.coordinates;
+          var side=(lp1[0]-lp0[0])*(c[1]-lp0[1])-(lp1[1]-lp0[1])*(c[0]-lp0[0]);
+          if(side>=0) partesA.push(piece);
+          else        partesB.push(piece);
+        });
+      });
+
+      if(!partesB.length) throw new Error('A linha não dividiu o polígono. Certifique-se que cruza de ponta a ponta.');
+
+      var featA=featuresToMulti(partesA);
+      var featB=featuresToMulti(partesB);
+      if(!featA||!featB) throw new Error('Falha ao montar as metades.');
+
+      /* Atualizar talhão A */
+      t.geojson=featA; t.area_ha=turf.area(featA)/10000;
+      reloadLayer(t);
+      _splitPoints=[];
+      spin(false);
+
+      /* Mostrar preview da metade B e pedir confirmação */
+      _confirmarSplit(featB,turf.area(featB)/10000);
+      activeMode=null; hint(null);
+      document.getElementById('btn-split').classList.remove('active');
+      document.getElementById('btn-cancel').style.display='none';
+
+    }catch(err){
+      spin(false); _splitPoints=[]; cancelModes(false);
+      toast('Erro ao dividir: '+err.message,'err',6000);
+    }
+  },80);
+}
+
+function _confirmarSplit(featB,areaB){
+  previewGroup.clearLayers();
+  L.geoJSON(featB,{style:{color:'#f97316',fillColor:'#f97316',fillOpacity:.25,dashArray:'6 3'}}).addTo(previewGroup);
+  var t=TALHOES.find(function(x){return x.id==currentId;});
+  var nomeB=(t?t.nome:'Talhão')+' (2)';
+  var el=document.getElementById('pp-actions');
+  el.innerHTML=
+    '<div style="background:rgba(249,115,22,.14);border:1px solid rgba(249,115,22,.40);border-radius:9px;padding:10px 12px;font-size:11px;color:#fed7aa;line-height:1.6;">'+
+    '✂️ <strong>Divisão calculada!</strong><br>'+
+    '📐 Metade 2: <strong>'+areaB.toFixed(2)+' ha</strong> (laranja)<br>'+
+    '<small style="opacity:.75">Metade 1 já foi atualizada na camada.</small></div>'+
+    '<div><label class="pp-label" style="margin-top:8px;">Nome da 2ª parte</label>'+
+    '<input class="pp-input" id="split-nome-b" value="'+nomeB+'" type="text"></div>'+
+    '<button class="pp-btn pp-btn-orange" onclick="_salvarSplitB()">✅ Salvar 2ª parte</button>'+
+    '<button class="pp-btn pp-btn-ghost" onclick="_descartarSplitB()">✕ Descartar 2ª parte</button>';
+  el.style.display='flex';
+  el._splitFeatB=featB; el._splitAreaB=areaB;
+  toast('✂️ Divisão calculada! Salve a 2ª parte ou descarte.','warn',5000);
+}
+
+function _salvarSplitB(){
+  var nomeB=(document.getElementById('split-nome-b').value||'').trim()||'Talhão (2)';
+  var el=document.getElementById('pp-actions');
+  var featB=el._splitFeatB, areaB=el._splitAreaB;
+  var t=TALHOES.find(function(x){return x.id==currentId;});
+  if(!featB) return;
+  previewGroup.clearLayers();
+  spin(true,'Salvando partes...');
+  var payload={
+    id:currentId,
+    nome:document.getElementById('pp-nome').value.trim()||(t?t.nome:'Talhão'),
+    cultura:document.getElementById('pp-cultura').value,
+    cor:document.getElementById('pp-cor').value,
+    data_voo:document.getElementById('pp-data-voo').value,
+    pista_voo:document.getElementById('pp-pista-voo').value,
+    observacoes:document.getElementById('pp-obs').value,
+    geojson:t?t.geojson:featB
+  };
+  fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.erro) throw new Error(d.erro);
+    if(t){t.area_ha=d.area_ha;}
+    var payloadB={nome:nomeB,cultura:payload.cultura,cor:payload.cor,
+      data_voo:payload.data_voo,pista_voo:payload.pista_voo,
+      observacoes:payload.observacoes,geojson:featB};
+    return fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadB)});
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.erro) throw new Error(d.erro);
+    var nt={id:d.id,nome:nomeB,cultura:payload.cultura,cor:payload.cor,
+      area_ha:d.area_ha,geojson:featB,data_voo:payload.data_voo,
+      pista_voo:payload.pista_voo,observacoes:payload.observacoes};
+    TALHOES.push(nt); addLayer(nt);
+    spin(false); renderSidebar(); renderAcoes(currentId);
+    document.getElementById('pp-area').textContent='📐 '+(t?t.area_ha:0).toFixed(2)+' ha';
+    toast('✅ Camada dividida em 2 e salva!');
+  })
+  .catch(function(err){spin(false);toast('Erro: '+err.message,'err',5000);});
+}
+
+function _descartarSplitB(){
+  previewGroup.clearLayers();
+  var t=TALHOES.find(function(x){return x.id==currentId;});
+  if(t) salvarTalhao(); else renderAcoes(currentId);
+  toast('2ª parte descartada. Metade 1 mantida.');
+}
+
+/* ── Salvar ── */
+function salvarTalhao(){
+  var nome=document.getElementById('pp-nome').value.trim();
+  if(!nome){toast('Informe o nome do talhão.','err');return;}
+  var geojson=null;
+  if(currentId){var t=TALHOES.find(function(x){return x.id==currentId;});if(t)geojson=t.geojson;}
+  else{drawnGroup.eachLayer(function(l){geojson=l.toGeoJSON();});}
+  if(!geojson){toast('Nenhum polígono disponível.','err');return;}
   spin(true,'Salvando...');
   fetch('/talhoes/api/salvar',{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({id:currentId,nome:nome,
+    body:JSON.stringify({
+      id:currentId, nome:nome,
       cultura:document.getElementById('pp-cultura').value,
       cor:document.getElementById('pp-cor').value,
+      data_voo:document.getElementById('pp-data-voo').value,
+      pista_voo:document.getElementById('pp-pista-voo').value,
       observacoes:document.getElementById('pp-obs').value,
-      geojson:geojson}),
+      geojson:geojson
+    })
   })
   .then(function(r){return r.json();})
   .then(function(d){
     spin(false);
-    if (d.erro){toast(d.erro,'err');return;}
+    if(d.erro){toast(d.erro,'err');return;}
     var area=d.area_ha||0;
-    if (currentId){
+    if(currentId){
       var t=TALHOES.find(function(x){return x.id==currentId;});
       if(t){
-        t.nome=nome;t.cultura=document.getElementById('pp-cultura').value;
-        t.cor=document.getElementById('pp-cor').value;t.area_ha=area;
+        t.nome=nome; t.cultura=document.getElementById('pp-cultura').value;
+        t.cor=document.getElementById('pp-cor').value; t.area_ha=area;
+        t.data_voo=document.getElementById('pp-data-voo').value;
+        t.pista_voo=document.getElementById('pp-pista-voo').value;
         t.observacoes=document.getElementById('pp-obs').value;
-        if(layers[currentId])layers[currentId].setStyle({color:t.cor,fillColor:t.cor});
+        if(layers[currentId]) layers[currentId].setStyle({color:t.cor,fillColor:t.cor});
       }
     } else {
       var nt={id:d.id,nome:nome,cultura:document.getElementById('pp-cultura').value,
         cor:document.getElementById('pp-cor').value,area_ha:area,geojson:geojson,
+        data_voo:document.getElementById('pp-data-voo').value,
+        pista_voo:document.getElementById('pp-pista-voo').value,
         observacoes:document.getElementById('pp-obs').value};
-      TALHOES.push(nt); drawnGroup.clearLayers(); drawLayer=null;
-      addLayer(nt); currentId=d.id;
+      TALHOES.push(nt); drawnGroup.clearLayers(); addLayer(nt); currentId=d.id;
     }
     document.getElementById('pp-area').textContent='📐 '+area.toFixed(2)+' ha';
     document.getElementById('pp-actions').style.display='flex';
@@ -792,168 +929,87 @@ function salvarTalhao() {
 function excluirAtual(){if(currentId)excluir({stopPropagation:function(){}},currentId);}
 function excluir(e,id){
   e.stopPropagation();
-  if(!confirm('Excluir este talhão? As solicitações vinculadas também serão removidas.'))return;
+  if(!confirm('Excluir este talhão? As solicitações vinculadas também serão removidas.')) return;
   fetch('/talhoes/api/excluir/'+id,{method:'DELETE'})
   .then(function(r){return r.json();})
   .then(function(d){
     if(!d.ok){toast('Erro ao excluir.','err');return;}
     if(layers[id]){map.removeLayer(layers[id]);delete layers[id];}
     TALHOES=TALHOES.filter(function(t){return t.id!=id;});
-    if(currentId==id)closePropPanel();
+    if(currentId==id) closePropPanel();
     renderSidebar(); toast('🗑 Talhão excluído.');
   });
 }
 
-/* ════════════════════════════════════════════════════════
-   GERAR PERÍMETRO INTEIRO (fechar carreadores)
-   Buffer +10m → Buffer -10m com turf.js
-   ════════════════════════════════════════════════════════ */
-function gerarPerimetro() {
-  if (!currentId){toast('Selecione um talhão primeiro.','warn');return;}
-  if (typeof turf==='undefined'){
-    toast('turf.js não carregado. Verifique a conexão com a internet.','err',4000);return;
-  }
-  var t=TALHOES.find(function(x){return x.id==currentId;});
-  if (!t) return;
-
+/* ── Gerar Perímetro ── */
+function gerarPerimetro(){
+  if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
+  if(typeof turf==='undefined'){toast('turf.js não carregado.','err',4000);return;}
+  var t=TALHOES.find(function(x){return x.id==currentId;}); if(!t) return;
   spin(true,'Calculando perímetro — buffer +10m / −10m...');
-
   setTimeout(function(){
-    try {
-      // Garantir que é uma Feature GeoJSON válida
-      var gj = (t.geojson.type==='Feature') ? t.geojson
-             : {type:'Feature',geometry:t.geojson,properties:{}};
-
-      // 1) Expandir +10 m para cruzar os carreadores
-      var expandido = turf.buffer(gj, 10, {units:'meters'});
-      if (!expandido) throw new Error('buffer +10 retornou nulo');
-
-      // 2) Contrair -10 m para voltar ao limite original,
-      //    agora com os carreadores preenchidos
-      var perimetro = turf.buffer(expandido, -10, {units:'meters'});
-      if (!perimetro) throw new Error('buffer -10 retornou nulo');
-
-      // Calcular nova área
-      var novaArea = turf.area(perimetro)/10000;
-
+    try{
+      var gj=toFeature(t.geojson);
+      var exp=turf.buffer(gj,10,{units:'meters'});
+      if(!exp) throw new Error('buffer +10 retornou nulo');
+      var peri=turf.buffer(exp,-10,{units:'meters'});
+      if(!peri) throw new Error('buffer -10 retornou nulo');
+      var novaArea=turf.area(peri)/10000;
       spin(false);
-
-      // Remover preview anterior
-      if (bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
-
-      // Exibir preview em amarelo tracejado
-      bufferLayer = L.geoJSON(perimetro,{
-        style:{color:'#fcd34d',fillColor:'#fbbf24',fillOpacity:.30,
-               weight:2.5,dashArray:'7 4'}
-      }).addTo(map);
-
-      // Guardar para confirmação
-      _periTemp = perimetro;
-      _periArea = novaArea;
-
-      // Atualizar painel com opções de confirmar/cancelar
+      if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
+      bufferLayer=L.geoJSON(peri,{style:{color:'#fcd34d',fillColor:'#fbbf24',fillOpacity:.30,weight:2.5,dashArray:'7 4'}}).addTo(map);
+      _periTemp=peri; _periArea=novaArea;
       document.getElementById('pp-actions').innerHTML=
-        '<div style="background:rgba(234,179,8,.14);border:1px solid rgba(234,179,8,.40);'+
-        'border-radius:9px;padding:10px 12px;font-size:11px;color:#fde68a;line-height:1.6;">'+
-        '⚙️ <strong>Perímetro calculado</strong><br>'+
-        '📐 Nova área: <strong>'+novaArea.toFixed(2)+' ha</strong><br>'+
-        '<span style="opacity:.75;">Carreadores preenchidos (amarelo tracejado)</span>'+
-        '</div>'+
+        '<div style="background:rgba(234,179,8,.14);border:1px solid rgba(234,179,8,.40);border-radius:9px;padding:10px 12px;font-size:11px;color:#fde68a;line-height:1.6;">'+
+        '⚙️ <strong>Perímetro calculado</strong><br>📐 Nova área: <strong>'+novaArea.toFixed(2)+' ha</strong><br>'+
+        '<span style="opacity:.75;">Carreadores preenchidos (amarelo tracejado)</span></div>'+
         '<button class="pp-btn pp-btn-green" onclick="confirmarPerimetro()">✅ Confirmar e Salvar</button>'+
         '<button class="pp-btn pp-btn-ghost" onclick="cancelarPerimetro()">✕ Descartar</button>';
-
       toast('Perímetro calculado! Visualize em amarelo e confirme.','',4500);
-
-    } catch(err) {
-      spin(false);
-      console.error(err);
-      toast('Erro ao processar: '+err.message,'err',5000);
-    }
-  }, 80);
+    }catch(err){spin(false);console.error(err);toast('Erro: '+err.message,'err',5000);}
+  },80);
 }
-
-function confirmarPerimetro() {
-  if (!_periTemp||!currentId) return;
-  var t=TALHOES.find(function(x){return x.id==currentId;});
-  if (!t) return;
-
+function confirmarPerimetro(){
+  if(!_periTemp||!currentId) return;
+  var t=TALHOES.find(function(x){return x.id==currentId;}); if(!t) return;
   t.geojson=_periTemp; t.area_ha=_periArea;
-
-  if (bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
-  if (layers[currentId]){map.removeLayer(layers[currentId]);}
-  addLayer(t);
-
+  if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
+  reloadLayer(t);
   document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
   _periTemp=null; _periArea=null;
-  renderAcoes(currentId);
-  salvarTalhao();
+  renderAcoes(currentId); salvarTalhao();
 }
-
-function cancelarPerimetro() {
-  if (bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
+function cancelarPerimetro(){
+  if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
   _periTemp=null; _periArea=null;
-  if (currentId) renderAcoes(currentId);
+  if(currentId) renderAcoes(currentId);
   toast('Perímetro descartado.');
 }
 
-/* ── Cálculo de área (Shoelace esférico) ── */
-function calcArea(coords) {
-  var R=6371000,n=coords.length,area=0;
-  for(var i=0;i<n;i++){
-    var j=(i+1)%n;
-    area+=coords[i][0]*Math.PI/180*coords[j][1]*Math.PI/180
-         -coords[j][0]*Math.PI/180*coords[i][1]*Math.PI/180;
-  }
-  var lat=coords.reduce(function(s,c){return s+c[1];},0)/n*Math.PI/180;
-  return Math.abs(area)/2*R*R*Math.cos(lat)/10000;
-}
-/* Invalidar mapa Leaflet após render para corrigir tiles e tamanho.
-   Duplo requestAnimationFrame garante que o browser já calculou o
-   layout real (incluindo banner de impersonation) antes de medir. */
-requestAnimationFrame(function() {
-  requestAnimationFrame(function() {
-    if (typeof map !== 'undefined') map.invalidateSize();
-  });
+/* ── Init ── */
+requestAnimationFrame(function(){
+  requestAnimationFrame(function(){ if(typeof map!=='undefined') map.invalidateSize(); });
 });
 
-/* ════════════════════════════════════════════════════════
-   INICIALIZAÇÃO — após todas as funções estarem definidas
-   ════════════════════════════════════════════════════════ */
-(function init() {
-  var LOTE = 50;   // carregar 50 layers por vez para não travar a UI
-
-  if (TALHOES.length <= LOTE) {
-    // Poucos talhões: carrega tudo de uma vez
-    TALHOES.forEach(function(t){ addLayer(t); });
-    renderSidebar();
-    if (EDIT_ID && EDIT_ID !== 'null') openPanel(parseInt(EDIT_ID));
-    else if (TALHOES.length) fitAll();
+(function init(){
+  var LOTE=50;
+  if(TALHOES.length<=LOTE){
+    TALHOES.forEach(function(t){addLayer(t);}); renderSidebar();
+    if(EDIT_ID&&EDIT_ID!=='null') openPanel(parseInt(EDIT_ID));
+    else if(TALHOES.length) fitAll();
     return;
   }
-
-  // Muitos talhões: carregar em lotes assíncronos com spinner
-  spin(true, 'Carregando ' + TALHOES.length + ' talhões...');
-  renderSidebar();   // sidebar pode renderizar antes dos layers
-
-  var idx = 0;
-  function carregarLote() {
-    var fim = Math.min(idx + LOTE, TALHOES.length);
-    for (var i = idx; i < fim; i++) {
-      addLayer(TALHOES[i]);
-    }
-    idx = fim;
-    document.getElementById('spin-msg').textContent =
-      'Carregando... ' + idx + '/' + TALHOES.length;
-
-    if (idx < TALHOES.length) {
-      setTimeout(carregarLote, 0);   // libera a UI entre lotes
-    } else {
-      spin(false);
-      if (EDIT_ID && EDIT_ID !== 'null') openPanel(parseInt(EDIT_ID));
-      else fitAll();
-    }
+  spin(true,'Carregando '+TALHOES.length+' talhões...');
+  renderSidebar();
+  var idx=0;
+  function lote(){
+    var fim=Math.min(idx+LOTE,TALHOES.length);
+    for(var i=idx;i<fim;i++) addLayer(TALHOES[i]);
+    idx=fim; document.getElementById('spin-msg').textContent='Carregando... '+idx+'/'+TALHOES.length;
+    if(idx<TALHOES.length) setTimeout(lote,0);
+    else{spin(false);if(EDIT_ID&&EDIT_ID!=='null')openPanel(parseInt(EDIT_ID));else fitAll();}
   }
-  setTimeout(carregarLote, 0);
+  setTimeout(lote,0);
 })();
 </script>
 {% endblock %}

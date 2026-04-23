@@ -251,12 +251,14 @@ def mapa():
     user    = get_current_user()
     talhoes = Talhao.query.filter_by(user_id=user.id).all()
     talhoes_json = json.dumps([{
-        "id":      t.id,
-        "nome":    t.nome,
-        "cultura": t.cultura or "",
-        "area_ha": t.area_ha or 0,
-        "cor":     t.cor or "#22c55e",
-        "geojson": json.loads(t.geojson),
+        "id":       t.id,
+        "nome":     t.nome,
+        "cultura":  t.cultura or "",
+        "area_ha":  t.area_ha or 0,
+        "cor":      t.cor or "#22c55e",
+        "geojson":  json.loads(t.geojson),
+        "data_voo": t.data_voo.isoformat() if t.data_voo else "",
+        "pista_voo":t.pista_voo or "",
     } for t in talhoes])
     editar_id = request.args.get("editar", "null")
     return render_template("talhoes/mapa.html",
@@ -284,21 +286,33 @@ def api_salvar():
     geojson_str = json.dumps(geojson)
     area = _area_ha(geojson_str)
 
+    # Campos novos
+    from datetime import date as _date
+    data_voo_raw = (data.get("data_voo") or "").strip()
+    try:
+        data_voo_val = _date.fromisoformat(data_voo_raw) if data_voo_raw else None
+    except ValueError:
+        data_voo_val = None
+    pista_voo_val = (data.get("pista_voo") or "").strip()
+
     tid = data.get("id")
     if tid:
         t = Talhao.query.filter_by(id=tid, user_id=user.id).first_or_404()
-        t.nome    = nome
-        t.cultura = (data.get("cultura") or "").strip()
-        t.cor     = (data.get("cor") or "#22c55e").strip()
-        t.geojson = geojson_str
-        t.area_ha = area
+        t.nome      = nome
+        t.cultura   = (data.get("cultura") or "").strip()
+        t.cor       = (data.get("cor") or "#22c55e").strip()
+        t.geojson   = geojson_str
+        t.area_ha   = area
         t.observacoes = (data.get("observacoes") or "").strip()
+        t.data_voo  = data_voo_val
+        t.pista_voo = pista_voo_val
     else:
         t = Talhao(user_id=user.id, nome=nome,
                    cultura=(data.get("cultura") or "").strip(),
                    cor=(data.get("cor") or "#22c55e").strip(),
                    geojson=geojson_str, area_ha=area,
-                   observacoes=(data.get("observacoes") or "").strip())
+                   observacoes=(data.get("observacoes") or "").strip(),
+                   data_voo=data_voo_val, pista_voo=pista_voo_val)
         db.session.add(t)
 
     db.session.commit()

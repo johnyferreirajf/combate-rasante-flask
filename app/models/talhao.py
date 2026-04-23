@@ -18,6 +18,8 @@ class Talhao(db.Model):
     geojson     = db.Column(db.Text, nullable=False)
     cor         = db.Column(db.String(20), default="#22c55e")
     observacoes = db.Column(db.Text)
+    data_voo    = db.Column(db.Date)
+    pista_voo   = db.Column(db.String(200))
 
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at  = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

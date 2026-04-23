@@ -62,6 +62,8 @@ def create_app():
                         ordem INTEGER DEFAULT 0
                     )""",
                     "ALTER TABLE post_midias ALTER COLUMN tipo TYPE VARCHAR(20)",
+                    "ALTER TABLE talhoes ADD COLUMN IF NOT EXISTS data_voo DATE",
+                    "ALTER TABLE talhoes ADD COLUMN IF NOT EXISTS pista_voo VARCHAR(200)",
                     """CREATE TABLE IF NOT EXISTS talhoes (
                         id SERIAL PRIMARY KEY,
                         user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
