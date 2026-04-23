@@ -1,25 +1,49 @@
 {% extends "layout.html" %}
 {% block title %}Editor de Talhões — COMBATE RASANTE{% endblock %}
 
+{% block body_class %}body--fullscreen{% endblock %}
+
 {% block head_extra %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
-/* Sobrescrever o main do layout base para não interferir */
-main#main-content {
+/*
+ * ── Fullscreen map fix ──────────────────────────────────
+ * Problema: body tem min-height:100vh mas não height:100vh,
+ * então flex:1 no main não tem altura real para herdar —
+ * o #map-layout colapsa para zero.
+ *
+ * Solução: body--fullscreen define height:100vh no body e
+ * propaga a altura real por toda a cadeia com overflow:hidden
+ * + min-height:0 em cada nível flex.
+ * A classe é injetada só nesta página via {% block body_class %},
+ * sem afetar nenhum outro template.
+ * ────────────────────────────────────────────────────────
+ */
+
+/* 1) body: altura real (não só mínima) */
+body.body--fullscreen {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 2) main: ocupa TODO o espaço restante abaixo da navbar */
+body.body--fullscreen main#main-content {
   padding: 0 !important;
   margin: 0 !important;
-  flex: 1;
+  flex: 1 1 0;          /* 0 base-size = ignora conteúdo interno */
+  min-height: 0;        /* permite encolher abaixo do conteúdo */
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
+/* 3) layout do mapa: ocupa todo o main */
 #map-layout {
   display: flex;
-  flex: 1;
+  flex: 1 1 0;
+  min-height: 0;        /* CRÍTICO: sem isso flex não propaga altura */
   overflow: hidden;
-  min-height: 400px;
 }
 
 /* ── Sidebar ── */
@@ -882,8 +906,14 @@ function calcArea(coords) {
   var lat=coords.reduce(function(s,c){return s+c[1];},0)/n*Math.PI/180;
   return Math.abs(area)/2*R*R*Math.cos(lat)/10000;
 }
-/* Invalidar mapa Leaflet após render para corrigir tiles */
-setTimeout(function(){ if(typeof map!=='undefined') map.invalidateSize(); }, 100);
+/* Invalidar mapa Leaflet após render para corrigir tiles e tamanho.
+   Duplo requestAnimationFrame garante que o browser já calculou o
+   layout real (incluindo banner de impersonation) antes de medir. */
+requestAnimationFrame(function() {
+  requestAnimationFrame(function() {
+    if (typeof map !== 'undefined') map.invalidateSize();
+  });
+});
 
 /* ════════════════════════════════════════════════════════
    INICIALIZAÇÃO — após todas as funções estarem definidas
