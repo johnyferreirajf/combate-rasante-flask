@@ -487,6 +487,9 @@ function cancelModes(silent){
     if(currentId&&layers[currentId]) layers[currentId].addTo(map);
     editLayer=null;
   }
+  /* Limpar preview do perímetro (buffer) se estiver visível */
+  if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
+  _periTemp=null; _periArea=null;
   previewGroup.clearLayers();
   drawnGroup.clearLayers();
   map.off('click',_splitClickHandler);
@@ -518,10 +521,23 @@ function startDraw(){
   activeMode='draw';
   document.getElementById('btn-draw').classList.add('active');
   document.getElementById('btn-cancel').style.display='';
-  hint('Clique para adicionar vértices. Clique no primeiro ponto para fechar o polígono.');
+  hint('Clique para adicionar vértices. Clique no primeiro ponto para fechar o polígono.<br><small style="opacity:.7">Pressione <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> ou <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Delete</kbd> para apagar o último ponto.</small>');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.2}});
   drawCtrl.enable();
 }
+
+/* ── Teclado: Backspace/Delete durante desenho = desfazer último ponto ── */
+document.addEventListener('keydown',function(ev){
+  if(ev.key==='Backspace'||ev.key==='Delete'){
+    /* Só age se estiver desenhando (drawCtrl ativo) e o foco não for num input */
+    if(!drawCtrl) return;
+    var tag=(document.activeElement||{}).tagName||'';
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+    ev.preventDefault();
+    /* Leaflet.Draw armazena o handler em _mouseMarker e expõe _deleteLastVertex */
+    try{ drawCtrl.deleteLastVertex(); }catch(e){}
+  }
+});
 
 map.on(L.Draw.Event.CREATED,function(e){
   if(activeMode==='draw'){
@@ -618,7 +634,7 @@ function startAddPart(){
   activeMode='add-part';
   document.getElementById('btn-add-part').classList.add('active');
   document.getElementById('btn-cancel').style.display='';
-  hint('Desenhe o novo polígono que será adicionado à camada "<strong>'+
+  hint('Clique para adicionar vértices. <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> desfaz o último ponto.<br>Adiciona à camada "<strong>'+
     (TALHOES.find(function(x){return x.id==currentId;})||{nome:'?'}).nome+'</strong>".');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.25,dashArray:'6 3'}});
   drawCtrl.enable();
@@ -654,7 +670,7 @@ function startHole(){
   activeMode='hole';
   document.getElementById('btn-hole').classList.add('active');
   document.getElementById('btn-cancel').style.display='';
-  hint('Desenhe a área de exclusão <strong>dentro</strong> do talhão. Ela será subtraída do polígono.');
+  hint('Desenhe a área de exclusão <strong>dentro</strong> do talhão. <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> desfaz o último ponto.');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#ef4444',fillColor:'#ef4444',fillOpacity:.20,dashArray:'6 3'}});
   drawCtrl.enable();
 }
@@ -971,6 +987,9 @@ function excluir(e,id){
   .then(function(r){return r.json();})
   .then(function(d){
     if(!d.ok){toast('Erro ao excluir.','err');return;}
+    /* Garantir que o preview de perímetro some junto com a camada */
+    if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
+    _periTemp=null; _periArea=null;
     if(layers[id]){map.removeLayer(layers[id]);delete layers[id];}
     TALHOES=TALHOES.filter(function(t){return t.id!=id;});
     if(currentId==id) closePropPanel();
