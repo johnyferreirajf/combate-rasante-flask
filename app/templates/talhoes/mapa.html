@@ -142,6 +142,11 @@ select.pp-input option { background:#0d2418; }
 #toast.warn { background:#b45309; }
 #toast.err  { background:#dc2626; }
 
+/* Cursor tesoura customizado para modo split */
+.cursor-scissors {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath fill='%23f97316' stroke='%23fff' stroke-width='.8' d='M6 9c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1zm0-4c1.66 0 3 1.34 3 3 0 .56-.16 1.08-.4 1.54l2.4 2.4 5-5V6h-2V4h4v2h-2v.59L11.41 12 16 16.59V17h2v2h-4v-2h2v-.59l-5-5-2.4 2.4c.24.46.4.98.4 1.54 0 1.66-1.34 3-3 3S3 16.66 3 15s1.34-3 3-3c.56 0 1.08.16 1.54.4L10 9.94 8.46 8.4C8 8.65 7.48 8.8 7 8.8c-.55 0-1.04-.16-1.46-.4zm0 10c-.55 0-1 .45-1 1s.45 1 1 1 1-.45 1-1-.45-1-1-1z'/%3E%3C/svg%3E") 4 20, crosshair !important;
+}
+
 /* Instrução flutuante */
 #mode-hint {
   position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
@@ -529,8 +534,12 @@ function cancelModes(silent){
   drawnGroup.clearLayers();
   map.off('click',_splitClickHandler);
   map.off('dblclick',_splitDblClick);
+  map.off('mousemove',_splitMouseMove);
   if(_splitLine){map.removeLayer(_splitLine);_splitLine=null;}
+  if(_splitPreviewLine){map.removeLayer(_splitPreviewLine);_splitPreviewLine=null;}
   _splitPoints=[];
+  /* Remover cursor tesoura */
+  map.getContainer().classList.remove('cursor-scissors');
   /* Reset toolbar */
   ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-split'].forEach(function(bid){
     var b=document.getElementById(bid); if(b) b.classList.remove('active');
@@ -738,29 +747,51 @@ function _onHoleDrawn(layer){
       turf.lineSplit corta cada sub-polígono →
       classificar peças por centroide vs. lado da linha
    ════════════════════════════════════════════════════════════ */
+var _splitPreviewLine = null;   /* linha de preview cursor */
+
 function startSplit(){
   if(activeMode) return;
   if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
   activeMode='split';
   _splitPoints=[];
   if(_splitLine){map.removeLayer(_splitLine);_splitLine=null;}
+  if(_splitPreviewLine){map.removeLayer(_splitPreviewLine);_splitPreviewLine=null;}
   document.getElementById('btn-split').classList.add('active');
   document.getElementById('btn-cancel').style.display='';
-  hint('Clique para traçar a linha de corte (mínimo 2 pontos). A linha deve cruzar o talhão de ponta a ponta.<br>'+
-    '<small style="opacity:.7">Clique duplo ou use o botão para cortar.</small>');
+  /* Cursor tesoura no container do mapa */
+  map.getContainer().classList.add('cursor-scissors');
+  hint('Clique para iniciar a linha de corte. A linha deve cruzar o talhão de ponta a ponta.<br>'+
+    '<small style="opacity:.7">Clique duplo para cortar.</small>');
   map.on('click',_splitClickHandler);
   map.on('dblclick',_splitDblClick);
+  map.on('mousemove',_splitMouseMove);
+}
+
+function _splitMouseMove(e){
+  if(activeMode!=='split'||!_splitPoints.length) return;
+  /* Linha dinâmica do último ponto até o cursor */
+  var lastPt=_splitPoints[_splitPoints.length-1];
+  var latLngs=[[lastPt[1],lastPt[0]],[e.latlng.lat,e.latlng.lng]];
+  if(_splitPreviewLine) _splitPreviewLine.setLatLngs(latLngs);
+  else _splitPreviewLine=L.polyline(latLngs,
+    {color:'#f97316',weight:1.5,dashArray:'4 6',opacity:.65}).addTo(map);
 }
 
 function _splitClickHandler(e){
   if(activeMode!=='split') return;
   _splitPoints.push([e.latlng.lng,e.latlng.lat]);
+  /* Remover preview dinâmico — linha fixa será redesenhada */
+  if(_splitPreviewLine){map.removeLayer(_splitPreviewLine);_splitPreviewLine=null;}
+  /* Redesenhar linha fixa com todos os pontos */
   if(_splitLine) map.removeLayer(_splitLine);
   _splitLine=L.polyline(_splitPoints.map(function(p){return [p[1],p[0]];}),
     {color:'#f97316',weight:2.5,dashArray:'8 4'}).addTo(map);
   if(_splitPoints.length>=2)
-    hint('Linha com <strong>'+_splitPoints.length+' pontos</strong>. Clique para adicionar mais ou '+
-      '<button onclick="executarSplit()" style="background:#f97316;border:none;color:#fff;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:800;cursor:pointer;">✂️ Cortar agora</button>');
+    hint('Linha com <strong>'+_splitPoints.length+' pontos</strong>. Continue clicando ou '+
+      '<button onclick="executarSplit()" style="background:#f97316;border:none;color:#fff;'+
+      'border-radius:6px;padding:2px 8px;font-size:10px;font-weight:800;cursor:pointer;">✂️ Cortar agora</button>');
+  else
+    hint('1 ponto definido. Clique para continuar a linha. Clique duplo para cortar.');
 }
 
 function _splitDblClick(e){
@@ -776,7 +807,10 @@ function executarSplit(){
 
   map.off('click',_splitClickHandler);
   map.off('dblclick',_splitDblClick);
+  map.off('mousemove',_splitMouseMove);
+  map.getContainer().classList.remove('cursor-scissors');
   if(_splitLine){map.removeLayer(_splitLine);_splitLine=null;}
+  if(_splitPreviewLine){map.removeLayer(_splitPreviewLine);_splitPreviewLine=null;}
 
   spin(true,'Dividindo camada...');
   setTimeout(function(){
@@ -872,14 +906,17 @@ function executarSplit(){
       var featB=featuresToMulti(partesB);
       if(!featA||!featB) throw new Error('Falha ao montar as metades.');
 
-      /* Atualizar talhão A */
+      /* Guardar geojson original para poder cancelar depois */
+      window._splitOrigGeojson = t.geojson;
+
+      /* Atualizar talhão A (parte 1) localmente */
       t.geojson=featA; t.area_ha=turf.area(featA)/10000;
       reloadLayer(t);
       _splitPoints=[];
       spin(false);
 
-      /* Preview da metade B e confirmação */
-      _confirmarSplit(featB,turf.area(featB)/10000);
+      /* Mostrar preview e formulário de confirmação */
+      _confirmarSplit(featA, t.area_ha, featB, turf.area(featB)/10000);
       activeMode=null; hint(null);
       document.getElementById('btn-split').classList.remove('active');
       document.getElementById('btn-cancel').style.display='none';
@@ -891,73 +928,104 @@ function executarSplit(){
   },80);
 }
 
-function _confirmarSplit(featB,areaB){
+function _confirmarSplit(featA, areaA, featB, areaB){
+  /* Mostrar preview das DUAS metades no mapa */
   previewGroup.clearLayers();
-  L.geoJSON(featB,{style:{color:'#f97316',fillColor:'#f97316',fillOpacity:.25,dashArray:'6 3'}}).addTo(previewGroup);
+  L.geoJSON(featA,{style:{color:'#22c55e',fillColor:'#22c55e',fillOpacity:.30,weight:2}}).addTo(previewGroup);
+  L.geoJSON(featB,{style:{color:'#f97316',fillColor:'#f97316',fillOpacity:.30,weight:2}}).addTo(previewGroup);
+
   var t=TALHOES.find(function(x){return x.id==currentId;});
+  var nomeA=(t?t.nome:'Talhão')+' (1)';
   var nomeB=(t?t.nome:'Talhão')+' (2)';
   var el=document.getElementById('pp-actions');
   el.innerHTML=
-    '<div style="background:rgba(249,115,22,.14);border:1px solid rgba(249,115,22,.40);border-radius:9px;padding:10px 12px;font-size:11px;color:#fed7aa;line-height:1.6;">'+
-    '✂️ <strong>Divisão calculada!</strong><br>'+
-    '📐 Metade 2: <strong>'+areaB.toFixed(2)+' ha</strong> (laranja)<br>'+
-    '<small style="opacity:.75">Metade 1 já foi atualizada na camada.</small></div>'+
-    '<div><label class="pp-label" style="margin-top:8px;">Nome da 2ª parte</label>'+
+    '<div style="background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.35);border-radius:9px;padding:10px 12px;font-size:11px;color:#bbf7d0;line-height:1.7;">'+
+    '✂️ <strong>Divisão calculada — 2 partes</strong><br>'+
+    '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:4px;"></span>Parte 1: <strong>'+areaA.toFixed(2)+' ha</strong> &nbsp;'+
+    '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f97316;margin-right:4px;"></span>Parte 2: <strong>'+areaB.toFixed(2)+' ha</strong></div>'+
+    '<div><label class="pp-label" style="margin-top:6px;">Nome — Parte 1 (verde)</label>'+
+    '<input class="pp-input" id="split-nome-a" value="'+nomeA+'" type="text"></div>'+
+    '<div><label class="pp-label" style="margin-top:4px;">Nome — Parte 2 (laranja)</label>'+
     '<input class="pp-input" id="split-nome-b" value="'+nomeB+'" type="text"></div>'+
-    '<button class="pp-btn pp-btn-orange" onclick="_salvarSplitB()">✅ Salvar 2ª parte</button>'+
-    '<button class="pp-btn pp-btn-ghost" onclick="_descartarSplitB()">✕ Descartar 2ª parte</button>';
+    '<button class="pp-btn pp-btn-green" onclick="_salvarAmbas()" style="margin-top:4px;">💾 Salvar as 2 partes</button>'+
+    '<button class="pp-btn pp-btn-ghost" onclick="_cancelarSplit()">✕ Cancelar divisão</button>';
   el.style.display='flex';
+  el._splitFeatA=featA; el._splitAreaA=areaA;
   el._splitFeatB=featB; el._splitAreaB=areaB;
-  toast('✂️ Divisão calculada! Salve a 2ª parte ou descarte.','warn',5000);
+  toast('✂️ Divisão calculada! Confirme os nomes e salve.','warn',5000);
 }
 
-function _salvarSplitB(){
-  var nomeB=(document.getElementById('split-nome-b').value||'').trim()||'Talhão (2)';
+function _salvarAmbas(){
   var el=document.getElementById('pp-actions');
+  var featA=el._splitFeatA, areaA=el._splitAreaA;
   var featB=el._splitFeatB, areaB=el._splitAreaB;
+  if(!featA||!featB) return;
+
+  var nomeA=(document.getElementById('split-nome-a').value||'').trim()||'Talhão (1)';
+  var nomeB=(document.getElementById('split-nome-b').value||'').trim()||'Talhão (2)';
   var t=TALHOES.find(function(x){return x.id==currentId;});
-  if(!featB) return;
+
   previewGroup.clearLayers();
-  spin(true,'Salvando partes...');
-  var payload={
-    id:currentId,
-    nome:document.getElementById('pp-nome').value.trim()||(t?t.nome:'Talhão'),
-    cultura:document.getElementById('pp-cultura').value,
-    cor:document.getElementById('pp-cor').value,
+  spin(true,'Salvando as 2 partes...');
+
+  /* Atributos herdados */
+  var base={
+    cultura: document.getElementById('pp-cultura').value,
+    cor:     document.getElementById('pp-cor').value,
     data_voo:document.getElementById('pp-data-voo').value,
     pista_voo:document.getElementById('pp-pista-voo').value,
-    observacoes:document.getElementById('pp-obs').value,
-    geojson:t?t.geojson:featB
+    observacoes:document.getElementById('pp-obs').value
   };
-  fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+
+  /* Salvar Parte A — atualiza o talhão atual */
+  var payloadA=Object.assign({},base,{id:currentId, nome:nomeA, geojson:featA});
+  fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadA)})
   .then(function(r){return r.json();})
   .then(function(d){
     if(d.erro) throw new Error(d.erro);
-    if(t){t.area_ha=d.area_ha;}
-    var payloadB={nome:nomeB,cultura:payload.cultura,cor:payload.cor,
-      data_voo:payload.data_voo,pista_voo:payload.pista_voo,
-      observacoes:payload.observacoes,geojson:featB};
+    /* Atualizar dados locais da parte A */
+    if(t){
+      t.nome=nomeA; t.geojson=featA; t.area_ha=d.area_ha;
+      reloadLayer(t);
+    }
+    document.getElementById('pp-nome').value=nomeA;
+    document.getElementById('pp-area').textContent='📐 '+d.area_ha.toFixed(2)+' ha';
+
+    /* Salvar Parte B — nova camada */
+    var payloadB=Object.assign({},base,{nome:nomeB, geojson:featB});
     return fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadB)});
   })
   .then(function(r){return r.json();})
   .then(function(d){
     if(d.erro) throw new Error(d.erro);
-    var nt={id:d.id,nome:nomeB,cultura:payload.cultura,cor:payload.cor,
-      area_ha:d.area_ha,geojson:featB,data_voo:payload.data_voo,
-      pista_voo:payload.pista_voo,observacoes:payload.observacoes};
-    TALHOES.push(nt); addLayer(nt);
-    spin(false); renderSidebar(); renderAcoes(currentId);
-    document.getElementById('pp-area').textContent='📐 '+(t?t.area_ha:0).toFixed(2)+' ha';
-    toast('✅ Camada dividida em 2 e salva!');
+    var nt=Object.assign({},base,{
+      id:d.id, nome:nomeB, area_ha:d.area_ha, geojson:featB
+    });
+    TALHOES.push(nt);
+    addLayer(nt);
+    spin(false);
+    renderSidebar();
+    renderAcoes(currentId);
+    toast('✅ Divisão salva! 2 novas camadas criadas.');
   })
-  .catch(function(err){spin(false);toast('Erro: '+err.message,'err',5000);});
+  .catch(function(err){spin(false);toast('Erro ao salvar: '+err.message,'err',5000);});
 }
 
-function _descartarSplitB(){
+function _cancelarSplit(){
+  /* Reverter: restaurar geometria original do talhão (antes do corte) */
   previewGroup.clearLayers();
   var t=TALHOES.find(function(x){return x.id==currentId;});
-  if(t) salvarTalhao(); else renderAcoes(currentId);
-  toast('2ª parte descartada. Metade 1 mantida.');
+  /* A parte A já foi aplicada ao t.geojson em executarSplit antes de chamar _confirmarSplit
+     Precisamos reverter. Guardamos o geojson original em _splitOrigGeojson. */
+  if(t && window._splitOrigGeojson){
+    t.geojson=window._splitOrigGeojson;
+    t.area_ha=turf&&turf.area?turf.area(toFeature(t.geojson))/10000:t.area_ha;
+    reloadLayer(t);
+    document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
+  }
+  window._splitOrigGeojson=null;
+  renderAcoes(currentId);
+  toast('Divisão cancelada — polígono original restaurado.');
 }
 
 /* ── Salvar ── */
