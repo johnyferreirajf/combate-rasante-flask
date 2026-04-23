@@ -269,11 +269,11 @@ var TALHOES = {{ talhoes_json | safe }};
 var EDIT_ID = {{ editar_id | tojson }};
 
 /* ── Mapa ── */
-var map = L.map('map',{zoomControl:true}).setView([-18.5,-50],9);
+var map = L.map('map',{zoomControl:true, maxZoom:22}).setView([-18.5,-50],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {attribution:'Esri',maxZoom:20}).addTo(map);
+  {attribution:'Esri',maxZoom:22,maxNativeZoom:20}).addTo(map);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  {maxZoom:20,opacity:0.7}).addTo(map);
+  {maxZoom:22,maxNativeZoom:20,opacity:0.7}).addTo(map);
 
 /* ── Estado ── */
 var layers       = {};
@@ -482,6 +482,7 @@ function cancelModes(silent){
   if(drawCtrl){drawCtrl.disable();drawCtrl=null;}
   if(editHandler){editHandler.revertLayers();editHandler.disable();editHandler=null;}
   if(editLayer){
+    map.removeLayer(editLayer);        /* remover do mapa (foi adicionado diretamente) */
     editGroup.removeLayer(editLayer);
     if(currentId&&layers[currentId]) layers[currentId].addTo(map);
     editLayer=null;
@@ -555,10 +556,8 @@ function toggleEdit(){
     /* Confirmar */
     editHandler.save();
     var features=[];
-    editLayer.eachLayer(function(lg){
-      lg.eachLayer ? lg.eachLayer(function(sub){features.push(sub.toGeoJSON());})
-                   : features.push(lg.toGeoJSON());
-    });
+    /* editLayer contém L.Polygon diretamente agora */
+    editLayer.eachLayer(function(l){ features.push(l.toGeoJSON()); });
     var merged=featuresToMulti(features);
     if(merged&&currentId){
       var t=TALHOES.find(function(x){return x.id==currentId;});
@@ -586,12 +585,15 @@ function toggleEdit(){
 
   if(layers[currentId]) map.removeLayer(layers[currentId]);
 
-  /* Criar FeatureGroup com um L.geoJSON por polígono */
+  /* Criar FeatureGroup com L.Polygon individuais (não L.geoJSON containers)
+     O L.EditToolbar.Edit precisa de L.Path diretamente no featureGroup */
   editLayer=new L.FeatureGroup();
   polys.forEach(function(f){
-    var lg=L.geoJSON(f,{style:{color:'#fcd34d',fillColor:'#fcd34d',fillOpacity:.15,weight:2.5,dashArray:'4 3'}});
-    editLayer.addLayer(lg);
+    /* L.geoJSON cria um container — extrair os L.Polygon filhos */
+    var tmp=L.geoJSON(f,{style:{color:'#fcd34d',fillColor:'#fcd34d',fillOpacity:.15,weight:2.5,dashArray:'4 3'}});
+    tmp.eachLayer(function(l){ editLayer.addLayer(l); });
   });
+  editLayer.addTo(map);   /* adicionar ao mapa diretamente — editGroup é só controle */
   editGroup.addLayer(editLayer);
 
   editHandler=new L.EditToolbar.Edit(map,{
@@ -623,6 +625,10 @@ function startAddPart(){
 }
 
 function _onAddPartDrawn(layer){
+  /* Remover imediatamente o layer temporário desenhado do mapa */
+  map.removeLayer(layer);
+  drawnGroup.clearLayers();
+
   var newFeat=layer.toGeoJSON();
   var t=TALHOES.find(function(x){return x.id==currentId;});
   if(!t){cancelModes(false);return;}
@@ -630,7 +636,12 @@ function _onAddPartDrawn(layer){
   if(!merged){toast('Erro ao fundir geometrias.','err');cancelModes(false);return;}
   t.geojson=merged; t.area_ha=areaFromFeature(merged);
   document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
-  reloadLayer(t); drawCtrl=null; cancelModes(false);
+  drawCtrl=null; activeMode=null;
+  reloadLayer(t);
+  /* Cancelar só o estado de modo, sem limpar editLayer (não há) */
+  document.getElementById('btn-add-part').classList.remove('active');
+  document.getElementById('btn-cancel').style.display='none';
+  hint(null);
   toast('✅ Parte adicionada! Clique em Salvar.','',3500);
 }
 
@@ -720,18 +731,59 @@ function executarSplit(){
   setTimeout(function(){
     try{
       var base=toFeature(t.geojson);
-      /* Extender linha para garantir que cruze o bbox do polígono */
-      var bbox=turf.bbox(base);
-      var diag=turf.distance(turf.point([bbox[0],bbox[1]]),turf.point([bbox[2],bbox[3]]),{units:'kilometers'})*2;
       var pts=_splitPoints;
-      var bearS=turf.bearing(turf.point(pts[1]),turf.point(pts[0]));
-      var bearE=turf.bearing(turf.point(pts[pts.length-2]),turf.point(pts[pts.length-1]));
-      var extS=turf.destination(turf.point(pts[0]),diag,bearS,{units:'kilometers'}).geometry.coordinates;
-      var extE=turf.destination(turf.point(pts[pts.length-1]),diag,bearE,{units:'kilometers'}).geometry.coordinates;
-      var extCoords=[extS].concat(pts).concat([extE]);
-      var cutLine=turf.lineString(extCoords);
 
-      /* Coletar todos os sub-polígonos da camada */
+      /* ── Extender a linha bem além do bbox do polígono ── */
+      var bbox=turf.bbox(base);
+      var diag=turf.distance(
+        turf.point([bbox[0],bbox[1]]),
+        turf.point([bbox[2],bbox[3]]),
+        {units:'kilometers'}
+      )*3;  /* 3x diagonal = garante que atravessa qualquer polígono */
+
+      var bearS=turf.bearing(turf.point(pts[1]),       turf.point(pts[0]));
+      var bearE=turf.bearing(turf.point(pts[pts.length-2]), turf.point(pts[pts.length-1]));
+      var extS =turf.destination(turf.point(pts[0]),           diag, bearS, {units:'kilometers'}).geometry.coordinates;
+      var extE =turf.destination(turf.point(pts[pts.length-1]),diag, bearE, {units:'kilometers'}).geometry.coordinates;
+      var lineCoords=[extS].concat(pts).concat([extE]);
+
+      /* ── Estratégia: half-plane intersection ──
+         Criamos dois polígonos "infinitos" — um de cada lado da linha de corte.
+         Cada half-plane é um retângulo gigante que cobre metade do mapa.
+         Intersectamos o talhão com cada half-plane → as duas metades.
+         Esta abordagem funciona com Turf 6.x sem precisar de noding manual. */
+
+      /* Vetor perpendicular à linha (normal) para deslocar os half-planes */
+      var vx = lineCoords[lineCoords.length-1][0] - lineCoords[0][0];
+      var vy = lineCoords[lineCoords.length-1][1] - lineCoords[0][1];
+      /* Normal perpendicular */
+      var nx = -vy, ny = vx;
+      /* Normalizar e escalar para um offset grande (em graus, ~500 km) */
+      var len = Math.sqrt(nx*nx+ny*ny);
+      var scale = 5;  /* graus — garante cobertura global */
+      nx = nx/len*scale; ny = ny/len*scale;
+
+      /* Half-plane A: linha + deslocamento para um lado */
+      var hpA = [
+        [lineCoords[0][0]+nx,           lineCoords[0][1]+ny],
+        [lineCoords[lineCoords.length-1][0]+nx, lineCoords[lineCoords.length-1][1]+ny],
+        [lineCoords[lineCoords.length-1][0],    lineCoords[lineCoords.length-1][1]],
+        [lineCoords[0][0],              lineCoords[0][1]],
+        [lineCoords[0][0]+nx,           lineCoords[0][1]+ny]
+      ];
+      /* Half-plane B: lado oposto */
+      var hpB = [
+        [lineCoords[0][0]-nx,           lineCoords[0][1]-ny],
+        [lineCoords[lineCoords.length-1][0]-nx, lineCoords[lineCoords.length-1][1]-ny],
+        [lineCoords[lineCoords.length-1][0],    lineCoords[lineCoords.length-1][1]],
+        [lineCoords[0][0],              lineCoords[0][1]],
+        [lineCoords[0][0]-nx,           lineCoords[0][1]-ny]
+      ];
+
+      var halfPlaneA = turf.polygon([hpA]);
+      var halfPlaneB = turf.polygon([hpB]);
+
+      /* Processar cada sub-polígono da camada */
       var geom=base.geometry||base, subPolys=[];
       if(geom.type==='Polygon') subPolys=[base];
       else if(geom.type==='MultiPolygon')
@@ -740,45 +792,30 @@ function executarSplit(){
         });
 
       var partesA=[], partesB=[];
+      var cortou=false;
 
       subPolys.forEach(function(poly){
-        /* Converter o perímetro do polígono em linhas e adicionar a linha de corte */
-        var polyLines=turf.polygonToLine(poly);
-        var merged=turf.lineString([]); // dummy
-        /* Usar polygonize para partir */
-        var allLines;
-        if(polyLines.type==='Feature'&&polyLines.geometry.type==='LineString')
-          allLines=turf.featureCollection([polyLines,cutLine]);
-        else
-          allLines=turf.featureCollection([cutLine].concat(
-            (polyLines.features||[polyLines])
-          ));
+        var iA=null, iB=null;
+        try{ iA=turf.intersect(poly,halfPlaneA); }catch(e){}
+        try{ iB=turf.intersect(poly,halfPlaneB); }catch(e){}
 
-        var pieces=turf.polygonize(allLines);
-        if(!pieces||!pieces.features.length){partesA.push(poly);return;}
-
-        /* Filtrar peças que estão dentro do polígono original */
-        var inside=pieces.features.filter(function(piece){
-          try{
-            var c=turf.centroid(piece).geometry.coordinates;
-            return turf.booleanPointInPolygon(turf.point(c),poly);
-          }catch(e){return false;}
-        });
-
-        if(inside.length<2){partesA.push(poly);return;}
-
-        /* Classificar peças pelo lado da linha usando o centroide */
-        /* "lado" = sinal do produto cruzado do vetor da linha com o vetor ponto */
-        var lp0=extCoords[0], lp1=extCoords[extCoords.length-1];
-        inside.forEach(function(piece,i){
-          var c=turf.centroid(piece).geometry.coordinates;
-          var side=(lp1[0]-lp0[0])*(c[1]-lp0[1])-(lp1[1]-lp0[1])*(c[0]-lp0[0]);
-          if(side>=0) partesA.push(piece);
-          else        partesB.push(piece);
-        });
+        if(iA&&iB){
+          /* A linha cruzou este sub-polígono */
+          cortou=true;
+          partesA.push(iA);
+          partesB.push(iB);
+        } else if(iA){
+          partesA.push(iA);
+        } else if(iB){
+          partesB.push(iB);
+        } else {
+          /* Nem A nem B — polígono inteiro vai para A */
+          partesA.push(poly);
+        }
       });
 
-      if(!partesB.length) throw new Error('A linha não dividiu o polígono. Certifique-se que cruza de ponta a ponta.');
+      if(!cortou) throw new Error('A linha não cruzou o polígono. Certifique-se que ela atravessa de ponta a ponta.');
+      if(!partesB.length) throw new Error('A linha não dividiu o polígono em duas partes.');
 
       var featA=featuresToMulti(partesA);
       var featB=featuresToMulti(partesB);
@@ -790,7 +827,7 @@ function executarSplit(){
       _splitPoints=[];
       spin(false);
 
-      /* Mostrar preview da metade B e pedir confirmação */
+      /* Preview da metade B e confirmação */
       _confirmarSplit(featB,turf.area(featB)/10000);
       activeMode=null; hint(null);
       document.getElementById('btn-split').classList.remove('active');
