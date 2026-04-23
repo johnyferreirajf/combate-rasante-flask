@@ -173,44 +173,67 @@ def _ring_kml(ring):
     return " ".join(f"{c[0]},{c[1]},0" for c in ring)
 
 
+def _hex_to_kml_color(hex_color: str, alpha_hex: str = "ff") -> str:
+    """Converte #RRGGBB para AABBGGRR (formato KML/Google Earth)."""
+    h = hex_color.lstrip("#")
+    if len(h) == 6:
+        r, g, b = h[0:2], h[2:4], h[4:6]
+        return f"{alpha_hex}{b}{g}{r}".lower()
+    return f"{alpha_hex}ff0000"   # fallback vermelho
+
+
 def _to_kml(t: Talhao) -> str:
     gj    = json.loads(t.geojson)
     geom  = gj.get("geometry", gj) if gj.get("type") == "Feature" else gj
     gtype = geom.get("type", "")
     desc  = f"Cultura: {t.cultura or '-'} | Area: {t.area_ha or 0:.2f} ha"
 
+    # ── Estilo: contorno na cor do talhão, preenchimento transparente ──
+    cor_linha  = _hex_to_kml_color(t.cor or "#22c55e", "ff")   # 100% opaco
+    cor_fill   = _hex_to_kml_color(t.cor or "#22c55e", "33")   # ~20% opaco
+    style_id   = "estilo_talhao"
+    style_block = (
+        f'  <Style id="{style_id}">\n'
+        f'    <LineStyle><color>{cor_linha}</color><width>2</width></LineStyle>\n'
+        f'    <PolyStyle><color>{cor_fill}</color><fill>1</fill><outline>1</outline></PolyStyle>\n'
+        f'  </Style>\n'
+    )
+    style_ref = f'<styleUrl>#{style_id}</styleUrl>'
+
+    def _placemark(nome_pm, coords_outer, rings_inner):
+        inner = "".join(
+            f"<innerBoundaryIs><LinearRing><coordinates>{_ring_kml(r)}</coordinates>"
+            f"</LinearRing></innerBoundaryIs>" for r in rings_inner
+        )
+        return (
+            f"<Placemark>"
+            f"<n>{nome_pm}</n>"
+            f"<description>{desc}</description>"
+            f"{style_ref}"
+            f"<Polygon>"
+            f"<outerBoundaryIs><LinearRing>"
+            f"<coordinates>{_ring_kml(coords_outer)}</coordinates>"
+            f"</LinearRing></outerBoundaryIs>"
+            f"{inner}"
+            f"</Polygon>"
+            f"</Placemark>"
+        )
+
     placemarks = []
     if gtype == "Polygon":
         rings = geom["coordinates"]
-        inner = "".join(
-            f"<innerBoundaryIs><LinearRing><coordinates>{_ring_kml(r)}</coordinates>"
-            f"</LinearRing></innerBoundaryIs>" for r in rings[1:]
-        )
-        placemarks.append(
-            f"<Placemark><n>{t.nome}</n><description>{desc}</description>"
-            f"<Polygon><outerBoundaryIs><LinearRing>"
-            f"<coordinates>{_ring_kml(rings[0])}</coordinates>"
-            f"</LinearRing></outerBoundaryIs>{inner}</Polygon></Placemark>"
-        )
+        placemarks.append(_placemark(t.nome, rings[0], rings[1:]))
     elif gtype == "MultiPolygon":
+        total = len(geom["coordinates"])
         for i, poly in enumerate(geom["coordinates"]):
-            nm = f"{t.nome} ({i+1})" if len(geom["coordinates"]) > 1 else t.nome
-            inner = "".join(
-                f"<innerBoundaryIs><LinearRing><coordinates>{_ring_kml(r)}</coordinates>"
-                f"</LinearRing></innerBoundaryIs>" for r in poly[1:]
-            )
-            placemarks.append(
-                f"<Placemark><n>{nm}</n><description>{desc}</description>"
-                f"<Polygon><outerBoundaryIs><LinearRing>"
-                f"<coordinates>{_ring_kml(poly[0])}</coordinates>"
-                f"</LinearRing></outerBoundaryIs>{inner}</Polygon></Placemark>"
-            )
+            nm = f"{t.nome} ({i+1})" if total > 1 else t.nome
+            placemarks.append(_placemark(nm, poly[0], poly[1:]))
 
     body = "\n    ".join(placemarks)
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
-        f'  <Document>\n    <n>{t.nome}</n>\n    {body}\n  </Document>\n</kml>'
+        f'  <Document>\n    <n>{t.nome}</n>\n{style_block}    {body}\n  </Document>\n</kml>'
     )
 
 
