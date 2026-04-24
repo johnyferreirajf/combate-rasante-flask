@@ -403,17 +403,29 @@ select.pp-input option { background:#0d2418; }
     <!-- Modal de exclusão com buffer -->
     <div id="exclusao-modal">
       <h4>🚫 Polígono de Exclusão</h4>
-      <label>Buffer de exclusão (metros)</label>
-      <input type="number" id="exclusao-buffer" value="0" min="0" max="500" step="1" placeholder="0 = sem buffer">
-      <div class="exclusao-range">
-        <button onclick="setExclusaoBuffer(0)">0m</button>
-        <button onclick="setExclusaoBuffer(10)">10m</button>
-        <button onclick="setExclusaoBuffer(25)">25m</button>
-        <button onclick="setExclusaoBuffer(50)">50m</button>
-        <button onclick="setExclusaoBuffer(100)">100m</button>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div>
+          <label>Nome da exclusão</label>
+          <input type="text" id="exclusao-nome" class="pp-input" placeholder="Ex: Represa, Torre, Mata..." style="margin-top:4px;">
+        </div>
+        <div>
+          <label>Data</label>
+          <input type="date" id="exclusao-data" class="pp-input" style="margin-top:4px;">
+        </div>
+        <div>
+          <label>Buffer (metros)</label>
+          <input type="number" id="exclusao-buffer" value="0" min="0" max="500" step="1" placeholder="0 = sem buffer" style="margin-top:4px;">
+          <div class="exclusao-range" style="margin-top:6px;">
+            <button onclick="setExclusaoBuffer(0)">0m</button>
+            <button onclick="setExclusaoBuffer(10)">10m</button>
+            <button onclick="setExclusaoBuffer(25)">25m</button>
+            <button onclick="setExclusaoBuffer(50)">50m</button>
+            <button onclick="setExclusaoBuffer(100)">100m</button>
+          </div>
+        </div>
+        <div class="preview-info" id="exclusao-info"></div>
       </div>
-      <div class="preview-info" id="exclusao-info"></div>
-      <button class="ex-confirm" onclick="confirmarExclusao()">✅ Aplicar exclusão</button>
+      <button class="ex-confirm" onclick="confirmarExclusao()" style="margin-top:12px;">✅ Aplicar e salvar exclusão</button>
       <button class="ex-cancel"  onclick="cancelarExclusao()">✕ Cancelar</button>
     </div>
 
@@ -953,10 +965,16 @@ function _onExclusaoDrawn(layer){
     style:{color:'#dc2626',fillColor:'#dc2626',fillOpacity:.20,weight:2,dashArray:'6 3'}
   }).addTo(previewGroup);
 
-  /* Abrir modal de buffer */
+  /* Abrir modal — pré-preencher data de hoje e limpar campos */
   document.getElementById('exclusao-buffer').value = '0';
   document.getElementById('exclusao-info').style.display = 'none';
+  document.getElementById('exclusao-nome').value = '';
+  /* Data de hoje como padrão */
+  var hoje = new Date(); var mm=String(hoje.getMonth()+1).padStart(2,'0'); var dd=String(hoje.getDate()).padStart(2,'0');
+  document.getElementById('exclusao-data').value = hoje.getFullYear()+'-'+mm+'-'+dd;
   document.getElementById('exclusao-modal').classList.add('show');
+  /* Focar no campo nome */
+  setTimeout(function(){ document.getElementById('exclusao-nome').focus(); }, 100);
 
   drawCtrl=null; activeMode=null;
   document.getElementById('btn-exclusao').classList.remove('active');
@@ -1002,7 +1020,9 @@ function _atualizarPreviewExclusao(){
 
 function confirmarExclusao(){
   if(!_exclusaoFeat||!currentId){cancelarExclusao();return;}
-  var metros = parseFloat(document.getElementById('exclusao-buffer').value)||0;
+  var metros  = parseFloat(document.getElementById('exclusao-buffer').value)||0;
+  var nomeEx  = (document.getElementById('exclusao-nome').value||'').trim() || 'Exclusão';
+  var dataEx  = document.getElementById('exclusao-data').value || '';
   var t = TALHOES.find(function(x){return x.id==currentId;});
   if(!t){cancelarExclusao();return;}
   if(typeof turf==='undefined'){toast('turf.js não carregado.','err');cancelarExclusao();return;}
@@ -1012,25 +1032,89 @@ function confirmarExclusao(){
 
   setTimeout(function(){
     try{
+      /* Calcular geometria de exclusão (com ou sem buffer) */
       var exclusaoGeom = metros > 0
         ? turf.buffer(_exclusaoFeat, metros, {units:'meters'})
-        : _exclusaoFeat;
+        : toFeature(_exclusaoFeat);
       if(!exclusaoGeom) throw new Error('buffer retornou nulo.');
 
+      /* Subtrair da camada principal */
       var base   = toFeature(t.geojson);
       var result = turf.difference(base, exclusaoGeom);
-
       if(!result) throw new Error('A exclusão removeu todo o polígono ou está fora da área.');
 
+      /* Atualizar camada principal */
       t.geojson = result;
       t.area_ha = turf.area(result)/10000;
       document.getElementById('pp-area').textContent = '📐 '+t.area_ha.toFixed(2)+' ha';
       reloadLayer(t);
+
       previewGroup.clearLayers();
-      _exclusaoFeat  = null;
-      _exclusaoLayer = null;
-      spin(false);
-      toast('✅ Exclusão aplicada! Clique em Salvar.','',3500);
+      spin(true,'Salvando camadas...');
+
+      /* Salvar camada principal atualizada */
+      var payloadPrincipal = {
+        id:          currentId,
+        nome:        document.getElementById('pp-nome').value.trim() || t.nome,
+        cultura:     document.getElementById('pp-cultura').value,
+        cor:         document.getElementById('pp-cor').value,
+        data_voo:    document.getElementById('pp-data-voo').value,
+        pista_voo:   document.getElementById('pp-pista-voo').value,
+        observacoes: document.getElementById('pp-obs').value,
+        geojson:     t.geojson
+      };
+
+      fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(payloadPrincipal)})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.erro) throw new Error(d.erro);
+        t.area_ha = d.area_ha;
+
+        /* Salvar camada de exclusão — vermelha, sem cultura nem pista */
+        var areaEx = turf.area(exclusaoGeom)/10000;
+        var payloadEx = {
+          nome:        nomeEx,
+          cultura:     '',           /* sem cultura */
+          cor:         '#dc2626',    /* vermelho fixo */
+          data_voo:    dataEx,
+          pista_voo:   '',           /* sem pista */
+          observacoes: 'Área de exclusão'+(metros>0?' — buffer '+metros+'m':'')+
+                       ' da camada: '+(payloadPrincipal.nome||t.nome),
+          geojson:     exclusaoGeom
+        };
+        return fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},
+               body:JSON.stringify(payloadEx)});
+      })
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.erro) throw new Error(d.erro);
+        /* Adicionar camada de exclusão na sidebar e no mapa */
+        var novaEx = {
+          id:          d.id,
+          nome:        nomeEx,
+          cultura:     '',
+          cor:         '#dc2626',
+          area_ha:     d.area_ha,
+          geojson:     exclusaoGeom,
+          data_voo:    dataEx,
+          pista_voo:   '',
+          observacoes: payloadPrincipal.observacoes
+        };
+        TALHOES.push(novaEx);
+        addLayer(novaEx);
+        _exclusaoFeat  = null;
+        _exclusaoLayer = null;
+        spin(false);
+        renderSidebar();
+        toast('✅ Exclusão aplicada! Camada "'+nomeEx+'" criada em vermelho.','',4000);
+      })
+      .catch(function(err){
+        spin(false);
+        _exclusaoFeat = null;
+        toast('Erro ao salvar: '+err.message,'err',5000);
+      });
+
     }catch(err){
       spin(false);
       previewGroup.clearLayers();
