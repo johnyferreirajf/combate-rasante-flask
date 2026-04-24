@@ -159,6 +159,48 @@ select.pp-input option { background:#0d2418; }
 .adm-banner { position:absolute; bottom:12px; left:50%; transform:translateX(-50%); z-index:998; background:rgba(234,179,8,.90); color:#1a1200; font-size:11px; font-weight:800; padding:5px 14px; border-radius:9px; white-space:nowrap; }
 
 /* Mobile */
+/* ── Modal de buffer de exclusão ── */
+#exclusao-modal {
+  display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  z-index:1200; background:rgba(3,20,10,.97); border:1px solid rgba(255,255,255,.22);
+  border-radius:14px; padding:20px 22px; min-width:260px; max-width:320px;
+  box-shadow:0 8px 40px rgba(0,0,0,.5); backdrop-filter:blur(12px);
+}
+#exclusao-modal.show { display:block; }
+#exclusao-modal h4 { color:#fff; font-size:13px; font-weight:900; margin:0 0 12px; }
+#exclusao-modal label { font-size:10px; font-weight:800; color:rgba(255,255,255,.65); text-transform:uppercase; display:block; margin-bottom:4px; }
+#exclusao-modal input[type=number] {
+  width:100%; padding:8px 11px; border-radius:9px; border:1px solid rgba(255,255,255,.20);
+  background:rgba(0,0,0,.40); color:#fff; font-size:14px; font-weight:700;
+  font-family:inherit; outline:none; box-sizing:border-box; text-align:center;
+  transition:border-color .15s;
+}
+#exclusao-modal input[type=number]:focus { border-color:rgba(239,68,68,.65); }
+.exclusao-range { display:flex; gap:6px; margin-top:6px; flex-wrap:wrap; }
+.exclusao-range button {
+  flex:1; min-width:50px; padding:5px 8px; border-radius:8px; border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.07); color:rgba(255,255,255,.75); font-size:11px;
+  font-weight:700; cursor:pointer; font-family:inherit; transition:background .15s;
+}
+.exclusao-range button:hover { background:rgba(239,68,68,.25); border-color:rgba(239,68,68,.45); color:#fca5a5; }
+#exclusao-modal .ex-confirm {
+  width:100%; margin-top:12px; padding:9px; border-radius:10px; border:none;
+  background:linear-gradient(135deg,#dc2626,#b91c1c); color:#fff;
+  font-size:13px; font-weight:800; cursor:pointer; font-family:inherit;
+}
+#exclusao-modal .ex-confirm:hover { opacity:.88; }
+#exclusao-modal .ex-cancel {
+  width:100%; margin-top:6px; padding:7px; border-radius:10px;
+  border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.07);
+  color:rgba(255,255,255,.65); font-size:11px; font-weight:700;
+  cursor:pointer; font-family:inherit;
+}
+#exclusao-modal .preview-info {
+  background:rgba(239,68,68,.12); border:1px solid rgba(239,68,68,.30);
+  border-radius:8px; padding:8px 10px; font-size:11px; color:#fca5a5;
+  margin-top:8px; line-height:1.6; display:none;
+}
+
 /* ══════════════════════════════════════════════════
    MOBILE — layout app nativo
    ══════════════════════════════════════════════════ */
@@ -350,11 +392,29 @@ select.pp-input option { background:#0d2418; }
       <div class="tb-sep"></div>
       <button id="btn-add-part" onclick="startAddPart()" title="Adicionar polígono à camada selecionada">➕ Add Parte</button>
       <button id="btn-hole"     onclick="startHole()"    title="Desenhar área de exclusão">⭕ Buraco</button>
+      <button id="btn-exclusao" onclick="startExclusao()" title="Polígono de exclusão com buffer">🚫 Exclusão</button>
       <button id="btn-split"    onclick="startSplit()"   title="Dividir camada com linha de corte">✂️ Dividir</button>
       <div class="tb-sep"></div>
       <button id="btn-perimetro" onclick="gerarPerimetro()" title="Fechar carreadores (buffer duplo)">⚙️ Perímetro</button>
       <button id="btn-cancel"   onclick="cancelAll()" style="display:none;color:#fca5a5;">✕ Cancelar</button>
       <button onclick="fitAll()">🔍 Ver Todos</button>
+    </div>
+
+    <!-- Modal de exclusão com buffer -->
+    <div id="exclusao-modal">
+      <h4>🚫 Polígono de Exclusão</h4>
+      <label>Buffer de exclusão (metros)</label>
+      <input type="number" id="exclusao-buffer" value="0" min="0" max="500" step="1" placeholder="0 = sem buffer">
+      <div class="exclusao-range">
+        <button onclick="setExclusaoBuffer(0)">0m</button>
+        <button onclick="setExclusaoBuffer(10)">10m</button>
+        <button onclick="setExclusaoBuffer(25)">25m</button>
+        <button onclick="setExclusaoBuffer(50)">50m</button>
+        <button onclick="setExclusaoBuffer(100)">100m</button>
+      </div>
+      <div class="preview-info" id="exclusao-info"></div>
+      <button class="ex-confirm" onclick="confirmarExclusao()">✅ Aplicar exclusão</button>
+      <button class="ex-cancel"  onclick="cancelarExclusao()">✕ Cancelar</button>
     </div>
 
     <!-- Painel de propriedades -->
@@ -658,7 +718,7 @@ function cancelModes(silent){
   /* Remover cursor tesoura */
   map.getContainer().classList.remove('cursor-scissors');
   /* Reset toolbar */
-  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-split'].forEach(function(bid){
+  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split'].forEach(function(bid){
     var b=document.getElementById(bid); if(b) b.classList.remove('active');
   });
   document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
@@ -721,6 +781,7 @@ map.on(L.Draw.Event.CREATED,function(e){
   } else if(activeMode==='add-part')  _onAddPartDrawn(e.layer);
   else if(activeMode==='hole')        _onHoleDrawn(e.layer);
   else if(activeMode==='split-line')  _onSplitLineDrawn(e.layer);
+  else if(activeMode==='exclusao')     _onExclusaoDrawn(e.layer);
 });
 
 /* ════════════════════════════════════════════════════════════
@@ -859,6 +920,135 @@ function _onHoleDrawn(layer){
 }
 
 /* ════════════════════════════════════════════════════════════
+   4b. EXCLUSÃO COM BUFFER
+       Desenha polígono → pede buffer em metros → aplica
+       turf.buffer(poly, metros) → turf.difference(base, buffered)
+   ════════════════════════════════════════════════════════════ */
+var _exclusaoFeat  = null;   /* Feature do polígono desenhado */
+var _exclusaoLayer = null;   /* Layer visual do polígono */
+
+function startExclusao(){
+  if(activeMode) return;
+  if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
+  activeMode='exclusao';
+  document.getElementById('btn-exclusao').classList.add('active');
+  document.getElementById('btn-cancel').style.display='';
+  hint('Desenhe o polígono de exclusão. Depois você define o buffer em metros antes de aplicar.<br>'+
+    '<kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> desfaz o último ponto.');
+  drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#dc2626',fillColor:'#dc2626',fillOpacity:.25,dashArray:'6 3',weight:2}});
+  drawCtrl.enable();
+}
+
+/* Chamado pelo L.Draw.Event.CREATED quando activeMode==='exclusao' */
+function _onExclusaoDrawn(layer){
+  map.removeLayer(layer);
+  drawnGroup.clearLayers();
+
+  _exclusaoFeat  = layer.toGeoJSON();
+  _exclusaoLayer = null;
+
+  /* Mostrar preview do polígono desenhado */
+  previewGroup.clearLayers();
+  _exclusaoLayer = L.geoJSON(_exclusaoFeat,{
+    style:{color:'#dc2626',fillColor:'#dc2626',fillOpacity:.20,weight:2,dashArray:'6 3'}
+  }).addTo(previewGroup);
+
+  /* Abrir modal de buffer */
+  document.getElementById('exclusao-buffer').value = '0';
+  document.getElementById('exclusao-info').style.display = 'none';
+  document.getElementById('exclusao-modal').classList.add('show');
+
+  drawCtrl=null; activeMode=null;
+  document.getElementById('btn-exclusao').classList.remove('active');
+  document.getElementById('btn-cancel').style.display='none';
+  hint(null);
+  /* Atualizar preview ao mudar buffer */
+  document.getElementById('exclusao-buffer').oninput = _atualizarPreviewExclusao;
+}
+
+function setExclusaoBuffer(v){
+  document.getElementById('exclusao-buffer').value = v;
+  _atualizarPreviewExclusao();
+}
+
+function _atualizarPreviewExclusao(){
+  if(!_exclusaoFeat) return;
+  var metros = parseFloat(document.getElementById('exclusao-buffer').value)||0;
+  previewGroup.clearLayers();
+  try{
+    var feat = metros > 0
+      ? turf.buffer(_exclusaoFeat, metros, {units:'meters'})
+      : _exclusaoFeat;
+    if(!feat) return;
+    L.geoJSON(feat,{
+      style:{color:'#dc2626',fillColor:'#dc2626',fillOpacity:.25,weight:2,dashArray:'5 3'}
+    }).addTo(previewGroup);
+    /* Calcular área excluída */
+    var t = TALHOES.find(function(x){return x.id==currentId;});
+    if(t){
+      var base = toFeature(t.geojson);
+      var diff = null;
+      try{ diff = turf.difference(base, feat); }catch(e){}
+      var areaExcluida = diff ? (turf.area(base)/10000 - turf.area(diff)/10000) : 0;
+      var novaArea     = diff ? turf.area(diff)/10000 : turf.area(base)/10000;
+      var info = document.getElementById('exclusao-info');
+      info.style.display='block';
+      info.innerHTML = '📐 Área excluída: <strong>'+Math.max(0,areaExcluida).toFixed(2)+' ha</strong><br>'+
+        '📐 Área restante: <strong>'+novaArea.toFixed(2)+' ha</strong>'+
+        (metros>0?' <small style="opacity:.7">(buffer '+metros+'m)</small>':'');
+    }
+  }catch(e){}
+}
+
+function confirmarExclusao(){
+  if(!_exclusaoFeat||!currentId){cancelarExclusao();return;}
+  var metros = parseFloat(document.getElementById('exclusao-buffer').value)||0;
+  var t = TALHOES.find(function(x){return x.id==currentId;});
+  if(!t){cancelarExclusao();return;}
+  if(typeof turf==='undefined'){toast('turf.js não carregado.','err');cancelarExclusao();return;}
+
+  document.getElementById('exclusao-modal').classList.remove('show');
+  spin(true,'Aplicando exclusão'+(metros>0?' com buffer +'+metros+'m':'')+'...');
+
+  setTimeout(function(){
+    try{
+      var exclusaoGeom = metros > 0
+        ? turf.buffer(_exclusaoFeat, metros, {units:'meters'})
+        : _exclusaoFeat;
+      if(!exclusaoGeom) throw new Error('buffer retornou nulo.');
+
+      var base   = toFeature(t.geojson);
+      var result = turf.difference(base, exclusaoGeom);
+
+      if(!result) throw new Error('A exclusão removeu todo o polígono ou está fora da área.');
+
+      t.geojson = result;
+      t.area_ha = turf.area(result)/10000;
+      document.getElementById('pp-area').textContent = '📐 '+t.area_ha.toFixed(2)+' ha';
+      reloadLayer(t);
+      previewGroup.clearLayers();
+      _exclusaoFeat  = null;
+      _exclusaoLayer = null;
+      spin(false);
+      toast('✅ Exclusão aplicada! Clique em Salvar.','',3500);
+    }catch(err){
+      spin(false);
+      previewGroup.clearLayers();
+      _exclusaoFeat = null;
+      toast('Erro: '+err.message,'err',5000);
+    }
+  }, 60);
+}
+
+function cancelarExclusao(){
+  document.getElementById('exclusao-modal').classList.remove('show');
+  previewGroup.clearLayers();
+  _exclusaoFeat  = null;
+  _exclusaoLayer = null;
+  toast('Exclusão cancelada.');
+}
+
+/* ════════════════════════════════════════════════════════════
    5. DIVIDIR COM LINHA DE CORTE
       Estratégia: coletar pontos no mapa → confirmar →
       turf.lineSplit corta cada sub-polígono →
@@ -932,111 +1122,132 @@ function executarSplit(){
   spin(true,'Dividindo camada...');
   setTimeout(function(){
     try{
-      var base=toFeature(t.geojson);
-      var pts=_splitPoints;
+      /* ── Normalizar geometria de entrada ──
+         Após cortes anteriores, t.geojson pode ser Feature<Polygon>,
+         Feature<MultiPolygon>, ou até Feature com geometria aninhada.
+         Explodir tudo em Polygons simples. */
+      var base = toFeature(t.geojson);
+      var geom = base.geometry || base;
 
-      /* ── Extender a linha bem além do bbox do polígono ── */
-      var bbox=turf.bbox(base);
-      var diag=turf.distance(
+      /* Extrair todos os sub-polígonos, incluindo o caso onde
+         turf.intersect retornou MultiPolygon */
+      var subPolys = [];
+      function extrairPolys(g){
+        if(!g) return;
+        if(g.type==='Feature') { extrairPolys(g.geometry); return; }
+        if(g.type==='Polygon')
+          subPolys.push({type:'Feature',geometry:g,properties:{}});
+        else if(g.type==='MultiPolygon')
+          g.coordinates.forEach(function(rings){
+            subPolys.push({type:'Feature',geometry:{type:'Polygon',coordinates:rings},properties:{}});
+          });
+        else if(g.type==='GeometryCollection')
+          g.geometries.forEach(extrairPolys);
+      }
+      extrairPolys(geom);
+
+      if(!subPolys.length) throw new Error('Geometria inválida ou vazia.');
+
+      var pts = _splitPoints;
+
+      /* ── Calcular bbox do conjunto real de polígonos ── */
+      var fc  = turf.featureCollection(subPolys);
+      var bbox= turf.bbox(fc);
+      var diag= turf.distance(
         turf.point([bbox[0],bbox[1]]),
         turf.point([bbox[2],bbox[3]]),
         {units:'kilometers'}
-      )*3;  /* 3x diagonal = garante que atravessa qualquer polígono */
+      ) * 4;   /* 4x diagonal — margem generosa para qualquer polígono */
 
-      var bearS=turf.bearing(turf.point(pts[1]),       turf.point(pts[0]));
-      var bearE=turf.bearing(turf.point(pts[pts.length-2]), turf.point(pts[pts.length-1]));
-      var extS =turf.destination(turf.point(pts[0]),           diag, bearS, {units:'kilometers'}).geometry.coordinates;
-      var extE =turf.destination(turf.point(pts[pts.length-1]),diag, bearE, {units:'kilometers'}).geometry.coordinates;
-      var lineCoords=[extS].concat(pts).concat([extE]);
+      /* ── Extender linha pelos dois extremos ── */
+      var bearS = turf.bearing(turf.point(pts[1]),              turf.point(pts[0]));
+      var bearE = turf.bearing(turf.point(pts[pts.length-2]),   turf.point(pts[pts.length-1]));
+      var extS  = turf.destination(turf.point(pts[0]),           diag, bearS, {units:'kilometers'}).geometry.coordinates;
+      var extE  = turf.destination(turf.point(pts[pts.length-1]),diag, bearE, {units:'kilometers'}).geometry.coordinates;
+      var lineCoords = [extS].concat(pts).concat([extE]);
 
-      /* ── Estratégia: half-plane intersection ──
-         Criamos dois polígonos "infinitos" — um de cada lado da linha de corte.
-         Cada half-plane é um retângulo gigante que cobre metade do mapa.
-         Intersectamos o talhão com cada half-plane → as duas metades.
-         Esta abordagem funciona com Turf 6.x sem precisar de noding manual. */
-
-      /* Vetor perpendicular à linha (normal) para deslocar os half-planes */
-      var vx = lineCoords[lineCoords.length-1][0] - lineCoords[0][0];
-      var vy = lineCoords[lineCoords.length-1][1] - lineCoords[0][1];
-      /* Normal perpendicular */
+      /* ── Half-plane intersection ──
+         Vetor da linha extendida: p0 → p1 (usa os dois extremos finais).
+         Normal perpendicular escalada 8 graus (~800km) para cobertura total. */
+      var p0 = lineCoords[0], p1 = lineCoords[lineCoords.length-1];
+      var vx = p1[0]-p0[0], vy = p1[1]-p0[1];
       var nx = -vy, ny = vx;
-      /* Normalizar e escalar para um offset grande (em graus, ~500 km) */
-      var len = Math.sqrt(nx*nx+ny*ny);
-      var scale = 5;  /* graus — garante cobertura global */
-      nx = nx/len*scale; ny = ny/len*scale;
+      var len= Math.sqrt(nx*nx+ny*ny)||1;
+      var sc = 8;   /* graus */
+      nx = nx/len*sc; ny = ny/len*sc;
 
-      /* Half-plane A: linha + deslocamento para um lado */
-      var hpA = [
-        [lineCoords[0][0]+nx,           lineCoords[0][1]+ny],
-        [lineCoords[lineCoords.length-1][0]+nx, lineCoords[lineCoords.length-1][1]+ny],
-        [lineCoords[lineCoords.length-1][0],    lineCoords[lineCoords.length-1][1]],
-        [lineCoords[0][0],              lineCoords[0][1]],
-        [lineCoords[0][0]+nx,           lineCoords[0][1]+ny]
-      ];
-      /* Half-plane B: lado oposto */
-      var hpB = [
-        [lineCoords[0][0]-nx,           lineCoords[0][1]-ny],
-        [lineCoords[lineCoords.length-1][0]-nx, lineCoords[lineCoords.length-1][1]-ny],
-        [lineCoords[lineCoords.length-1][0],    lineCoords[lineCoords.length-1][1]],
-        [lineCoords[0][0],              lineCoords[0][1]],
-        [lineCoords[0][0]-nx,           lineCoords[0][1]-ny]
-      ];
+      /* Construir os dois half-planes como polígonos fechados */
+      var hpA = turf.polygon([[
+        [p0[0]+nx, p0[1]+ny],
+        [p1[0]+nx, p1[1]+ny],
+        [p1[0],    p1[1]   ],
+        [p0[0],    p0[1]   ],
+        [p0[0]+nx, p0[1]+ny]
+      ]]);
+      var hpB = turf.polygon([[
+        [p0[0]-nx, p0[1]-ny],
+        [p1[0]-nx, p1[1]-ny],
+        [p1[0],    p1[1]   ],
+        [p0[0],    p0[1]   ],
+        [p0[0]-nx, p0[1]-ny]
+      ]]);
 
-      var halfPlaneA = turf.polygon([hpA]);
-      var halfPlaneB = turf.polygon([hpB]);
-
-      /* Processar cada sub-polígono da camada */
-      var geom=base.geometry||base, subPolys=[];
-      if(geom.type==='Polygon') subPolys=[base];
-      else if(geom.type==='MultiPolygon')
-        geom.coordinates.forEach(function(rings){
-          subPolys.push({type:'Feature',geometry:{type:'Polygon',coordinates:rings},properties:{}});
-        });
-
-      var partesA=[], partesB=[];
-      var cortou=false;
+      var partesA = [], partesB = [];
+      var cortou  = false;
 
       subPolys.forEach(function(poly){
-        var iA=null, iB=null;
-        try{ iA=turf.intersect(poly,halfPlaneA); }catch(e){}
-        try{ iB=turf.intersect(poly,halfPlaneB); }catch(e){}
+        var iA = null, iB = null;
+        try { iA = turf.intersect(poly, hpA); } catch(e){}
+        try { iB = turf.intersect(poly, hpB); } catch(e){}
 
-        if(iA&&iB){
-          /* A linha cruzou este sub-polígono */
-          cortou=true;
-          partesA.push(iA);
-          partesB.push(iB);
+        /* turf.intersect pode devolver MultiPolygon — normalizar para peças simples */
+        function coletarResultado(feat, lista){
+          if(!feat) return;
+          var g = feat.geometry || feat;
+          if(g.type==='Polygon')
+            lista.push({type:'Feature',geometry:g,properties:{}});
+          else if(g.type==='MultiPolygon')
+            g.coordinates.forEach(function(r){
+              lista.push({type:'Feature',geometry:{type:'Polygon',coordinates:r},properties:{}});
+            });
+        }
+
+        if(iA && iB){
+          cortou = true;
+          coletarResultado(iA, partesA);
+          coletarResultado(iB, partesB);
         } else if(iA){
-          partesA.push(iA);
+          coletarResultado(iA, partesA);
         } else if(iB){
-          partesB.push(iB);
+          coletarResultado(iB, partesB);
         } else {
-          /* Nem A nem B — polígono inteiro vai para A */
+          /* Sub-polígono fora da linha — manter no grupo A */
           partesA.push(poly);
         }
       });
 
-      if(!cortou) throw new Error('A linha não cruzou o polígono. Certifique-se que ela atravessa de ponta a ponta.');
-      if(!partesB.length) throw new Error('A linha não dividiu o polígono em duas partes.');
+      if(!cortou)
+        throw new Error('A linha não cruzou o polígono. Certifique-se que ela atravessa de ponta a ponta.');
+      if(!partesB.length)
+        throw new Error('A linha não dividiu o polígono em duas partes.');
 
-      var featA=featuresToMulti(partesA);
-      var featB=featuresToMulti(partesB);
-      if(!featA||!featB) throw new Error('Falha ao montar as metades.');
+      var featA = featuresToMulti(partesA);
+      var featB = featuresToMulti(partesB);
+      if(!featA || !featB) throw new Error('Falha ao montar as metades.');
 
-      /* Guardar geojson original para poder cancelar depois */
-      window._splitOrigGeojson = t.geojson;
+      /* Guardar geojson original para poder cancelar */
+      window._splitOrigGeojson = JSON.parse(JSON.stringify(t.geojson));
 
-      /* Atualizar talhão A (parte 1) localmente */
-      t.geojson=featA; t.area_ha=turf.area(featA)/10000;
+      /* Atualizar talhão A localmente */
+      t.geojson = featA; t.area_ha = turf.area(featA)/10000;
       reloadLayer(t);
-      _splitPoints=[];
+      _splitPoints = [];
       spin(false);
 
-      /* Mostrar preview e formulário de confirmação */
       _confirmarSplit(featA, t.area_ha, featB, turf.area(featB)/10000);
-      activeMode=null; hint(null);
+      activeMode = null; hint(null);
       document.getElementById('btn-split').classList.remove('active');
-      document.getElementById('btn-cancel').style.display='none';
+      document.getElementById('btn-cancel').style.display = 'none';
 
     }catch(err){
       spin(false); _splitPoints=[]; cancelModes(false);
