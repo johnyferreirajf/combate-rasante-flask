@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}COMBATE RASANTE{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="{% block meta_description %}Aplicação aérea agrícola com precisão, tecnologia e segurança. Combate Rasante Aviação Agrícola.{% endblock %}">
+
+  {# Open Graph #}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_title %}COMBATE RASANTE — Aviação Agrícola{% endblock %}">
+  <meta property="og:description" content="Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.">
+  {# _external=True gera URL absoluta com domínio — obrigatório para WhatsApp/Telegram lerem a imagem #}
+  {# Força HTTPS na URL da imagem — necessário para WhatsApp/Telegram carregarem #}
+  {% set og_image = url_for('static', filename='img/og-combaterasante.jpeg', _external=True) | replace('http://', 'https://') %}
+  <meta property="og:image" content="{{ og_image }}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:url" content="{{ request.url | replace('http://', 'https://') }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="{{ og_image }}">
+
+  {# Preloads críticos #}
+  <link rel="preload" href="{{ url_for('static', filename='img/logo-combate.jpeg') }}" as="image">
+  <link rel="preload" href="{{ url_for('static', filename='css/main.css') }}" as="style">
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body data-cr-auth="{{ '1' if session.get('user_id') or session.get('employee_id') else '0' }}" class="{% block body_class %}{% endblock %}">
+
+  {# ── NAVBAR ─────────────────────────────────────────────── #}
+
+  {# ── Banner de impersonation ── #}
+  {% if session.get('admin_impersonating') %}
+  <div id="imp-banner" style="position:fixed;top:0;left:0;right:0;z-index:99999;
+              background:rgba(234,179,8,.95);color:#1a1200;
+              padding:8px 16px;display:flex;align-items:center;
+              justify-content:space-between;gap:12px;font-size:13px;
+              font-weight:800;backdrop-filter:blur(4px);box-shadow:0 2px 12px rgba(0,0,0,.3);">
+    <span>👁 Você está visualizando como cliente — o que você vê é exatamente o que o cliente vê</span>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button id="imp-hide-btn" onclick="impHide()"
+        style="background:rgba(0,0,0,.15);color:#1a1200;border:1px solid rgba(0,0,0,.2);
+               padding:4px 12px;border-radius:8px;font-size:12px;font-weight:800;
+               cursor:pointer;font-family:inherit;white-space:nowrap;">
+        👁 Esconder
+      </button>
+      <a href="{{ url_for('auth.sair_impersonation') }}"
+         style="background:rgba(0,0,0,.15);color:#1a1200;text-decoration:none;
+                padding:4px 14px;border-radius:8px;font-size:12px;white-space:nowrap;
+                border:1px solid rgba(0,0,0,.2);">
+        ✕ Voltar ao Admin
+      </a>
+    </div>
+  </div>
+  <!-- Botão flutuante "Mostrar" — aparece quando banner foi escondido -->
+  <button id="imp-show-btn" onclick="impShow()"
+    style="display:none;position:fixed;top:68px;right:12px;z-index:99998;
+           background:rgba(234,179,8,.95);color:#1a1200;border:none;
+           padding:4px 14px;border-radius:8px;font-size:11px;font-weight:800;
+           cursor:pointer;font-family:inherit;box-shadow:0 2px 8px rgba(0,0,0,.25);
+           backdrop-filter:blur(4px);">
+    👁 Mostrar banner
+  </button>
+  <div id="imp-spacer" style="height:40px;"></div>
+  <script>
+    (function(){
+      var HIDDEN_KEY = 'cr_imp_hidden';
+      function impHide(){
+        document.getElementById('imp-banner').style.display='none';
+        document.getElementById('imp-spacer').style.display='none';
+        document.getElementById('imp-show-btn').style.display='block';
+        try{ sessionStorage.setItem(HIDDEN_KEY,'1'); }catch(e){}
+      }
+      function impShow(){
+        document.getElementById('imp-banner').style.display='flex';
+        document.getElementById('imp-spacer').style.display='block';
+        document.getElementById('imp-show-btn').style.display='none';
+        try{ sessionStorage.removeItem(HIDDEN_KEY); }catch(e){}
+      }
+      window.impHide = impHide;
+      window.impShow = impShow;
+      /* Restaurar estado escondido se usuário recarregou a página */
+      try{
+        if(sessionStorage.getItem(HIDDEN_KEY)){
+          document.getElementById('imp-banner').style.display='none';
+          document.getElementById('imp-spacer').style.display='none';
+          document.getElementById('imp-show-btn').style.display='block';
+        }
+      }catch(e){}
+    })();
+  </script>
+  {% endif %}
+
+  <header class="navbar" role="banner">
+    <div class="container navbar__inner">
+
+      <a href="{{ url_for('main.index') }}" class="navbar__logo" aria-label="COMBATE RASANTE – página inicial">
+        <img
+          src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+          alt=""
+          class="navbar__logo-img"
+          width="38" height="38"
+          loading="eager"
+          onerror="this.style.display='none';"
+        >
+        <div class="navbar__logo-text">
+          <span class="navbar__logo-title">COMBATE RASANTE</span>
+          <span class="navbar__logo-subtitle">Aviação Agrícola</span>
+        </div>
+      </a>
+
+      <nav class="navbar__nav" id="navMenu" aria-label="Navegação principal">
+        <a href="{{ url_for('main.index') }}"       class="navbar__link">Início</a>
+        <a href="{{ url_for('main.servicos') }}"    class="navbar__link">Serviços</a>
+        <a href="{{ url_for('main.tecnologia') }}"  class="navbar__link">Tecnologia</a>
+        <a href="{{ url_for('main.equipe') }}"      class="navbar__link">Equipe</a>
+        <a href="{{ url_for('posts.em_campo') }}"   class="navbar__link">Em Campo</a>
+        <a href="{{ url_for('main.contato') }}"     class="navbar__link">Contato</a>
+
+        {% if session.get('employee_id') %}
+          <span style="font-size:var(--text-xs);font-weight:800;color:rgba(255,255,255,.75);
+                       padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.10);">
+            {{ current_employee.name.split()[0] if current_employee else '' }}
+          </span>
+          <a href="{{ url_for('employee.files') }}" class="navbar__link navbar__link--cta">Painel Funcionário</a>
+          <a href="{{ url_for('employee.logout') }}" class="navbar__link navbar__link--cta">Sair</a>
+        {% elif session.get('user_id') %}
+          <span style="font-size:var(--text-xs);font-weight:800;color:rgba(255,255,255,.75);
+                       padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.10);">
+            {{ current_user.name.split()[0] if current_user else '' }}
+          </span>
+          <a href="{{ url_for('main.painel') }}" class="navbar__link navbar__link--cta">Meu Painel</a>
+          <a href="{{ url_for('auth.logout') }}" class="navbar__link navbar__link--cta">Sair</a>
+        {% else %}
+          <a href="{{ url_for('auth.login') }}" class="navbar__link navbar__link--cta">Área do Cliente</a>
+          <a href="{{ url_for('employee.login') }}" class="navbar__link navbar__link--cta">Funcionários</a>
+        {% endif %}
+      </nav>
+
+      <button
+        class="navbar__toggle"
+        id="navToggle"
+        type="button"
+        aria-label="Abrir menu de navegação"
+        aria-expanded="false"
+        aria-controls="navMenu"
+      >☰</button>
+
+    </div>
+  </header>
+
+  {# ── FLASH MESSAGES ──────────────────────────────────────── #}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-stack" role="status" aria-live="polite">
+        {% for category, message in messages %}
+          <div class="flash-item flash-item--{{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {# ── CONTEÚDO PRINCIPAL ──────────────────────────────────── #}
+  <main id="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  {# ── FOOTER ──────────────────────────────────────────────── #}
+  <footer class="footer" role="contentinfo">
+    <div class="container footer__grid">
+
+      <div>
+        <div class="footer__brand">
+          <img
+            src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+            alt="COMBATE RASANTE"
+            class="footer__logo-img"
+            width="28" height="28"
+            loading="lazy"
+            onerror="this.style.display='none';"
+          >
+          <div>
+            <div class="footer__brand-title">COMBATE RASANTE</div>
+            <div class="footer__brand-sub">Aviação Agrícola</div>
+          </div>
+        </div>
+        <p class="footer__tagline">
+          Aplicação aérea com precisão, segurança e tecnologia para o agronegócio.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="footer__heading">Contatos</h3>
+        <ul class="footer__list">
+          <li><strong>Tel:</strong> (64) 99983-6005</li>
+          <li><strong>Tel:</strong> (64) 99221-7002</li>
+          <li><strong>Email:</strong> weikren@combateaviacao.com.br</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer__heading">Matriz</h3>
+        <ul class="footer__list">
+          <li>Rod. GO 320, Km 82 — Vicentinópolis/GO</li>
+          <li>CEP 75.555-000</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer__heading">Filial</h3>
+        <ul class="footer__list">
+          <li>Av. Jandiro Vilela de Freitas, 6051</li>
+          <li>Bairro Guimarães — Ituiutaba/MG</li>
+          <li>CEP 38.307-494</li>
+        </ul>
+      </div>
+
+    </div>
+    <div class="footer__bottom">© 2026 COMBATE RASANTE Aviação Agrícola</div>
+  </footer>
+
+  {# ── SCRIPTS ─────────────────────────────────────────────── #}
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block scripts %}{% endblock %}
+  <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+
+</body>
+</html>
