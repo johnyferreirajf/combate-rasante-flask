@@ -206,126 +206,126 @@ select.pp-input option { background:#0d2418; }
    ══════════════════════════════════════════════════ */
 @media (max-width:768px) {
 
-  /* ── Layout geral: mapa ocupa tudo, sidebar e painel flutuam ── */
-  #map-layout { flex-direction:column; position:relative; }
+  /* ── Layout: mapa ocupa 100%, UI flutua sobre ele ── */
+  #map-layout    { flex-direction:column; position:relative; }
   #map-container { flex:1; min-height:0; }
 
-  /* ── Sidebar: drawer horizontal fixo no topo do mapa ── */
+  /* ── Sidebar: faixa fina colapsável no topo ── */
   #map-sidebar {
-    position:absolute; top:0; left:0; right:0; z-index:500;
-    width:100% !important;          /* override do localStorage */
-    height:auto; max-height:48px;
-    flex-direction:row; align-items:center;
-    background:rgba(3,20,10,.96);
-    border-right:none; border-bottom:1px solid rgba(255,255,255,.12);
-    overflow:hidden; transition:max-height .28s ease;
-    flex-shrink:0;
+    position:absolute; top:0; left:0; right:0; z-index:600;
+    width:100% !important;
+    height:auto; max-height:40px;
+    flex-direction:column;
+    background:rgba(3,18,8,.97);
+    border-right:none; border-bottom:1px solid rgba(255,255,255,.10);
+    overflow:hidden; transition:max-height .3s cubic-bezier(.32,1,.32,1);
   }
-  #map-sidebar.expanded { max-height:260px; }
+  #map-sidebar.expanded { max-height:280px; }
 
-  /* Cabeçalho da sidebar vira barra tocável */
+  /* Header da sidebar — barra tocável fina */
   #map-sidebar-header {
-    padding:10px 14px;
-    border-bottom:none;
-    flex-shrink:0; width:100%;
+    padding:0 12px; height:40px; min-height:40px;
+    border-bottom:none; flex-shrink:0;
     display:flex; align-items:center; justify-content:space-between;
     cursor:pointer; user-select:none;
   }
-  #map-sidebar-header h2 { margin:0; font-size:13px; }
+  #map-sidebar-header h2 { margin:0; font-size:12px; font-weight:800; }
+  #map-sidebar-header > div { display:none; }
+  #map-sidebar.expanded #map-sidebar-header > div { display:flex; }
 
-  /* Seta indicadora de estado */
+  /* Seta */
   #map-sidebar-header::after {
-    content:'▼'; font-size:10px; color:rgba(255,255,255,.50);
-    transition:transform .25s;
+    content:'▾'; font-size:14px; color:rgba(255,255,255,.45); transition:transform .25s;
   }
   #map-sidebar.expanded #map-sidebar-header::after { transform:rotate(180deg); }
 
-  /* Links de navegação: ficam na mesma linha do h2 */
-  #map-sidebar-header > div { display:none; } /* esconde links no collapsed */
-  #map-sidebar.expanded #map-sidebar-header > div { display:flex; }
-
-  /* Lista de talhões: scroll horizontal no collapsed, vertical no expanded */
+  /* Lista de talhões */
   #talhoes-list {
-    display:flex; gap:6px; padding:6px 10px;
-    overflow-x:auto; overflow-y:hidden;
-    flex-shrink:0; width:100%;
+    display:flex; gap:5px; padding:5px 10px;
+    overflow-x:auto; overflow-y:hidden; flex-shrink:0; width:100%;
   }
   #map-sidebar.expanded #talhoes-list {
     overflow-x:hidden; overflow-y:auto;
-    flex-direction:column; max-height:160px;
+    flex-direction:column; max-height:180px;
   }
-  .t-item {
-    flex-shrink:0; min-width:120px;
-    flex-direction:column; align-items:flex-start;
-    padding:6px 8px;
-  }
+  .t-item { flex-shrink:0; min-width:110px; flex-direction:column; align-items:flex-start; padding:5px 8px; }
   #map-sidebar.expanded .t-item { min-width:unset; flex-direction:row; }
 
-  /* Rodapé da sidebar: esconder no collapsed */
+  /* Rodapé sidebar */
   #map-sidebar > div:last-child { display:none; }
-  #map-sidebar.expanded > div:last-child { display:flex; }
+  #map-sidebar.expanded > div:last-child { display:flex; flex-direction:column; gap:5px; padding:6px 10px; }
 
-  /* Sel toolbar: só no expanded */
   #sel-toolbar { flex-shrink:0; }
-
-  /* Alça de resize: esconder no mobile */
   #sidebar-resizer { display:none; }
 
-  /* ── Toolbar: duas linhas compactas ── */
+  /* ── Toolbar flutuante — grade 2 colunas no modo normal ── */
   #map-toolbar {
     position:absolute;
-    top:52px;            /* abaixo da sidebar */
-    left:50%; transform:translateX(-50%);
-    max-width:calc(100% - 8px);
-    gap:3px;
+    top:46px;
+    left:4px; right:4px; transform:none;
+    max-width:100%;
+    display:grid !important;
+    grid-template-columns:repeat(4,1fr);
+    gap:4px;
+    pointer-events:none;
   }
   #map-toolbar button {
-    padding:5px 8px; font-size:10px; border-radius:8px;
+    pointer-events:all;
+    padding:0; height:42px;
+    font-size:9px; font-weight:800;
+    border-radius:10px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2px; line-height:1.2; white-space:normal; text-align:center;
   }
+  /* Ícones maiores no mobile via emoji + texto pequeno abaixo */
+  #map-toolbar button .tb-icon { font-size:16px; display:block; }
+  #map-toolbar button .tb-label { font-size:8px; display:block; opacity:.85; }
+
+  /* Botão undo e cancelar — largura dupla */
+  #btn-undo-draw { grid-column:span 1; background:rgba(234,179,8,.22) !important; border-color:rgba(234,179,8,.55) !important; color:#fde68a !important; }
+  #btn-cancel    { grid-column:span 1; display:none; }
+  #btn-cancel[style*="display:none"] { display:none !important; }
+
   .tb-sep { display:none; }
+
+  /* Toolbar no modo draw: mostrar undo e cancelar ocupando linha inteira */
+  body.drawing #map-toolbar { grid-template-columns:repeat(2,1fr); }
 
   /* ── Painel direito: bottom sheet ── */
   #prop-panel {
-    position:fixed !important;   /* sai do flow do mapa */
+    position:fixed !important;
     left:0; right:0; bottom:0; top:auto;
-    width:100% !important;       /* override localStorage */
-    height:auto;
-    max-height:75vh;
+    width:100% !important;
+    height:auto; max-height:78vh;
     border-left:none;
-    border-top:2px solid rgba(255,255,255,.15);
-    border-radius:18px 18px 0 0;
+    border-top:1.5px solid rgba(255,255,255,.15);
+    border-radius:20px 20px 0 0;
     transform:translateY(100%);
-    transition:transform .3s cubic-bezier(.32,1,.32,1);
+    transition:transform .32s cubic-bezier(.32,1,.32,1);
     z-index:1100;
   }
   #prop-panel.open { transform:translateY(0); }
 
-  /* Alça de drag visual no topo do painel */
+  /* Alça visual */
   #prop-panel::before {
-    content:''; display:block;
-    width:40px; height:4px; border-radius:2px;
-    background:rgba(255,255,255,.25);
-    margin:10px auto 4px;
-    flex-shrink:0;
+    content:''; display:block; width:36px; height:4px; border-radius:2px;
+    background:rgba(255,255,255,.22); margin:10px auto 2px; flex-shrink:0;
   }
 
-  /* Painel: scroll interno */
-  #pp-scroll { max-height:calc(75vh - 30px); overflow-y:auto; }
-
-  /* Alça de resize do painel: esconder no mobile */
+  #pp-scroll { max-height:calc(78vh - 28px); overflow-y:auto; }
   #panel-resizer { display:none; }
 
-  /* ── Instrução flutuante: mover para baixo da toolbar ── */
-  #mode-hint {
-    top:auto; bottom:auto;
-    top:110px;
-    max-width:calc(100% - 16px);
-    font-size:10px;
-  }
+  /* Instrução flutuante — abaixo da toolbar */
+  #mode-hint { top:136px; bottom:auto; max-width:calc(100% - 16px); font-size:10px; line-height:1.5; }
 
-  /* Botão de fechar do painel: mais fácil de tocar */
-  #pp-scroll > button:first-child {
-    padding:6px 16px; font-size:13px; min-width:80px;
+  /* Fechar painel — botão grande */
+  #pp-scroll > button:first-child { padding:8px 20px; font-size:13px; min-width:80px; }
+
+  /* Modal de exclusão — tela cheia no mobile */
+  #exclusao-modal {
+    top:auto; bottom:0; left:0; right:0; transform:none;
+    border-radius:18px 18px 0 0; min-width:unset; max-width:100%;
+    max-height:85vh; overflow-y:auto;
   }
 }
 </style>
@@ -387,17 +387,17 @@ select.pp-input option { background:#0d2418; }
 
     <!-- Toolbar -->
     <div id="map-toolbar">
-      <button id="btn-draw"     onclick="startDraw()"    title="Desenhar novo talhão">✏️ Desenhar</button>
-      <button id="btn-edit"     onclick="toggleEdit()"   title="Mover/apagar vértices">🖊 Editar Vértices</button>
+      <button id="btn-draw"     onclick="startDraw()"     title="Desenhar novo talhão"><span class="tb-icon">✏️</span><span class="tb-label">Desenhar</span></button>
+      <button id="btn-edit"     onclick="toggleEdit()"    title="Editar vértices"><span class="tb-icon">🖊</span><span class="tb-label">Editar</span></button>
+      <button id="btn-add-part" onclick="startAddPart()"  title="Add parte"><span class="tb-icon">➕</span><span class="tb-label">Add Parte</span></button>
+      <button id="btn-hole"     onclick="startHole()"     title="Buraco"><span class="tb-icon">⭕</span><span class="tb-label">Buraco</span></button>
+      <button id="btn-exclusao" onclick="startExclusao()" title="Exclusão com buffer"><span class="tb-icon">🚫</span><span class="tb-label">Exclusão</span></button>
+      <button id="btn-split"    onclick="startSplit()"    title="Dividir"><span class="tb-icon">✂️</span><span class="tb-label">Dividir</span></button>
+      <button id="btn-perimetro" onclick="gerarPerimetro()" title="Perímetro"><span class="tb-icon">⚙️</span><span class="tb-label">Perímetro</span></button>
+      <button onclick="fitAll()" title="Ver tudo"><span class="tb-icon">🔍</span><span class="tb-label">Ver Todos</span></button>
       <div class="tb-sep"></div>
-      <button id="btn-add-part" onclick="startAddPart()" title="Adicionar polígono à camada selecionada">➕ Add Parte</button>
-      <button id="btn-hole"     onclick="startHole()"    title="Desenhar área de exclusão">⭕ Buraco</button>
-      <button id="btn-exclusao" onclick="startExclusao()" title="Polígono de exclusão com buffer">🚫 Exclusão</button>
-      <button id="btn-split"    onclick="startSplit()"   title="Dividir camada com linha de corte">✂️ Dividir</button>
-      <div class="tb-sep"></div>
-      <button id="btn-perimetro" onclick="gerarPerimetro()" title="Fechar carreadores (buffer duplo)">⚙️ Perímetro</button>
-      <button id="btn-cancel"   onclick="cancelAll()" style="display:none;color:#fca5a5;">✕ Cancelar</button>
-      <button onclick="fitAll()">🔍 Ver Todos</button>
+      <button id="btn-undo-draw" onclick="undoDraw()" style="display:none;" title="Desfazer último ponto"><span class="tb-icon">‹</span><span class="tb-label">Desfazer</span></button>
+      <button id="btn-cancel"   onclick="cancelAll()" style="display:none;color:#fca5a5;" title="Cancelar"><span class="tb-icon">✕</span><span class="tb-label">Cancelar</span></button>
     </div>
 
     <!-- Modal de exclusão com buffer -->
@@ -498,7 +498,14 @@ var TALHOES = {{ talhoes_json | safe }};
 var EDIT_ID = {{ editar_id | tojson }};
 
 /* ── Mapa ── */
-var map = L.map('map',{zoomControl:true, maxZoom:22}).setView([-18.5,-50],9);
+var _isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window);
+var map = L.map('map',{
+  zoomControl: true,
+  maxZoom: 22,
+  tap: false,          /* desabilitar tap handler do Leaflet — vamos controlar manualmente */
+  dragging: true,      /* sempre arrastável */
+  touchZoom: true
+}).setView([-18.5,-50],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   {attribution:'Esri',maxZoom:22,maxNativeZoom:20}).addTo(map);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
@@ -735,6 +742,7 @@ function cancelModes(silent){
   });
   document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
   document.getElementById('btn-cancel').style.display='none';
+  _showUndoBtn(false);
   hint(null);
   activeMode=null;
 }
@@ -757,20 +765,31 @@ function startDraw(){
   hint('Clique para adicionar vértices. Clique no primeiro ponto para fechar o polígono.<br><small style="opacity:.7">Pressione <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> ou <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Delete</kbd> para apagar o último ponto.</small>');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.2}});
   drawCtrl.enable();
+  _showUndoBtn(true);
 }
 
 /* ── Teclado: Backspace/Delete durante desenho = desfazer último ponto ── */
 document.addEventListener('keydown',function(ev){
   if(ev.key==='Backspace'||ev.key==='Delete'){
-    /* Só age se estiver desenhando (drawCtrl ativo) e o foco não for num input */
     if(!drawCtrl) return;
     var tag=(document.activeElement||{}).tagName||'';
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
     ev.preventDefault();
-    /* Leaflet.Draw armazena o handler em _mouseMarker e expõe _deleteLastVertex */
     try{ drawCtrl.deleteLastVertex(); }catch(e){}
   }
 });
+
+/* Desfazer último ponto — botão ‹ na toolbar */
+function undoDraw(){
+  if(!drawCtrl) return;
+  try{ drawCtrl.deleteLastVertex(); }catch(e){}
+}
+
+/* Mostrar/esconder botão undo durante o desenho */
+function _showUndoBtn(show){
+  var b=document.getElementById('btn-undo-draw');
+  if(b) b.style.display = show ? '' : 'none';
+}
 
 map.on(L.Draw.Event.CREATED,function(e){
   if(activeMode==='draw'){
@@ -790,6 +809,7 @@ map.on(L.Draw.Event.CREATED,function(e){
     activeMode=null; hint(null);
     document.getElementById('btn-draw').classList.remove('active');
     document.getElementById('btn-cancel').style.display='none';
+    _showUndoBtn(false);
   } else if(activeMode==='add-part')  _onAddPartDrawn(e.layer);
   else if(activeMode==='hole')        _onHoleDrawn(e.layer);
   else if(activeMode==='split-line')  _onSplitLineDrawn(e.layer);
@@ -872,6 +892,7 @@ function startAddPart(){
     (TALHOES.find(function(x){return x.id==currentId;})||{nome:'?'}).nome+'</strong>".');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.25,dashArray:'6 3'}});
   drawCtrl.enable();
+  _showUndoBtn(true);
 }
 
 function _onAddPartDrawn(layer){
@@ -891,6 +912,7 @@ function _onAddPartDrawn(layer){
   /* Cancelar só o estado de modo, sem limpar editLayer (não há) */
   document.getElementById('btn-add-part').classList.remove('active');
   document.getElementById('btn-cancel').style.display='none';
+  _showUndoBtn(false);
   hint(null);
   toast('✅ Parte adicionada! Clique em Salvar.','',3500);
 }
@@ -1723,6 +1745,49 @@ function cancelarPerimetro(){
       sidebar.classList.remove('expanded');
     }
   });
+
+  /* ── Touch draw: arrastar = pan mapa, tap rápido = adicionar ponto ──
+     Leaflet.Draw no mobile usa touchstart para adicionar ponto imediatamente.
+     Substituímos por: detectar se o dedo moveu > threshold → cancel o ponto,
+     deixar o Leaflet pan; se ficou parado → adicionar ponto manualmente.
+     Threshold: 10px. */
+  var _touchStartX=0, _touchStartY=0, _touchMoved=false;
+  var DRAG_THRESHOLD = 10;
+
+  map.getContainer().addEventListener('touchstart', function(e){
+    if(!drawCtrl) return;  /* só interfere durante o desenho */
+    var t0 = e.touches[0];
+    _touchStartX = t0.clientX; _touchStartY = t0.clientY; _touchMoved = false;
+  }, {passive:true});
+
+  map.getContainer().addEventListener('touchmove', function(e){
+    if(!drawCtrl) return;
+    var dx = e.touches[0].clientX - _touchStartX;
+    var dy = e.touches[0].clientY - _touchStartY;
+    if(Math.sqrt(dx*dx+dy*dy) > DRAG_THRESHOLD) _touchMoved = true;
+  }, {passive:true});
+
+  map.getContainer().addEventListener('touchend', function(e){
+    if(!drawCtrl) return;
+    if(_touchMoved){
+      /* Drag detectado: bloquear o click sintético que viria depois
+         prevenindo que o Leaflet.Draw crie um ponto indesejado */
+      var blocker = function(ev){ ev.stopPropagation(); ev.preventDefault(); };
+      map.getContainer().addEventListener('click', blocker, {capture:true, once:true});
+      return;
+    }
+    /* Tap sem drag: adicionar ponto via coordenada do touch */
+    if(e.changedTouches.length){
+      var touch = e.changedTouches[0];
+      var containerPoint = map.mouseEventToContainerPoint({
+        clientX: touch.clientX, clientY: touch.clientY,
+        target: e.target
+      });
+      var latlng = map.containerPointToLatLng(containerPoint);
+      /* Disparar click no handler do Leaflet.Draw */
+      map.fire('click', {latlng: latlng, originalEvent: e});
+    }
+  }, {passive:true});
 
   /* ── Bottom sheet: swipe down para fechar ── */
   var panel = document.getElementById('prop-panel');
