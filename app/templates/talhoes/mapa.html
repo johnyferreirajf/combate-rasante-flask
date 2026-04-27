@@ -1746,47 +1746,47 @@ function cancelarPerimetro(){
     }
   });
 
-  /* ── Touch draw: arrastar = pan mapa, tap rápido = adicionar ponto ──
-     Leaflet.Draw no mobile usa touchstart para adicionar ponto imediatamente.
-     Substituímos por: detectar se o dedo moveu > threshold → cancel o ponto,
-     deixar o Leaflet pan; se ficou parado → adicionar ponto manualmente.
-     Threshold: 10px. */
-  var _touchStartX=0, _touchStartY=0, _touchMoved=false;
-  var DRAG_THRESHOLD = 10;
+  /* ── Touch draw: tap = ponto, arrastar = só pan ──
+   * tap:false no mapa impede o handler padrão do Leaflet.
+   * Aqui controlamos manualmente: touchmove >12px = drag, touchend sem drag = ponto.
+   * ─────────────────────────────────────────────────────── */
+  var _tx0=0, _ty0=0, _tDrag=false;
+  var DRAG_PX = 12;
+  var mapContainer = map.getContainer();
 
-  map.getContainer().addEventListener('touchstart', function(e){
-    if(!drawCtrl) return;  /* só interfere durante o desenho */
-    var t0 = e.touches[0];
-    _touchStartX = t0.clientX; _touchStartY = t0.clientY; _touchMoved = false;
+  mapContainer.addEventListener('touchstart', function(e){
+    if(!drawCtrl || e.touches.length !== 1) return;
+    _tx0 = e.touches[0].clientX;
+    _ty0 = e.touches[0].clientY;
+    _tDrag = false;
   }, {passive:true});
 
-  map.getContainer().addEventListener('touchmove', function(e){
-    if(!drawCtrl) return;
-    var dx = e.touches[0].clientX - _touchStartX;
-    var dy = e.touches[0].clientY - _touchStartY;
-    if(Math.sqrt(dx*dx+dy*dy) > DRAG_THRESHOLD) _touchMoved = true;
+  mapContainer.addEventListener('touchmove', function(e){
+    if(!drawCtrl || e.touches.length !== 1) return;
+    var dx = e.touches[0].clientX - _tx0;
+    var dy = e.touches[0].clientY - _ty0;
+    if(Math.sqrt(dx*dx + dy*dy) > DRAG_PX) _tDrag = true;
   }, {passive:true});
 
-  map.getContainer().addEventListener('touchend', function(e){
+  mapContainer.addEventListener('touchend', function(e){
     if(!drawCtrl) return;
-    if(_touchMoved){
-      /* Drag detectado: bloquear o click sintético que viria depois
-         prevenindo que o Leaflet.Draw crie um ponto indesejado */
-      var blocker = function(ev){ ev.stopPropagation(); ev.preventDefault(); };
-      map.getContainer().addEventListener('click', blocker, {capture:true, once:true});
-      return;
+    if(_tDrag){ _tDrag=false; return; }  /* drag → nenhum ponto */
+    var touch = e.changedTouches[0];
+    var rect  = mapContainer.getBoundingClientRect();
+    var cp    = L.point(touch.clientX - rect.left, touch.clientY - rect.top);
+    var ll    = map.containerPointToLatLng(cp);
+    /* Adicionar vértice diretamente na API interna do Leaflet.Draw */
+    try {
+      if(drawCtrl._mouseMarker) drawCtrl._mouseMarker.setLatLng(ll);
+      if(typeof drawCtrl.addVertex === 'function') {
+        drawCtrl.addVertex(ll);
+      } else {
+        map.fire('click',{latlng:ll,layerPoint:map.latLngToLayerPoint(ll),containerPoint:cp,originalEvent:e});
+      }
+    } catch(err) {
+      map.fire('click',{latlng:ll,layerPoint:map.latLngToLayerPoint(ll),containerPoint:cp,originalEvent:e});
     }
-    /* Tap sem drag: adicionar ponto via coordenada do touch */
-    if(e.changedTouches.length){
-      var touch = e.changedTouches[0];
-      var containerPoint = map.mouseEventToContainerPoint({
-        clientX: touch.clientX, clientY: touch.clientY,
-        target: e.target
-      });
-      var latlng = map.containerPointToLatLng(containerPoint);
-      /* Disparar click no handler do Leaflet.Draw */
-      map.fire('click', {latlng: latlng, originalEvent: e});
-    }
+    _tDrag = false;
   }, {passive:true});
 
   /* ── Bottom sheet: swipe down para fechar ── */
