@@ -8,37 +8,42 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
 /* Fullscreen chain fix */
+/* ── Fullscreen map: abordagem via 100dvh - navbar ──────────────
+   Não dependemos da cadeia flex do layout base.
+   O #map-layout ocupa exatamente: 100dvh menos a navbar.
+   O main sai do flow com position:fixed e padding compensa a navbar.
+   ─────────────────────────────────────────────────────────────── */
 body.body--fullscreen {
-  height: 100vh !important;
-  min-height: 100vh !important;
-  overflow: hidden;
-  /* Remover background da home que aparece atrás do mapa */
   background-image: none !important;
   background-attachment: scroll !important;
+  overflow: hidden !important;
 }
-/* Esconder footer e espaçador do banner na página fullscreen do mapa */
-body.body--fullscreen .footer  { display:none !important; }
-body.body--fullscreen footer   { display:none !important; }
-/* flash messages não devem aparecer aqui */
-body.body--fullscreen .flash-stack { display:none !important; }
+body.body--fullscreen .footer       { display:none !important; }
+body.body--fullscreen footer        { display:none !important; }
+body.body--fullscreen .flash-stack  { display:none !important; }
+
+/* main sai do flow e cobre o viewport inteiro */
 body.body--fullscreen main#main-content {
+  position: fixed !important;
+  inset: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
-  /* Usar position absolute para sair do flow flex e cobrir a área restante */
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
+  /* padding-top dinâmico via JS (ajustarNavbar) */
+  padding-top: 68px !important;
+  box-sizing: border-box !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
-  /* padding-top para compensar a navbar (~64px) */
-  padding-top: var(--navbar-height, 64px) !important;
-  box-sizing: border-box !important;
-  z-index: 1;
+  z-index: 2 !important;  /* acima do body background, abaixo da navbar (1100) */
 }
-#map-layout { display:flex; flex:1; min-height:0; overflow:hidden; }
+
+/* map-layout ocupa TODO o espaço restante abaixo do padding da navbar */
+#map-layout {
+  flex: 1 1 0px !important;
+  min-height: 0 !important;
+  display: flex !important;
+  overflow: hidden !important;
+}
 
 /* Sidebar */
 #map-sidebar {
@@ -600,11 +605,24 @@ var EDIT_ID = {{ editar_id | tojson }};
 
 /* ── Mapa ── */
 var _isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window);
+
+/* Aplicar navbar height ANTES de criar o mapa */
+(function aplicarNavbarHeight(){
+  var navbar = document.querySelector('header.navbar') || document.querySelector('header');
+  var main   = document.getElementById('main-content');
+  if(navbar && main){
+    var h = navbar.getBoundingClientRect().height || 68;
+    var spacer = document.getElementById('imp-spacer');
+    if(spacer && spacer.offsetHeight > 0) h += spacer.offsetHeight;
+    main.style.paddingTop = h + 'px';
+  }
+})();
+
 var map = L.map('map',{
   zoomControl: true,
   maxZoom: 22,
-  tap: false,          /* desabilitar tap handler do Leaflet — vamos controlar manualmente */
-  dragging: true,      /* sempre arrastável */
+  tap: false,
+  dragging: true,
   touchZoom: true
 }).setView([-18.5,-50],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -2096,42 +2114,22 @@ function cancelarPerimetro(){
 })();
 
 /* ── Init ── */
-/* Garantir que o Leaflet receba o tamanho real do container.
-   O body--fullscreen usa height:0 no main para forçar flex, mas o Leaflet
-   precisa ser notificado DEPOIS que o browser calculou o layout final.
-   Usamos múltiplos checkpoints: rAF duplo + 100ms + 500ms */
+/* Revalidar o mapa após render completo da página */
 (function fixMapSize(){
-  /* Ajustar padding-top do main para a altura real da navbar */
-  function ajustarNavbar(){
-    var navbar = document.querySelector('header.navbar') || document.querySelector('header') || document.querySelector('nav');
-    var main   = document.getElementById('main-content');
-    if(navbar && main){
-      var h = navbar.getBoundingClientRect().height;
-      /* Somar com o imp-spacer se visível */
-      var spacer = document.getElementById('imp-spacer');
-      if(spacer && spacer.style.display !== 'none'){
-        h += spacer.getBoundingClientRect().height;
-      }
-      main.style.paddingTop = h + 'px';
-    }
-  }
-
-  function doInvalidate(){
+  function doFix(){
     if(typeof map === 'undefined') return;
-    ajustarNavbar();
-    map.invalidateSize({reset:true});
-    var s = map.getSize();
-    if(s.x === 0 || s.y === 0){
-      setTimeout(doInvalidate, 200);
-    }
+    map.invalidateSize({reset:true, animate:false});
   }
+  /* Múltiplos checkpoints para garantir */
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
-      doInvalidate();
-      setTimeout(doInvalidate, 150);
-      setTimeout(doInvalidate, 600);
+      doFix();
+      setTimeout(doFix, 200);
+      setTimeout(doFix, 800);
     });
   });
+  /* Também no load completo da página */
+  window.addEventListener('load', function(){ setTimeout(doFix, 100); });
 })();
 
 (function init(){
