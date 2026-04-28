@@ -674,7 +674,7 @@ function areaFromFeature(feat){
 function addLayer(t){
   var isSel = selectedIds.has(t.id);
   var cor   = isSel ? '#eab308' : t.cor;
-  var fOp   = isSel ? .40 : .25;
+  var fOp   = isSel ? 0.40 : 0.25;
   var w     = isSel ? 3   : 2;
   var l=L.geoJSON(t.geojson,{style:{color:cor,fillColor:cor,fillOpacity:fOp,weight:w}}).addTo(map);
   l.on('click',function(){openPanel(t.id);});
@@ -691,7 +691,7 @@ function _updateLayerHighlights(){
     var l=layers[t.id]; if(!l) return;
     var isSel=selectedIds.has(t.id);
     var cor=isSel?'#eab308':t.cor;
-    l.setStyle({color:cor,fillColor:cor,fillOpacity:isSel?.40:.25,weight:isSel?3:2});
+    l.setStyle({color:cor,fillColor:cor,fillOpacity:isSel?0.40:0.25,weight:isSel?3:2});
   });
 }
 function reloadLayer(t){
@@ -1650,9 +1650,7 @@ function startMesclar(){
   /* Camada maior em ha = herda os atributos */
   var maior = talhs.reduce(function(a,b){ return (a.area_ha||0)>=(b.area_ha||0)?a:b; });
 
-  if(!confirm('Mesclar '+talhs.length+' camadas em uma só?
-A camada resultante usará os atributos de "'+maior.nome+'" (maior área).
-Esta ação não pode ser desfeita.')) return;
+  if(!confirm('Mesclar '+talhs.length+' camadas em uma só?\nA camada resultante usará os atributos de "'+maior.nome+'" (maior área).\nEsta ação não pode ser desfeita.')) return;
 
   if(typeof turf==='undefined'){ toast('turf.js não carregado.','err'); return; }
 
