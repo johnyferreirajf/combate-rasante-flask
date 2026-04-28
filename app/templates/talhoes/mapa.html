@@ -258,38 +258,45 @@ select.pp-input option { background:#0d2418; }
   #sel-toolbar { flex-shrink:0; }
   #sidebar-resizer { display:none; }
 
-  /* ── Toolbar flutuante — grade 2 colunas no modo normal ── */
+  /* ── Ocultar controles de zoom do Leaflet no mobile ── */
+  .leaflet-control-zoom { display:none !important; }
+
+  /* ── Toolbar flutuante — grade 4 colunas ── */
   #map-toolbar {
     position:absolute;
-    top:46px;
-    left:4px; right:4px; transform:none;
+    top:44px;
+    left:0; right:0; transform:none;
     max-width:100%;
     display:grid !important;
     grid-template-columns:repeat(4,1fr);
-    gap:4px;
+    gap:3px;
+    padding:0 3px;
     pointer-events:none;
+    z-index:550;
   }
   #map-toolbar button {
     pointer-events:all;
-    padding:0; height:42px;
+    padding:0; height:44px;
     font-size:9px; font-weight:800;
-    border-radius:10px;
+    border-radius:8px;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:2px; line-height:1.2; white-space:normal; text-align:center;
+    gap:1px; line-height:1.2; white-space:normal; text-align:center;
   }
-  /* Ícones maiores no mobile via emoji + texto pequeno abaixo */
-  #map-toolbar button .tb-icon { font-size:16px; display:block; }
-  #map-toolbar button .tb-label { font-size:8px; display:block; opacity:.85; }
+  #map-toolbar button .tb-icon  { font-size:15px; display:block; }
+  #map-toolbar button .tb-label { font-size:8px;  display:block; opacity:.85; }
 
-  /* Botão undo e cancelar — largura dupla */
-  #btn-undo-draw { grid-column:span 1; background:rgba(234,179,8,.22) !important; border-color:rgba(234,179,8,.55) !important; color:#fde68a !important; }
-  #btn-cancel    { grid-column:span 1; display:none; }
+  #btn-undo-draw { background:rgba(234,179,8,.22) !important; border-color:rgba(234,179,8,.55) !important; color:#fde68a !important; }
+  #btn-cancel    { display:none; }
   #btn-cancel[style*="display:none"] { display:none !important; }
-
   .tb-sep { display:none; }
 
-  /* Toolbar no modo draw: mostrar undo e cancelar ocupando linha inteira */
-  body.drawing #map-toolbar { grid-template-columns:repeat(2,1fr); }
+  /* Instrução flutuante — abaixo da toolbar (2 linhas × 44px + 44px topo + gaps) */
+  #mode-hint {
+    top:140px; bottom:auto;
+    max-width:calc(100% - 16px);
+    font-size:10px; line-height:1.5;
+    z-index:560;
+  }
 
   /* ── Painel direito: bottom sheet ── */
   #prop-panel {
@@ -812,7 +819,10 @@ function startDraw(){
   activeMode='draw';
   document.getElementById('btn-draw').classList.add('active');
   document.getElementById('btn-cancel').style.display='';
-  hint('Clique para adicionar vértices. Clique no primeiro ponto para fechar o polígono.<br><small style="opacity:.7">Pressione <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> ou <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Delete</kbd> para apagar o último ponto.</small>');
+  var _isMob = window.innerWidth <= 768 || ('ontouchstart' in window);
+  hint(_isMob
+    ? 'Use a <strong>mira</strong> + botão <strong>✦ Ponto</strong> para adicionar vértices.<br><small style="opacity:.7">Arraste para mover o mapa. Use <strong>‹ Desfazer</strong> para remover o último ponto.</small>'
+    : 'Clique para adicionar vértices. Clique no primeiro ponto para fechar o polígono.<br><small style="opacity:.7">Pressione <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> ou <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Delete</kbd> para apagar o último ponto.</small>');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.2}});
   drawCtrl.enable();
   _showUndoBtn(true);
@@ -839,9 +849,10 @@ function undoDraw(){
 function _showUndoBtn(show){
   var b=document.getElementById('btn-undo-draw');
   if(b) b.style.display = show ? '' : 'none';
-  /* Mira e botão de ponto — só no mobile */
-  if(window.innerWidth <= 768){
+  /* Mira, botão de ponto e overlay — só no mobile */
+  if(window.innerWidth <= 768 || ('ontouchstart' in window)){
     _showCrosshair(show);
+    if(window._setDrawOverlay) window._setDrawOverlay(show);
   }
 }
 
@@ -1852,48 +1863,83 @@ function cancelarPerimetro(){
     }
   });
 
-  /* ── Mobile draw: bloquear touchstart do Leaflet.Draw ──
-   * O Leaflet.Draw registra um listener de 'touchstart' no container
-   * para criar pontos. Bloqueamos ele com capture:true + preventDefault.
-   * Pontos só são criados pelo botão "✦ Ponto" via addVertexFromCrosshair().
-   * Pan e zoom continuam funcionando normalmente pois o Leaflet usa
-   * seus próprios listeners de dragging que não dependem de touchstart
-   * no container (usam o L.Draggable interno).
+  /* ── Mobile draw: overlay invisível intercepta touch durante o draw ──
+   *
+   * Estratégia definitiva sem quebrar o pan:
+   * Um <div id="draw-overlay"> cobre o mapa APENAS durante o draw.
+   * Ele fica na frente do container do Leaflet.Draw (z-index:400),
+   * mas atrás da toolbar (z-index:550) e da mira (z-index:900).
+   *
+   * O overlay:
+   *   - Intercepta TODOS os toques → o Leaflet.Draw não recebe nada
+   *   - Implementa pan/zoom manual via touch (arrastando o mapa)
+   *   - O botão "✦ Ponto" chama addVertexFromCrosshair() que usa map.fire()
+   *     diretamente, bypassando o overlay
    * ─────────────────────────────────────────────────────────────── */
-  var mapContainer = map.getContainer();
 
-  mapContainer.addEventListener('touchstart', function(e){
-    /* Só bloquear quando o draw estiver ativo */
-    if(!drawCtrl) return;
-    /* Impedir que o Leaflet.Draw receba o touchstart e crie um ponto */
-    e.stopPropagation();
-    /* NÃO fazemos preventDefault para não quebrar o pan do Leaflet.Draggable */
-  }, {capture: true, passive: true});
+  /* Criar overlay dinamicamente */
+  var drawOverlay = document.createElement('div');
+  drawOverlay.id  = 'draw-overlay';
+  drawOverlay.style.cssText = [
+    'position:absolute','top:0','left:0','right:0','bottom:0',
+    'z-index:400','display:none','touch-action:none'
+  ].join(';');
+  map.getContainer().appendChild(drawOverlay);
 
-  mapContainer.addEventListener('touchend', function(e){
-    if(!drawCtrl) return;
-    /* Bloquear o 'click' sintético que o browser emite após touchend,
-       que o Leaflet.Draw usa como fallback para criar ponto */
-    e.stopPropagation();
-  }, {capture: true, passive: true});
+  /* Pan manual via overlay */
+  var _ov = { active:false, x:0, y:0 };
 
-  /* Bloquear o evento 'click' sintético do browser no container quando draw ativo */
-  mapContainer.addEventListener('click', function(e){
-    if(!drawCtrl) return;
-    /* Deixar passar se veio do botão "✦ Ponto" */
-    if(_fromCrosshair) return;
-    /* Bloquear clicks gerados por toque real */
-    if((e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) ||
-        e.pointerType === 'touch'){
-      e.stopImmediatePropagation();
-      return;
+  drawOverlay.addEventListener('touchstart', function(e){
+    e.preventDefault();
+    var t = e.touches[0];
+    _ov.active = true; _ov.x = t.clientX; _ov.y = t.clientY;
+  }, {passive:false});
+
+  drawOverlay.addEventListener('touchmove', function(e){
+    e.preventDefault();
+    if(!_ov.active || e.touches.length !== 1) return;
+    var t  = e.touches[0];
+    var dx = t.clientX - _ov.x;
+    var dy = t.clientY - _ov.y;
+    _ov.x  = t.clientX; _ov.y = t.clientY;
+    /* Pan via offset do centro do mapa */
+    var c  = map.getCenter();
+    var pt = map.latLngToContainerPoint(c);
+    var nl = map.containerPointToLatLng(L.point(pt.x - dx, pt.y - dy));
+    map.panTo(nl, {animate:false});
+  }, {passive:false});
+
+  drawOverlay.addEventListener('touchend', function(e){
+    e.preventDefault();
+    _ov.active = false;
+  }, {passive:false});
+
+  /* Pinch-zoom via overlay (dois dedos) */
+  var _pinch = {active:false, dist:0};
+  function _dist2(e){ var dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY; return Math.sqrt(dx*dx+dy*dy); }
+
+  drawOverlay.addEventListener('touchstart', function(e){
+    if(e.touches.length===2){ _pinch.active=true; _pinch.dist=_dist2(e); }
+  }, {passive:false});
+
+  drawOverlay.addEventListener('touchmove', function(e){
+    if(!_pinch.active || e.touches.length!==2) return;
+    var d = _dist2(e);
+    if(Math.abs(d - _pinch.dist) > 5){
+      if(d > _pinch.dist) map.zoomIn(0.5); else map.zoomOut(0.5);
+      _pinch.dist = d;
     }
-    /* Android Chrome: sem sourceCapabilities mas isTrusted + sem clientX/Y real */
-    /* Bloquear qualquer click que não seja do botão (mouse sintético de touch) */
-    if(!e.pointerType && e.isTrusted && e.detail === 0){
-      e.stopImmediatePropagation();
-    }
-  }, {capture: true});
+  }, {passive:false});
+
+  drawOverlay.addEventListener('touchend', function(e){
+    if(e.touches.length < 2) _pinch.active = false;
+  }, {passive:false});
+
+  /* Mostrar/esconder overlay quando draw ativa/desativa */
+  function _setDrawOverlay(on){
+    drawOverlay.style.display = on ? 'block' : 'none';
+  }
+  window._setDrawOverlay = _setDrawOverlay;
 
   /* ── Bottom sheet: swipe down para fechar ── */
   var panel = document.getElementById('prop-panel');
