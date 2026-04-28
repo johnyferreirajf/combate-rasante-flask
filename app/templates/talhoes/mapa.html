@@ -431,10 +431,16 @@ select.pp-input option { background:#0d2418; }
   #draw-crosshair-dot {
     position:absolute; top:50%; left:50%;
     transform:translate(-50%,-50%);
-    width:6px; height:6px; border-radius:50%;
+    width:8px; height:8px; border-radius:50%;
     background:#22c55e;
     box-shadow:0 0 0 2px rgba(255,255,255,.9), 0 0 6px rgba(0,0,0,.6);
-    transition:transform .15s ease, background .15s ease;
+    transition:transform .15s ease, background .15s ease, box-shadow .15s ease;
+  }
+  /* Mira em modo "fechar polígono" — anel maior */
+  #draw-crosshair.can-close #draw-crosshair-dot {
+    background:#fff;
+    box-shadow:0 0 0 3px #22c55e, 0 0 10px rgba(34,197,94,.8);
+    transform:translate(-50%,-50%) scale(1.8);
   }
 
   /* Botão "✦ Ponto" — aparece ao lado do ‹ durante draw mobile */
@@ -953,38 +959,68 @@ function addVertexFromCrosshair(){
   if(!drawCtrl) return;
   var container = map.getContainer();
   var rect      = container.getBoundingClientRect();
-  /* Centro visível do mapa: descontar toolbar mobile (2 linhas × 44px = 88px) + sidebar (44px) */
-  var toolbarH  = window.innerWidth <= 768 ? 132 : 0;  /* 44px sidebar + 88px toolbar */
-  var visH      = rect.height - toolbarH;
-  var cp        = L.point(rect.width / 2, toolbarH + visH / 2);
-  var ll        = map.containerPointToLatLng(cp);
 
-  /* Liberar o bloqueio momentaneamente e chamar addVertex diretamente */
-  window._fromCrosshair = true;
-  try{
-    if(drawCtrl._mouseMarker) drawCtrl._mouseMarker.setLatLng(ll);
-    /* Chamar addVertex do Draw diretamente — bypass total do evento */
-    drawCtrl.addVertex(ll);
-  }catch(err){
-    /* Fallback: map.fire com flag liberada */
-    map.fire('click',{
-      latlng:ll, layerPoint:map.latLngToLayerPoint(ll), containerPoint:cp,
-      originalEvent:{type:'click',button:0,target:container,
-        preventDefault:function(){},stopPropagation:function(){}}
-    });
+  /* Centro visível do mapa: sidebar(40px) + barra draw(44px+3px) + toolbar2linhas */
+  var toolbarH = window.innerWidth <= 768 ? 134 : 0;
+  var visH     = rect.height - toolbarH;
+  var cp       = L.point(rect.width / 2, toolbarH + visH / 2);
+  var ll       = map.containerPointToLatLng(cp);
+
+  /* ── Verificar se está próximo do 1º vértice para FECHAR o polígono ──
+     O Leaflet.Draw usa distância em pixels para detectar o clique de fechamento.
+     Se o 1º vértice estiver a menos de CLOSE_PX pixels do centro da mira,
+     chamamos _finishShape() em vez de addVertex(). */
+  var CLOSE_PX = 40;  /* pixels de tolerância para fechar */
+  var canClose = false;
+
+  if(drawCtrl._poly && drawCtrl._poly.getLatLngs){
+    try{
+      var latlngs = drawCtrl._poly.getLatLngs();
+      /* Polygon: latlngs pode ser array plano ou array de arrays */
+      var flat = (latlngs[0] && latlngs[0].lat) ? latlngs : (latlngs[0] || []);
+      if(flat.length >= 2){
+        /* Pegar o primeiro ponto do polígono em curso */
+        var firstLL  = flat[0];
+        var firstCp  = map.latLngToContainerPoint(firstLL);
+        var dist     = Math.sqrt(Math.pow(cp.x-firstCp.x,2)+Math.pow(cp.y-firstCp.y,2));
+        if(dist <= CLOSE_PX) canClose = true;
+      }
+    }catch(e){}
   }
-  setTimeout(function(){ window._fromCrosshair = false; }, 100);
 
-  /* Feedback visual: pulsar a mira */
+  /* Feedback visual */
   var dot = document.getElementById('draw-crosshair-dot');
-  if(dot){
+  function pulseDot(color){
+    if(!dot) return;
     dot.style.transform='translate(-50%,-50%) scale(2.5)';
-    dot.style.background='#fff';
+    dot.style.background=color||'#fff';
     setTimeout(function(){
       dot.style.transform='translate(-50%,-50%) scale(1)';
       dot.style.background='#22c55e';
     },180);
   }
+
+  window._fromCrosshair = true;
+  try{
+    if(canClose){
+      /* Fechar o polígono */
+      pulseDot('#22c55e');
+      drawCtrl._finishShape();
+    } else {
+      /* Adicionar vértice normal */
+      if(drawCtrl._mouseMarker) drawCtrl._mouseMarker.setLatLng(ll);
+      drawCtrl.addVertex(ll);
+      pulseDot('#fff');
+    }
+  }catch(err){
+    map.fire('click',{
+      latlng:ll, layerPoint:map.latLngToLayerPoint(ll), containerPoint:cp,
+      originalEvent:{type:'click',button:0,target:container,
+        preventDefault:function(){},stopPropagation:function(){}}
+    });
+    pulseDot('#fff');
+  }
+  setTimeout(function(){ window._fromCrosshair = false; }, 100);
 }
 
 map.on(L.Draw.Event.CREATED,function(e){
@@ -2109,6 +2145,28 @@ function cancelarPerimetro(){
 })();
 
 /* ── Init ── */
+/* Monitorar posição da mira durante draw para indicar fechamento */
+map.on('move zoom', function(){
+  if(!drawCtrl || !drawCtrl._poly) return;
+  var ch = document.getElementById('draw-crosshair');
+  if(!ch || ch.style.display==='none') return;
+  try{
+    var container = map.getContainer();
+    var rect      = container.getBoundingClientRect();
+    var toolbarH  = window.innerWidth <= 768 ? 134 : 0;
+    var visH      = rect.height - toolbarH;
+    var cp        = L.point(rect.width/2, toolbarH+visH/2);
+    var latlngs   = drawCtrl._poly.getLatLngs();
+    var flat      = (latlngs[0]&&latlngs[0].lat)?latlngs:(latlngs[0]||[]);
+    if(flat.length>=2){
+      var firstCp = map.latLngToContainerPoint(flat[0]);
+      var dist    = Math.sqrt(Math.pow(cp.x-firstCp.x,2)+Math.pow(cp.y-firstCp.y,2));
+      if(dist<=40) ch.classList.add('can-close');
+      else ch.classList.remove('can-close');
+    }
+  }catch(e){}
+});
+
 /* Revalidar o Leaflet após render — com calc(100vh - navbar) o #map
    já tem tamanho correto na criação, mas invalidamos por segurança */
 requestAnimationFrame(function(){
