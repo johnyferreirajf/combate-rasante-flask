@@ -45,7 +45,7 @@ body.body--fullscreen main#main-content {
 .t-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; cursor:pointer; border:1px solid transparent; margin-bottom:5px; transition:background .15s; }
 .t-item:hover  { background:rgba(255,255,255,.06); }
 .t-item.active { background:rgba(34,197,94,.12); border-color:rgba(34,197,94,.30); }
-.t-item.selected { background:rgba(239,68,68,.18)!important; border-color:rgba(239,68,68,.45)!important; }
+.t-item.selected { background:rgba(234,179,8,.22)!important; border-color:rgba(234,179,8,.55)!important; }
 .t-item__dot  { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
 .t-item__info { flex:1; min-width:0; }
 .t-item__nome { font-size:12px; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -53,7 +53,7 @@ body.body--fullscreen main#main-content {
 .t-item__del  { background:none; border:none; color:rgba(239,68,68,.65); cursor:pointer; font-size:13px; padding:2px 4px; border-radius:4px; flex-shrink:0; }
 .t-item__del:hover { color:#ef4444; }
 .t-item__check { width:14px; height:14px; border-radius:3px; border:1.5px solid rgba(255,255,255,.30); background:rgba(0,0,0,.30); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; }
-.t-item.selected .t-item__check { background:#ef4444; border-color:#ef4444; }
+.t-item.selected .t-item__check { background:#eab308; border-color:#eab308; }
 #sel-toolbar { display:none; padding:6px 8px; background:rgba(239,68,68,.18); border-top:1px solid rgba(239,68,68,.35); gap:6px; align-items:center; flex-shrink:0; }
 #sel-toolbar.show { display:flex; }
 #sel-count { font-size:11px; font-weight:800; color:#fca5a5; flex:1; }
@@ -138,6 +138,20 @@ select.pp-input option { background:#0d2418; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
 /* Toast */
+/* Label permanente no centro da camada */
+.layer-label {
+  background:transparent !important;
+  border:none !important;
+  box-shadow:none !important;
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  text-shadow:0 0 4px rgba(0,0,0,.9), 0 0 8px rgba(0,0,0,.8), 1px 1px 0 rgba(0,0,0,.9);
+  white-space:nowrap;
+  pointer-events:none;
+}
+.layer-label::before { display:none !important; }
+
 #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:9px 22px; border-radius:11px; font-weight:800; font-size:13px; z-index:9999; display:none; box-shadow:0 4px 20px rgba(0,0,0,.4); transition:opacity .3s; }
 #toast.warn { background:#b45309; }
 #toast.err  { background:#dc2626; }
@@ -286,13 +300,18 @@ select.pp-input option { background:#0d2418; }
   #map-toolbar button .tb-label { font-size:8px;  display:block; opacity:.85; }
 
   #btn-undo-draw { background:rgba(234,179,8,.22) !important; border-color:rgba(234,179,8,.55) !important; color:#fde68a !important; }
-  #btn-cancel    { display:none; }
-  #btn-cancel[style*="display:none"] { display:none !important; }
   .tb-sep { display:none; }
 
-  /* Instrução flutuante — abaixo da toolbar (2 linhas × 44px + 44px topo + gaps) */
+  /* No mobile, durante draw os 3 botões de ação ficam numa 3ª linha */
+  #btn-add-vertex,
+  #btn-undo-draw,
+  #btn-cancel {
+    /* removidos da grid principal, posicionados em linha própria via JS */
+  }
+
+  /* Instrução flutuante — abaixo das 3 linhas de toolbar */
   #mode-hint {
-    top:140px; bottom:auto;
+    top:182px; bottom:auto;
     max-width:calc(100% - 16px);
     font-size:10px; line-height:1.5;
     z-index:560;
@@ -339,7 +358,9 @@ select.pp-input option { background:#0d2418; }
   #draw-crosshair {
     display:none;
     position:absolute;
-    top:50%; left:50%;
+    /* Centro da área visível: abaixo das 2 linhas de toolbar (44+44+44=132px da sidebar+toolbar) */
+    top:calc(132px + (100% - 132px) / 2);
+    left:50%;
     transform:translate(-50%,-50%);
     z-index:900;
     pointer-events:none;
@@ -374,7 +395,7 @@ select.pp-input option { background:#0d2418; }
 
   /* Botão "✦ Ponto" — aparece ao lado do ‹ durante draw mobile */
   #btn-add-vertex {
-    display:none;
+    display:none !important;  /* escondido por padrão */
     background:rgba(34,197,94,.30) !important;
     border-color:rgba(34,197,94,.70) !important;
     color:#86efac !important;
@@ -452,7 +473,8 @@ select.pp-input option { background:#0d2418; }
       <button id="btn-perimetro" onclick="gerarPerimetro()" title="Perímetro"><span class="tb-icon">⚙️</span><span class="tb-label">Perímetro</span></button>
       <button onclick="fitAll()" title="Ver tudo"><span class="tb-icon">🔍</span><span class="tb-label">Ver Todos</span></button>
       <div class="tb-sep"></div>
-      <button id="btn-add-vertex" onclick="addVertexFromCrosshair()" title="Adicionar ponto na mira"><span class="tb-icon">✦</span><span class="tb-label">Ponto</span></button>
+      <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
+      <button id="btn-add-vertex" onclick="addVertexFromCrosshair()" style="display:none" title="Adicionar ponto na mira"><span class="tb-icon">✦</span><span class="tb-label">Ponto</span></button>
       <button id="btn-undo-draw" onclick="undoDraw()" style="display:none;" title="Desfazer último ponto"><span class="tb-icon">‹</span><span class="tb-label">Desfazer</span></button>
       <button id="btn-cancel"   onclick="cancelAll()" style="display:none;color:#fca5a5;" title="Cancelar"><span class="tb-icon">✕</span><span class="tb-label">Cancelar</span></button>
     </div>
@@ -631,11 +653,27 @@ function areaFromFeature(feat){
 
 /* ── Camadas no mapa ── */
 function addLayer(t){
-  var l=L.geoJSON(t.geojson,{style:{color:t.cor,fillColor:t.cor,fillOpacity:.25,weight:2}}).addTo(map);
+  var isSel = selectedIds.has(t.id);
+  var cor   = isSel ? '#eab308' : t.cor;
+  var fOp   = isSel ? .40 : .25;
+  var w     = isSel ? 3   : 2;
+  var l=L.geoJSON(t.geojson,{style:{color:cor,fillColor:cor,fillOpacity:fOp,weight:w}}).addTo(map);
   l.on('click',function(){openPanel(t.id);});
-  if(TALHOES.length<=100)
-    l.bindTooltip(t.nome+(t.area_ha?' ('+t.area_ha.toFixed(2)+' ha)':''),{permanent:false,direction:'center'});
+  /* Tooltip com nome permanente no centro */
+  l.bindTooltip(t.nome,{
+    permanent:true, direction:'center',
+    className:'layer-label'
+  });
   layers[t.id]=l;
+}
+/* Atualizar estilo de highlight nas camadas selecionadas */
+function _updateLayerHighlights(){
+  TALHOES.forEach(function(t){
+    var l=layers[t.id]; if(!l) return;
+    var isSel=selectedIds.has(t.id);
+    var cor=isSel?'#eab308':t.cor;
+    l.setStyle({color:cor,fillColor:cor,fillOpacity:isSel?.40:.25,weight:isSel?3:2});
+  });
 }
 function reloadLayer(t){
   if(layers[t.id]){map.removeLayer(layers[t.id]);delete layers[t.id];}
@@ -671,6 +709,7 @@ function renderSidebar(){
   });
   list.innerHTML=rows.join('');
   atualizarSelToolbar();
+  _updateLayerHighlights();
 }
 
 document.addEventListener('click',function(e){
@@ -794,7 +833,7 @@ function cancelModes(silent){
   /* Remover cursor tesoura */
   map.getContainer().classList.remove('cursor-scissors');
   /* Reset toolbar */
-  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split'].forEach(function(bid){
+  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar'].forEach(function(bid){
     var b=document.getElementById(bid); if(b) b.classList.remove('active');
   });
   document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
@@ -849,6 +888,9 @@ function undoDraw(){
 function _showUndoBtn(show){
   var b=document.getElementById('btn-undo-draw');
   if(b) b.style.display = show ? '' : 'none';
+  /* Cancelar: sempre visível quando draw ativo */
+  var bc=document.getElementById('btn-cancel');
+  if(bc && show) bc.style.display='';
   /* Mira, botão de ponto e overlay — só no mobile */
   if(window.innerWidth <= 768 || ('ontouchstart' in window)){
     _showCrosshair(show);
@@ -869,9 +911,10 @@ function addVertexFromCrosshair(){
   if(!drawCtrl) return;
   var container = map.getContainer();
   var rect      = container.getBoundingClientRect();
-  /* Centro do mapa, descontando a toolbar (~90px) no mobile */
-  var toolbarH  = window.innerWidth <= 768 ? 90 : 0;
-  var cp        = L.point(rect.width / 2, (rect.height - toolbarH) / 2 + toolbarH);
+  /* Centro visível do mapa: descontar toolbar mobile (2 linhas × 44px = 88px) + sidebar (44px) */
+  var toolbarH  = window.innerWidth <= 768 ? 132 : 0;  /* 44px sidebar + 88px toolbar */
+  var visH      = rect.height - toolbarH;
+  var cp        = L.point(rect.width / 2, toolbarH + visH / 2);
   var ll        = map.containerPointToLatLng(cp);
 
   /* Liberar o bloqueio momentaneamente e chamar addVertex diretamente */
@@ -1573,6 +1616,93 @@ function _cancelarSplit(){
   window._splitOrigGeojson=null;
   renderAcoes(currentId);
   toast('Divisão cancelada — polígono original restaurado.');
+}
+
+/* ── Mesclar camadas ── */
+function startMesclar(){
+  if(selectedIds.size < 2){
+    toast('Selecione 2 ou mais camadas na sidebar para mesclar (Ctrl+clique ou Shift+clique).','warn',4000);
+    return;
+  }
+  var ids   = Array.from(selectedIds);
+  var talhs = ids.map(function(id){ return TALHOES.find(function(t){return t.id==id;}); }).filter(Boolean);
+  if(talhs.length < 2){ toast('Camadas não encontradas.','err'); return; }
+
+  /* Camada maior em ha = herda os atributos */
+  var maior = talhs.reduce(function(a,b){ return (a.area_ha||0)>=(b.area_ha||0)?a:b; });
+
+  if(!confirm('Mesclar '+talhs.length+' camadas em uma só?
+A camada resultante usará os atributos de "'+maior.nome+'" (maior área).
+Esta ação não pode ser desfeita.')) return;
+
+  if(typeof turf==='undefined'){ toast('turf.js não carregado.','err'); return; }
+
+  spin(true,'Mesclando '+talhs.length+' camadas...');
+  setTimeout(function(){
+    try{
+      /* Fundir todas as geometrias */
+      var features = talhs.map(function(t){ return toFeature(t.geojson); });
+      var merged   = featuresToMulti(features);
+      if(!merged) throw new Error('Falha ao fundir geometrias.');
+
+      /* Tentar dissolve (union) usando turf.union se disponível */
+      var resultado = features[0];
+      for(var i=1;i<features.length;i++){
+        try{ resultado = turf.union(resultado, features[i]); }
+        catch(e){ /* se union falhar para este par, usar featuresToMulti */ }
+      }
+      if(!resultado) resultado = merged;
+      var novaArea = turf.area(resultado)/10000;
+
+      spin(true,'Salvando...');
+      /* Salvar como atualização da camada maior */
+      var payload = {
+        id:          maior.id,
+        nome:        maior.nome,
+        cultura:     maior.cultura||'',
+        cor:         maior.cor||'#22c55e',
+        data_voo:    maior.data_voo||'',
+        pista_voo:   maior.pista_voo||'',
+        observacoes: maior.observacoes||'',
+        geojson:     resultado
+      };
+      fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.erro) throw new Error(d.erro);
+        /* Atualizar camada maior localmente */
+        maior.geojson = resultado; maior.area_ha = d.area_ha;
+        reloadLayer(maior);
+        /* Excluir as demais camadas */
+        var outrasIds = ids.filter(function(id){return id!=maior.id;});
+        var fila = outrasIds.slice(), erros=0;
+        function next(){
+          if(!fila.length){
+            /* Remover do TALHOES e layers */
+            outrasIds.forEach(function(id){
+              if(layers[id]){map.removeLayer(layers[id]);delete layers[id];}
+              TALHOES = TALHOES.filter(function(t){return t.id!=id;});
+            });
+            selectedIds.clear();
+            spin(false);
+            renderSidebar();
+            if(currentId && outrasIds.indexOf(currentId)>=0) closePropPanel();
+            toast('✅ '+talhs.length+' camadas mescladas em "'+maior.nome+'" ('+d.area_ha.toFixed(2)+' ha)!','',4000);
+            return;
+          }
+          var id=fila.shift();
+          fetch('/talhoes/api/excluir/'+id,{method:'DELETE'})
+          .then(function(r){return r.json();})
+          .then(function(dr){ if(!dr.ok) erros++; next(); })
+          .catch(function(){ erros++; next(); });
+        }
+        next();
+      })
+      .catch(function(err){ spin(false); toast('Erro ao salvar: '+err.message,'err',5000); });
+    }catch(err){
+      spin(false); toast('Erro ao mesclar: '+err.message,'err',5000);
+    }
+  },60);
 }
 
 /* ── Salvar ── */
