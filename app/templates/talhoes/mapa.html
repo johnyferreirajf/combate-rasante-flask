@@ -8,13 +8,28 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
 /* Fullscreen chain fix */
-body.body--fullscreen { height:100vh; overflow:hidden; }
+body.body--fullscreen {
+  height: 100vh !important;
+  min-height: 100vh !important;
+  overflow: hidden;
+  /* Remover background da home que aparece atrás do mapa */
+  background-image: none !important;
+  background-attachment: scroll !important;
+}
 /* Esconder footer e espaçador do banner na página fullscreen do mapa */
-body.body--fullscreen .footer { display:none !important; }
-body.body--fullscreen footer  { display:none !important; }
+body.body--fullscreen .footer  { display:none !important; }
+body.body--fullscreen footer   { display:none !important; }
+/* flash messages não devem aparecer aqui */
+body.body--fullscreen .flash-stack { display:none !important; }
 body.body--fullscreen main#main-content {
-  padding:0!important; margin:0!important;
-  flex:1 1 0; min-height:0; display:flex; flex-direction:column; overflow:hidden;
+  padding:0 !important;
+  margin:0 !important;
+  flex: 1 1 0 !important;   /* override do flex:1 1 auto do main.css */
+  min-height: 0 !important;
+  height: 0 !important;     /* força colapso inicial para flex funcionar */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 #map-layout { display:flex; flex:1 1 0; min-height:0; overflow:hidden; }
 
