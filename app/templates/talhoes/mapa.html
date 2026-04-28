@@ -321,13 +321,6 @@ select.pp-input option { background:#0d2418; }
   #btn-undo-draw { background:rgba(234,179,8,.22) !important; border-color:rgba(234,179,8,.55) !important; color:#fde68a !important; }
   .tb-sep { display:none; }
 
-  /* No mobile, durante draw os 3 botões de ação ficam numa 3ª linha */
-  #btn-add-vertex,
-  #btn-undo-draw,
-  #btn-cancel {
-    /* removidos da grid principal, posicionados em linha própria via JS */
-  }
-
   /* Instrução flutuante — abaixo das 3 linhas de toolbar */
   #mode-hint {
     top:182px; bottom:auto;
@@ -414,12 +407,11 @@ select.pp-input option { background:#0d2418; }
 
   /* Botão "✦ Ponto" — aparece ao lado do ‹ durante draw mobile */
   #btn-add-vertex {
-    display:none !important;  /* escondido por padrão */
+    display:none;             /* escondido por padrão — JS usa style.display */
     background:rgba(34,197,94,.30) !important;
     border-color:rgba(34,197,94,.70) !important;
     color:#86efac !important;
   }
-  #btn-add-vertex.visible { display:flex !important; }
 }
 </style>
 {% endblock %}
@@ -906,10 +898,10 @@ function undoDraw(){
 /* Mostrar/esconder botão undo durante o desenho */
 function _showUndoBtn(show){
   var b=document.getElementById('btn-undo-draw');
-  if(b) b.style.display = show ? '' : 'none';
-  /* Cancelar: sempre visível quando draw ativo */
+  if(b) b.style.display = show ? 'flex' : 'none';
+  /* Cancelar: mostrar quando draw ativo, esconder quando não */
   var bc=document.getElementById('btn-cancel');
-  if(bc && show) bc.style.display='';
+  if(bc) bc.style.display = show ? 'flex' : 'none';
   /* Mira, botão de ponto e overlay — só no mobile */
   if(window.innerWidth <= 768 || ('ontouchstart' in window)){
     _showCrosshair(show);
@@ -920,8 +912,8 @@ function _showUndoBtn(show){
 function _showCrosshair(show){
   var ch  = document.getElementById('draw-crosshair');
   var btn = document.getElementById('btn-add-vertex');
-  if(ch)  { if(show) ch.classList.add('visible');    else ch.classList.remove('visible'); }
-  if(btn) { if(show) btn.classList.add('visible');   else btn.classList.remove('visible'); }
+  if(ch)  ch.style.display  = show ? 'block' : 'none';
+  if(btn) btn.style.display = show ? 'flex'  : 'none';
 }
 
 window._fromCrosshair = false;   /* flag: true = clique veio do botão Ponto, não do touch */
