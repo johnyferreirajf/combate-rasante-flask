@@ -297,7 +297,7 @@ select.pp-input option { background:#0d2418; }
   /* ── Toolbar flutuante — grade 4 colunas ── */
   #map-toolbar {
     position:absolute;
-    top:44px;
+    top:43px;  /* logo abaixo da sidebar de 40px */
     left:0; right:0; transform:none;
     max-width:100%;
     display:grid !important;
@@ -321,12 +321,44 @@ select.pp-input option { background:#0d2418; }
   #btn-undo-draw { background:rgba(234,179,8,.22) !important; border-color:rgba(234,179,8,.55) !important; color:#fde68a !important; }
   .tb-sep { display:none; }
 
-  /* Instrução flutuante — abaixo das 3 linhas de toolbar */
+  /* Barra de ação draw — linha dedicada abaixo da toolbar */
+  #draw-action-bar {
+    position: absolute;
+    /* sidebar(40px) + linha1(44px+3px) + linha2(44px+3px) = 134px */
+    top: 134px;
+    left: 0; right: 0;
+    display: none;  /* JS controla via style.display = 'grid' */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+    padding: 0 3px;
+    z-index: 551;
+    pointer-events: none;
+  }
+  #draw-action-bar button {
+    pointer-events: all;
+    padding: 0; height: 44px;
+    font-size: 9px; font-weight: 800;
+    border-radius: 8px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1px; white-space: normal; text-align: center;
+    background: rgba(3,20,10,.92);
+    border: 1px solid rgba(255,255,255,.22);
+    color: #fff; cursor: pointer; font-family: inherit;
+    backdrop-filter: blur(8px);
+  }
+  #draw-action-bar button .tb-icon  { font-size: 15px; display: block; }
+  #draw-action-bar button .tb-label { font-size: 8px;  display: block; opacity: .85; }
+  #btn-add-vertex { background: rgba(34,197,94,.30) !important; border-color: rgba(34,197,94,.70) !important; color: #86efac !important; }
+  #btn-undo-draw  { background: rgba(234,179,8,.22) !important; border-color: rgba(234,179,8,.55) !important; color: #fde68a !important; }
+
+  /* hint desce abaixo da barra de draw */
   #mode-hint {
-    top:182px; bottom:auto;
-    max-width:calc(100% - 16px);
-    font-size:10px; line-height:1.5;
-    z-index:560;
+    top: calc(44px + 3*44px + 3*3px + 10px);
+    bottom: auto;
+    max-width: calc(100% - 16px);
+    font-size: 10px; line-height: 1.5;
+    z-index: 560;
   }
 
   /* ── Painel direito: bottom sheet ── */
@@ -406,12 +438,7 @@ select.pp-input option { background:#0d2418; }
   }
 
   /* Botão "✦ Ponto" — aparece ao lado do ‹ durante draw mobile */
-  #btn-add-vertex {
-    display:none;             /* escondido por padrão — JS usa style.display */
-    background:rgba(34,197,94,.30) !important;
-    border-color:rgba(34,197,94,.70) !important;
-    color:#86efac !important;
-  }
+  /* btn-add-vertex estilizado dentro do draw-action-bar (mobile) */
 }
 </style>
 {% endblock %}
@@ -485,10 +512,13 @@ select.pp-input option { background:#0d2418; }
       <button onclick="fitAll()" title="Ver tudo"><span class="tb-icon">🔍</span><span class="tb-label">Ver Todos</span></button>
       <div class="tb-sep"></div>
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
-      <button id="btn-add-vertex" onclick="addVertexFromCrosshair()" style="display:none" title="Adicionar ponto na mira"><span class="tb-icon">✦</span><span class="tb-label">Ponto</span></button>
-      <button id="btn-undo-draw" onclick="undoDraw()" style="display:none;" title="Desfazer último ponto"><span class="tb-icon">‹</span><span class="tb-label">Desfazer</span></button>
-      <button id="btn-cancel"   onclick="cancelAll()" style="display:none;color:#fca5a5;" title="Cancelar"><span class="tb-icon">✕</span><span class="tb-label">Cancelar</span></button>
     </div>
+    <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
+    <div id="draw-action-bar" style="display:none;">
+      <button id="btn-add-vertex" onclick="addVertexFromCrosshair()" title="Adicionar ponto na mira"><span class="tb-icon">✦</span><span class="tb-label">Ponto</span></button>
+      <button id="btn-undo-draw" onclick="undoDraw()" title="Desfazer último ponto"><span class="tb-icon">‹</span><span class="tb-label">Desfazer</span></button>
+      <button id="btn-cancel"   onclick="cancelAll()" style="color:#fca5a5;" title="Cancelar"><span class="tb-icon">✕</span><span class="tb-label">Cancelar</span></button>
+    </div>  <!-- /draw-action-bar -->
 
     <!-- Modal de exclusão com buffer -->
     <div id="exclusao-modal">
@@ -868,7 +898,6 @@ function startDraw(){
   cancelModes(true);
   activeMode='draw';
   document.getElementById('btn-draw').classList.add('active');
-  document.getElementById('btn-cancel').style.display='';
   var _isMob = window.innerWidth <= 768 || ('ontouchstart' in window);
   hint(_isMob
     ? 'Use a <strong>mira</strong> + botão <strong>✦ Ponto</strong> para adicionar vértices.<br><small style="opacity:.7">Arraste para mover o mapa. Use <strong>‹ Desfazer</strong> para remover o último ponto.</small>'
@@ -897,23 +926,25 @@ function undoDraw(){
 
 /* Mostrar/esconder botão undo durante o desenho */
 function _showUndoBtn(show){
+  /* Sempre mostrar/esconder a barra de draw (CSS mobile oculta no desktop) */
+  _showCrosshair(show);
+  if(window._setDrawOverlay) window._setDrawOverlay(show);
+
+  /* Desktop também: undo e cancel individualmente (redundante mas seguro) */
   var b=document.getElementById('btn-undo-draw');
-  if(b) b.style.display = show ? 'flex' : 'none';
-  /* Cancelar: mostrar quando draw ativo, esconder quando não */
   var bc=document.getElementById('btn-cancel');
+  if(b)  b.style.display  = show ? 'flex' : 'none';
   if(bc) bc.style.display = show ? 'flex' : 'none';
-  /* Mira, botão de ponto e overlay — só no mobile */
-  if(window.innerWidth <= 768 || ('ontouchstart' in window)){
-    _showCrosshair(show);
-    if(window._setDrawOverlay) window._setDrawOverlay(show);
-  }
 }
 
 function _showCrosshair(show){
-  var ch  = document.getElementById('draw-crosshair');
-  var btn = document.getElementById('btn-add-vertex');
-  if(ch)  ch.style.display  = show ? 'block' : 'none';
-  if(btn) btn.style.display = show ? 'flex'  : 'none';
+  /* Mira */
+  var ch = document.getElementById('draw-crosshair');
+  if(ch) ch.style.display = show ? 'block' : 'none';
+
+  /* Barra de ação draw no mobile */
+  var bar = document.getElementById('draw-action-bar');
+  if(bar) bar.style.display = show ? 'grid' : 'none';
 }
 
 window._fromCrosshair = false;   /* flag: true = clique veio do botão Ponto, não do touch */
@@ -1040,7 +1071,6 @@ function toggleEdit(){
   activeMode='edit';
   document.getElementById('btn-edit').classList.add('active');
   document.getElementById('btn-edit').textContent='✅ Confirmar Edição';
-  document.getElementById('btn-cancel').style.display='';
   hint('Arraste os pontos brancos para mover vértices.<br><small style="opacity:.7">Passe o mouse sobre um vértice e pressione <kbd style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:4px;">Delete</kbd> para removê-lo.</small>');
 }
 
@@ -1052,7 +1082,6 @@ function startAddPart(){
   if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
   activeMode='add-part';
   document.getElementById('btn-add-part').classList.add('active');
-  document.getElementById('btn-cancel').style.display='';
   hint('Clique para adicionar vértices. <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> desfaz o último ponto.<br>Adiciona à camada "<strong>'+
     (TALHOES.find(function(x){return x.id==currentId;})||{nome:'?'}).nome+'</strong>".');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#22c55e',fillOpacity:.25,dashArray:'6 3'}});
@@ -1090,7 +1119,6 @@ function startHole(){
   if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
   activeMode='hole';
   document.getElementById('btn-hole').classList.add('active');
-  document.getElementById('btn-cancel').style.display='';
   hint('Desenhe a área de exclusão <strong>dentro</strong> do talhão. <kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> desfaz o último ponto.');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#ef4444',fillColor:'#ef4444',fillOpacity:.20,dashArray:'6 3'}});
   drawCtrl.enable();
@@ -1132,7 +1160,6 @@ function startExclusao(){
   if(!currentId){toast('Selecione um talhão primeiro.','warn');return;}
   activeMode='exclusao';
   document.getElementById('btn-exclusao').classList.add('active');
-  document.getElementById('btn-cancel').style.display='';
   hint('Desenhe o polígono de exclusão. Depois você define o buffer em metros antes de aplicar.<br>'+
     '<kbd style="background:rgba(255,255,255,.15);padding:1px 6px;border-radius:4px;">Backspace</kbd> desfaz o último ponto.');
   drawCtrl=new L.Draw.Polygon(map,{shapeOptions:{color:'#dc2626',fillColor:'#dc2626',fillOpacity:.25,dashArray:'6 3',weight:2}});
@@ -1337,7 +1364,6 @@ function startSplit(){
   if(_splitLine){map.removeLayer(_splitLine);_splitLine=null;}
   if(_splitPreviewLine){map.removeLayer(_splitPreviewLine);_splitPreviewLine=null;}
   document.getElementById('btn-split').classList.add('active');
-  document.getElementById('btn-cancel').style.display='';
   /* Cursor tesoura no container do mapa */
   map.getContainer().classList.add('cursor-scissors');
   hint('Clique para iniciar a linha de corte. A linha deve cruzar o talhão de ponta a ponta.<br>'+
