@@ -863,36 +863,32 @@ function _showCrosshair(show){
   if(btn) { if(show) btn.classList.add('visible');   else btn.classList.remove('visible'); }
 }
 
-var _fromCrosshair = false;   /* flag para distinguir click da mira vs touch real */
+window._fromCrosshair = false;   /* flag: true = clique veio do botão Ponto, não do touch */
 
 function addVertexFromCrosshair(){
   if(!drawCtrl) return;
   var container = map.getContainer();
   var rect      = container.getBoundingClientRect();
-  /* Centro do mapa visível (descontando toolbar ~90px no topo) */
-  var offsetY   = window.innerWidth <= 768 ? 90 : 0;
-  var cp        = L.point(rect.width/2, (rect.height + offsetY)/2);
+  /* Centro do mapa, descontando a toolbar (~90px) no mobile */
+  var toolbarH  = window.innerWidth <= 768 ? 90 : 0;
+  var cp        = L.point(rect.width / 2, (rect.height - toolbarH) / 2 + toolbarH);
   var ll        = map.containerPointToLatLng(cp);
 
+  /* Liberar o bloqueio momentaneamente e chamar addVertex diretamente */
+  window._fromCrosshair = true;
   try{
-    /* API interna do Leaflet.Draw Polygon — _mouseDownOrigin e addVertex */
-    if(drawCtrl._mouseMarker){
-      drawCtrl._mouseMarker.setLatLng(ll);
-    }
-    /* Disparar click no mapa com o mouseMarker já posicionado no latlng correto.
-       O Leaflet.Draw usa o mouseMarker para saber onde adicionar o vértice. */
-    _fromCrosshair = true;
-    map.fire('click', {
-      latlng:         ll,
-      layerPoint:     map.latLngToLayerPoint(ll),
-      containerPoint: cp,
-      originalEvent:  {type:'click', button:0, target:container,
-                       preventDefault:function(){}, stopPropagation:function(){}}
-    });
-    setTimeout(function(){ _fromCrosshair = false; }, 50);
+    if(drawCtrl._mouseMarker) drawCtrl._mouseMarker.setLatLng(ll);
+    /* Chamar addVertex do Draw diretamente — bypass total do evento */
+    drawCtrl.addVertex(ll);
   }catch(err){
-    console.warn('addVertexFromCrosshair err:', err);
+    /* Fallback: map.fire com flag liberada */
+    map.fire('click',{
+      latlng:ll, layerPoint:map.latLngToLayerPoint(ll), containerPoint:cp,
+      originalEvent:{type:'click',button:0,target:container,
+        preventDefault:function(){},stopPropagation:function(){}}
+    });
   }
+  setTimeout(function(){ window._fromCrosshair = false; }, 100);
 
   /* Feedback visual: pulsar a mira */
   var dot = document.getElementById('draw-crosshair-dot');
@@ -1863,82 +1859,34 @@ function cancelarPerimetro(){
     }
   });
 
-  /* ── Mobile draw: overlay invisível intercepta touch durante o draw ──
-   *
-   * Estratégia definitiva sem quebrar o pan:
-   * Um <div id="draw-overlay"> cobre o mapa APENAS durante o draw.
-   * Ele fica na frente do container do Leaflet.Draw (z-index:400),
-   * mas atrás da toolbar (z-index:550) e da mira (z-index:900).
-   *
-   * O overlay:
-   *   - Intercepta TODOS os toques → o Leaflet.Draw não recebe nada
-   *   - Implementa pan/zoom manual via touch (arrastando o mapa)
-   *   - O botão "✦ Ponto" chama addVertexFromCrosshair() que usa map.fire()
-   *     diretamente, bypassando o overlay
+  /* ── Mobile draw: monkey-patch Leaflet.Draw para bloquear touch ──
+   * Substituímos os métodos internos do Draw que criam pontos por touch.
+   * Flag _mobileDrawBlocked=true bloqueia todos; _fromCrosshair=true libera
+   * apenas o clique do botão "✦ Ponto".
    * ─────────────────────────────────────────────────────────────── */
+  if('ontouchstart' in window){
+    var _origAddVertex = L.Draw.Polyline.prototype.addVertex;
+    var _origMouseDown = L.Draw.Polyline.prototype._onMouseDown;
+    var _origTouch     = L.Draw.Polyline.prototype._onTouch;
 
-  /* Criar overlay dinamicamente */
-  var drawOverlay = document.createElement('div');
-  drawOverlay.id  = 'draw-overlay';
-  drawOverlay.style.cssText = [
-    'position:absolute','top:0','left:0','right:0','bottom:0',
-    'z-index:400','display:none','touch-action:none'
-  ].join(';');
-  map.getContainer().appendChild(drawOverlay);
-
-  /* Pan manual via overlay */
-  var _ov = { active:false, x:0, y:0 };
-
-  drawOverlay.addEventListener('touchstart', function(e){
-    e.preventDefault();
-    var t = e.touches[0];
-    _ov.active = true; _ov.x = t.clientX; _ov.y = t.clientY;
-  }, {passive:false});
-
-  drawOverlay.addEventListener('touchmove', function(e){
-    e.preventDefault();
-    if(!_ov.active || e.touches.length !== 1) return;
-    var t  = e.touches[0];
-    var dx = t.clientX - _ov.x;
-    var dy = t.clientY - _ov.y;
-    _ov.x  = t.clientX; _ov.y = t.clientY;
-    /* Pan via offset do centro do mapa */
-    var c  = map.getCenter();
-    var pt = map.latLngToContainerPoint(c);
-    var nl = map.containerPointToLatLng(L.point(pt.x - dx, pt.y - dy));
-    map.panTo(nl, {animate:false});
-  }, {passive:false});
-
-  drawOverlay.addEventListener('touchend', function(e){
-    e.preventDefault();
-    _ov.active = false;
-  }, {passive:false});
-
-  /* Pinch-zoom via overlay (dois dedos) */
-  var _pinch = {active:false, dist:0};
-  function _dist2(e){ var dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY; return Math.sqrt(dx*dx+dy*dy); }
-
-  drawOverlay.addEventListener('touchstart', function(e){
-    if(e.touches.length===2){ _pinch.active=true; _pinch.dist=_dist2(e); }
-  }, {passive:false});
-
-  drawOverlay.addEventListener('touchmove', function(e){
-    if(!_pinch.active || e.touches.length!==2) return;
-    var d = _dist2(e);
-    if(Math.abs(d - _pinch.dist) > 5){
-      if(d > _pinch.dist) map.zoomIn(0.5); else map.zoomOut(0.5);
-      _pinch.dist = d;
+    L.Draw.Polyline.prototype.addVertex = function(latlng){
+      if(window._mobileDrawBlocked && !window._fromCrosshair) return;
+      return _origAddVertex.call(this, latlng);
+    };
+    L.Draw.Polyline.prototype._onMouseDown = function(e){
+      if(window._mobileDrawBlocked && !window._fromCrosshair) return;
+      return _origMouseDown ? _origMouseDown.call(this, e) : undefined;
+    };
+    if(_origTouch){
+      L.Draw.Polyline.prototype._onTouch = function(e){
+        if(window._mobileDrawBlocked && !window._fromCrosshair) return;
+        return _origTouch.call(this, e);
+      };
     }
-  }, {passive:false});
-
-  drawOverlay.addEventListener('touchend', function(e){
-    if(e.touches.length < 2) _pinch.active = false;
-  }, {passive:false});
-
-  /* Mostrar/esconder overlay quando draw ativa/desativa */
-  function _setDrawOverlay(on){
-    drawOverlay.style.display = on ? 'block' : 'none';
   }
+
+  window._mobileDrawBlocked = false;
+  function _setDrawOverlay(on){ window._mobileDrawBlocked = on; }
   window._setDrawOverlay = _setDrawOverlay;
 
   /* ── Bottom sheet: swipe down para fechar ── */
