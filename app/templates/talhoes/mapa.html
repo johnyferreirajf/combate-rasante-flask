@@ -22,16 +22,23 @@ body.body--fullscreen footer   { display:none !important; }
 /* flash messages não devem aparecer aqui */
 body.body--fullscreen .flash-stack { display:none !important; }
 body.body--fullscreen main#main-content {
-  padding:0 !important;
-  margin:0 !important;
-  flex: 1 1 0 !important;   /* override do flex:1 1 auto do main.css */
-  min-height: 0 !important;
-  height: 0 !important;     /* força colapso inicial para flex funcionar */
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  padding: 0 !important;
+  margin: 0 !important;
+  /* Usar position absolute para sair do flow flex e cobrir a área restante */
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  /* padding-top para compensar a navbar (~64px) */
+  padding-top: var(--navbar-height, 64px) !important;
+  box-sizing: border-box !important;
+  z-index: 1;
 }
-#map-layout { display:flex; flex:1 1 0; min-height:0; overflow:hidden; }
+#map-layout { display:flex; flex:1; min-height:0; overflow:hidden; }
 
 /* Sidebar */
 #map-sidebar {
@@ -2089,9 +2096,43 @@ function cancelarPerimetro(){
 })();
 
 /* ── Init ── */
-requestAnimationFrame(function(){
-  requestAnimationFrame(function(){ if(typeof map!=='undefined') map.invalidateSize(); });
-});
+/* Garantir que o Leaflet receba o tamanho real do container.
+   O body--fullscreen usa height:0 no main para forçar flex, mas o Leaflet
+   precisa ser notificado DEPOIS que o browser calculou o layout final.
+   Usamos múltiplos checkpoints: rAF duplo + 100ms + 500ms */
+(function fixMapSize(){
+  /* Ajustar padding-top do main para a altura real da navbar */
+  function ajustarNavbar(){
+    var navbar = document.querySelector('header.navbar') || document.querySelector('header') || document.querySelector('nav');
+    var main   = document.getElementById('main-content');
+    if(navbar && main){
+      var h = navbar.getBoundingClientRect().height;
+      /* Somar com o imp-spacer se visível */
+      var spacer = document.getElementById('imp-spacer');
+      if(spacer && spacer.style.display !== 'none'){
+        h += spacer.getBoundingClientRect().height;
+      }
+      main.style.paddingTop = h + 'px';
+    }
+  }
+
+  function doInvalidate(){
+    if(typeof map === 'undefined') return;
+    ajustarNavbar();
+    map.invalidateSize({reset:true});
+    var s = map.getSize();
+    if(s.x === 0 || s.y === 0){
+      setTimeout(doInvalidate, 200);
+    }
+  }
+  requestAnimationFrame(function(){
+    requestAnimationFrame(function(){
+      doInvalidate();
+      setTimeout(doInvalidate, 150);
+      setTimeout(doInvalidate, 600);
+    });
+  });
+})();
 
 (function init(){
   var LOTE=50;
