@@ -8,41 +8,27 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css">
 <style>
 /* Fullscreen chain fix */
-/* ── Fullscreen map: abordagem via 100dvh - navbar ──────────────
-   Não dependemos da cadeia flex do layout base.
-   O #map-layout ocupa exatamente: 100dvh menos a navbar.
-   O main sai do flow com position:fixed e padding compensa a navbar.
+/* ── Fullscreen map: abordagem direta sem depender de flex chain ──
+   #map-layout recebe altura explícita: 100vh menos a navbar.
+   Isso funciona independente de qualquer cascata flex do layout base.
    ─────────────────────────────────────────────────────────────── */
+
 body.body--fullscreen {
+  overflow: hidden !important;
   background-image: none !important;
-  background-attachment: scroll !important;
-  overflow: hidden !important;
 }
-body.body--fullscreen .footer       { display:none !important; }
-body.body--fullscreen footer        { display:none !important; }
-body.body--fullscreen .flash-stack  { display:none !important; }
+body.body--fullscreen .footer      { display:none !important; }
+body.body--fullscreen footer       { display:none !important; }
+body.body--fullscreen .flash-stack { display:none !important; }
 
-/* main sai do flow e cobre o viewport inteiro */
-body.body--fullscreen main#main-content {
-  position: fixed !important;
-  inset: 0 !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  /* padding-top dinâmico via JS (ajustarNavbar) */
-  padding-top: 68px !important;
-  box-sizing: border-box !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-  z-index: 2 !important;  /* acima do body background, abaixo da navbar (1100) */
-}
-
-/* map-layout ocupa TODO o espaço restante abaixo do padding da navbar */
+/* Não mexemos no main — deixamos o layout base funcionar normalmente */
+/* O truque está em dar altura explícita ao #map-layout */
 #map-layout {
-  flex: 1 1 0px !important;
-  min-height: 0 !important;
-  display: flex !important;
-  overflow: hidden !important;
+  display: flex;
+  /* Altura = viewport inteiro menos a navbar (68px definida no main.css) */
+  height: calc(100vh - var(--navbar-height, 68px));
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* Sidebar */
@@ -246,9 +232,15 @@ select.pp-input option { background:#0d2418; }
    MOBILE — layout app nativo
    ══════════════════════════════════════════════════ */
 @media (max-width:768px) {
+  body.body--fullscreen { background-image:none !important; }
 
-  /* ── Layout: mapa ocupa 100%, UI flutua sobre ele ── */
-  #map-layout    { flex-direction:column; position:relative; }
+  /* ── Layout mobile: mapa ocupa tudo menos a sidebar no topo ── */
+  #map-layout {
+    flex-direction: column;
+    position: relative;
+    /* No mobile: 100vh menos navbar menos sidebar */
+    height: calc(100vh - 68px - 40px) !important;
+  }
   #map-container { flex:1; min-height:0; }
 
   /* ── Sidebar: faixa fina colapsável no topo ── */
@@ -605,24 +597,11 @@ var EDIT_ID = {{ editar_id | tojson }};
 
 /* ── Mapa ── */
 var _isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window);
-
-/* Aplicar navbar height ANTES de criar o mapa */
-(function aplicarNavbarHeight(){
-  var navbar = document.querySelector('header.navbar') || document.querySelector('header');
-  var main   = document.getElementById('main-content');
-  if(navbar && main){
-    var h = navbar.getBoundingClientRect().height || 68;
-    var spacer = document.getElementById('imp-spacer');
-    if(spacer && spacer.offsetHeight > 0) h += spacer.offsetHeight;
-    main.style.paddingTop = h + 'px';
-  }
-})();
-
 var map = L.map('map',{
   zoomControl: true,
   maxZoom: 22,
-  tap: false,
-  dragging: true,
+  tap: false,          /* desabilitar tap handler do Leaflet — vamos controlar manualmente */
+  dragging: true,      /* sempre arrastável */
   touchZoom: true
 }).setView([-18.5,-50],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -2114,23 +2093,18 @@ function cancelarPerimetro(){
 })();
 
 /* ── Init ── */
-/* Revalidar o mapa após render completo da página */
-(function fixMapSize(){
-  function doFix(){
-    if(typeof map === 'undefined') return;
-    map.invalidateSize({reset:true, animate:false});
-  }
-  /* Múltiplos checkpoints para garantir */
+/* Revalidar o Leaflet após render — com calc(100vh - navbar) o #map
+   já tem tamanho correto na criação, mas invalidamos por segurança */
+requestAnimationFrame(function(){
   requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
-      doFix();
-      setTimeout(doFix, 200);
-      setTimeout(doFix, 800);
-    });
+    if(typeof map !== 'undefined'){
+      map.invalidateSize({reset:true, animate:false});
+    }
   });
-  /* Também no load completo da página */
-  window.addEventListener('load', function(){ setTimeout(doFix, 100); });
-})();
+});
+window.addEventListener('load', function(){
+  if(typeof map !== 'undefined') map.invalidateSize({reset:true, animate:false});
+});
 
 (function init(){
   var LOTE=50;
