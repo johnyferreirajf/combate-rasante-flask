@@ -852,36 +852,46 @@ function _showCrosshair(show){
   if(btn) { if(show) btn.classList.add('visible');   else btn.classList.remove('visible'); }
 }
 
+var _fromCrosshair = false;   /* flag para distinguir click da mira vs touch real */
+
 function addVertexFromCrosshair(){
   if(!drawCtrl) return;
-  /* Pegar o centro do container do mapa */
   var container = map.getContainer();
   var rect      = container.getBoundingClientRect();
-  var cp        = L.point(rect.width/2, rect.height/2);
+  /* Centro do mapa visível (descontando toolbar ~90px no topo) */
+  var offsetY   = window.innerWidth <= 768 ? 90 : 0;
+  var cp        = L.point(rect.width/2, (rect.height + offsetY)/2);
   var ll        = map.containerPointToLatLng(cp);
-  /* Mover o marcador interno do Draw para o centro e adicionar vértice */
+
   try{
-    if(drawCtrl._mouseMarker) drawCtrl._mouseMarker.setLatLng(ll);
-    /* Disparar click interno do Leaflet no centro exato */
-    map.fire('click',{
+    /* API interna do Leaflet.Draw Polygon — _mouseDownOrigin e addVertex */
+    if(drawCtrl._mouseMarker){
+      drawCtrl._mouseMarker.setLatLng(ll);
+    }
+    /* Disparar click no mapa com o mouseMarker já posicionado no latlng correto.
+       O Leaflet.Draw usa o mouseMarker para saber onde adicionar o vértice. */
+    _fromCrosshair = true;
+    map.fire('click', {
       latlng:         ll,
       layerPoint:     map.latLngToLayerPoint(ll),
       containerPoint: cp,
-      originalEvent:  {type:'click', target:container}
+      originalEvent:  {type:'click', button:0, target:container,
+                       preventDefault:function(){}, stopPropagation:function(){}}
     });
+    setTimeout(function(){ _fromCrosshair = false; }, 50);
   }catch(err){
-    map.fire('click',{latlng:ll,layerPoint:map.latLngToLayerPoint(ll),
-      containerPoint:cp,originalEvent:{type:'click',target:container}});
+    console.warn('addVertexFromCrosshair err:', err);
   }
-  /* Pulsar a mira para feedback visual */
+
+  /* Feedback visual: pulsar a mira */
   var dot = document.getElementById('draw-crosshair-dot');
   if(dot){
-    dot.style.transform='translate(-50%,-50%) scale(2)';
+    dot.style.transform='translate(-50%,-50%) scale(2.5)';
     dot.style.background='#fff';
     setTimeout(function(){
       dot.style.transform='translate(-50%,-50%) scale(1)';
       dot.style.background='#22c55e';
-    },150);
+    },180);
   }
 }
 
@@ -1842,11 +1852,48 @@ function cancelarPerimetro(){
     }
   });
 
-  /* ── Mobile draw: touch livre para pan, mira + botão para adicionar ponto ──
-   * No mobile, o draw usa mira fixa no centro + botão "✦ Ponto".
-   * Touch é SOMENTE pan/zoom — nenhum ponto é criado por toque.
-   * ─────────────────────────────────────────────────────── */
-  /* (nenhum listener de touch — o Leaflet cuida do pan normalmente) */
+  /* ── Mobile draw: bloquear touchstart do Leaflet.Draw ──
+   * O Leaflet.Draw registra um listener de 'touchstart' no container
+   * para criar pontos. Bloqueamos ele com capture:true + preventDefault.
+   * Pontos só são criados pelo botão "✦ Ponto" via addVertexFromCrosshair().
+   * Pan e zoom continuam funcionando normalmente pois o Leaflet usa
+   * seus próprios listeners de dragging que não dependem de touchstart
+   * no container (usam o L.Draggable interno).
+   * ─────────────────────────────────────────────────────────────── */
+  var mapContainer = map.getContainer();
+
+  mapContainer.addEventListener('touchstart', function(e){
+    /* Só bloquear quando o draw estiver ativo */
+    if(!drawCtrl) return;
+    /* Impedir que o Leaflet.Draw receba o touchstart e crie um ponto */
+    e.stopPropagation();
+    /* NÃO fazemos preventDefault para não quebrar o pan do Leaflet.Draggable */
+  }, {capture: true, passive: true});
+
+  mapContainer.addEventListener('touchend', function(e){
+    if(!drawCtrl) return;
+    /* Bloquear o 'click' sintético que o browser emite após touchend,
+       que o Leaflet.Draw usa como fallback para criar ponto */
+    e.stopPropagation();
+  }, {capture: true, passive: true});
+
+  /* Bloquear o evento 'click' sintético do browser no container quando draw ativo */
+  mapContainer.addEventListener('click', function(e){
+    if(!drawCtrl) return;
+    /* Deixar passar se veio do botão "✦ Ponto" */
+    if(_fromCrosshair) return;
+    /* Bloquear clicks gerados por toque real */
+    if((e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) ||
+        e.pointerType === 'touch'){
+      e.stopImmediatePropagation();
+      return;
+    }
+    /* Android Chrome: sem sourceCapabilities mas isTrusted + sem clientX/Y real */
+    /* Bloquear qualquer click que não seja do botão (mouse sintético de touch) */
+    if(!e.pointerType && e.isTrusted && e.detail === 0){
+      e.stopImmediatePropagation();
+    }
+  }, {capture: true});
 
   /* ── Bottom sheet: swipe down para fechar ── */
   var panel = document.getElementById('prop-panel');
