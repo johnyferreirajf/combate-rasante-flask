@@ -374,7 +374,7 @@ select.pp-input option { background:#0d2418; }
     position:fixed !important;
     left:0; right:0; bottom:0; top:auto;
     width:100% !important;
-    height:auto; max-height:42vh;
+    height:auto; max-height:55vh;
     border-left:none;
     border-top:1.5px solid rgba(255,255,255,.20);
     border-radius:16px 16px 0 0;
@@ -384,13 +384,13 @@ select.pp-input option { background:#0d2418; }
   }
   #prop-panel.open { transform:translateY(0); }
 
-  /* Alça visual + botão de fechar em linha */
+  /* Alça visual */
   #prop-panel::before {
     content:''; display:block; width:36px; height:4px; border-radius:2px;
     background:rgba(255,255,255,.25); margin:8px auto 0; flex-shrink:0;
   }
 
-  #pp-scroll { max-height:calc(42vh - 20px); overflow-y:auto; }
+  #pp-scroll { max-height:calc(55vh - 20px); overflow-y:auto; }
   #panel-resizer { display:none; }
 
   /* Instrução flutuante — abaixo da toolbar */
@@ -641,9 +641,9 @@ var map = L.map('map',{
   touchZoom: true
 }).setView([-18.5,-50],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {attribution:'Esri',maxZoom:22,maxNativeZoom:20}).addTo(map);
+  {attribution:'Esri',maxZoom:22,maxNativeZoom:19}).addTo(map);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  {maxZoom:22,maxNativeZoom:20,opacity:0.7}).addTo(map);
+  {maxZoom:22,maxNativeZoom:19,opacity:0.7}).addTo(map);
 
 /* ── Estado ── */
 var layers       = {};
