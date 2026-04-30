@@ -878,6 +878,8 @@ function closePropPanel(){
 }
 
 function renderAcoes(id){
+  _expandPanel();
+  document.getElementById('pp-actions').style.display='flex';
   document.getElementById('pp-actions').innerHTML=
     '<button class="pp-btn pp-btn-yellow" onclick="gerarPerimetro()">⚙️ Gerar Perímetro Inteiro</button>'+
     '<a class="pp-btn pp-btn-green" href="/talhoes/solicitar/'+id+'">✈️ Solicitar Aplicação</a>'+
@@ -940,6 +942,26 @@ function _expandPanel(){
   var p = document.getElementById('prop-panel');
   if(p) p.classList.remove('mini');
 }
+
+/* Observer: sempre que pp-actions ganhar conteúdo novo, expandir o painel */
+(function(){
+  var obs = new MutationObserver(function(muts){
+    for(var i=0;i<muts.length;i++){
+      if(muts[i].type==='childList' || muts[i].type==='attributes'){
+        var pa = document.getElementById('pp-actions');
+        var pp = document.getElementById('prop-panel');
+        if(pa && pp && pp.classList.contains('open') && pa.children.length > 0){
+          _expandPanel();
+        }
+      }
+    }
+  });
+  /* Iniciar depois do DOM estar pronto */
+  document.addEventListener('DOMContentLoaded', function(){
+    var pa = document.getElementById('pp-actions');
+    if(pa) obs.observe(pa, {childList:true, subtree:false, attributes:true, attributeFilter:['style']});
+  });
+})();
 
 function startDraw(){
   if(activeMode) return;
@@ -1326,6 +1348,7 @@ function confirmarExclusao(){
   if(!t){cancelarExclusao();return;}
   if(typeof turf==='undefined'){toast('turf.js não carregado.','err');cancelarExclusao();return;}
 
+  _expandPanel();
   document.getElementById('exclusao-modal').classList.remove('show');
   spin(true,'Aplicando exclusão'+(metros>0?' com buffer +'+metros+'m':'')+'...');
 
@@ -1649,6 +1672,8 @@ function _confirmarSplit(featA, areaA, featB, areaB){
   var nomeA=(t?t.nome:'Talhão')+' (1)';
   var nomeB=(t?t.nome:'Talhão')+' (2)';
   var el=document.getElementById('pp-actions');
+  _expandPanel();
+  el.style.display='flex';
   el.innerHTML=
     '<div style="background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.35);border-radius:9px;padding:10px 12px;font-size:11px;color:#bbf7d0;line-height:1.7;">'+
     '✂️ <strong>Divisão calculada — 2 partes</strong><br>'+
@@ -2005,6 +2030,8 @@ function gerarPerimetro(){
       if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
       bufferLayer=L.geoJSON(peri,{style:{color:'#fcd34d',fillColor:'#fbbf24',fillOpacity:.30,weight:2.5,dashArray:'7 4'}}).addTo(map);
       _periTemp=peri; _periArea=novaArea;
+      _expandPanel();
+      document.getElementById('pp-actions').style.display='flex';
       document.getElementById('pp-actions').innerHTML=
         '<div style="background:rgba(234,179,8,.14);border:1px solid rgba(234,179,8,.40);border-radius:9px;padding:10px 12px;font-size:11px;color:#fde68a;line-height:1.6;">'+
         '⚙️ <strong>Perímetro calculado</strong><br>📐 Nova área: <strong>'+novaArea.toFixed(2)+' ha</strong><br>'+
