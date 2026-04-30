@@ -36,6 +36,14 @@
            style="font-size:12px;min-height:32px;padding:0 14px;">
           🔑 Trocar senha
         </a>
+        {% if current_user and current_user.is_admin %}
+        <a href="{{ url_for('auth.admin') }}"
+           class="btn btn--ghost"
+           style="font-size:12px;min-height:32px;padding:0 14px;
+                  background:rgba(234,179,8,.18);border:1px solid rgba(234,179,8,.45);color:#fde68a;">
+          ⚙️ Admin
+        </a>
+        {% endif %}
         {# Botão de talhões — visível apenas para admin em preview #}
         {% if session.get('admin_impersonating') %}
         <a href="{{ url_for('talhoes.mapa') }}"

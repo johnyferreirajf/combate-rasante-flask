@@ -50,17 +50,17 @@
           <input class="ei" type="password" name="confirmar" placeholder="Repita a nova senha" minlength="6" required>
         </div>
         <div class="er">
-          <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
             <a href="{{ url_for('main.painel') }}"
                style="font-size:13px;color:rgba(255,255,255,.55);text-decoration:none;">
               ← Voltar ao painel
             </a>
             {% if current_user and current_user.is_admin %}
-            <a href="{{ url_for('admin.index') }}"
-               style="display:inline-block;padding:8px 16px;border-radius:10px;font-size:12px;
-                      font-weight:800;background:rgba(234,179,8,.20);border:1px solid rgba(234,179,8,.50);
-                      color:#fde68a;text-decoration:none;text-align:center;">
-              ⚙️ Funcionalidades de Administrador
+            <a href="{{ url_for('auth.admin') }}"
+               style="font-size:12px;font-weight:800;padding:6px 14px;border-radius:9px;
+                      background:rgba(234,179,8,.18);border:1px solid rgba(234,179,8,.45);
+                      color:#fde68a;text-decoration:none;">
+              ⚙️ Admin
             </a>
             {% endif %}
           </div>

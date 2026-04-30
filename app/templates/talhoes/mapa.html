@@ -367,31 +367,43 @@ select.pp-input option { background:#0d2418; }
     z-index: 560;
   }
 
-  /* ── Painel direito: bottom sheet PARCIAL (42vh) ──
-     Ocupa menos da metade da tela para o mapa ficar visível e utilizável.
-     As ferramentas funcionam mesmo com o painel aberto. */
+  /* ── Painel direito: bottom sheet ── */
   #prop-panel {
-    position:fixed !important;
-    left:0; right:0; bottom:0; top:auto;
-    width:100% !important;
-    height:auto; max-height:55vh;
-    border-left:none;
-    border-top:1.5px solid rgba(255,255,255,.20);
-    border-radius:16px 16px 0 0;
-    transform:translateY(100%);
-    transition:transform .32s cubic-bezier(.32,1,.32,1);
-    z-index:1100;
+    position: fixed !important;
+    left: 0; right: 0; bottom: 0; top: auto;
+    width: 100% !important;
+    /* Altura: suficiente para mostrar conteúdo, mas deixa mapa visível */
+    height: 58vh;
+    max-height: 58vh;
+    border-left: none;
+    border-top: 1.5px solid rgba(255,255,255,.20);
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);
+    transition: transform .32s cubic-bezier(.32,1,.32,1);
+    z-index: 1100;
+    display: flex;
+    flex-direction: column;
   }
-  #prop-panel.open { transform:translateY(0); }
+  #prop-panel.open { transform: translateY(0); }
 
   /* Alça visual */
   #prop-panel::before {
     content:''; display:block; width:36px; height:4px; border-radius:2px;
-    background:rgba(255,255,255,.25); margin:8px auto 0; flex-shrink:0;
+    background:rgba(255,255,255,.25); margin:8px auto 4px; flex-shrink:0;
   }
 
-  #pp-scroll { max-height:calc(55vh - 20px); overflow-y:auto; }
+  /* Scroll interno ocupa o espaço restante */
+  #pp-scroll {
+    flex: 1;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: 16px;
+  }
   #panel-resizer { display:none; }
+
+  /* Minimizado: aba de 44px */
+  #prop-panel.mini { transform: translateY(calc(100% - 44px)); }
 
   /* Instrução flutuante — abaixo da toolbar */
   #mode-hint { top:136px; bottom:auto; max-width:calc(100% - 16px); font-size:10px; line-height:1.5; }
@@ -404,6 +416,14 @@ select.pp-input option { background:#0d2418; }
     top:auto; bottom:0; left:0; right:0; transform:none;
     border-radius:18px 18px 0 0; min-width:unset; max-width:100%;
     max-height:85vh; overflow-y:auto;
+  }
+
+  /* "Mostrar banner" no mobile: navbar escondida, então mover para abaixo da sidebar */
+  #imp-show-btn {
+    top: 48px !important;   /* abaixo da sidebar de 40px + margem */
+    z-index: 595 !important; /* abaixo da toolbar (550) e acima do mapa */
+    font-size: 10px !important;
+    padding: 3px 10px !important;
   }
 
   /* ── Mira de desenho (mobile) ── */
@@ -526,6 +546,7 @@ select.pp-input option { background:#0d2418; }
       <button onclick="fitAll()" title="Ver tudo"><span class="tb-icon">🔍</span><span class="tb-label">Ver Todos</span></button>
       <div class="tb-sep"></div>
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
+      <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
     </div>
     <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
     <div id="draw-action-bar" style="display:none;">
@@ -889,7 +910,7 @@ function cancelModes(silent){
   /* Remover cursor tesoura */
   map.getContainer().classList.remove('cursor-scissors');
   /* Reset toolbar */
-  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar'].forEach(function(bid){
+  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar','btn-pontes'].forEach(function(bid){
     var b=document.getElementById(bid); if(b) b.classList.remove('active');
   });
   document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
@@ -909,17 +930,15 @@ function cancelAll(){
    1. DESENHAR NOVO TALHÃO
    ════════════════════════════════════════════════════════════ */
 function _miniPanel(){
-  /* No mobile: recolhe o painel parcialmente sem desselecionar o talhão */
   if(window.innerWidth > 768) return;
   var p = document.getElementById('prop-panel');
   if(p && p.classList.contains('open')){
-    /* Animar para fora mas manter classe 'open' — o currentId continua setado */
-    p.style.transform = 'translateY(calc(100% - 48px))';
+    p.classList.add('mini');
   }
 }
 function _expandPanel(){
   var p = document.getElementById('prop-panel');
-  if(p) p.style.transform = '';  /* volta ao CSS normal */
+  if(p) p.classList.remove('mini');
 }
 
 function startDraw(){
@@ -1803,6 +1822,96 @@ function startMesclar(){
       spin(false); toast('Erro ao mesclar: '+err.message,'err',5000);
     }
   },60);
+}
+
+/* ── Unir ilhas com pontes finas ──
+   Pega todos os sub-polígonos da camada selecionada e os conecta
+   com pontes da largura mínima (0.10m), gerando um único polígono.
+   Equivalente ao script QGIS de unir polígonos separados com pontes.
+   ─────────────────────────────────────────────────────────────── */
+function startUnirPontes(){
+  if(!currentId){toast('Selecione uma camada primeiro.','warn');return;}
+  var t=TALHOES.find(function(x){return x.id==currentId;});
+  if(!t){toast('Camada não encontrada.','err');return;}
+  if(typeof turf==='undefined'){toast('turf.js não carregado.','err');return;}
+
+  /* Extrair sub-polígonos */
+  var geom=toFeature(t.geojson).geometry;
+  var polys=[];
+  if(geom.type==='Polygon') polys=[{type:'Feature',geometry:geom,properties:{}}];
+  else if(geom.type==='MultiPolygon')
+    geom.coordinates.forEach(function(r){polys.push({type:'Feature',geometry:{type:'Polygon',coordinates:r},properties:{}}); });
+
+  if(polys.length<=1){toast('A camada já é um único polígono — sem ilhas para unir.','warn',3500);return;}
+
+  spin(true,'Calculando pontes entre '+polys.length+' ilhas...');
+  setTimeout(function(){
+    try{
+      var LARGURA_PONTE = 0.10;   /* 10cm em metros */
+      var RAIO = LARGURA_PONTE/2; /* 5cm */
+
+      /* Algoritmo: Prim MST — conectar sempre a ilha mais próxima ao conjunto já conectado */
+      var conectados=[0];
+      var pendentes=polys.map(function(_,i){return i;}).filter(function(i){return i>0;});
+      var pontes=[];
+
+      while(pendentes.length){
+        var melhorDist=Infinity, melhorI=-1, melhorJ=-1, melhorPto=null;
+
+        conectados.forEach(function(i){
+          pendentes.forEach(function(j){
+            /* Distância mínima entre os dois polígonos usando os vértices */
+            var coordsI=polys[i].geometry.coordinates[0];
+            var coordsJ=polys[j].geometry.coordinates[0];
+            coordsI.forEach(function(ptI){
+              coordsJ.forEach(function(ptJ){
+                var dx=ptI[0]-ptJ[0], dy=ptI[1]-ptJ[1];
+                var dist=Math.sqrt(dx*dx+dy*dy);
+                if(dist<melhorDist){
+                  melhorDist=dist; melhorI=i; melhorJ=j;
+                  melhorPto={i:ptI, j:ptJ};
+                }
+              });
+            });
+          });
+        });
+
+        if(melhorPto && melhorDist>0){
+          /* Criar linha entre os dois pontos mais próximos */
+          var linha=turf.lineString([melhorPto.i, melhorPto.j]);
+          /* Buffer da linha = a ponte */
+          var ponte=turf.buffer(linha, RAIO/111320, {units:'degrees'});
+          if(ponte) pontes.push(ponte);
+        }
+
+        conectados.push(melhorJ);
+        pendentes=pendentes.filter(function(x){return x!==melhorJ;});
+      }
+
+      /* Unir todos os polígonos + pontes */
+      var tudo=polys.concat(pontes);
+      var resultado=tudo[0];
+      for(var k=1;k<tudo.length;k++){
+        try{ resultado=turf.union(resultado,tudo[k]); }
+        catch(e){ /* ignorar erro de union individual */ }
+      }
+
+      if(!resultado) throw new Error('Não foi possível unir as ilhas.');
+
+      var novaArea=turf.area(resultado)/10000;
+
+      /* Atualizar talhão */
+      t.geojson=resultado;
+      t.area_ha=novaArea;
+      document.getElementById('pp-area').textContent='📐 '+novaArea.toFixed(2)+' ha';
+      reloadLayer(t);
+      spin(false);
+      toast('✅ '+polys.length+' ilhas unidas com '+(pontes.length)+' ponte(s) fina(s)! Clique em Salvar.','',4500);
+    }catch(err){
+      spin(false);
+      toast('Erro ao unir pontes: '+err.message,'err',6000);
+    }
+  },80);
 }
 
 /* ── Salvar ── */
