@@ -44,15 +44,12 @@
           ⚙️ Admin
         </a>
         {% endif %}
-        {# Botão de talhões — visível apenas para admin em preview #}
-        {% if session.get('admin_impersonating') %}
+        {# Botão de talhões — visível para todos os clientes #}
         <a href="{{ url_for('talhoes.mapa') }}"
            class="btn btn--primary"
-           style="font-size:12px;min-height:32px;padding:0 14px;background:rgba(234,179,8,.25);
-                  border:1px solid rgba(234,179,8,.60);color:#fde68a;">
-          🗺️ [PREVIEW] Meus Talhões
+           style="font-size:12px;min-height:32px;padding:0 14px;">
+          🗺️ Meus Talhões
         </a>
-        {% endif %}
       </div>
     </div>
 
