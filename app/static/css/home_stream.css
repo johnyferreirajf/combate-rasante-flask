@@ -188,13 +188,15 @@ body.intro-lock {
   font-size: clamp(15px, 1.6vw, 19px);
   font-weight: 900;
   color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0,0,0,.7), 0 2px 12px rgba(0,0,0,.5);
 }
 
 .stream-tile__desc {
   margin: 0 0 8px;
   font-size: 13px;
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.78);
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 4px rgba(0,0,0,.6);
 }
 
 .stream-tile__list {
@@ -215,15 +217,16 @@ body.intro-lock {
   overflow: hidden;
 }
 
-/* Overlay escuro sobre a imagem — deixa o texto legível */
+/* Overlay mínimo — imagem praticamente sem véu */
 .stream-tile__bg-overlay {
   position: absolute;
   inset: 0;
+  /* Só uma faixa escura na base para o texto ser legível */
   background: linear-gradient(
-    160deg,
-    rgba(3, 18, 8, 0.72) 0%,
-    rgba(3, 18, 8, 0.55) 50%,
-    rgba(3, 18, 8, 0.78) 100%
+    to bottom,
+    rgba(0, 0, 0, 0.00) 0%,
+    rgba(0, 0, 0, 0.00) 50%,
+    rgba(0, 0, 0, 0.42) 100%
   );
   z-index: 0;
   transition: background 0.25s ease;
@@ -231,11 +234,24 @@ body.intro-lock {
 
 .stream-tile--has-bg:hover .stream-tile__bg-overlay {
   background: linear-gradient(
-    160deg,
-    rgba(3, 18, 8, 0.60) 0%,
-    rgba(3, 18, 8, 0.38) 50%,
-    rgba(3, 18, 8, 0.65) 100%
+    to bottom,
+    rgba(0, 0, 0, 0.00) 0%,
+    rgba(0, 0, 0, 0.00) 50%,
+    rgba(0, 0, 0, 0.32) 100%
   );
+}
+
+/* Imagem viva e saturada */
+.stream-tile--has-bg {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  overflow: hidden;
+  filter: saturate(1.30) brightness(1.12);
+}
+.stream-tile--has-bg:hover {
+  filter: saturate(1.45) brightness(1.18);
 }
 
 /* Conteúdo fica acima do overlay */
