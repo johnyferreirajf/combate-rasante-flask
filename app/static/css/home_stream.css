@@ -206,6 +206,52 @@ body.intro-lock {
 
 .stream-tile__list li + li { margin-top: 3px; }
 
+/* ─── TILE COM IMAGEM DE FUNDO (Cards normais com bg) ─────── */
+.stream-tile--has-bg {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Overlay escuro sobre a imagem — deixa o texto legível */
+.stream-tile__bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    160deg,
+    rgba(3, 18, 8, 0.72) 0%,
+    rgba(3, 18, 8, 0.55) 50%,
+    rgba(3, 18, 8, 0.78) 100%
+  );
+  z-index: 0;
+  transition: background 0.25s ease;
+}
+
+.stream-tile--has-bg:hover .stream-tile__bg-overlay {
+  background: linear-gradient(
+    160deg,
+    rgba(3, 18, 8, 0.60) 0%,
+    rgba(3, 18, 8, 0.38) 50%,
+    rgba(3, 18, 8, 0.65) 100%
+  );
+}
+
+/* Conteúdo fica acima do overlay */
+.stream-tile__content {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Tiles sem bg mantêm o layout antigo */
+.stream-tile:not(.stream-tile--has-bg) .stream-tile__content {
+  display: contents;
+}
+
 /* ─── TILE COM FOTO DE FUNDO (Em Campo) ──────────────────── */
 .stream-tile--foto {
   padding: 0;

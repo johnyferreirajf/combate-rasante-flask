@@ -14,7 +14,8 @@
       title: "ATIVIDADES",
       desc:  "Operações em campo",
       items: ["Pulverização de Soja", "Controle de Pragas", "Adubação Foliar"],
-      url:   "/atividades"
+      url:   "/atividades",
+      bg:    "/static/img/tiles/atividades.png"
     },
     {
       badge: "CLIENTES",
@@ -22,7 +23,8 @@
       title: "CLIENTES",
       desc:  "Atendimento e histórico",
       items: ["Painéis por safra", "Galeria de análises", "Relatórios organizados"],
-      url:   "/clientes"
+      url:   "/clientes",
+      bg:    "/static/img/tiles/clientes.png"
     },
     {
       badge: "NOVO",
@@ -30,7 +32,8 @@
       title: "PARCERIAS",
       desc:  "Empresas e produtores",
       items: ["Acordos estratégicos", "Relacionamento", "Resultados compartilhados"],
-      url:   "/parcerias"
+      url:   "/parcerias",
+      bg:    "/static/img/tiles/parceria.png"
     },
     {
       badge: "TIME",
@@ -38,7 +41,8 @@
       title: "EQUIPE",
       desc:  "Gestão e contatos",
       items: ["Responsáveis", "Escalas", "Comunicação interna"],
-      url:   "/equipe"
+      url:   "/equipe",
+      bg:    "/static/img/tiles/equipe.png"
     },
     {
       badge: "EVENTOS",
@@ -46,7 +50,8 @@
       title: "EVENTOS",
       desc:  "Agenda e novidades",
       items: ["Dias de campo", "Treinamentos", "Atualizações"],
-      url:   "/eventos"
+      url:   "/eventos",
+      bg:    "/static/img/tiles/eventos.png"
     }
   ];
 
@@ -99,16 +104,21 @@
       );
     }
     var items = (t.items || []).map(function (i) { return "<li>" + i + "</li>"; }).join("");
+    var bgStyle = t.bg ? ' style="background-image:url('' + t.bg + '')"' : '';
+    var tileClass = t.bg ? 'stream-tile stream-tile--has-bg' : 'stream-tile';
     return (
-      '<a class="stream-tile" href="' + t.url + '">' +
-        '<div class="stream-tile__top">' +
-          '<span class="stream-tile__badge">' + t.badge + "</span>" +
-        "</div>" +
-        '<div class="stream-tile__icon">' + t.icon + "</div>" +
-        '<h3 class="stream-tile__title">' + t.title + "</h3>" +
-        '<p class="stream-tile__desc">' + t.desc + "</p>" +
-        '<ul class="stream-tile__list">' + items + "</ul>" +
-      "</a>"
+      '<a class="' + tileClass + '" href="' + t.url + '"' + bgStyle + '>' +
+        (t.bg ? '<div class="stream-tile__bg-overlay"></div>' : '') +
+        '<div class="stream-tile__content">' +
+          '<div class="stream-tile__top">' +
+            '<span class="stream-tile__badge">' + t.badge + '</span>' +
+          '</div>' +
+          '<div class="stream-tile__icon">' + t.icon + '</div>' +
+          '<h3 class="stream-tile__title">' + t.title + '</h3>' +
+          '<p class="stream-tile__desc">' + t.desc + '</p>' +
+          '<ul class="stream-tile__list">' + items + '</ul>' +
+        '</div>' +
+      '</a>'
     );
   }).join("");
 
