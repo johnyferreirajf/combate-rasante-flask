@@ -188,22 +188,23 @@ body.intro-lock {
   font-size: clamp(15px, 1.6vw, 19px);
   font-weight: 900;
   color: #ffffff;
-  text-shadow: 0 1px 6px rgba(0,0,0,.7), 0 2px 12px rgba(0,0,0,.5);
+  text-shadow: 1px 1px 3px rgba(0,0,0,.9), 0 0 8px rgba(0,0,0,.6);
 }
 
 .stream-tile__desc {
   margin: 0 0 8px;
   font-size: 13px;
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.92);
-  text-shadow: 0 1px 4px rgba(0,0,0,.6);
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 1px 1px 3px rgba(0,0,0,.9);
 }
 
 .stream-tile__list {
   margin: 0;
   padding-left: 16px;
-  color: rgba(255, 255, 255, 0.70);
+  color: rgba(255, 255, 255, 0.90);
   font-size: 12px;
+  text-shadow: 1px 1px 3px rgba(0,0,0,.9);
 }
 
 .stream-tile__list li + li { margin-top: 3px; }
@@ -263,31 +264,7 @@ body.intro-lock {
   flex-direction: column;
 }
 
-/* Balão flutuante de legibilidade — só nos tiles com imagem de fundo */
-.stream-tile--has-bg .stream-tile__content {
-  justify-content: flex-end;   /* empurra tudo para baixo */
-  padding: 0;
-}
 
-/* O "balão": fundo escuro translúcido atrás do texto */
-.stream-tile--has-bg .stream-tile__top,
-.stream-tile--has-bg .stream-tile__icon,
-.stream-tile--has-bg .stream-tile__title,
-.stream-tile--has-bg .stream-tile__desc,
-.stream-tile--has-bg .stream-tile__list {
-  position: relative;
-}
-
-.stream-tile--has-bg .stream-tile__text-balloon {
-  background: rgba(0, 0, 0, 0.52);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-radius: 0 0 20px 20px;   /* arredonda só em baixo (canto do card) */
-  padding: 10px 14px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
 
 /* Tiles sem bg: stream-tile__content como flex column funciona normalmente */
 

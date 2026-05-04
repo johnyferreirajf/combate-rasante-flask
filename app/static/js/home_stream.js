@@ -106,38 +106,18 @@
     var items = (t.items || []).map(function (i) { return "<li>" + i + "</li>"; }).join("");
     var bgStyle = t.bg ? ' style="background-image:url(' + t.bg + ')"' : '';
     var tileClass = t.bg ? 'stream-tile stream-tile--has-bg' : 'stream-tile';
-    if(t.bg){
-      /* Tile com imagem: badge no topo, balão de texto na base */
-      return (
-        '<a class="' + tileClass + '" href="' + t.url + '"' + bgStyle + '>' +
-          '<div class="stream-tile__bg-overlay"></div>' +
-          '<div class="stream-tile__content">' +
-            /* Badge flutua no topo direito */
-            '<div class="stream-tile__top" style="position:absolute;top:10px;right:10px;z-index:2;">' +
-              '<span class="stream-tile__badge">' + t.badge + '</span>' +
-            '</div>' +
-            /* Balão de texto na base */
-            '<div class="stream-tile__text-balloon">' +
-              '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
-                '<span style="font-size:18px;">' + t.icon + '</span>' +
-                '<h3 class="stream-tile__title" style="margin:0;">' + t.title + '</h3>' +
-              '</div>' +
-              '<p class="stream-tile__desc" style="margin:0 0 5px;">' + t.desc + '</p>' +
-              '<ul class="stream-tile__list">' + items + '</ul>' +
-            '</div>' +
-          '</div>' +
-        '</a>'
-      );
-    }
     return (
-      '<a class="stream-tile" href="' + t.url + '">' +
-        '<div class="stream-tile__top">' +
-          '<span class="stream-tile__badge">' + t.badge + '</span>' +
+      '<a class="' + tileClass + '" href="' + t.url + '"' + bgStyle + '>' +
+        (t.bg ? '<div class="stream-tile__bg-overlay"></div>' : '') +
+        '<div class="stream-tile__content">' +
+          '<div class="stream-tile__top">' +
+            '<span class="stream-tile__badge">' + t.badge + '</span>' +
+          '</div>' +
+          '<div class="stream-tile__icon">' + t.icon + '</div>' +
+          '<h3 class="stream-tile__title">' + t.title + '</h3>' +
+          '<p class="stream-tile__desc">' + t.desc + '</p>' +
+          '<ul class="stream-tile__list">' + items + '</ul>' +
         '</div>' +
-        '<div class="stream-tile__icon">' + t.icon + '</div>' +
-        '<h3 class="stream-tile__title">' + t.title + '</h3>' +
-        '<p class="stream-tile__desc">' + t.desc + '</p>' +
-        '<ul class="stream-tile__list">' + items + '</ul>' +
       '</a>'
     );
   }).join("");
