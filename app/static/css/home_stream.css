@@ -263,6 +263,32 @@ body.intro-lock {
   flex-direction: column;
 }
 
+/* Balão flutuante de legibilidade — só nos tiles com imagem de fundo */
+.stream-tile--has-bg .stream-tile__content {
+  justify-content: flex-end;   /* empurra tudo para baixo */
+  padding: 0;
+}
+
+/* O "balão": fundo escuro translúcido atrás do texto */
+.stream-tile--has-bg .stream-tile__top,
+.stream-tile--has-bg .stream-tile__icon,
+.stream-tile--has-bg .stream-tile__title,
+.stream-tile--has-bg .stream-tile__desc,
+.stream-tile--has-bg .stream-tile__list {
+  position: relative;
+}
+
+.stream-tile--has-bg .stream-tile__text-balloon {
+  background: rgba(0, 0, 0, 0.52);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 0 0 20px 20px;   /* arredonda só em baixo (canto do card) */
+  padding: 10px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 /* Tiles sem bg: stream-tile__content como flex column funciona normalmente */
 
 /* ─── TILE COM FOTO DE FUNDO (Em Campo) ──────────────────── */
