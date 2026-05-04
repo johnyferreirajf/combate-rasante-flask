@@ -104,7 +104,7 @@
       );
     }
     var items = (t.items || []).map(function (i) { return "<li>" + i + "</li>"; }).join("");
-    var bgStyle = t.bg ? ' style="background-image:url('' + t.bg + '')"' : '';
+    var bgStyle = t.bg ? ' style="background-image:url(' + t.bg + ')"' : '';
     var tileClass = t.bg ? 'stream-tile stream-tile--has-bg' : 'stream-tile';
     return (
       '<a class="' + tileClass + '" href="' + t.url + '"' + bgStyle + '>' +

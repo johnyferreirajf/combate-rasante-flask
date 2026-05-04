@@ -247,10 +247,7 @@ body.intro-lock {
   flex-direction: column;
 }
 
-/* Tiles sem bg mantêm o layout antigo */
-.stream-tile:not(.stream-tile--has-bg) .stream-tile__content {
-  display: contents;
-}
+/* Tiles sem bg: stream-tile__content como flex column funciona normalmente */
 
 /* ─── TILE COM FOTO DE FUNDO (Em Campo) ──────────────────── */
 .stream-tile--foto {
