@@ -504,166 +504,163 @@ def solicitar(tid):
                            current_user=user)
 
 
-# ── Gerar preview do mapa e fazer upload no Cloudinary ───────
+# ── Gerar preview do mapa (Playwright screenshot) ──────────────
 
 @talhoes_bp.route("/api/mapa-preview/<int:tid>", methods=["GET"])
 @login_required
 def mapa_preview(tid):
-    """Gera imagem do talhão com Pillow e faz upload no Cloudinary."""
-    import json as _json, math as _math
+    """Gera screenshot do mapa Leaflet com satélite usando Playwright."""
+    import json as _json, os as _os, tempfile as _tmp
     from io import BytesIO
-    from PIL import Image, ImageDraw, ImageFont
 
     user   = get_current_user()
     talhao = Talhao.query.filter_by(id=tid, user_id=user.id).first_or_404()
 
     try:
-        geo = _json.loads(talhao.geojson) if isinstance(talhao.geojson, str) else talhao.geojson
-        geom = geo.get("geometry") or geo
-        cor_hex = talhao.cor or "#22c55e"
+        geo     = _json.loads(talhao.geojson) if isinstance(talhao.geojson, str) else talhao.geojson
+        cor     = talhao.cor or "#22c55e"
         nome    = talhao.nome or "Talhão"
         area_ha = talhao.area_ha or 0
 
-        import random as _rnd
-        _rnd.seed(42)
+        # Buscar todos os talhões do usuário para mostrar no mapa
+        todos = Talhao.query.filter_by(user_id=user.id).all()
 
-        def _simplificar(coords, max_pts=80):
-            if len(coords) <= max_pts: return coords
-            step = len(coords) / max_pts
-            return [coords[int(i*step)] for i in range(max_pts)] + [coords[0]]
+        # Montar GeoJSON de todos os talhões
+        features = []
+        for t in todos:
+            try:
+                g = _json.loads(t.geojson) if isinstance(t.geojson, str) else t.geojson
+                is_main = (t.id == tid)
+                is_exclusao = (t.cor or "").lower() in ["#dc2626","#ef4444","#b91c1c"]
+                features.append({
+                    "type": "Feature",
+                    "geometry": g.get("geometry") or g,
+                    "properties": {
+                        "nome":      t.nome or "",
+                        "cor":       t.cor or "#22c55e",
+                        "is_main":   is_main,
+                        "is_exclusao": is_exclusao
+                    }
+                })
+            except Exception:
+                pass
 
-        def _coletar_rings(g):
-            t = g.get("type","")
-            if t == "Polygon": return [g["coordinates"][0]]
-            elif t == "MultiPolygon": return [p[0] for p in g["coordinates"]]
-            elif t == "GeometryCollection":
-                rs=[]
-                for gg in g.get("geometries",[]): rs+=_coletar_rings(gg)
-                return rs
-            return []
+        fc_json = _json.dumps({"type":"FeatureCollection","features":features})
 
-        rings = _coletar_rings(geom)
-        if not rings:
-            return jsonify({"erro": "GeoJSON sem coordenadas"}), 400
+        # URL da logo
+        logo_url = current_app.config.get("SERVER_NAME","")
+        logo_path = _os.path.join(current_app.root_path, "static", "img", "logo-combate.jpeg")
+        logo_b64 = ""
+        if _os.path.exists(logo_path):
+            import base64
+            with open(logo_path, "rb") as lf:
+                logo_b64 = "data:image/jpeg;base64," + base64.b64encode(lf.read()).decode()
 
-        all_pts = [pt for r in rings for pt in r]
-        lons = [p[0] for p in all_pts]
-        lats = [p[1] for p in all_pts]
+        html = f"""<!DOCTYPE html><html><head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  * {{margin:0;padding:0;box-sizing:border-box;}}
+  body {{background:#071a0d;font-family:Arial,sans-serif;}}
+  #map {{width:1200px;height:630px;}}
+  #header {{width:1200px;height:70px;background:rgba(3,12,5,0.97);display:flex;
+            align-items:center;justify-content:space-between;padding:0 20px;
+            border-bottom:3px solid {cor};}}
+  #footer {{width:1200px;height:50px;background:rgba(3,12,5,0.97);display:flex;
+            align-items:center;justify-content:space-between;padding:0 20px;
+            border-top:2px solid {cor};}}
+  .htitle {{color:#fff;font-size:22px;font-weight:900;letter-spacing:1px;}}
+  .hsub   {{color:{cor};font-size:13px;margin-top:2px;}}
+  .finfo  {{color:#fff;font-size:13px;font-weight:700;}}
+  .fdate  {{color:rgba(255,255,255,0.5);font-size:12px;}}
+  .logo   {{height:50px;border-radius:8px;}}
+  .nome-pill {{background:{cor}33;border:1.5px solid {cor}88;
+               border-radius:6px;padding:4px 14px;color:{cor};
+               font-size:15px;font-weight:800;}}
+</style>
+</head><body>
+<div id="header">
+  <div>
+    <div class="htitle">MAPA DE APLICACAO</div>
+    <div class="hsub">Combate Rasante &mdash; Aviacao Agricola de Precisao</div>
+  </div>
+  {'<img class="logo" src="' + logo_b64 + '">' if logo_b64 else '<span style="color:{cor};font-weight:900;font-size:18px;">CR</span>'}
+</div>
+<div id="map"></div>
+<div id="footer">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <span class="nome-pill">{nome}</span>
+    <span class="finfo">{area_ha:.2f} ha</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:20px;">
+    <span style="color:#22c55e;font-size:12px;">&#9632; Area principal</span>
+    <span style="color:#dc2626;font-size:12px;">&#9632; Exclusao</span>
+    <span style="color:rgba(255,255,255,0.4);font-size:12px;">&#9632; Demais areas</span>
+    <span class="fdate">{__import__('datetime').date.today().strftime('%d/%m/%Y')}</span>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+var fc = {fc_json};
+var mainId = {tid};
 
-        W, H = 1200, 720
-        HEADER, FOOTER = 90, 65
-        MAP_H = H - HEADER - FOOTER
+var map = L.map('map', {{zoomControl:false, attributionControl:false, tap:false}});
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',
+  {{maxNativeZoom:19,maxZoom:20}}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{{z}}/{{y}}/{{x}}',
+  {{maxNativeZoom:19,maxZoom:20,opacity:0.6}}).addTo(map);
 
-        margin = 0.18
-        lon_min, lon_max = min(lons), max(lons)
-        lat_min, lat_max = min(lats), max(lats)
-        dlon = (lon_max - lon_min) or 0.001
-        dlat = (lat_max - lat_min) or 0.001
-        lon_min -= dlon*margin; lon_max += dlon*margin
-        lat_min -= dlat*margin; lat_max += dlat*margin
+var mainLayer = null;
+L.geoJSON(fc, {{
+  style: function(f) {{
+    var p = f.properties;
+    if(p.is_main)     return {{color:p.cor,weight:4,fillColor:p.cor,fillOpacity:0.45,dashArray:null}};
+    if(p.is_exclusao) return {{color:'#dc2626',weight:3,fillColor:'#dc2626',fillOpacity:0.40}};
+    return {{color:'rgba(255,255,255,0.6)',weight:1.5,fillColor:p.cor,fillOpacity:0.15}};
+  }},
+  onEachFeature: function(f,l) {{
+    var p = f.properties;
+    if(p.nome) {{
+      l.bindTooltip(p.nome, {{permanent:true,direction:'center',
+        className: p.is_main ? 'main-label' : 'other-label'}});
+    }}
+    if(p.is_main) mainLayer = l;
+  }}
+}}).addTo(map);
 
-        def geo2px(lon, lat):
-            x = (lon - lon_min) / (lon_max - lon_min) * W
-            y = HEADER + (1 - (lat - lat_min) / (lat_max - lat_min)) * MAP_H
-            return (x, y)
+// Fit nos bounds da camada principal com padding
+if(mainLayer) {{
+  map.fitBounds(mainLayer.getBounds(), {{padding:[40,40]}});
+}} else {{
+  var all = L.geoJSON(fc);
+  map.fitBounds(all.getBounds(), {{padding:[20,20]}});
+}}
 
-        # Fundo com gradiente de campo agricola
-        img = Image.new("RGB", (W, H), "#1a2e0d")
-        draw = ImageDraw.Draw(img, "RGBA")
+window.MAP_READY = false;
+setTimeout(function(){{ window.MAP_READY = true; }}, 5000);
+</script>
+<style>
+.main-label {{background:rgba(0,0,0,0.75);border:none;color:#fff;font-weight:900;
+             font-size:13px;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.5);}}
+.other-label {{background:rgba(0,0,0,0.55);border:none;color:rgba(255,255,255,0.8);
+              font-size:11px;padding:2px 6px;border-radius:4px;}}
+</style>
+</body></html>"""
 
-        for i in range(MAP_H):
-            t = i / MAP_H
-            rv = int(15 + 35*t + _rnd.randint(-2,2))
-            gv = int(28 + 18*t + _rnd.randint(-2,2))
-            bv = int(8  +  5*t + _rnd.randint(-1,1))
-            draw.line([(0, HEADER+i),(W, HEADER+i)], fill=(rv,gv,bv))
-
-        # Texturas de campo
-        for i in range(0, MAP_H, _rnd.randint(18,35)):
-            alpha = _rnd.randint(8,22)
-            color = _rnd.choice([(255,220,100),(80,120,30),(150,100,40),(60,90,20)])
-            draw.line([(0, HEADER+i),(W, HEADER+i)], fill=(*color, alpha))
-
-        # Manchas de vegetacao
-        for _ in range(10):
-            cx2 = _rnd.randint(0,W); cy2 = _rnd.randint(HEADER,H-FOOTER)
-            rw = _rnd.randint(60,200); rh = _rnd.randint(30,80)
-            col = _rnd.choice([(40,80,15,20),(100,70,20,18),(60,100,25,18)])
-            draw.ellipse([cx2-rw,cy2-rh,cx2+rw,cy2+rh], fill=col)
-
-        # Blur suave no fundo
-        from PIL.ImageFilter import GaussianBlur
-        bg_crop = img.crop((0,HEADER,W,H-FOOTER))
-        img.paste(bg_crop.filter(GaussianBlur(radius=2)), (0,HEADER))
-        draw = ImageDraw.Draw(img, "RGBA")
-
-        # Cor hex
-        ch2 = cor_hex.lstrip("#")
-        cr, cg2, cb2 = int(ch2[0:2],16), int(ch2[2:4],16), int(ch2[4:6],16)
-
-        # Desenhar poligonos (sem pontos nos vertices)
-        for ring in rings:
-            simp = _simplificar(ring, 80)
-            pts = [geo2px(c[0],c[1]) for c in simp]
-            if len(pts) < 3: continue
-            for d in [8,5,3]:
-                draw.polygon([(x+d,y+d) for x,y in pts], fill=(0,0,0,35))
-            draw.polygon(pts, fill=(cr,cg2,cb2,55))
-            draw.line(pts+[pts[0]], fill=(cr,cg2,cb2,240), width=5)
-            draw.line(pts+[pts[0]], fill=(255,255,255,100), width=1)
-
-        # Centroide
-        avg_lon = sum(lons)/len(lons)
-        avg_lat = sum(lats)/len(lats)
-        cpx, cpy = geo2px(avg_lon, avg_lat)
-
-        # Fontes
-        try:
-            fB = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
-            fM = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-            fS = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
-            fXS= ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
-        except:
-            fB = fM = fS = fXS = ImageFont.load_default()
-
-        # Label no centroide
-        lbl_nome = nome[:28]
-        lbl_w = max(len(lbl_nome)*12, 120) + 30
-        lx, ly = cpx - lbl_w//2, cpy - 30
-        draw.rounded_rectangle([lx-4,ly-4,lx+lbl_w+4,ly+54], radius=8,
-                                fill=(0,0,0,155), outline=(cr,cg2,cb2,120), width=2)
-        draw.text((lx+8, ly+4),  lbl_nome,            fill=(255,255,255,230), font=fM)
-        draw.text((lx+8, ly+28), f"{area_ha:.2f} ha", fill=(cr,cg2,cb2,220), font=fS)
-
-        # HEADER
-        draw.rectangle([0,0,W,HEADER], fill=(3,10,5,252))
-        draw.rectangle([0,0,W,5], fill=(cr,cg2,cb2))
-        draw.rectangle([0,HEADER-1,W,HEADER+1], fill=(cr,cg2,cb2,80))
-
-        draw.text((22,12), "SOLICITACAO DE APLICACAO", fill=(255,255,255,235), font=fB)
-        draw.text((22,48), "Combate Rasante   Aviacao Agricola de Precisao", fill=(cr,cg2,cb2,200), font=fS)
-        draw.text((W-20,12), "combaterasante.com.br", fill=(255,255,255,100), font=fXS, anchor="ra")
-        draw.text((W-20,30), "Aviacao Agricola", fill=(255,255,255,60), font=fXS, anchor="ra")
-
-        # FOOTER
-        draw.rectangle([0,H-FOOTER,W,H], fill=(3,10,5,252))
-        draw.rectangle([0,H-FOOTER,W,H-FOOTER+1], fill=(cr,cg2,cb2,80))
-        draw.rectangle([0,H-4,W,H], fill=(cr,cg2,cb2))
-
-        tw2 = min(len(nome)*11+30, 420)
-        draw.rounded_rectangle([14,H-FOOTER+13,14+tw2,H-FOOTER+45], radius=8,
-                                fill=(cr,cg2,cb2,35), outline=(cr,cg2,cb2,100), width=2)
-        draw.text((34, H-FOOTER+21), nome[:35], fill=(cr,cg2,cb2,235), font=fM)
-        draw.text((34+tw2+12, H-FOOTER+21), f"Area: {area_ha:.2f} ha", fill=(255,255,255,175), font=fS)
-
-        from datetime import date as _date
-        draw.text((W-20, H-FOOTER+21), _date.today().strftime("%d/%m/%Y"), fill=(255,255,255,80), font=fXS, anchor="ra")
+        # Screenshot com Playwright
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(args=["--no-sandbox","--disable-dev-shm-usage","--disable-gpu"])
+            page = browser.new_page(viewport={"width":1200,"height":750})
+            page.set_content(html, wait_until="networkidle")
+            page.wait_for_timeout(5500)  # aguardar tiles carregarem
+            screenshot = page.screenshot(
+                clip={"x":0,"y":0,"width":1200,"height":750},
+                type="jpeg", quality=92
+            )
+            browser.close()
 
         # Upload Cloudinary
-        buf = BytesIO()
-        img.save(buf, format="JPEG", quality=90)
-        buf.seek(0)
-
         import cloudinary, cloudinary.uploader
         cloudinary.config(
             cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
@@ -671,7 +668,7 @@ def mapa_preview(tid):
             api_secret=current_app.config["CLOUDINARY_API_SECRET"],
         )
         result = cloudinary.uploader.upload(
-            buf.getvalue(),
+            screenshot,
             folder="combaterasante/talhoes_preview",
             public_id=f"talhao_{tid}_{user.id}",
             overwrite=True,
@@ -682,7 +679,6 @@ def mapa_preview(tid):
     except Exception as e:
         current_app.logger.error(f"mapa_preview error: {e}")
         return jsonify({"erro": str(e)}), 500
-
 
 # ── Admin: todas as solicitações ─────────────────────────────
 
