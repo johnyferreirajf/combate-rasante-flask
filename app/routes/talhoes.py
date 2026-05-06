@@ -504,6 +504,172 @@ def solicitar(tid):
                            current_user=user)
 
 
+# ── Gerar preview do mapa e fazer upload no Cloudinary ───────
+
+@talhoes_bp.route("/api/mapa-preview/<int:tid>", methods=["GET"])
+@login_required
+def mapa_preview(tid):
+    """Gera imagem do talhão com Pillow e faz upload no Cloudinary."""
+    import json as _json, math as _math
+    from io import BytesIO
+    from PIL import Image, ImageDraw, ImageFont
+
+    user   = get_current_user()
+    talhao = Talhao.query.filter_by(id=tid, user_id=user.id).first_or_404()
+
+    try:
+        geo = _json.loads(talhao.geojson) if isinstance(talhao.geojson, str) else talhao.geojson
+        geom = geo.get("geometry") or geo
+        cor_hex = talhao.cor or "#22c55e"
+        nome    = talhao.nome or "Talhão"
+        area_ha = talhao.area_ha or 0
+
+        def coletar(c, acc):
+            if isinstance(c[0], (int, float)): acc.append(c)
+            else:
+                for sub in c: coletar(sub, acc)
+
+        coords_flat = []
+        coletar(geom["coordinates"], coords_flat)
+        if not coords_flat:
+            return {"erro": "GeoJSON sem coordenadas"}, 400
+
+        lons = [c[0] for c in coords_flat]
+        lats = [c[1] for c in coords_flat]
+
+        W, H = 1200, 720
+        HEADER, FOOTER = 90, 70
+        MAP_H = H - HEADER - FOOTER
+
+        margin = 0.22
+        lon_min, lon_max = min(lons), max(lons)
+        lat_min, lat_max = min(lats), max(lats)
+        dlon = (lon_max - lon_min) or 0.001
+        dlat = (lat_max - lat_min) or 0.001
+        lon_min -= dlon*margin; lon_max += dlon*margin
+        lat_min -= dlat*margin; lat_max += dlat*margin
+
+        def geo2px(lon, lat):
+            x = (lon - lon_min) / (lon_max - lon_min) * W
+            y = HEADER + (1 - (lat - lat_min) / (lat_max - lat_min)) * MAP_H
+            return (x, y)
+
+        # Imagem base
+        img = Image.new("RGB", (W, H), "#050f07")
+        draw = ImageDraw.Draw(img, "RGBA")
+
+        # Fundo da área do mapa com gradiente vertical
+        for i in range(MAP_H):
+            t = i / MAP_H
+            r = int(5 + 12*t*(1-t)*4)
+            g = int(15 + 28*t*(1-t)*4)
+            b = int(7 + 10*t*(1-t)*4)
+            draw.line([(0, HEADER+i),(W, HEADER+i)], fill=(r,g,b))
+
+        # Grade sutil
+        for gx in range(0, W, 60):
+            draw.line([(gx, HEADER),(gx, H-FOOTER)], fill=(255,255,255,10))
+        for gy in range(0, MAP_H, 60):
+            draw.line([(0, HEADER+gy),(W, HEADER+gy)], fill=(255,255,255,10))
+
+        # Converter cor hex
+        ch = cor_hex.lstrip("#")
+        cr, cg, cb = int(ch[0:2],16), int(ch[2:4],16), int(ch[4:6],16)
+
+        def pegar_rings(g):
+            t = g.get("type","")
+            if t == "Polygon": return [g["coordinates"][0]]
+            elif t == "MultiPolygon": return [p[0] for p in g["coordinates"]]
+            elif t == "GeometryCollection":
+                rs=[]
+                for gg in g.get("geometries",[]): rs+=pegar_rings(gg)
+                return rs
+            return []
+
+        rings = pegar_rings(geom)
+        for ring in rings:
+            pts = [geo2px(c[0],c[1]) for c in ring]
+            if len(pts) < 3: continue
+            # Sombra
+            draw.polygon([(x+5,y+5) for x,y in pts], fill=(0,0,0,50))
+            # Fill
+            draw.polygon(pts, fill=(cr,cg,cb,65))
+            # Borda exterior
+            draw.line(pts+[pts[0]], fill=(cr,cg,cb), width=4)
+            # Borda interior branca
+            draw.line(pts+[pts[0]], fill=(255,255,255,80), width=1)
+            # Vértices
+            for px,py in pts[:-1]:
+                draw.ellipse([px-6,py-6,px+6,py+6], fill=(cr,cg,cb), outline=(255,255,255), width=2)
+
+        # Centroide para label
+        cpx, cpy = geo2px(sum(lons)/len(lons), sum(lats)/len(lats))
+
+        # Fontes
+        try:
+            fB = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
+            fM = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
+            fS = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+            fXS= ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
+        except:
+            fB = fM = fS = fXS = ImageFont.load_default()
+
+        # Label no centroide
+        for dx,dy in [(2,2),(1,1)]:
+            draw.text((cpx-60+dx, cpy-16+dy), nome[:28], fill=(0,0,0,200), font=fM)
+        draw.text((cpx-60, cpy-16), nome[:28], fill=(255,255,255,220), font=fM)
+        draw.text((cpx-60, cpy+8), f"{area_ha:.2f} ha", fill=(cr,cg,cb,210), font=fS)
+
+        # ── HEADER ─────────────────────────────────────
+        draw.rectangle([0,0,W,HEADER], fill=(3,12,6,250))
+        draw.rectangle([0,0,W,5], fill=(cr,cg,cb))  # barra colorida topo
+        draw.rectangle([0,HEADER-1,W,HEADER], fill=(cr,cg,cb,50))
+
+        draw.text((20,12), "SOLICITACAO DE APLICACAO", fill=(255,255,255,230), font=fB)
+        draw.text((20,46), "Combate Rasante Aviacao Agricola", fill=(cr,cg,cb,200), font=fS)
+        draw.text((W-20,12), "combaterasante.com.br", fill=(255,255,255,100), font=fXS, anchor="ra")
+        draw.text((W-20,30), "Aviacao Agricola de Precisao", fill=(255,255,255,60), font=fXS, anchor="ra")
+
+        # ── FOOTER ─────────────────────────────────────
+        draw.rectangle([0,H-FOOTER,W,H], fill=(3,12,6,250))
+        draw.rectangle([0,H-FOOTER,W,H-FOOTER+1], fill=(cr,cg,cb,50))
+        draw.rectangle([0,H-5,W,H], fill=(cr,cg,cb))  # barra colorida fundo
+
+        # Pílula nome
+        tw = min(len(nome)*11+30, 400)
+        draw.rounded_rectangle([16, H-FOOTER+14, 16+tw, H-FOOTER+44], radius=8,
+                                fill=(cr,cg,cb,40), outline=(cr,cg,cb,120), width=1)
+        draw.text((36, H-FOOTER+22), nome[:35], fill=(cr,cg,cb,230), font=fM)
+        draw.text((36+tw+10, H-FOOTER+22), f"Area: {area_ha:.2f} ha", fill=(255,255,255,180), font=fS)
+
+        from datetime import date as _date
+        draw.text((W-20, H-FOOTER+22), _date.today().strftime("%d/%m/%Y"), fill=(255,255,255,80), font=fXS, anchor="ra")
+
+        # Upload Cloudinary
+        buf = BytesIO()
+        img.save(buf, format="JPEG", quality=90)
+        buf.seek(0)
+
+        import cloudinary, cloudinary.uploader
+        cloudinary.config(
+            cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+            api_key=current_app.config["CLOUDINARY_API_KEY"],
+            api_secret=current_app.config["CLOUDINARY_API_SECRET"],
+        )
+        result = cloudinary.uploader.upload(
+            buf.getvalue(),
+            folder="combaterasante/talhoes_preview",
+            public_id=f"talhao_{tid}_{user.id}",
+            overwrite=True,
+            resource_type="image",
+        )
+        return {"url": result["secure_url"]}
+
+    except Exception as e:
+        current_app.logger.error(f"mapa_preview error: {e}")
+        return {"erro": str(e)}, 500
+
+
 # ── Admin: todas as solicitações ─────────────────────────────
 
 @talhoes_bp.route("/admin/solicitacoes")

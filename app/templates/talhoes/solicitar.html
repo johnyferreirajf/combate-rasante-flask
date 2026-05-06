@@ -15,6 +15,7 @@ select.fi option{background:#0d2418;}
 textarea.fi{resize:vertical;}
 .btn-wa{display:inline-flex;align-items:center;gap:8px;padding:0 18px;min-height:42px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;background:#25D366;color:#fff;}
 .btn-wa:hover{background:#1ebe5d;}
+.btn-wa:disabled{background:#3a3a3a;cursor:wait;}
 </style>
 {% endblock %}
 {% block content %}
@@ -62,11 +63,11 @@ textarea.fi{resize:vertical;}
 
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px;flex-wrap:wrap;">
       <a href="{{ url_for('talhoes.mapa') }}" class="btn btn--ghost">Cancelar</a>
-      <button type="button" class="btn-wa" onclick="enviarWhatsApp()">
+      <button type="button" id="btn-wa" class="btn-wa" onclick="iniciarWhatsApp(this)">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
         </svg>
-        WhatsApp
+        <span id="wa-txt">WhatsApp</span>
       </button>
       <button type="submit" class="btn btn--primary">✈️ Enviar Solicitação</button>
     </div>
@@ -76,26 +77,12 @@ textarea.fi{resize:vertical;}
 </section>
 
 <script>
-/* Calcular centroide do GeoJSON para o link de mapa */
-var TALHAO_GEOJSON = {{ talhao.geojson | safe }};
-var TALHAO_NOME    = {{ talhao.nome | tojson }};
-var TALHAO_AREA    = '{{ "%.2f"|format(talhao.area_ha or 0) }}';
+var TALHAO_ID   = {{ talhao.id }};
+var TALHAO_NOME = {{ talhao.nome | tojson }};
+var TALHAO_AREA = '{{ "%.2f"|format(talhao.area_ha or 0) }}';
+var TALHAO_GEO  = {{ talhao.geojson | safe }};
 
-function calcCentroid(geojson){
-  var coords = [];
-  function coleta(c){
-    if(typeof c[0] === 'number'){ coords.push(c); }
-    else { c.forEach(coleta); }
-  }
-  var geom = geojson.geometry || geojson;
-  coleta(geom.coordinates);
-  if(!coords.length) return null;
-  var lon = coords.reduce(function(s,c){return s+c[0];},0)/coords.length;
-  var lat = coords.reduce(function(s,c){return s+c[1];},0)/coords.length;
-  return {lat: lat.toFixed(6), lon: lon.toFixed(6)};
-}
-
-function enviarWhatsApp(){
+function iniciarWhatsApp(btn){
   var cultura = document.getElementById('campo-cultura').value;
   var produto  = document.getElementById('campo-produto').value;
   var dose     = document.getElementById('campo-dose').value;
@@ -105,24 +92,31 @@ function enviarWhatsApp(){
   if(!cultura){ alert('Selecione a cultura antes de enviar.'); return; }
   if(!produto.trim()){ alert('Informe o produto antes de enviar.'); return; }
 
-  /* Formatar data */
   var dataFmt = 'Não informada';
-  if(dataVal){
-    var p = dataVal.split('-');
-    dataFmt = p[2]+'/'+p[1]+'/'+p[0];
-  }
+  if(dataVal){ var p=dataVal.split('-'); dataFmt=p[2]+'/'+p[1]+'/'+p[0]; }
 
-  /* Link do mapa mostrando o centroide do talhão */
-  var centro = calcCentroid(TALHAO_GEOJSON);
-  var mapaUrl = '';
-  if(centro){
-    /* Google Maps com pin no centroide */
-    mapaUrl = 'https://maps.google.com/?q=' + centro.lat + ',' + centro.lon + '&z=15';
-  }
+  btn.disabled = true;
+  document.getElementById('wa-txt').textContent = 'Gerando imagem...';
 
-  /* Montar mensagem limpa — sem escape unicode, com emojis diretos */
+  /* Gerar imagem no servidor */
+  fetch('/talhoes/api/mapa-preview/' + TALHAO_ID)
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var imgUrl = d.url || null;
+      enviarMensagem(cultura, produto, dose, dataFmt, obs, imgUrl);
+    })
+    .catch(function(){
+      enviarMensagem(cultura, produto, dose, dataFmt, obs, null);
+    })
+    .finally(function(){
+      btn.disabled = false;
+      document.getElementById('wa-txt').textContent = 'WhatsApp';
+    });
+}
+
+function enviarMensagem(cultura, produto, dose, dataFmt, obs, imgUrl){
   var linhas = [
-    '✈️ *SOLICITAÇÃO DE APLICAÇÃO*',
+    '*✈️ SOLICITAÇÃO DE APLICAÇÃO*',
     '',
     '🗺️ *Talhão:* ' + TALHAO_NOME,
     '📐 *Área:* ' + TALHAO_AREA + ' ha',
@@ -130,14 +124,17 @@ function enviarWhatsApp(){
     '📅 *Data desejada:* ' + dataFmt,
     '🧪 *Produto:* ' + produto
   ];
-  if(dose)    linhas.push('⚗️ *Dose/Volume:* ' + dose);
-  if(obs)     linhas.push('📝 *Observações:* ' + obs);
-  if(mapaUrl) linhas.push('', '📍 *Localização do talhão:*', mapaUrl);
-  linhas.push('', '_Enviado pelo portal — Combate Rasante_');
+  if(dose) linhas.push('⚗️ *Dose/Volume:* ' + dose);
+  if(obs)  linhas.push('📝 *Observações:* ' + obs);
+  if(imgUrl){
+    linhas.push('');
+    linhas.push('🛩️ *Mapa do talhão:*');
+    linhas.push(imgUrl);
+  }
+  linhas.push('');
+  linhas.push('_Enviado pelo portal — Combate Rasante_');
 
-  var msg = linhas.join('\n');
-  var url = 'https://wa.me/5534991967002?text=' + encodeURIComponent(msg);
-  window.open(url, '_blank');
+  window.open('https://wa.me/5534991967002?text=' + encodeURIComponent(linhas.join('\n')), '_blank');
 }
 </script>
 {% endblock %}
