@@ -7,7 +7,7 @@ import io, json, math, zipfile
 from datetime import datetime, date
 
 from flask import (Blueprint, render_template, request, redirect,
-                   url_for, flash, jsonify, send_file, abort, session)
+                   url_for, flash, jsonify, send_file, abort, session, current_app)
 
 from app import db
 from app.models.talhao import Talhao, SolicitacaoAplicacao
@@ -663,11 +663,11 @@ def mapa_preview(tid):
             overwrite=True,
             resource_type="image",
         )
-        return {"url": result["secure_url"]}
+        return jsonify({"url": result["secure_url"]})
 
     except Exception as e:
         current_app.logger.error(f"mapa_preview error: {e}")
-        return {"erro": str(e)}, 500
+        return jsonify({"erro": str(e)}), 500
 
 
 # ── Admin: todas as solicitações ─────────────────────────────

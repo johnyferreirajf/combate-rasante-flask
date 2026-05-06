@@ -116,23 +116,24 @@ function iniciarWhatsApp(btn){
 
 function enviarMensagem(cultura, produto, dose, dataFmt, obs, imgUrl){
   var linhas = [
-    '*✈️ SOLICITAÇÃO DE APLICAÇÃO*',
+    '✈️ *SOLICITAÇÃO DE APLICAÇÃO*',
+    '━━━━━━━━━━━━━━━━━━━━━━',
     '',
-    '🗺️ *Talhão:* ' + TALHAO_NOME,
+    '🗺 *Talhão:* ' + TALHAO_NOME,
     '📐 *Área:* ' + TALHAO_AREA + ' ha',
     '🌱 *Cultura:* ' + cultura,
-    '📅 *Data desejada:* ' + dataFmt,
+    '📅 *Data:* ' + dataFmt,
     '🧪 *Produto:* ' + produto
   ];
-  if(dose) linhas.push('⚗️ *Dose/Volume:* ' + dose);
-  if(obs)  linhas.push('📝 *Observações:* ' + obs);
+  if(dose) linhas.push('💧 *Dose/Volume:* ' + dose);
+  if(obs)  linhas.push('📝 *Obs:* ' + obs);
+  linhas.push('');
+  linhas.push('━━━━━━━━━━━━━━━━━━━━━━');
   if(imgUrl){
-    linhas.push('');
-    linhas.push('🛩️ *Mapa do talhão:*');
-    linhas.push(imgUrl);
+    linhas.push('🛩 Mapa do talhão: ' + imgUrl);
   }
   linhas.push('');
-  linhas.push('_Enviado pelo portal — Combate Rasante_');
+  linhas.push('_Combate Rasante — Aviação Agrícola_');
 
   window.open('https://wa.me/5534991967002?text=' + encodeURIComponent(linhas.join('\n')), '_blank');
 }
