@@ -628,9 +628,81 @@ L.geoJSON(fc, {{
   }}
 }}).addTo(map);
 
-// Fit nos bounds da camada principal com padding
+// ── Centróide com coordenadas DMS no polígono principal de maior área ──
+function toDMS(deg, isLat) {{
+  var d = Math.abs(deg);
+  var graus = Math.floor(d);
+  var minRaw = (d - graus) * 60;
+  var min = Math.floor(minRaw);
+  var seg = ((minRaw - min) * 60).toFixed(1);
+  var dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'L' : 'O');
+  return graus + '° ' + min + "' " + seg + '" ' + dir;
+}}
+
+function calcArea(coords) {{
+  // Shoelace formula (área aproximada em graus²)
+  var a = 0;
+  for(var i = 0; i < coords.length - 1; i++) {{
+    a += coords[i][0] * coords[i+1][1] - coords[i+1][0] * coords[i][1];
+  }}
+  return Math.abs(a / 2);
+}}
+
+function getCentroid(coords) {{
+  var x = 0, y = 0, n = coords.length - 1; // último = primeiro
+  for(var i = 0; i < n; i++) {{
+    x += coords[i][0]; y += coords[i][1];
+  }}
+  return [x/n, y/n];
+}}
+
+// Encontrar sub-polígono de maior área dentro da feição principal
 if(mainLayer) {{
-  map.fitBounds(mainLayer.getBounds(), {{padding:[40,40]}});
+  var bestArea = -1, bestCentroid = null;
+  mainLayer.eachLayer(function(sub) {{
+    // Para cada sub-layer (MultiPolygon é decomposto em layers)
+    if(sub.getLatLngs) {{
+      var lls = sub.getLatLngs();
+      // Normalizar para array de arrays
+      var rings = Array.isArray(lls[0]) ? lls : [lls];
+      rings.forEach(function(ring) {{
+        var coords = ring.map(function(ll){{ return [ll.lng, ll.lat]; }});
+        coords.push(coords[0]); // fechar
+        var area = calcArea(coords);
+        if(area > bestArea) {{
+          bestArea = area;
+          bestCentroid = getCentroid(coords);
+        }}
+      }});
+    }}
+  }});
+
+  // Fallback: centro dos bounds
+  if(!bestCentroid) {{
+    var ctr = mainLayer.getBounds().getCenter();
+    bestCentroid = [ctr.lng, ctr.lat];
+  }}
+
+  var lon = bestCentroid[0], lat = bestCentroid[1];
+  var dmsLat = toDMS(lat, true);
+  var dmsLon = toDMS(lon, false);
+
+  // Marcador com pin + coordenadas
+  var coordIcon = L.divIcon({{
+    className: 'coord-icon',
+    html: '<div class="coord-box">' +
+            '<div class="coord-pin"></div>' +
+            '<div class="coord-text">' +
+              '<span class="coord-lat">' + dmsLat + '</span>' +
+              '<span class="coord-lon">' + dmsLon + '</span>' +
+            '</div>' +
+          '</div>',
+    iconAnchor: [0, 24],
+    iconSize: [200, 60]
+  }});
+
+  L.marker([lat, lon], {{icon: coordIcon, interactive:false}}).addTo(map);
+  map.fitBounds(mainLayer.getBounds(), {{padding:[60,60]}});
 }} else {{
   var all = L.geoJSON(fc);
   map.fitBounds(all.getBounds(), {{padding:[20,20]}});
@@ -644,6 +716,18 @@ setTimeout(function(){{ window.MAP_READY = true; }}, 5000);
              font-size:13px;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.5);}}
 .other-label {{background:rgba(0,0,0,0.55);border:none;color:rgba(255,255,255,0.8);
               font-size:11px;padding:2px 6px;border-radius:4px;}}
+.coord-icon  {{ background:transparent!important; border:none!important; }}
+.coord-box   {{ position:relative; }}
+.coord-pin   {{ width:10px;height:10px;background:#fff;border:2px solid #16a34a;
+               border-radius:50%;position:absolute;top:0;left:0;
+               box-shadow:0 0 0 3px rgba(22,163,74,0.35); }}
+.coord-text  {{ position:absolute;top:-28px;left:14px;
+               background:rgba(0,0,0,0.82);border:1px solid rgba(255,255,255,0.25);
+               border-radius:6px;padding:4px 9px;white-space:nowrap;
+               box-shadow:0 2px 8px rgba(0,0,0,0.6); }}
+.coord-lat,
+.coord-lon   {{ display:block;font-size:11px;font-weight:700;
+               font-family:monospace;color:#86efac;line-height:1.4; }}
 </style>
 </body></html>"""
 
