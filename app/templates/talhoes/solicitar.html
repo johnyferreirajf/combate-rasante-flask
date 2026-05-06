@@ -115,27 +115,39 @@ function iniciarWhatsApp(btn){
 }
 
 function enviarMensagem(cultura, produto, dose, dataFmt, obs, imgUrl){
+  var SEP = '--------------------';
   var linhas = [
-    '✈️ *SOLICITAÇÃO DE APLICAÇÃO*',
-    '━━━━━━━━━━━━━━━━━━━━━━',
+    '*SOLICITACAO DE APLICACAO*',
+    SEP,
     '',
-    '🗺 *Talhão:* ' + TALHAO_NOME,
-    '📐 *Área:* ' + TALHAO_AREA + ' ha',
-    '🌱 *Cultura:* ' + cultura,
-    '📅 *Data:* ' + dataFmt,
-    '🧪 *Produto:* ' + produto
+    '*Talhao:* ' + TALHAO_NOME,
+    '*Area:* ' + TALHAO_AREA + ' ha',
+    '*Cultura:* ' + cultura,
+    '*Data desejada:* ' + dataFmt,
+    '*Produto:* ' + produto
   ];
-  if(dose) linhas.push('💧 *Dose/Volume:* ' + dose);
-  if(obs)  linhas.push('📝 *Obs:* ' + obs);
+  if(dose) linhas.push('*Dose/Volume:* ' + dose);
+  if(obs)  linhas.push('*Observacoes:* ' + obs);
   linhas.push('');
-  linhas.push('━━━━━━━━━━━━━━━━━━━━━━');
+  linhas.push(SEP);
   if(imgUrl){
-    linhas.push('🛩 Mapa do talhão: ' + imgUrl);
+    linhas.push('Mapa do talhao:');
+    linhas.push(imgUrl);
   }
   linhas.push('');
-  linhas.push('_Combate Rasante — Aviação Agrícola_');
+  linhas.push('_Combate Rasante - Aviacao Agricola_');
 
-  window.open('https://wa.me/5534991967002?text=' + encodeURIComponent(linhas.join('\n')), '_blank');
+  var msg = linhas.join('\n');
+
+  /* Copiar para clipboard (util no WhatsApp Web) */
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(msg);
+    }
+  }catch(e){}
+
+  /* Abrir WhatsApp */
+  window.open('https://wa.me/5534991967002?text=' + encodeURIComponent(msg), '_blank');
 }
 </script>
 {% endblock %}

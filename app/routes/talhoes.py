@@ -524,24 +524,37 @@ def mapa_preview(tid):
         nome    = talhao.nome or "Talhão"
         area_ha = talhao.area_ha or 0
 
-        def coletar(c, acc):
-            if isinstance(c[0], (int, float)): acc.append(c)
-            else:
-                for sub in c: coletar(sub, acc)
+        import random as _rnd
+        _rnd.seed(42)
 
-        coords_flat = []
-        coletar(geom["coordinates"], coords_flat)
-        if not coords_flat:
-            return {"erro": "GeoJSON sem coordenadas"}, 400
+        def _simplificar(coords, max_pts=80):
+            if len(coords) <= max_pts: return coords
+            step = len(coords) / max_pts
+            return [coords[int(i*step)] for i in range(max_pts)] + [coords[0]]
 
-        lons = [c[0] for c in coords_flat]
-        lats = [c[1] for c in coords_flat]
+        def _coletar_rings(g):
+            t = g.get("type","")
+            if t == "Polygon": return [g["coordinates"][0]]
+            elif t == "MultiPolygon": return [p[0] for p in g["coordinates"]]
+            elif t == "GeometryCollection":
+                rs=[]
+                for gg in g.get("geometries",[]): rs+=_coletar_rings(gg)
+                return rs
+            return []
+
+        rings = _coletar_rings(geom)
+        if not rings:
+            return jsonify({"erro": "GeoJSON sem coordenadas"}), 400
+
+        all_pts = [pt for r in rings for pt in r]
+        lons = [p[0] for p in all_pts]
+        lats = [p[1] for p in all_pts]
 
         W, H = 1200, 720
-        HEADER, FOOTER = 90, 70
+        HEADER, FOOTER = 90, 65
         MAP_H = H - HEADER - FOOTER
 
-        margin = 0.22
+        margin = 0.18
         lon_min, lon_max = min(lons), max(lons)
         lat_min, lat_max = min(lats), max(lats)
         dlon = (lon_max - lon_min) or 0.001
@@ -554,96 +567,97 @@ def mapa_preview(tid):
             y = HEADER + (1 - (lat - lat_min) / (lat_max - lat_min)) * MAP_H
             return (x, y)
 
-        # Imagem base
-        img = Image.new("RGB", (W, H), "#050f07")
+        # Fundo com gradiente de campo agricola
+        img = Image.new("RGB", (W, H), "#1a2e0d")
         draw = ImageDraw.Draw(img, "RGBA")
 
-        # Fundo da área do mapa com gradiente vertical
         for i in range(MAP_H):
             t = i / MAP_H
-            r = int(5 + 12*t*(1-t)*4)
-            g = int(15 + 28*t*(1-t)*4)
-            b = int(7 + 10*t*(1-t)*4)
-            draw.line([(0, HEADER+i),(W, HEADER+i)], fill=(r,g,b))
+            rv = int(15 + 35*t + _rnd.randint(-2,2))
+            gv = int(28 + 18*t + _rnd.randint(-2,2))
+            bv = int(8  +  5*t + _rnd.randint(-1,1))
+            draw.line([(0, HEADER+i),(W, HEADER+i)], fill=(rv,gv,bv))
 
-        # Grade sutil
-        for gx in range(0, W, 60):
-            draw.line([(gx, HEADER),(gx, H-FOOTER)], fill=(255,255,255,10))
-        for gy in range(0, MAP_H, 60):
-            draw.line([(0, HEADER+gy),(W, HEADER+gy)], fill=(255,255,255,10))
+        # Texturas de campo
+        for i in range(0, MAP_H, _rnd.randint(18,35)):
+            alpha = _rnd.randint(8,22)
+            color = _rnd.choice([(255,220,100),(80,120,30),(150,100,40),(60,90,20)])
+            draw.line([(0, HEADER+i),(W, HEADER+i)], fill=(*color, alpha))
 
-        # Converter cor hex
-        ch = cor_hex.lstrip("#")
-        cr, cg, cb = int(ch[0:2],16), int(ch[2:4],16), int(ch[4:6],16)
+        # Manchas de vegetacao
+        for _ in range(10):
+            cx2 = _rnd.randint(0,W); cy2 = _rnd.randint(HEADER,H-FOOTER)
+            rw = _rnd.randint(60,200); rh = _rnd.randint(30,80)
+            col = _rnd.choice([(40,80,15,20),(100,70,20,18),(60,100,25,18)])
+            draw.ellipse([cx2-rw,cy2-rh,cx2+rw,cy2+rh], fill=col)
 
-        def pegar_rings(g):
-            t = g.get("type","")
-            if t == "Polygon": return [g["coordinates"][0]]
-            elif t == "MultiPolygon": return [p[0] for p in g["coordinates"]]
-            elif t == "GeometryCollection":
-                rs=[]
-                for gg in g.get("geometries",[]): rs+=pegar_rings(gg)
-                return rs
-            return []
+        # Blur suave no fundo
+        from PIL.ImageFilter import GaussianBlur
+        bg_crop = img.crop((0,HEADER,W,H-FOOTER))
+        img.paste(bg_crop.filter(GaussianBlur(radius=2)), (0,HEADER))
+        draw = ImageDraw.Draw(img, "RGBA")
 
-        rings = pegar_rings(geom)
+        # Cor hex
+        ch2 = cor_hex.lstrip("#")
+        cr, cg2, cb2 = int(ch2[0:2],16), int(ch2[2:4],16), int(ch2[4:6],16)
+
+        # Desenhar poligonos (sem pontos nos vertices)
         for ring in rings:
-            pts = [geo2px(c[0],c[1]) for c in ring]
+            simp = _simplificar(ring, 80)
+            pts = [geo2px(c[0],c[1]) for c in simp]
             if len(pts) < 3: continue
-            # Sombra
-            draw.polygon([(x+5,y+5) for x,y in pts], fill=(0,0,0,50))
-            # Fill
-            draw.polygon(pts, fill=(cr,cg,cb,65))
-            # Borda exterior
-            draw.line(pts+[pts[0]], fill=(cr,cg,cb), width=4)
-            # Borda interior branca
-            draw.line(pts+[pts[0]], fill=(255,255,255,80), width=1)
-            # Vértices
-            for px,py in pts[:-1]:
-                draw.ellipse([px-6,py-6,px+6,py+6], fill=(cr,cg,cb), outline=(255,255,255), width=2)
+            for d in [8,5,3]:
+                draw.polygon([(x+d,y+d) for x,y in pts], fill=(0,0,0,35))
+            draw.polygon(pts, fill=(cr,cg2,cb2,55))
+            draw.line(pts+[pts[0]], fill=(cr,cg2,cb2,240), width=5)
+            draw.line(pts+[pts[0]], fill=(255,255,255,100), width=1)
 
-        # Centroide para label
-        cpx, cpy = geo2px(sum(lons)/len(lons), sum(lats)/len(lats))
+        # Centroide
+        avg_lon = sum(lons)/len(lons)
+        avg_lat = sum(lats)/len(lats)
+        cpx, cpy = geo2px(avg_lon, avg_lat)
 
         # Fontes
         try:
-            fB = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
-            fM = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 18)
-            fS = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+            fB = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
+            fM = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
+            fS = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 15)
             fXS= ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 12)
         except:
             fB = fM = fS = fXS = ImageFont.load_default()
 
         # Label no centroide
-        for dx,dy in [(2,2),(1,1)]:
-            draw.text((cpx-60+dx, cpy-16+dy), nome[:28], fill=(0,0,0,200), font=fM)
-        draw.text((cpx-60, cpy-16), nome[:28], fill=(255,255,255,220), font=fM)
-        draw.text((cpx-60, cpy+8), f"{area_ha:.2f} ha", fill=(cr,cg,cb,210), font=fS)
+        lbl_nome = nome[:28]
+        lbl_w = max(len(lbl_nome)*12, 120) + 30
+        lx, ly = cpx - lbl_w//2, cpy - 30
+        draw.rounded_rectangle([lx-4,ly-4,lx+lbl_w+4,ly+54], radius=8,
+                                fill=(0,0,0,155), outline=(cr,cg2,cb2,120), width=2)
+        draw.text((lx+8, ly+4),  lbl_nome,            fill=(255,255,255,230), font=fM)
+        draw.text((lx+8, ly+28), f"{area_ha:.2f} ha", fill=(cr,cg2,cb2,220), font=fS)
 
-        # ── HEADER ─────────────────────────────────────
-        draw.rectangle([0,0,W,HEADER], fill=(3,12,6,250))
-        draw.rectangle([0,0,W,5], fill=(cr,cg,cb))  # barra colorida topo
-        draw.rectangle([0,HEADER-1,W,HEADER], fill=(cr,cg,cb,50))
+        # HEADER
+        draw.rectangle([0,0,W,HEADER], fill=(3,10,5,252))
+        draw.rectangle([0,0,W,5], fill=(cr,cg2,cb2))
+        draw.rectangle([0,HEADER-1,W,HEADER+1], fill=(cr,cg2,cb2,80))
 
-        draw.text((20,12), "SOLICITACAO DE APLICACAO", fill=(255,255,255,230), font=fB)
-        draw.text((20,46), "Combate Rasante Aviacao Agricola", fill=(cr,cg,cb,200), font=fS)
+        draw.text((22,12), "SOLICITACAO DE APLICACAO", fill=(255,255,255,235), font=fB)
+        draw.text((22,48), "Combate Rasante   Aviacao Agricola de Precisao", fill=(cr,cg2,cb2,200), font=fS)
         draw.text((W-20,12), "combaterasante.com.br", fill=(255,255,255,100), font=fXS, anchor="ra")
-        draw.text((W-20,30), "Aviacao Agricola de Precisao", fill=(255,255,255,60), font=fXS, anchor="ra")
+        draw.text((W-20,30), "Aviacao Agricola", fill=(255,255,255,60), font=fXS, anchor="ra")
 
-        # ── FOOTER ─────────────────────────────────────
-        draw.rectangle([0,H-FOOTER,W,H], fill=(3,12,6,250))
-        draw.rectangle([0,H-FOOTER,W,H-FOOTER+1], fill=(cr,cg,cb,50))
-        draw.rectangle([0,H-5,W,H], fill=(cr,cg,cb))  # barra colorida fundo
+        # FOOTER
+        draw.rectangle([0,H-FOOTER,W,H], fill=(3,10,5,252))
+        draw.rectangle([0,H-FOOTER,W,H-FOOTER+1], fill=(cr,cg2,cb2,80))
+        draw.rectangle([0,H-4,W,H], fill=(cr,cg2,cb2))
 
-        # Pílula nome
-        tw = min(len(nome)*11+30, 400)
-        draw.rounded_rectangle([16, H-FOOTER+14, 16+tw, H-FOOTER+44], radius=8,
-                                fill=(cr,cg,cb,40), outline=(cr,cg,cb,120), width=1)
-        draw.text((36, H-FOOTER+22), nome[:35], fill=(cr,cg,cb,230), font=fM)
-        draw.text((36+tw+10, H-FOOTER+22), f"Area: {area_ha:.2f} ha", fill=(255,255,255,180), font=fS)
+        tw2 = min(len(nome)*11+30, 420)
+        draw.rounded_rectangle([14,H-FOOTER+13,14+tw2,H-FOOTER+45], radius=8,
+                                fill=(cr,cg2,cb2,35), outline=(cr,cg2,cb2,100), width=2)
+        draw.text((34, H-FOOTER+21), nome[:35], fill=(cr,cg2,cb2,235), font=fM)
+        draw.text((34+tw2+12, H-FOOTER+21), f"Area: {area_ha:.2f} ha", fill=(255,255,255,175), font=fS)
 
         from datetime import date as _date
-        draw.text((W-20, H-FOOTER+22), _date.today().strftime("%d/%m/%Y"), fill=(255,255,255,80), font=fXS, anchor="ra")
+        draw.text((W-20, H-FOOTER+21), _date.today().strftime("%d/%m/%Y"), fill=(255,255,255,80), font=fXS, anchor="ra")
 
         # Upload Cloudinary
         buf = BytesIO()
