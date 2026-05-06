@@ -510,7 +510,7 @@ def solicitar(tid):
 @login_required
 def mapa_preview(tid):
     """Gera screenshot do mapa Leaflet com satélite usando Playwright."""
-    import json as _json, os as _os, tempfile as _tmp
+    import json as _json, os as _os, base64 as _b64
     from io import BytesIO
 
     user   = get_current_user()
@@ -522,23 +522,20 @@ def mapa_preview(tid):
         nome    = talhao.nome or "Talhão"
         area_ha = talhao.area_ha or 0
 
-        # Buscar todos os talhões do usuário para mostrar no mapa
         todos = Talhao.query.filter_by(user_id=user.id).all()
-
-        # Montar GeoJSON de todos os talhões
         features = []
         for t in todos:
             try:
                 g = _json.loads(t.geojson) if isinstance(t.geojson, str) else t.geojson
-                is_main = (t.id == tid)
+                is_main     = (t.id == tid)
                 is_exclusao = (t.cor or "").lower() in ["#dc2626","#ef4444","#b91c1c"]
                 features.append({
                     "type": "Feature",
                     "geometry": g.get("geometry") or g,
                     "properties": {
-                        "nome":      t.nome or "",
-                        "cor":       t.cor or "#22c55e",
-                        "is_main":   is_main,
+                        "nome": t.nome or "",
+                        "cor":  t.cor or "#22c55e",
+                        "is_main": is_main,
                         "is_exclusao": is_exclusao
                     }
                 })
@@ -547,36 +544,53 @@ def mapa_preview(tid):
 
         fc_json = _json.dumps({"type":"FeatureCollection","features":features})
 
-        # URL da logo
-        logo_url = current_app.config.get("SERVER_NAME","")
-        logo_path = _os.path.join(current_app.root_path, "static", "img", "logo-combate.jpeg")
+        # Logo em base64
         logo_b64 = ""
+        logo_path = _os.path.join(current_app.root_path, "static", "img", "logo-combate.jpeg")
         if _os.path.exists(logo_path):
-            import base64
             with open(logo_path, "rb") as lf:
-                logo_b64 = "data:image/jpeg;base64," + base64.b64encode(lf.read()).decode()
+                logo_b64 = "data:image/jpeg;base64," + _b64.b64encode(lf.read()).decode()
+
+        logo_tag = f'<img class="logo" src="{logo_b64}">' if logo_b64 else ""
+        today = __import__("datetime").date.today().strftime("%d/%m/%Y")
 
         html = f"""<!DOCTYPE html><html><head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
-  * {{margin:0;padding:0;box-sizing:border-box;}}
-  body {{background:#071a0d;font-family:Arial,sans-serif;}}
-  #map {{width:1200px;height:630px;}}
-  #header {{width:1200px;height:70px;background:rgba(3,12,5,0.97);display:flex;
-            align-items:center;justify-content:space-between;padding:0 20px;
-            border-bottom:3px solid {cor};}}
-  #footer {{width:1200px;height:50px;background:rgba(3,12,5,0.97);display:flex;
-            align-items:center;justify-content:space-between;padding:0 20px;
-            border-top:2px solid {cor};}}
-  .htitle {{color:#fff;font-size:22px;font-weight:900;letter-spacing:1px;}}
-  .hsub   {{color:{cor};font-size:13px;margin-top:2px;}}
-  .finfo  {{color:#fff;font-size:13px;font-weight:700;}}
-  .fdate  {{color:rgba(255,255,255,0.5);font-size:12px;}}
-  .logo   {{height:50px;border-radius:8px;}}
-  .nome-pill {{background:{cor}33;border:1.5px solid {cor}88;
-               border-radius:6px;padding:4px 14px;color:{cor};
-               font-size:15px;font-weight:800;}}
+*{{margin:0;padding:0;box-sizing:border-box;}}
+body{{background:#071a0d;font-family:Arial,sans-serif;}}
+#map{{width:1200px;height:630px;}}
+#header{{width:1200px;height:70px;background:rgba(3,12,5,0.97);display:flex;
+         align-items:center;justify-content:space-between;padding:0 20px;
+         border-bottom:3px solid {cor};}}
+#footer{{width:1200px;height:50px;background:rgba(3,12,5,0.97);display:flex;
+         align-items:center;justify-content:space-between;padding:0 20px;
+         border-top:2px solid {cor};}}
+.htitle{{color:#fff;font-size:22px;font-weight:900;letter-spacing:1px;}}
+.hsub{{color:{cor};font-size:13px;margin-top:2px;}}
+.logo{{height:52px;border-radius:8px;}}
+.nome-pill{{background:{cor}33;border:1.5px solid {cor}88;border-radius:6px;
+            padding:4px 14px;color:{cor};font-size:15px;font-weight:800;}}
+.finfo{{color:#fff;font-size:13px;font-weight:700;}}
+.fleg{{color:rgba(255,255,255,0.65);font-size:11px;display:flex;align-items:center;gap:4px;}}
+.fdate{{color:rgba(255,255,255,0.45);font-size:12px;}}
+.main-label{{background:rgba(0,0,0,0.80);border:none!important;color:#fff;font-weight:900;
+             font-size:13px;padding:3px 8px;border-radius:4px;
+             box-shadow:0 2px 6px rgba(0,0,0,0.6);white-space:nowrap;}}
+.other-label{{background:rgba(0,0,0,0.55);border:none!important;
+              color:rgba(255,255,255,0.8);font-size:11px;
+              padding:2px 6px;border-radius:4px;}}
+.coord-icon{{background:transparent!important;border:none!important;}}
+.coord-pin{{width:10px;height:10px;background:#fff;border:2px solid {cor};
+            border-radius:50%;position:absolute;top:22px;left:0;
+            box-shadow:0 0 0 3px {cor}55;}}
+.coord-text{{position:absolute;top:0;left:14px;
+             background:rgba(0,0,0,0.85);border:1px solid rgba(255,255,255,0.25);
+             border-radius:6px;padding:4px 9px;white-space:nowrap;
+             box-shadow:0 2px 8px rgba(0,0,0,0.7);}}
+.coord-lat,.coord-lon{{display:block;font-size:11px;font-weight:700;
+                        font-family:monospace;color:#86efac;line-height:1.45;}}
 </style>
 </head><body>
 <div id="header">
@@ -584,7 +598,7 @@ def mapa_preview(tid):
     <div class="htitle">MAPA DE APLICACAO</div>
     <div class="hsub">Combate Rasante &mdash; Aviacao Agricola de Precisao</div>
   </div>
-  {'<img class="logo" src="' + logo_b64 + '">' if logo_b64 else '<span style="color:{cor};font-weight:900;font-size:18px;">CR</span>'}
+  {logo_tag}
 </div>
 <div id="map"></div>
 <div id="footer">
@@ -592,159 +606,132 @@ def mapa_preview(tid):
     <span class="nome-pill">{nome}</span>
     <span class="finfo">{area_ha:.2f} ha</span>
   </div>
-  <div style="display:flex;align-items:center;gap:20px;">
-    <span style="color:#22c55e;font-size:12px;">&#9632; Area principal</span>
-    <span style="color:#dc2626;font-size:12px;">&#9632; Exclusao</span>
-    <span style="color:rgba(255,255,255,0.4);font-size:12px;">&#9632; Demais areas</span>
-    <span class="fdate">{__import__('datetime').date.today().strftime('%d/%m/%Y')}</span>
+  <div style="display:flex;align-items:center;gap:18px;">
+    <span class="fleg"><span style="color:{cor};font-size:14px;">&#9632;</span> Area principal</span>
+    <span class="fleg"><span style="color:#dc2626;font-size:14px;">&#9632;</span> Exclusao</span>
+    <span class="fleg"><span style="color:rgba(255,255,255,0.35);font-size:14px;">&#9632;</span> Demais areas</span>
+    <span class="fdate">{today}</span>
   </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 var fc = {fc_json};
-var mainId = {tid};
 
-var map = L.map('map', {{zoomControl:false, attributionControl:false, tap:false}});
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',
-  {{maxNativeZoom:19,maxZoom:20}}).addTo(map);
-L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{{z}}/{{y}}/{{x}}',
-  {{maxNativeZoom:19,maxZoom:20,opacity:0.6}}).addTo(map);
+var map = L.map('map',{{zoomControl:false,attributionControl:false,tap:false,
+                         preferCanvas:true}});
+
+var tilesLoaded = 0, tilesTotal = 0;
+function checkReady(){{ if(tilesLoaded >= tilesTotal && tilesTotal > 0) window.TILES_READY = true; }}
+
+var sat = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{{z}}/{{y}}/{{x}}',
+  {{maxNativeZoom:19,maxZoom:20}});
+sat.on('tileloadstart', function(){{ tilesTotal++; }});
+sat.on('tileload', function(){{ tilesLoaded++; checkReady(); }});
+sat.on('tileerror', function(){{ tilesLoaded++; checkReady(); }});
+sat.addTo(map);
+
+L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{{z}}/{{y}}/{{x}}',
+  {{maxNativeZoom:19,maxZoom:20,opacity:0.65}}).addTo(map);
 
 var mainLayer = null;
-L.geoJSON(fc, {{
-  style: function(f) {{
+L.geoJSON(fc,{{
+  style: function(f){{
     var p = f.properties;
-    if(p.is_main)     return {{color:p.cor,weight:4,fillColor:p.cor,fillOpacity:0.45,dashArray:null}};
+    if(p.is_main)     return {{color:p.cor,weight:4,fillColor:p.cor,fillOpacity:0.45}};
     if(p.is_exclusao) return {{color:'#dc2626',weight:3,fillColor:'#dc2626',fillOpacity:0.40}};
-    return {{color:'rgba(255,255,255,0.6)',weight:1.5,fillColor:p.cor,fillOpacity:0.15}};
+    return {{color:'rgba(255,255,255,0.55)',weight:1.5,fillColor:p.cor,fillOpacity:0.12}};
   }},
-  onEachFeature: function(f,l) {{
+  onEachFeature: function(f,l){{
     var p = f.properties;
-    if(p.nome) {{
-      l.bindTooltip(p.nome, {{permanent:true,direction:'center',
-        className: p.is_main ? 'main-label' : 'other-label'}});
+    if(p.nome){{
+      l.bindTooltip(p.nome,{{permanent:true,direction:'center',
+        className:p.is_main?'main-label':'other-label'}});
     }}
     if(p.is_main) mainLayer = l;
   }}
 }}).addTo(map);
 
-// ── Centróide com coordenadas DMS no polígono principal de maior área ──
-function toDMS(deg, isLat) {{
-  var d = Math.abs(deg);
-  var graus = Math.floor(d);
-  var minRaw = (d - graus) * 60;
-  var min = Math.floor(minRaw);
-  var seg = ((minRaw - min) * 60).toFixed(1);
-  var dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'L' : 'O');
-  return graus + '° ' + min + "' " + seg + '" ' + dir;
+if(mainLayer){{
+  map.fitBounds(mainLayer.getBounds(),{{padding:[60,60]}});
+}}else{{
+  map.fitBounds(L.geoJSON(fc).getBounds(),{{padding:[20,20]}});
 }}
 
-function calcArea(coords) {{
-  // Shoelace formula (área aproximada em graus²)
-  var a = 0;
-  for(var i = 0; i < coords.length - 1; i++) {{
-    a += coords[i][0] * coords[i+1][1] - coords[i+1][0] * coords[i][1];
-  }}
-  return Math.abs(a / 2);
+// Centróide com coordenadas DMS
+function toDMS(deg,isLat){{
+  var d=Math.abs(deg), gr=Math.floor(d);
+  var mRaw=(d-gr)*60, mn=Math.floor(mRaw);
+  var sg=((mRaw-mn)*60).toFixed(1);
+  var dir=isLat?(deg>=0?'N':'S'):(deg>=0?'L':'O');
+  return gr+"° "+mn+"' "+sg+'" '+dir;
+}}
+function calcArea(coords){{
+  var a=0;
+  for(var i=0;i<coords.length-1;i++)
+    a+=coords[i][0]*coords[i+1][1]-coords[i+1][0]*coords[i][1];
+  return Math.abs(a/2);
+}}
+function centroid(coords){{
+  var x=0,y=0,n=coords.length-1;
+  for(var i=0;i<n;i++){{x+=coords[i][0];y+=coords[i][1];}}
+  return [x/n,y/n];
 }}
 
-function getCentroid(coords) {{
-  var x = 0, y = 0, n = coords.length - 1; // último = primeiro
-  for(var i = 0; i < n; i++) {{
-    x += coords[i][0]; y += coords[i][1];
-  }}
-  return [x/n, y/n];
-}}
-
-// Encontrar sub-polígono de maior área dentro da feição principal
-if(mainLayer) {{
-  var bestArea = -1, bestCentroid = null;
-  mainLayer.eachLayer(function(sub) {{
-    // Para cada sub-layer (MultiPolygon é decomposto em layers)
-    if(sub.getLatLngs) {{
-      var lls = sub.getLatLngs();
-      // Normalizar para array de arrays
-      var rings = Array.isArray(lls[0]) ? lls : [lls];
-      rings.forEach(function(ring) {{
-        var coords = ring.map(function(ll){{ return [ll.lng, ll.lat]; }});
-        coords.push(coords[0]); // fechar
-        var area = calcArea(coords);
-        if(area > bestArea) {{
-          bestArea = area;
-          bestCentroid = getCentroid(coords);
-        }}
-      }});
-    }}
+if(mainLayer){{
+  var bestA=-1,bestC=null;
+  mainLayer.eachLayer(function(sub){{
+    if(!sub.getLatLngs) return;
+    var lls=sub.getLatLngs();
+    var rings=Array.isArray(lls[0])?lls:[lls];
+    rings.forEach(function(ring){{
+      var coords=ring.map(function(ll){{return[ll.lng,ll.lat];}});
+      coords.push(coords[0]);
+      var a=calcArea(coords);
+      if(a>bestA){{bestA=a;bestC=centroid(coords);}}
+    }});
   }});
+  if(!bestC){{var ctr=mainLayer.getBounds().getCenter();bestC=[ctr.lng,ctr.lat];}}
 
-  // Fallback: centro dos bounds
-  if(!bestCentroid) {{
-    var ctr = mainLayer.getBounds().getCenter();
-    bestCentroid = [ctr.lng, ctr.lat];
-  }}
-
-  var lon = bestCentroid[0], lat = bestCentroid[1];
-  var dmsLat = toDMS(lat, true);
-  var dmsLon = toDMS(lon, false);
-
-  // Marcador com pin + coordenadas
-  var coordIcon = L.divIcon({{
-    className: 'coord-icon',
-    html: '<div class="coord-box">' +
-            '<div class="coord-pin"></div>' +
-            '<div class="coord-text">' +
-              '<span class="coord-lat">' + dmsLat + '</span>' +
-              '<span class="coord-lon">' + dmsLon + '</span>' +
-            '</div>' +
-          '</div>',
-    iconAnchor: [0, 24],
-    iconSize: [200, 60]
+  var dmsLat=toDMS(bestC[1],true), dmsLon=toDMS(bestC[0],false);
+  var icon=L.divIcon({{
+    className:'coord-icon',
+    html:'<div style="position:relative;width:180px;height:44px;">'+
+         '<div class="coord-pin"></div>'+
+         '<div class="coord-text">'+
+           '<span class="coord-lat">'+dmsLat+'</span>'+
+           '<span class="coord-lon">'+dmsLon+'</span>'+
+         '</div></div>',
+    iconAnchor:[0,32],iconSize:[180,44]
   }});
-
-  L.marker([lat, lon], {{icon: coordIcon, interactive:false}}).addTo(map);
-  map.fitBounds(mainLayer.getBounds(), {{padding:[60,60]}});
-}} else {{
-  var all = L.geoJSON(fc);
-  map.fitBounds(all.getBounds(), {{padding:[20,20]}});
+  L.marker([bestC[1],bestC[0]],{{icon:icon,interactive:false}}).addTo(map);
 }}
 
-window.MAP_READY = false;
-setTimeout(function(){{ window.MAP_READY = true; }}, 5000);
+window.TILES_READY = false;
+setTimeout(function(){{ window.TILES_READY = true; }}, 8000);
 </script>
-<style>
-.main-label {{background:rgba(0,0,0,0.75);border:none;color:#fff;font-weight:900;
-             font-size:13px;padding:3px 8px;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.5);}}
-.other-label {{background:rgba(0,0,0,0.55);border:none;color:rgba(255,255,255,0.8);
-              font-size:11px;padding:2px 6px;border-radius:4px;}}
-.coord-icon  {{ background:transparent!important; border:none!important; }}
-.coord-box   {{ position:relative; }}
-.coord-pin   {{ width:10px;height:10px;background:#fff;border:2px solid #16a34a;
-               border-radius:50%;position:absolute;top:0;left:0;
-               box-shadow:0 0 0 3px rgba(22,163,74,0.35); }}
-.coord-text  {{ position:absolute;top:-28px;left:14px;
-               background:rgba(0,0,0,0.82);border:1px solid rgba(255,255,255,0.25);
-               border-radius:6px;padding:4px 9px;white-space:nowrap;
-               box-shadow:0 2px 8px rgba(0,0,0,0.6); }}
-.coord-lat,
-.coord-lon   {{ display:block;font-size:11px;font-weight:700;
-               font-family:monospace;color:#86efac;line-height:1.4; }}
-</style>
 </body></html>"""
 
-        # Screenshot com Playwright
         from playwright.sync_api import sync_playwright
         with sync_playwright() as pw:
-            browser = pw.chromium.launch(args=["--no-sandbox","--disable-dev-shm-usage","--disable-gpu"])
-            page = browser.new_page(viewport={"width":1200,"height":750})
-            page.set_content(html, wait_until="networkidle")
-            page.wait_for_timeout(5500)  # aguardar tiles carregarem
+            browser = pw.chromium.launch(args=[
+                "--no-sandbox","--disable-dev-shm-usage",
+                "--disable-gpu","--disable-web-security"
+            ])
+            page = browser.new_page(viewport={{"width":1200,"height":750}})
+            page.set_content(html, wait_until="domcontentloaded")
+            # Aguardar tiles carregarem (até 10s)
+            try:
+                page.wait_for_function("window.TILES_READY === true", timeout=10000)
+            except Exception:
+                page.wait_for_timeout(8000)
             screenshot = page.screenshot(
-                clip={"x":0,"y":0,"width":1200,"height":750},
-                type="jpeg", quality=92
+                clip={{"x":0,"y":0,"width":1200,"height":750}},
+                type="jpeg", quality=93
             )
             browser.close()
 
-        # Upload Cloudinary
         import cloudinary, cloudinary.uploader
         cloudinary.config(
             cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
@@ -758,11 +745,12 @@ setTimeout(function(){{ window.MAP_READY = true; }}, 5000);
             overwrite=True,
             resource_type="image",
         )
-        return jsonify({"url": result["secure_url"]})
+        return jsonify({{"url": result["secure_url"]}})
 
     except Exception as e:
         current_app.logger.error(f"mapa_preview error: {e}")
-        return jsonify({"erro": str(e)}), 500
+        return jsonify({{"erro": str(e)}}), 500
+
 
 # ── Admin: todas as solicitações ─────────────────────────────
 
@@ -775,8 +763,27 @@ def admin_solicitacoes():
     sols = (SolicitacaoAplicacao.query
             .order_by(SolicitacaoAplicacao.created_at.desc())
             .all())
+
+    # Agrupar por cliente
+    from collections import OrderedDict
+    grupos = OrderedDict()
+    for s in sols:
+        uid = s.user_id
+        if uid not in grupos:
+            grupos[uid] = {"user": s.user, "solicitacoes": []}
+        grupos[uid]["solicitacoes"].append(s)
+
+    clientes_list = list(grupos.values())
+    # Ordenar: clientes com pendentes primeiro
+    clientes_list.sort(
+        key=lambda g: any(s.status == "pendente" for s in g["solicitacoes"]),
+        reverse=True
+    )
+
     return render_template("talhoes/admin_solicitacoes.html",
-                           solicitacoes=sols, current_user=user)
+                           solicitacoes=sols,
+                           clientes=clientes_list,
+                           current_user=user)
 
 
 @talhoes_bp.route("/admin/solicitacoes/<int:sid>/status", methods=["POST"])

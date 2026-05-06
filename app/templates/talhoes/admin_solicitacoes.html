@@ -2,56 +2,83 @@
 {% block title %}Solicitações de Aplicação — Admin{% endblock %}
 {% block head_extra %}
 <style>
-.ss-wrap{width:min(960px,calc(100% - 24px));margin-inline:auto;padding-block:28px 60px;}
-.ss-wrap h1{font-size:1.5rem;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);}
-.sc{background:rgba(10,40,20,.60);border:1px solid rgba(255,255,255,.14);border-radius:15px;
-    backdrop-filter:blur(12px);padding:16px 18px;margin-bottom:12px;}
-.sc:hover{border-color:rgba(255,255,255,.24);}
-.sc__head{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;}
-.sc__cliente{font-size:11px;font-weight:800;color:#86efac;margin-bottom:2px;}
-.sc__nome{font-weight:900;font-size:14px;color:#fff;}
-.sc__meta{font-size:11px;color:rgba(255,255,255,.50);margin-top:3px;}
-.sc__badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:800;
-  padding:3px 11px;border-radius:999px;background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.15);margin-left:auto;flex-shrink:0;}
-.sc__body{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;font-size:12px;}
-.sc__body span{color:rgba(255,255,255,.65);}
-.sc__body strong{color:#fff;}
-.sc__resp{margin-top:10px;padding:9px 12px;background:rgba(34,197,94,.10);
-  border:1px solid rgba(34,197,94,.25);border-radius:9px;font-size:12px;color:rgba(255,255,255,.85);}
-.sc__form{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08);
-  display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
-.sc__form select,.sc__form input,.sc__form textarea{
-  background:rgba(0,0,0,.40);border:1px solid rgba(255,255,255,.22);color:#fff;
+.ss-wrap{width:min(980px,calc(100% - 24px));margin-inline:auto;padding-block:28px 60px;}
+h1{font-size:1.4rem;font-weight:900;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);}
+
+/* ── Cliente accordion ── */
+.cliente-card{background:rgba(10,40,20,.65);border:1px solid rgba(34,197,94,.25);
+              border-radius:14px;margin-bottom:14px;overflow:hidden;}
+.cliente-header{display:flex;align-items:center;justify-content:space-between;
+                padding:14px 18px;cursor:pointer;user-select:none;
+                border-bottom:1px solid transparent;transition:background .2s;}
+.cliente-header:hover{background:rgba(34,197,94,.08);}
+.cliente-header.open{border-bottom-color:rgba(34,197,94,.20);
+                     background:rgba(34,197,94,.10);}
+.cliente-nome{font-weight:900;font-size:15px;color:#86efac;display:flex;align-items:center;gap:10px;}
+.cliente-meta{font-size:12px;color:rgba(255,255,255,.50);margin-top:2px;}
+.cliente-count{background:rgba(234,179,8,.22);border:1px solid rgba(234,179,8,.50);
+               color:#fde68a;font-size:11px;font-weight:800;padding:2px 10px;border-radius:999px;}
+.cliente-chevron{color:rgba(255,255,255,.40);font-size:18px;transition:transform .25s;}
+.cliente-header.open .cliente-chevron{transform:rotate(180deg);}
+.cliente-body{display:none;padding:12px 14px 14px;}
+.cliente-body.open{display:block;}
+
+/* ── Solicitação card ── */
+.sc{background:rgba(3,15,8,.60);border:1px solid rgba(255,255,255,.10);
+    border-radius:11px;padding:14px 16px;margin-bottom:10px;}
+.sc:last-child{margin-bottom:0;}
+.sc__head{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;}
+.sc__talhao{font-weight:900;font-size:14px;color:#fff;}
+.sc__meta{font-size:11px;color:rgba(255,255,255,.45);margin-top:3px;}
+.sc__badge{font-size:11px;font-weight:800;padding:3px 11px;border-radius:999px;
+           border:1px solid;margin-left:auto;flex-shrink:0;}
+.sc__grid{margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));
+          gap:6px;font-size:12px;}
+.sc__grid span{color:rgba(255,255,255,.60);}
+.sc__grid strong{color:#fff;}
+.sc__obs{margin-top:6px;font-size:11px;color:rgba(255,255,255,.40);font-style:italic;}
+.sc__resp{margin-top:9px;padding:8px 12px;background:rgba(34,197,94,.10);
+          border:1px solid rgba(34,197,94,.25);border-radius:8px;font-size:12px;color:#86efac;}
+.sc__form{margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.07);
+          display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;}
+.sc__form select,.sc__form textarea{
+  background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.20);color:#fff;
   border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;}
-.sc__form select:focus,.sc__form input:focus,.sc__form textarea:focus{border-color:rgba(34,197,94,.60);}
 .sc__form select option{background:#0d2418;}
-.sc__form textarea{resize:vertical;min-height:52px;flex:1;}
-.sc__form button{background:linear-gradient(135deg,#16a34a,#15803d);border:none;color:#fff;
-  border-radius:9px;padding:8px 16px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;}
-.sc__form button:hover{opacity:.88;}
-.wa-btn{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;
-  background:#25D366;color:#fff;font-size:11px;font-weight:800;text-decoration:none;
-  border:none;cursor:pointer;font-family:inherit;}
-.empty{text-align:center;padding:50px 20px;background:rgba(10,40,20,.50);
-  border:1px solid rgba(255,255,255,.14);border-radius:18px;}
-.empty p{color:rgba(255,255,255,.55);margin-top:10px;}
+.sc__form textarea{flex:1;resize:vertical;min-height:50px;}
+.sc__form button{background:linear-gradient(135deg,#16a34a,#15803d);border:none;
+  color:#fff;border-radius:9px;padding:8px 16px;font-size:12px;
+  font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;}
+.wa-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;
+  border-radius:8px;background:#25D366;color:#fff;font-size:11px;
+  font-weight:800;border:none;cursor:pointer;font-family:inherit;margin-top:8px;}
+
+/* Status colors */
+.badge-pendente  {color:#fde68a;border-color:rgba(234,179,8,.50);}
+.badge-confirmado{color:#86efac;border-color:rgba(34,197,94,.50);}
+.badge-concluido {color:#93c5fd;border-color:rgba(59,130,246,.50);}
+.badge-cancelado {color:#fca5a5;border-color:rgba(239,68,68,.50);}
+
+.empty{text-align:center;padding:48px;background:rgba(10,40,20,.50);
+       border:1px solid rgba(255,255,255,.10);border-radius:16px;}
 .filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px;align-items:center;}
-.filter-bar select{background:rgba(0,0,0,.40);border:1px solid rgba(255,255,255,.22);color:#fff;
-  border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;outline:none;}
+.filter-bar select{background:rgba(0,0,0,.40);border:1px solid rgba(255,255,255,.22);
+  color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;font-family:inherit;}
 </style>
 {% endblock %}
+
 {% block content %}
 <section class="section">
 <div class="ss-wrap">
-  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
     <div>
       <h1>✈️ Solicitações de Aplicação</h1>
-      <p style="color:rgba(255,255,255,.50);font-size:13px;margin-top:4px;">
-        {{ solicitacoes|length }} solicitação(ões) no total
+      <p style="color:rgba(255,255,255,.45);font-size:13px;margin-top:4px;">
+        {{ solicitacoes|length }} solicitação(ões) · {{ clientes|length }} cliente(s)
       </p>
     </div>
-    <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">← Voltar ao Admin</a>
+    <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">← Admin</a>
   </div>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -65,105 +92,161 @@
 
   <!-- Filtro por status -->
   <div class="filter-bar">
-    <span style="font-size:12px;color:rgba(255,255,255,.55);font-weight:700;">Filtrar:</span>
+    <span style="font-size:12px;color:rgba(255,255,255,.50);font-weight:700;">Filtrar status:</span>
     <select onchange="filtrarStatus(this.value)">
       <option value="">Todos</option>
-      <option value="pendente">Pendente</option>
-      <option value="confirmado">Confirmado</option>
-      <option value="concluido">Concluído</option>
-      <option value="cancelado">Cancelado</option>
+      <option value="pendente">⏳ Pendente</option>
+      <option value="confirmado">✅ Confirmado</option>
+      <option value="concluido">🏁 Concluído</option>
+      <option value="cancelado">❌ Cancelado</option>
     </select>
+    <button onclick="expandAll()" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.20);
+      color:#fff;border-radius:8px;padding:5px 12px;font-size:12px;cursor:pointer;font-family:inherit;">
+      ↕ Expandir todos
+    </button>
   </div>
 
-  {% if solicitacoes %}
-    {% for s in solicitacoes %}
-    {% set label,color = s.status_label %}
-    <div class="sc" data-status="{{ s.status }}">
-      <div class="sc__head">
-        <div style="flex:1;min-width:0;">
-          <div class="sc__cliente">👤 {{ s.user.nome if s.user else 'Cliente removido' }}</div>
-          <div class="sc__nome">🗺️ {{ s.talhao.nome if s.talhao else 'Talhão removido' }}</div>
-          <div class="sc__meta">
-            Enviado em {{ s.created_at.strftime("%d/%m/%Y às %H:%M") }}
-            {% if s.data_desejada %} · Data desejada: <strong style="color:#fde68a;">{{ s.data_desejada.strftime("%d/%m/%Y") }}</strong>{% endif %}
+  {% if clientes %}
+    {% for cliente_info in clientes %}
+    {% set cliente = cliente_info.user %}
+    {% set sols = cliente_info.solicitacoes %}
+    <div class="cliente-card" data-cliente="{{ cliente.id if cliente else 0 }}">
+
+      <!-- Header do cliente (clicável) -->
+      <div class="cliente-header" onclick="toggleCliente(this)">
+        <div>
+          <div class="cliente-nome">
+            👤 {{ cliente.nome if cliente else 'Cliente removido' }}
+            <span class="cliente-count">{{ sols|length }} solicitação{{ 's' if sols|length > 1 else '' }}</span>
+          </div>
+          <div class="cliente-meta">
+            {{ cliente.email if cliente else '' }}
+            {% set pendentes = sols | selectattr('status','equalto','pendente') | list %}
+            {% if pendentes %}
+            · <span style="color:#fde68a;font-weight:700;">{{ pendentes|length }} pendente{{ 's' if pendentes|length > 1 else '' }}</span>
+            {% endif %}
           </div>
         </div>
-        <div class="sc__badge" style="color:{{ color }};border-color:{{ color }}40;">{{ label }}</div>
-      </div>
-
-      <div class="sc__body">
-        <div><span>🌱 Cultura: </span><strong>{{ s.cultura or '—' }}</strong></div>
-        <div><span>🧪 Produto: </span><strong>{{ s.produto or '—' }}</strong></div>
-        <div><span>💧 Dose: </span><strong>{{ s.dose or '—' }}</strong></div>
-        <div><span>📐 Área: </span><strong>{{ "%.2f"|format(s.talhao.area_ha or 0) if s.talhao else '—' }} ha</strong></div>
-      </div>
-
-      {% if s.observacoes %}
-      <div style="margin-top:6px;font-size:11px;color:rgba(255,255,255,.45);">📝 {{ s.observacoes }}</div>
-      {% endif %}
-
-      {% if s.resposta_admin %}
-      <div class="sc__resp"><strong style="color:#86efac;">💬 Resposta enviada:</strong><br>{{ s.resposta_admin }}</div>
-      {% endif %}
-
-      <!-- Ações admin: atualizar status + resposta + WhatsApp -->
-      <form method="POST" action="{{ url_for('talhoes.admin_atualizar_status', sid=s.id) }}" class="sc__form">
-        <div style="display:flex;flex-direction:column;gap:4px;">
-          <label style="font-size:10px;font-weight:800;color:rgba(255,255,255,.55);text-transform:uppercase;">Status</label>
-          <select name="status">
-            <option value="pendente"   {% if s.status=='pendente'   %}selected{% endif %}>⏳ Pendente</option>
-            <option value="confirmado" {% if s.status=='confirmado' %}selected{% endif %}>✅ Confirmado</option>
-            <option value="concluido"  {% if s.status=='concluido'  %}selected{% endif %}>🏁 Concluído</option>
-            <option value="cancelado"  {% if s.status=='cancelado'  %}selected{% endif %}>❌ Cancelado</option>
-          </select>
+        <div style="display:flex;align-items:center;gap:12px;">
+          {% if cliente %}
+          <button class="wa-btn" onclick="event.stopPropagation();contatarCliente('{{ cliente.nome|e }}')"
+            title="WhatsApp do cliente">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+            </svg>
+            WhatsApp
+          </button>
+          {% endif %}
+          <span class="cliente-chevron">▾</span>
         </div>
-        <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
-          <label style="font-size:10px;font-weight:800;color:rgba(255,255,255,.55);text-transform:uppercase;">Resposta para o cliente</label>
-          <textarea name="resposta" placeholder="Ex: Confirmado para 15/05 às 6h. Qualquer dúvida entre em contato.">{{ s.resposta_admin or '' }}</textarea>
-        </div>
-        <button type="submit">💾 Salvar</button>
-      </form>
-
-      <!-- Botão WhatsApp para contatar o cliente -->
-      {% if s.user %}
-      <div style="margin-top:8px;">
-        <button class="wa-btn" onclick="abrirWA('{{ s.user.nome|e }}','{{ s.talhao.nome if s.talhao else '' }}','{{ s.cultura|e }}','{{ s.produto|e }}','{{ s.data_desejada.strftime(\"%d/%m/%Y\") if s.data_desejada else \"\" }}')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-          </svg>
-          Contatar cliente via WhatsApp
-        </button>
       </div>
-      {% endif %}
+
+      <!-- Solicitações do cliente -->
+      <div class="cliente-body">
+        {% for s in sols %}
+        {% set label, badge_color = s.status_label %}
+        <div class="sc" data-status="{{ s.status }}">
+          <div class="sc__head">
+            <div style="flex:1;min-width:0;">
+              <div class="sc__talhao">🗺 {{ s.talhao.nome if s.talhao else 'Talhão removido' }}</div>
+              <div class="sc__meta">
+                Enviado {{ s.created_at.strftime("%d/%m/%Y %H:%M") }}
+                {% if s.data_desejada %} · Data desejada: <strong style="color:#fde68a;">{{ s.data_desejada.strftime("%d/%m/%Y") }}</strong>{% endif %}
+              </div>
+            </div>
+            <span class="sc__badge badge-{{ s.status }}" style="color:{{ badge_color }}; border-color:{{ badge_color }}44;">{{ label }}</span>
+          </div>
+
+          <div class="sc__grid">
+            <div><span>Cultura: </span><strong>{{ s.cultura or '—' }}</strong></div>
+            <div><span>Produto: </span><strong>{{ s.produto or '—' }}</strong></div>
+            <div><span>Dose: </span><strong>{{ s.dose or '—' }}</strong></div>
+            <div><span>Área: </span><strong>{{ "%.2f"|format(s.talhao.area_ha or 0) if s.talhao else '—' }} ha</strong></div>
+          </div>
+
+          {% if s.observacoes %}
+          <div class="sc__obs">📝 {{ s.observacoes }}</div>
+          {% endif %}
+
+          {% if s.resposta_admin %}
+          <div class="sc__resp"><strong>💬 Sua resposta:</strong> {{ s.resposta_admin }}</div>
+          {% endif %}
+
+          <form method="POST" action="{{ url_for('talhoes.admin_atualizar_status', sid=s.id) }}" class="sc__form">
+            <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;">
+              <label style="font-size:10px;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;">Status</label>
+              <select name="status">
+                <option value="pendente"   {% if s.status=='pendente'   %}selected{% endif %}>⏳ Pendente</option>
+                <option value="confirmado" {% if s.status=='confirmado' %}selected{% endif %}>✅ Confirmado</option>
+                <option value="concluido"  {% if s.status=='concluido'  %}selected{% endif %}>🏁 Concluído</option>
+                <option value="cancelado"  {% if s.status=='cancelado'  %}selected{% endif %}>❌ Cancelado</option>
+              </select>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+              <label style="font-size:10px;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;">Resposta ao cliente</label>
+              <textarea name="resposta" placeholder="Ex: Confirmado para 20/05 às 6h...">{{ s.resposta_admin or '' }}</textarea>
+            </div>
+            <button type="submit">💾 Salvar</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
     </div>
     {% endfor %}
   {% else %}
   <div class="empty">
     <div style="font-size:3rem;">✈️</div>
-    <p>Nenhuma solicitação recebida ainda.</p>
+    <p style="color:rgba(255,255,255,.50);margin-top:10px;">Nenhuma solicitação recebida ainda.</p>
   </div>
   {% endif %}
+
 </div>
 </section>
 
 <script>
-function filtrarStatus(val){
-  document.querySelectorAll('.sc').forEach(function(el){
-    el.style.display = (!val || el.dataset.status===val) ? '' : 'none';
+function toggleCliente(header){
+  header.classList.toggle('open');
+  var body = header.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+function expandAll(){
+  document.querySelectorAll('.cliente-header').forEach(function(h){
+    h.classList.add('open');
+    h.nextElementSibling.classList.add('open');
   });
 }
 
-function abrirWA(cliente, talhao, cultura, produto, data){
-  var msg = '✈️ *COMBATE RASANTE — Solicitação de Aplicação*\n\n'
-          + 'Olá, *' + cliente + '*!\n\n'
-          + 'Recebemos sua solicitação:\n'
-          + '🗺️ *Talhão:* ' + talhao + '\n'
-          + '🌱 *Cultura:* ' + cultura + '\n'
-          + '🧪 *Produto:* ' + produto + '\n'
-          + (data ? '📅 *Data desejada:* ' + data + '\n' : '')
-          + '\nEntraremos em contato para confirmar. Qualquer dúvida, responda aqui!';
-  /* Número principal: (64) 99983-6005 */
+function filtrarStatus(val){
+  document.querySelectorAll('.cliente-card').forEach(function(card){
+    var scs = card.querySelectorAll('.sc');
+    var visible = 0;
+    scs.forEach(function(sc){
+      var show = !val || sc.dataset.status === val;
+      sc.style.display = show ? '' : 'none';
+      if(show) visible++;
+    });
+    card.style.display = visible > 0 ? '' : 'none';
+    // Se filtro ativo, expandir automaticamente
+    if(val && visible > 0){
+      card.querySelector('.cliente-header').classList.add('open');
+      card.querySelector('.cliente-body').classList.add('open');
+    }
+  });
+}
+
+function contatarCliente(nome){
+  var msg = 'Ola, ' + nome + '! Aqui e a equipe da Combate Rasante. Estamos entrando em contato sobre sua solicitacao de aplicacao.';
   window.open('https://wa.me/5534991967002?text=' + encodeURIComponent(msg), '_blank');
 }
+
+// Expandir clientes com solicitações pendentes automaticamente
+document.querySelectorAll('.cliente-card').forEach(function(card){
+  var temPendente = card.querySelector('.sc[data-status="pendente"]');
+  if(temPendente){
+    card.querySelector('.cliente-header').classList.add('open');
+    card.querySelector('.cliente-body').classList.add('open');
+  }
+});
 </script>
 {% endblock %}
