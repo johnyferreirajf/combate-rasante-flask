@@ -512,6 +512,36 @@ select.pp-input option { background:#0d2418; }
   <div id="map-container">
     <div id="map"></div>
 
+    <!-- Barra flutuante: modo Sel+Gerar -->
+    <div id="selgerar-bar" style="
+         display:none; position:absolute; bottom:18px; left:50%;
+         transform:translateX(-50%); z-index:1200;
+         background:rgba(3,14,6,.96); border:1.5px solid rgba(234,179,8,.65);
+         border-radius:14px; padding:10px 18px;
+         align-items:center; gap:14px;
+         box-shadow:0 4px 24px rgba(0,0,0,.7); backdrop-filter:blur(8px);
+         white-space:nowrap; max-width:calc(100vw - 24px);">
+      <span style="color:#fde68a;font-size:12px;font-weight:800;">🔀 Clique nas ilhas para selecionar</span>
+      <span id="selgerar-count"
+            style="background:rgba(234,179,8,.18);border:1px solid rgba(234,179,8,.50);
+                   color:#fde68a;font-size:11px;font-weight:800;
+                   padding:2px 11px;border-radius:999px;min-width:80px;text-align:center;">
+        0 selecionadas
+      </span>
+      <button onclick="confirmarSelGerar()"
+              style="background:linear-gradient(135deg,#16a34a,#15803d);border:none;
+                     color:#fff;border-radius:9px;padding:7px 18px;font-size:12px;
+                     font-weight:800;cursor:pointer;font-family:inherit;">
+        ✅ Gerar Camada
+      </button>
+      <button onclick="cancelarSelGerar()"
+              style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);
+                     color:rgba(255,255,255,.75);border-radius:9px;padding:7px 14px;font-size:12px;
+                     font-weight:700;cursor:pointer;font-family:inherit;">
+        ✕ Cancelar
+      </button>
+    </div>
+
     <!-- Mira de desenho mobile -->
     <div id="draw-crosshair"><div id="draw-crosshair-dot"></div></div>
 
@@ -547,7 +577,7 @@ select.pp-input option { background:#0d2418; }
       <div class="tb-sep"></div>
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
       <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
-      <button id="btn-extrair" onclick="startExtrairIlhas()" title="Selecionar ilhas e gerar nova camada"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
+      <button id="btn-selgerar" onclick="startSelGerar()" title="Clicar nas ilhas para selecionar e gerar nova camada"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
     </div>
     <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
     <div id="draw-action-bar" style="display:none;">
@@ -555,41 +585,6 @@ select.pp-input option { background:#0d2418; }
       <button id="btn-undo-draw" onclick="undoDraw()" title="Desfazer último ponto"><span class="tb-icon">‹</span><span class="tb-label">Desfazer</span></button>
       <button id="btn-cancel"   onclick="cancelAll()" style="color:#fca5a5;" title="Cancelar"><span class="tb-icon">✕</span><span class="tb-label">Cancelar</span></button>
     </div>  <!-- /draw-action-bar -->
-
-    <!-- Modal: Selecionar ilhas e gerar nova camada -->
-    <div id="extrair-modal" style="display:none;position:fixed;inset:0;z-index:9000;
-         background:rgba(0,0,0,.72);backdrop-filter:blur(4px);
-         display:none;align-items:center;justify-content:center;">
-      <div style="background:#0a2010;border:1px solid rgba(34,197,94,.35);border-radius:18px;
-                  padding:24px;width:min(480px,calc(100% - 32px));max-height:80vh;
-                  display:flex;flex-direction:column;gap:14px;box-shadow:0 8px 40px rgba(0,0,0,.6);">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <h4 style="color:#fff;font-size:16px;font-weight:900;margin:0;">🔀 Selecionar Ilhas → Nova Camada</h4>
-          <button onclick="fecharExtrairModal()"
-                  style="background:none;border:none;color:rgba(255,255,255,.5);font-size:22px;cursor:pointer;line-height:1;">✕</button>
-        </div>
-        <p id="extrair-desc" style="color:rgba(255,255,255,.6);font-size:13px;margin:0;"></p>
-        <div style="font-size:11px;font-weight:800;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.5px;">
-          Selecione as ilhas para a nova camada:
-        </div>
-        <div id="extrair-lista" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;
-             max-height:300px;padding-right:4px;"></div>
-        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px;">
-          <button onclick="fecharExtrairModal()"
-                  style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.20);
-                         color:#fff;border-radius:10px;padding:8px 18px;font-size:13px;
-                         font-weight:700;cursor:pointer;font-family:inherit;">
-            Cancelar
-          </button>
-          <button onclick="confirmarExtrairIlhas()"
-                  style="background:linear-gradient(135deg,#16a34a,#15803d);border:none;
-                         color:#fff;border-radius:10px;padding:8px 20px;font-size:13px;
-                         font-weight:800;cursor:pointer;font-family:inherit;">
-            ✅ Gerar Nova Camada
-          </button>
-        </div>
-      </div>
-    </div>
 
     <!-- Modal de exclusão com buffer -->
     <div id="exclusao-modal">
@@ -948,7 +943,7 @@ function cancelModes(silent){
   /* Remover cursor tesoura */
   map.getContainer().classList.remove('cursor-scissors');
   /* Reset toolbar */
-  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar','btn-pontes','btn-extrair'].forEach(function(bid){
+  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar','btn-pontes','btn-selgerar'].forEach(function(bid){
     var b=document.getElementById(bid); if(b) b.classList.remove('active');
   });
   document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
@@ -1801,6 +1796,181 @@ function _cancelarSplit(){
 }
 
 /* ── Mesclar camadas ── */
+/* ══════════════════════════════════════════════════════════
+   SEL+GERAR — Selecionar ilhas clicando no mapa → nova camada
+   ══════════════════════════════════════════════════════════ */
+
+var _sg = {
+  sourceId:   null,   /* id da camada original */
+  ilhas:      [],     /* [{feature, area, layer, sel}] */
+  group:      null,   /* L.LayerGroup temporário */
+  active:     false
+};
+
+var _SG_COR_SEL  = '#eab308';  /* amarelo — selecionado */
+var _SG_COR_IDLE = 'rgba(255,255,255,0.55)';  /* branco — não selecionado */
+
+function startSelGerar(){
+  if(!currentId){ toast('Selecione uma camada primeiro.','warn'); return; }
+  if(typeof turf==='undefined'){ toast('turf.js não carregado.','err'); return; }
+  var t = TALHOES.find(function(x){return x.id===currentId;});
+  if(!t){ toast('Camada não encontrada.','err'); return; }
+
+  /* Decompor em sub-polígonos */
+  var geom = toFeature(t.geojson).geometry;
+  var polys = [];
+  if(geom.type==='Polygon'){
+    polys.push({type:'Feature',geometry:geom,properties:{}});
+  } else if(geom.type==='MultiPolygon'){
+    geom.coordinates.forEach(function(coords){
+      polys.push({type:'Feature',geometry:{type:'Polygon',coordinates:coords},properties:{}});
+    });
+  }
+  if(polys.length < 2){
+    toast('Esta camada tem apenas 1 polígono — sem ilhas separadas para selecionar.','warn',4000);
+    return;
+  }
+
+  cancelModes();
+  document.getElementById('btn-selgerar').classList.add('active');
+  _sg.active   = true;
+  _sg.sourceId = currentId;
+  _sg.ilhas    = polys.map(function(f){
+    return {feature:f, area:turf.area(f)/10000, layer:null, sel:false};
+  }).sort(function(a,b){return b.area-a.area;});
+
+  /* Esmaecer a camada original */
+  if(layers[currentId]) layers[currentId].setStyle({opacity:0.15,fillOpacity:0.05});
+
+  /* Criar layer por ilha */
+  _sg.group = L.layerGroup().addTo(map);
+  _sg.ilhas.forEach(function(ilha,i){
+    var l = L.geoJSON(ilha.feature, {
+      style:{color:_SG_COR_IDLE,weight:2.5,
+             fillColor:t.cor||'#22c55e',fillOpacity:0.22,
+             dashArray:'6 4'},
+      interactive:true
+    });
+
+    /* Tooltip permanente com área */
+    l.bindTooltip(ilha.area.toFixed(2)+' ha',{
+      permanent:true,direction:'center',className:'layer-label'
+    });
+
+    /* Clique: toggle amarelo */
+    l.on('click',function(e){
+      L.DomEvent.stopPropagation(e);
+      ilha.sel = !ilha.sel;
+      if(ilha.sel){
+        l.setStyle({color:_SG_COR_SEL,weight:4,
+                    fillColor:_SG_COR_SEL,fillOpacity:0.40,
+                    dashArray:null});
+      } else {
+        l.setStyle({color:_SG_COR_IDLE,weight:2.5,
+                    fillColor:t.cor||'#22c55e',fillOpacity:0.22,
+                    dashArray:'6 4'});
+      }
+      _sgAtualizarContador();
+    });
+
+    ilha.layer = l;
+    _sg.group.addLayer(l);
+  });
+
+  map.fitBounds(_sg.group.getBounds(),{padding:[50,50]});
+  map.getContainer().style.cursor = 'pointer';
+
+  var bar = document.getElementById('selgerar-bar');
+  bar.style.display = 'flex';
+  _sgAtualizarContador();
+}
+
+function _sgAtualizarContador(){
+  var n = _sg.ilhas.filter(function(i){return i.sel;}).length;
+  var el = document.getElementById('selgerar-count');
+  if(el){
+    el.textContent = n + (n===1?' selecionada':' selecionadas');
+    el.style.background = n>0 ? 'rgba(234,179,8,.28)' : 'rgba(234,179,8,.10)';
+    el.style.borderColor = n>0 ? 'rgba(234,179,8,.70)' : 'rgba(234,179,8,.35)';
+  }
+}
+
+function cancelarSelGerar(){
+  if(!_sg.active) return;
+  /* Restaurar camada original */
+  var t = TALHOES.find(function(x){return x.id===_sg.sourceId;});
+  if(t) reloadLayer(t);
+  /* Remover layers temporários */
+  if(_sg.group){ _sg.group.remove(); _sg.group=null; }
+  /* Fechar barra */
+  document.getElementById('selgerar-bar').style.display='none';
+  map.getContainer().style.cursor='';
+  document.getElementById('btn-selgerar').classList.remove('active');
+  _sg.active=false; _sg.sourceId=null; _sg.ilhas=[];
+}
+
+function confirmarSelGerar(){
+  var selecionadas = _sg.ilhas.filter(function(i){return i.sel;});
+  if(!selecionadas.length){
+    toast('Clique em pelo menos uma ilha no mapa.','warn'); return;
+  }
+  var t = TALHOES.find(function(x){return x.id===_sg.sourceId;});
+  if(!t){ toast('Camada original não encontrada.','err'); return; }
+
+  cancelarSelGerar();
+
+  /* Montar geometria da nova camada */
+  var novaGeo;
+  if(selecionadas.length===1){
+    novaGeo = selecionadas[0].feature;
+  } else {
+    var allCoords = [];
+    selecionadas.forEach(function(ilha){
+      var g = ilha.feature.geometry;
+      if(g.type==='Polygon') allCoords.push(g.coordinates);
+      else g.coordinates.forEach(function(r){allCoords.push(r);});
+    });
+    novaGeo = {
+      type:'Feature',
+      geometry:{type:'MultiPolygon',coordinates:allCoords},
+      properties:{}
+    };
+  }
+
+  var novaArea = turf.area(novaGeo)/10000;
+  var novoNome = t.nome+' (2)';
+  spin(true,'Gerando "'+novoNome+'"...');
+
+  fetch('/talhoes/api/salvar',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      nome:        novoNome,
+      cultura:     t.cultura||'',
+      cor:         t.cor||'#22c55e',
+      data_voo:    t.data_voo||'',
+      pista_voo:   t.pista_voo||'',
+      observacoes: 'Gerada de "'+t.nome+'" — '+selecionadas.length+' ilha(s).',
+      geojson:     novaGeo
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    if(d.erro) throw new Error(d.erro);
+    var nova={id:d.id,nome:novoNome,cultura:t.cultura||'',cor:t.cor||'#22c55e',
+              area_ha:d.area_ha||novaArea,geojson:novaGeo,
+              data_voo:t.data_voo||'',pista_voo:t.pista_voo||'',observacoes:''};
+    TALHOES.push(nova);
+    addLayer(nova);
+    spin(false);
+    renderSidebar();
+    openPanel(d.id);
+    toast('✅ "'+novoNome+'" criada com '+selecionadas.length+' ilha(s) — '+novaArea.toFixed(2)+' ha!','',5000);
+  })
+  .catch(function(err){ spin(false); toast('Erro: '+err.message,'err',5000); });
+}
+
+/* ── Fim Sel+Gerar ── */
+
 function startMesclar(){
   if(selectedIds.size < 2){
     toast('Selecione 2 ou mais camadas na sidebar para mesclar (Ctrl+clique ou Shift+clique).','warn',4000);
@@ -1973,167 +2143,6 @@ function startUnirPontes(){
       toast('Erro ao unir pontes: '+err.message,'err',6000);
     }
   },80);
-}
-
-/* ── Selecionar Ilhas → Gerar Nova Camada ── */
-
-var _extrairIlhasData = [];   /* [{idx, geom, area, preview}] */
-var _extrairSourceId  = null;
-
-function startExtrairIlhas(){
-  if(!currentId){ toast('Selecione uma camada primeiro.','warn'); return; }
-  var t = TALHOES.find(function(x){return x.id==currentId;});
-  if(!t){ toast('Camada não encontrada.','err'); return; }
-  if(typeof turf==='undefined'){ toast('turf.js não carregado.','err'); return; }
-
-  /* Extrair sub-polígonos */
-  var geom = toFeature(t.geojson).geometry;
-  var polys = [];
-  if(geom.type==='Polygon'){
-    polys=[{type:'Feature',geometry:geom,properties:{}}];
-  } else if(geom.type==='MultiPolygon'){
-    geom.coordinates.forEach(function(ring,i){
-      polys.push({type:'Feature',geometry:{type:'Polygon',coordinates:ring},properties:{}});
-    });
-  }
-
-  if(polys.length < 2){
-    toast('Esta camada tem apenas 1 polígono — não há ilhas para separar.','warn',4000);
-    return;
-  }
-
-  _extrairSourceId = currentId;
-  _extrairIlhasData = polys.map(function(f,i){
-    var area = turf.area(f)/10000;
-    return {idx:i, feature:f, area:area, selecionado:false};
-  });
-  /* Ordenar maior primeiro */
-  _extrairIlhasData.sort(function(a,b){return b.area-a.area;});
-
-  /* Popular modal */
-  document.getElementById('extrair-desc').textContent =
-    'Camada: "'+t.nome+'" — '+polys.length+' ilhas encontradas. '
-    +'Selecione quais vão para a nova camada (a original permanece intacta).';
-
-  var lista = document.getElementById('extrair-lista');
-  lista.innerHTML = '';
-  _extrairIlhasData.forEach(function(ilha,i){
-    var id = 'ilha-chk-'+i;
-    var div = document.createElement('div');
-    div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;'
-                       +'background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.20);'
-                       +'border-radius:9px;cursor:pointer;transition:background .15s;';
-    div.innerHTML =
-      '<input type="checkbox" id="'+id+'" style="width:18px;height:18px;cursor:pointer;accent-color:#22c55e;">'
-      +'<label for="'+id+'" style="flex:1;cursor:pointer;color:#fff;font-size:13px;font-weight:700;">'
-        +'Ilha '+(i+1)+' <span style="color:#86efac;font-weight:400;">'
-        +ilha.area.toFixed(2)+' ha</span>'
-      +'</label>';
-    div.addEventListener('click', function(e){
-      if(e.target.tagName !== 'INPUT'){
-        var cb = div.querySelector('input');
-        cb.checked = !cb.checked;
-      }
-      div.style.background = div.querySelector('input').checked
-        ? 'rgba(34,197,94,.22)' : 'rgba(34,197,94,.08)';
-      div.style.borderColor = div.querySelector('input').checked
-        ? 'rgba(34,197,94,.60)' : 'rgba(34,197,94,.20)';
-    });
-    lista.appendChild(div);
-  });
-
-  /* Mostrar modal */
-  var modal = document.getElementById('extrair-modal');
-  modal.style.display = 'flex';
-}
-
-function fecharExtrairModal(){
-  document.getElementById('extrair-modal').style.display = 'none';
-  _extrairIlhasData = [];
-  _extrairSourceId  = null;
-}
-
-function confirmarExtrairIlhas(){
-  /* Coletar ilhas selecionadas */
-  var selecionadas = [];
-  document.querySelectorAll('#extrair-lista input[type=checkbox]').forEach(function(cb,i){
-    if(cb.checked) selecionadas.push(_extrairIlhasData[i]);
-  });
-
-  if(!selecionadas.length){
-    toast('Selecione ao menos uma ilha.','warn'); return;
-  }
-
-  var t = TALHOES.find(function(x){return x.id==_extrairSourceId;});
-  if(!t){ toast('Camada original não encontrada.','err'); return; }
-
-  fecharExtrairModal();
-
-  /* Gerar geometria da nova camada (MultiPolygon com as ilhas selecionadas) */
-  var novaGeo;
-  if(selecionadas.length === 1){
-    novaGeo = selecionadas[0].feature;
-  } else {
-    /* Unir todas as ilhas selecionadas em MultiPolygon */
-    var coords = selecionadas.map(function(ilha){
-      var g = ilha.feature.geometry;
-      return g.type==='Polygon' ? g.coordinates : g.coordinates[0];
-    });
-    novaGeo = {
-      type:'Feature',
-      geometry:{type:'MultiPolygon', coordinates:coords.map(function(r){return [r];})},
-      properties:{}
-    };
-  }
-
-  var novaArea = turf.area(novaGeo)/10000;
-  var novoNome = t.nome+' (2)';
-
-  spin(true,'Gerando nova camada "'+novoNome+'"...');
-
-  var payload = {
-    /* sem id → cria nova camada */
-    nome:        novoNome,
-    cultura:     t.cultura||'',
-    cor:         t.cor||'#22c55e',
-    data_voo:    t.data_voo||'',
-    pista_voo:   t.pista_voo||'',
-    observacoes: 'Gerada de "'+t.nome+'" — '+selecionadas.length+' ilha(s) selecionada(s).',
-    geojson:     novaGeo
-  };
-
-  fetch('/talhoes/api/salvar',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload)
-  })
-  .then(function(r){return r.json();})
-  .then(function(d){
-    if(d.erro) throw new Error(d.erro);
-    /* Adicionar nova camada na sidebar e no mapa */
-    var novaTalhao = {
-      id:          d.id,
-      nome:        novoNome,
-      cultura:     t.cultura||'',
-      cor:         t.cor||'#22c55e',
-      area_ha:     d.area_ha||novaArea,
-      geojson:     novaGeo,
-      data_voo:    t.data_voo||'',
-      pista_voo:   t.pista_voo||'',
-      observacoes: payload.observacoes
-    };
-    TALHOES.push(novaTalhao);
-    addLayer(novaTalhao);
-    spin(false);
-    renderSidebar();
-    /* Selecionar a nova camada automaticamente */
-    openPanel(d.id);
-    toast('✅ Nova camada "'+novoNome+'" criada com '+selecionadas.length+' ilha(s) — '+novaArea.toFixed(2)+' ha!','',5000);
-  })
-  .catch(function(err){
-    spin(false);
-    toast('Erro ao gerar camada: '+err.message,'err',5000);
-  });
 }
 
 /* ── Salvar ── */
