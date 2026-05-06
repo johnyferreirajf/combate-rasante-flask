@@ -13,7 +13,7 @@
 .fi:focus{border-color:rgba(34,197,94,.60);}
 select.fi option{background:#0d2418;}
 textarea.fi{resize:vertical;}
-.btn-wa{display:inline-flex;align-items:center;gap:8px;padding:0 18px;min-height:42px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;background:#25D366;color:#fff;text-decoration:none;}
+.btn-wa{display:inline-flex;align-items:center;gap:8px;padding:0 18px;min-height:42px;border-radius:12px;border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;background:#25D366;color:#fff;}
 .btn-wa:hover{background:#1ebe5d;}
 </style>
 {% endblock %}
@@ -46,7 +46,8 @@ textarea.fi{resize:vertical;}
   <form id="solicitacao-form" method="POST" style="display:flex;flex-direction:column;gap:14px;">
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div><label class="fl">Cultura *</label>
-        <select class="fi" id="campo-cultura" name="cultura" required><option value="">Selecione...</option>
+        <select class="fi" id="campo-cultura" name="cultura" required>
+          <option value="">Selecione...</option>
           {% for c in culturas %}<option value="{{ c }}" {{ 'selected' if talhao.cultura==c else '' }}>{{ c }}</option>{% endfor %}
         </select></div>
       <div><label class="fl">Data desejada</label>
@@ -75,6 +76,25 @@ textarea.fi{resize:vertical;}
 </section>
 
 <script>
+/* Calcular centroide do GeoJSON para o link de mapa */
+var TALHAO_GEOJSON = {{ talhao.geojson | safe }};
+var TALHAO_NOME    = {{ talhao.nome | tojson }};
+var TALHAO_AREA    = '{{ "%.2f"|format(talhao.area_ha or 0) }}';
+
+function calcCentroid(geojson){
+  var coords = [];
+  function coleta(c){
+    if(typeof c[0] === 'number'){ coords.push(c); }
+    else { c.forEach(coleta); }
+  }
+  var geom = geojson.geometry || geojson;
+  coleta(geom.coordinates);
+  if(!coords.length) return null;
+  var lon = coords.reduce(function(s,c){return s+c[0];},0)/coords.length;
+  var lat = coords.reduce(function(s,c){return s+c[1];},0)/coords.length;
+  return {lat: lat.toFixed(6), lon: lon.toFixed(6)};
+}
+
 function enviarWhatsApp(){
   var cultura = document.getElementById('campo-cultura').value;
   var produto  = document.getElementById('campo-produto').value;
@@ -85,26 +105,37 @@ function enviarWhatsApp(){
   if(!cultura){ alert('Selecione a cultura antes de enviar.'); return; }
   if(!produto.trim()){ alert('Informe o produto antes de enviar.'); return; }
 
-  /* Formatar data dd/mm/aaaa */
-  var dataFmt = '-';
+  /* Formatar data */
+  var dataFmt = 'Não informada';
   if(dataVal){
     var p = dataVal.split('-');
-    dataFmt = p[2] + '/' + p[1] + '/' + p[0];
+    dataFmt = p[2]+'/'+p[1]+'/'+p[0];
   }
 
-  var talhaoNome = {{ talhao.nome | tojson }};
-  var talhaoArea = '{{ "%.2f"|format(talhao.area_ha or 0) }}';
+  /* Link do mapa mostrando o centroide do talhão */
+  var centro = calcCentroid(TALHAO_GEOJSON);
+  var mapaUrl = '';
+  if(centro){
+    /* Google Maps com pin no centroide */
+    mapaUrl = 'https://maps.google.com/?q=' + centro.lat + ',' + centro.lon + '&z=15';
+  }
 
-  var msg = '\u2708\ufe0f *SOLICITA\u00c7\u00c3O DE APLICA\u00c7\u00c3O*\n\n'
-          + '\ud83d\uddfa\ufe0f *Talh\u00e3o:* ' + talhaoNome + '\n'
-          + '\ud83d\udcd0 *\u00c1rea:* ' + talhaoArea + ' ha\n'
-          + '\ud83c\udf31 *Cultura:* ' + cultura + '\n'
-          + '\ud83d\udcc5 *Data desejada:* ' + dataFmt + '\n'
-          + '\ud83e\uddea *Produto:* ' + produto + '\n'
-          + (dose ? '\u2697\ufe0f *Dose/Volume:* ' + dose + '\n' : '')
-          + (obs  ? '\ud83d\udcdd *Observa\u00e7\u00f5es:* ' + obs + '\n' : '')
-          + '\n_Enviado pelo portal de Talh\u00f5es \u2014 Combate Rasante_';
+  /* Montar mensagem limpa — sem escape unicode, com emojis diretos */
+  var linhas = [
+    '✈️ *SOLICITAÇÃO DE APLICAÇÃO*',
+    '',
+    '🗺️ *Talhão:* ' + TALHAO_NOME,
+    '📐 *Área:* ' + TALHAO_AREA + ' ha',
+    '🌱 *Cultura:* ' + cultura,
+    '📅 *Data desejada:* ' + dataFmt,
+    '🧪 *Produto:* ' + produto
+  ];
+  if(dose)    linhas.push('⚗️ *Dose/Volume:* ' + dose);
+  if(obs)     linhas.push('📝 *Observações:* ' + obs);
+  if(mapaUrl) linhas.push('', '📍 *Localização do talhão:*', mapaUrl);
+  linhas.push('', '_Enviado pelo portal — Combate Rasante_');
 
+  var msg = linhas.join('\n');
   var url = 'https://wa.me/5534991967002?text=' + encodeURIComponent(msg);
   window.open(url, '_blank');
 }
