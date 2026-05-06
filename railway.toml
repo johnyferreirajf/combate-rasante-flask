@@ -1,8 +1,6 @@
 [build]
 builder = "nixpacks"
-
-[build.buildCommand]
-buildCommand = "pip install playwright && playwright install chromium --with-deps"
+buildCommand = "pip install -r requirements.txt && playwright install chromium --with-deps"
 
 [deploy]
 startCommand = "gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
