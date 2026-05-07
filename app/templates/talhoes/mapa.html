@@ -65,6 +65,9 @@ body.body--fullscreen .flash-stack { display:none !important; }
 .t-item__area { font-size:10px; color:rgba(255,255,255,.50); }
 .t-item__del  { background:none; border:none; color:rgba(239,68,68,.65); cursor:pointer; font-size:13px; padding:2px 4px; border-radius:4px; flex-shrink:0; }
 .t-item__del:hover { color:#ef4444; }
+.t-item__vis  { background:none; border:none; color:rgba(255,255,255,.40); cursor:pointer; font-size:12px; padding:2px 4px; border-radius:4px; flex-shrink:0; line-height:1; }
+.t-item__vis:hover { color:rgba(255,255,255,.80); }
+.t-item__vis.hidden { color:rgba(255,255,255,.20); }
 .t-item__check { width:14px; height:14px; border-radius:3px; border:1.5px solid rgba(255,255,255,.30); background:rgba(0,0,0,.30); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; }
 .t-item.selected .t-item__check { background:#eab308; border-color:#eab308; }
 #sel-toolbar { display:none; padding:6px 8px; background:rgba(239,68,68,.18); border-top:1px solid rgba(239,68,68,.35); gap:6px; align-items:center; flex-shrink:0; }
@@ -772,6 +775,7 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/Worl
 /* ── Estado ── */
 var layers       = {};
 var currentId    = null;
+var hiddenIds    = new Set();  /* IDs de camadas ocultas */
 var drawCtrl     = null;
 var editHandler  = null;
 var editLayer    = null;
@@ -836,7 +840,8 @@ function addLayer(t){
   var cor   = isSel ? '#eab308' : t.cor;
   var fOp   = isSel ? 0.40 : 0.25;
   var w     = isSel ? 3   : 2;
-  var l=L.geoJSON(t.geojson,{style:{color:cor,fillColor:cor,fillOpacity:fOp,weight:w}}).addTo(map);
+  var l=L.geoJSON(t.geojson,{style:{color:cor,fillColor:cor,fillOpacity:fOp,weight:w}});
+  if(!hiddenIds.has(t.id)) l.addTo(map);  /* respeitar visibilidade */
   l.on('click',function(){openPanel(t.id);});
   /* Tooltip permanente: apenas nome (área por sub-polígono aparece ao selecionar) */
   l.bindTooltip(t.nome,{
@@ -883,7 +888,10 @@ function renderSidebar(){
         '<div class="t-item__nome">'+t.nome+'</div>'+
         '<div class="t-item__area">'+sub+'</div>'+
       '</div>'+
-      '<button class="t-item__del" data-id="'+t.id+'" title="Excluir">&#128465;</button>'+
+      '<div style="display:flex;flex-direction:column;gap:1px;align-items:center;">'+
+        '<button class="t-item__del" data-id="'+t.id+'" title="Excluir">&#128465;</button>'+
+        '<button class="t-item__vis'+(hiddenIds.has(t.id)?' hidden':'')+'" data-vis-id="'+t.id+'" title="'+(hiddenIds.has(t.id)?'Mostrar camada':'Ocultar camada')+'">'+(hiddenIds.has(t.id)?'&#128065;&#65038;':'&#128065;')+'</button>'+
+      '</div>'+
     '</div>';
   });
   list.innerHTML=rows.join('');
@@ -893,10 +901,11 @@ function renderSidebar(){
 
 document.addEventListener('click',function(e){
   if(!e.target.closest('#talhoes-list')) return;
-  var del=e.target.closest('.t-item__del'), item=e.target.closest('.t-item');
+  var del=e.target.closest('.t-item__del'), vis=e.target.closest('.t-item__vis'), item=e.target.closest('.t-item');
   if(!item) return;
   var id=parseInt(item.dataset.id), idx=parseInt(item.dataset.idx);
   if(del){excluir(e,id);return;}
+  if(vis){toggleVisibilidade(e,id);return;}
   if(e.shiftKey&&lastClickIdx>=0){
     var from=Math.min(lastClickIdx,idx),to=Math.max(lastClickIdx,idx);
     for(var i=from;i<=to;i++) selectedIds.add(TALHOES[i].id);
@@ -2375,6 +2384,24 @@ function salvarTalhao(){
 
 /* ── Excluir ── */
 function excluirAtual(){if(currentId)excluir({stopPropagation:function(){}},currentId);}
+function toggleVisibilidade(e,id){
+  e.stopPropagation();
+  var l = layers[id];
+  if(!l) return;
+  if(hiddenIds.has(id)){
+    /* Mostrar: adicionar de volta ao mapa */
+    hiddenIds.delete(id);
+    l.addTo(map);
+  } else {
+    /* Ocultar: remover do mapa sem deletar */
+    hiddenIds.add(id);
+    map.removeLayer(l);
+    /* Fechar painel se esta camada estava selecionada */
+    if(currentId===id) closePropPanel();
+  }
+  renderSidebar();
+}
+
 function excluir(e,id){
   e.stopPropagation();
   if(!confirm('Excluir este talhão? As solicitações vinculadas também serão removidas.')) return;
