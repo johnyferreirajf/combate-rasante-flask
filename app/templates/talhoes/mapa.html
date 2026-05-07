@@ -165,6 +165,16 @@ select.pp-input option { background:#0d2418; }
 }
 .layer-label::before { display:none !important; }
 
+.sg-popup .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+.sg-popup .leaflet-popup-content {
+  margin: 0 !important;
+}
+.sg-popup .leaflet-popup-tip-container { display:none !important; }
+
 #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:9px 22px; border-radius:11px; font-weight:800; font-size:13px; z-index:9999; display:none; box-shadow:0 4px 20px rgba(0,0,0,.4); transition:opacity .3s; }
 #toast.warn { background:#b45309; }
 #toast.err  { background:#dc2626; }
@@ -512,36 +522,6 @@ select.pp-input option { background:#0d2418; }
   <div id="map-container">
     <div id="map"></div>
 
-    <!-- Barra flutuante: modo Sel+Gerar -->
-    <div id="selgerar-bar" style="
-         display:none; position:fixed; bottom:22px; left:50%;
-         transform:translateX(-50%); z-index:9999;
-         background:rgba(3,14,6,.97); border:2px solid rgba(234,179,8,.75);
-         border-radius:14px; padding:10px 16px;
-         align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;
-         box-shadow:0 4px 28px rgba(0,0,0,.80); backdrop-filter:blur(10px);
-         max-width:calc(100vw - 20px); box-sizing:border-box;">
-      <span style="color:#fde68a;font-size:12px;font-weight:800;white-space:nowrap;">🔀 Clique nas ilhas para selecionar</span>
-      <span id="selgerar-count"
-            style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.45);
-                   color:#fde68a;font-size:11px;font-weight:800;
-                   padding:3px 12px;border-radius:999px;min-width:110px;text-align:center;">
-        0 selecionadas
-      </span>
-      <button onclick="confirmarSelGerar()"
-              style="background:linear-gradient(135deg,#16a34a,#15803d);border:none;
-                     color:#fff;border-radius:9px;padding:8px 18px;font-size:13px;
-                     font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;">
-        ✅ Gerar Nova Camada
-      </button>
-      <button onclick="cancelarSelGerar()"
-              style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);
-                     color:rgba(255,255,255,.75);border-radius:9px;padding:8px 14px;font-size:13px;
-                     font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">
-        ✕ Cancelar
-      </button>
-    </div>
-
     <!-- Mira de desenho mobile -->
     <div id="draw-crosshair"><div id="draw-crosshair-dot"></div></div>
 
@@ -577,7 +557,7 @@ select.pp-input option { background:#0d2418; }
       <div class="tb-sep"></div>
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
       <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
-      <button id="btn-selgerar" onclick="toggleSelGerar()" title="Selecionar ilhas e gerar nova camada (clicar de novo cancela)"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
+      <button id="btn-selgerar" onclick="startSelGerar()" title="Clicar nas ilhas para selecionar e gerar nova camada"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
     </div>
     <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
     <div id="draw-action-bar" style="display:none;">
@@ -678,6 +658,39 @@ select.pp-input option { background:#0d2418; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+<!-- Barra Sel+Gerar: position:fixed fora de qualquer container, z-index máximo -->
+<div id="selgerar-bar" style="
+     display:none; position:fixed; bottom:28px; left:50%;
+     transform:translateX(-50%); z-index:10000;
+     background:rgba(3,14,6,.97); border:2px solid rgba(234,179,8,.80);
+     border-radius:14px; padding:12px 18px;
+     align-items:center; gap:12px; flex-wrap:wrap; justify-content:center;
+     box-shadow:0 6px 32px rgba(0,0,0,.85); backdrop-filter:blur(12px);
+     max-width:calc(100vw - 20px); box-sizing:border-box;">
+  <span style="color:#fde68a;font-size:13px;font-weight:800;white-space:nowrap;">
+    🔀 Clique nas ilhas para selecionar
+  </span>
+  <span id="selgerar-count"
+        style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.45);
+               color:#fde68a;font-size:12px;font-weight:800;
+               padding:4px 14px;border-radius:999px;min-width:120px;text-align:center;">
+    0 selecionadas
+  </span>
+  <button onclick="confirmarSelGerar()"
+          style="background:linear-gradient(135deg,#16a34a,#15803d);border:none;
+                 color:#fff;border-radius:10px;padding:9px 22px;font-size:13px;
+                 font-weight:900;cursor:pointer;font-family:inherit;white-space:nowrap;
+                 box-shadow:0 2px 8px rgba(0,0,0,.4);">
+    ✅ Gerar Nova Camada
+  </button>
+  <button onclick="cancelarSelGerar()"
+          style="background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.25);
+                 color:rgba(255,255,255,.80);border-radius:10px;padding:9px 16px;font-size:13px;
+                 font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">
+    ✕ Cancelar
+  </button>
+</div>
+
 <script>
 /* ── Dados ── */
 var TALHOES = {{ talhoes_json | safe }};
@@ -951,8 +964,6 @@ function cancelModes(silent){
   _showUndoBtn(false);
   hint(null);
   activeMode=null;
-  /* limpar Sel+Gerar se ativo — evita duplicação de layers */
-  if(_sg && _sg.active) _sgLimpar();
 }
 
 function cancelAll(){
@@ -1812,27 +1823,6 @@ var _sg = {
 var _SG_COR_SEL  = '#eab308';  /* amarelo — selecionado */
 var _SG_COR_IDLE = 'rgba(255,255,255,0.55)';  /* branco — não selecionado */
 
-function toggleSelGerar(){
-  if(_sg && _sg.active){ _sgLimpar(); return; }
-  startSelGerar();
-}
-
-/* Limpeza interna sem recarregar a camada (para cancelamento interno) */
-function _sgLimpar(){
-  try{ if(_sg.group){_sg.group.remove();_sg.group=null;} }catch(e){}
-  /* Restaurar estilo da camada original */
-  try{
-    var t=TALHOES.find(function(x){return x.id===_sg.sourceId;});
-    if(t && layers[t.id]) reloadLayer(t);
-  }catch(e){}
-  var bar=document.getElementById('selgerar-bar');
-  if(bar) bar.style.display='none';
-  try{ map.getContainer().style.cursor=''; }catch(e){}
-  var btn=document.getElementById('btn-selgerar');
-  if(btn) btn.classList.remove('active');
-  _sg.active=false; _sg.sourceId=null; _sg.ilhas=[];
-}
-
 function startSelGerar(){
   if(!currentId){ toast('Selecione uma camada primeiro.','warn'); return; }
   if(typeof turf==='undefined'){ toast('turf.js não carregado.','err'); return; }
@@ -1854,9 +1844,7 @@ function startSelGerar(){
     return;
   }
 
-  /* Garantir limpeza completa de sessão anterior */
-  if(_sg && _sg.group){ try{_sg.group.remove();}catch(e){} _sg.group=null; }
-  cancelModes(true);
+  cancelModes();
   document.getElementById('btn-selgerar').classList.add('active');
   _sg.active   = true;
   _sg.sourceId = currentId;
@@ -1877,23 +1865,29 @@ function startSelGerar(){
       interactive:true
     });
 
-    /* Tooltip permanente com área */
-    l.bindTooltip(ilha.area.toFixed(2)+' ha',{
-      permanent:true,direction:'center',className:'layer-label'
-    });
+    /* Popup com área — aparece ao clicar, não permanente */
+    l.bindPopup(
+      '<div style="text-align:center;font-weight:900;font-size:14px;color:#fff;'+
+      'background:rgba(3,14,6,.92);padding:6px 14px;border-radius:8px;'+
+      'border:1.5px solid rgba(234,179,8,.60);">'+
+      ilha.area.toFixed(2)+' ha</div>',
+      {className:'sg-popup',closeButton:false,offset:[0,-6]}
+    );
 
-    /* Clique: toggle amarelo */
+    /* Clique: toggle amarelo + mostrar área no popup */
     l.on('click',function(e){
       L.DomEvent.stopPropagation(e);
       ilha.sel = !ilha.sel;
       if(ilha.sel){
         l.setStyle({color:_SG_COR_SEL,weight:4,
-                    fillColor:_SG_COR_SEL,fillOpacity:0.40,
+                    fillColor:_SG_COR_SEL,fillOpacity:0.45,
                     dashArray:null});
+        l.openPopup();
       } else {
         l.setStyle({color:_SG_COR_IDLE,weight:2.5,
                     fillColor:t.cor||'#22c55e',fillOpacity:0.22,
                     dashArray:'6 4'});
+        l.closePopup();
       }
       _sgAtualizarContador();
     });
@@ -1921,8 +1915,17 @@ function _sgAtualizarContador(){
 }
 
 function cancelarSelGerar(){
-  if(!_sg || !_sg.active) return;
-  _sgLimpar();
+  if(!_sg.active) return;
+  /* Restaurar camada original */
+  var t = TALHOES.find(function(x){return x.id===_sg.sourceId;});
+  if(t) reloadLayer(t);
+  /* Remover layers temporários */
+  if(_sg.group){ _sg.group.remove(); _sg.group=null; }
+  /* Fechar barra */
+  document.getElementById('selgerar-bar').style.display='none';
+  map.getContainer().style.cursor='';
+  document.getElementById('btn-selgerar').classList.remove('active');
+  _sg.active=false; _sg.sourceId=null; _sg.ilhas=[];
 }
 
 function confirmarSelGerar(){
