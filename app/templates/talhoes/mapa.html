@@ -158,15 +158,15 @@ select.pp-input option { background:#0d2418; }
 }
 .sub-area-label span {
   display: inline-block;
-  background: rgba(0,0,0,0.72);
-  color: #86efac;
+  background: rgba(0,0,0,0.70);
+  color: #ffffff;
   font-size: 11px;
   font-weight: 800;
   padding: 2px 7px;
   border-radius: 5px;
-  border: 1px solid rgba(34,197,94,0.45);
+  border: none;
   white-space: nowrap;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9), 1px 1px 0 rgba(0,0,0,0.8);
   pointer-events: none;
 }
 /* Label principal da camada selecionada (afastado para cima) */
@@ -197,6 +197,30 @@ select.pp-input option { background:#0d2418; }
   margin: 0 !important;
 }
 .sg-popup .leaflet-popup-tip-container { display:none !important; }
+
+/* ── Sel+Gerar: responsivo mobile ── */
+@media (max-width: 600px) {
+  #selgerar-bar {
+    bottom: 72px !important;   /* acima dos botões mobile */
+    padding: 8px 12px !important;
+    gap: 8px !important;
+    font-size: 11px;
+  }
+  #selgerar-bar button {
+    padding: 7px 12px !important;
+    font-size: 11px !important;
+  }
+  #selgerar-bar span {
+    font-size: 10px !important;
+  }
+  #selgerar-aviso {
+    bottom: 155px !important;
+    font-size: 11px !important;
+    padding: 7px 14px !important;
+    white-space: normal !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+}
 
 #toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#16a34a; color:#fff; padding:9px 22px; border-radius:11px; font-weight:800; font-size:13px; z-index:9999; display:none; box-shadow:0 4px 20px rgba(0,0,0,.4); transition:opacity .3s; }
 #toast.warn { background:#b45309; }
@@ -581,7 +605,6 @@ select.pp-input option { background:#0d2418; }
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
       <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
       <button id="btn-selgerar" onclick="toggleSelGerar()" title="Selecionar ilhas e gerar nova camada (clicar de novo cancela)"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
-      <button id="btn-gerar-camada" onclick="confirmarSelGerar()" title="Gerar nova camada com as ilhas selecionadas" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d);border:1px solid rgba(34,197,94,.6);color:#fff;"><span class="tb-icon">✅</span><span class="tb-label">Gerar</span></button>
     </div>
     <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
     <div id="draw-action-bar" style="display:none;">
@@ -683,6 +706,18 @@ select.pp-input option { background:#0d2418; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 <!-- Barra Sel+Gerar: position:fixed fora de qualquer container, z-index máximo -->
+<!-- Aviso Sel+Gerar: aparece acima da barra -->
+<div id="selgerar-aviso" style="
+     display:none; position:fixed; bottom:110px; left:50%;
+     transform:translateX(-50%); z-index:10001;
+     background:rgba(239,68,68,.95); border:1.5px solid rgba(255,100,100,.6);
+     border-radius:10px; padding:8px 20px;
+     color:#fff; font-size:13px; font-weight:800;
+     box-shadow:0 4px 18px rgba(0,0,0,.6); white-space:nowrap;
+     max-width:calc(100vw - 24px); text-align:center;">
+  ⚠️ Nenhum polígono selecionado. Clique nos polígonos no mapa.
+</div>
+
 <div id="selgerar-bar" style="
      display:none; position:fixed; bottom:28px; left:50%;
      transform:translateX(-50%); z-index:10000;
@@ -692,7 +727,7 @@ select.pp-input option { background:#0d2418; }
      box-shadow:0 6px 32px rgba(0,0,0,.85); backdrop-filter:blur(12px);
      max-width:calc(100vw - 20px); box-sizing:border-box;">
   <span style="color:#fde68a;font-size:13px;font-weight:800;white-space:nowrap;">
-    🔀 Clique nas ilhas para selecionar
+    🔀 Clique nos polígonos para selecionar
   </span>
   <span id="selgerar-count"
         style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.45);
@@ -1971,13 +2006,7 @@ function startSelGerar(){
       interactive:true
     });
 
-    /* Área exibida via tooltip da camada ao selecionar na sidebar */
-
-    /* Clique: toggle amarelo + mostrar área no popup */
-    /* Tooltip permanente com área durante o modo Sel+Gerar */
-    l.bindTooltip(ilha.area.toFixed(2)+' ha',{
-      permanent:true, direction:'center', className:'layer-label'
-    });
+    /* Área mostrada pelo _mostrarAreasSubPoligonos ao selecionar a camada */
 
     l.on('click',function(e){
       L.DomEvent.stopPropagation(e);
@@ -2015,9 +2044,7 @@ function _sgAtualizarContador(){
     el.style.background = n>0 ? 'rgba(234,179,8,.28)' : 'rgba(234,179,8,.10)';
     el.style.borderColor = n>0 ? 'rgba(234,179,8,.70)' : 'rgba(234,179,8,.35)';
   }
-  /* Mostrar/esconder botão "Gerar" na toolbar */
-  var btnGerar = document.getElementById('btn-gerar-camada');
-  if(btnGerar) btnGerar.style.display = n > 0 ? '' : 'none';
+  /* btn-gerar-camada removido da toolbar — barra fixa é o controle */
 }
 
 function _sgLimpar(){
@@ -2028,8 +2055,9 @@ function _sgLimpar(){
   }catch(e){}
   var bar=document.getElementById('selgerar-bar');
   if(bar) bar.style.display='none';
-  var btnG=document.getElementById('btn-gerar-camada');
-  if(btnG) btnG.style.display='none';
+  var av=document.getElementById('selgerar-aviso');
+  if(av){ av.style.display='none'; clearTimeout(av._t); }
+
   try{ map.getContainer().style.cursor=''; }catch(e){}
   var btn=document.getElementById('btn-selgerar');
   if(btn) btn.classList.remove('active');
@@ -2053,7 +2081,13 @@ function cancelarSelGerar(){
 function confirmarSelGerar(){
   var selecionadas = _sg.ilhas.filter(function(i){return i.sel;});
   if(!selecionadas.length){
-    toast('Clique em pelo menos uma ilha no mapa.','warn'); return;
+    var av = document.getElementById('selgerar-aviso');
+    if(av){
+      av.style.display = 'block';
+      clearTimeout(av._t);
+      av._t = setTimeout(function(){ av.style.display='none'; }, 3000);
+    }
+    return;
   }
   var t = TALHOES.find(function(x){return x.id===_sg.sourceId;});
   if(!t){ toast('Camada original não encontrada.','err'); return; }
