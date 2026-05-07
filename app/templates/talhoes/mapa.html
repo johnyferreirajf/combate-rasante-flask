@@ -2420,6 +2420,11 @@ function excluir(e,id){
     /* Garantir que o preview de perímetro some junto com a camada */
     if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
     _periTemp=null; _periArea=null;
+    /* Remover sub-area markers da camada excluída */
+    if(layers[id] && layers[id]._subAreaGroup){
+      layers[id]._subAreaGroup.remove();
+      layers[id]._subAreaGroup = null;
+    }
     if(layers[id]){map.removeLayer(layers[id]);delete layers[id];}
     TALHOES=TALHOES.filter(function(t){return t.id!=id;});
     if(currentId==id) closePropPanel();
