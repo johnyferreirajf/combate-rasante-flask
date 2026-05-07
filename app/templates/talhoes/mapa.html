@@ -514,30 +514,30 @@ select.pp-input option { background:#0d2418; }
 
     <!-- Barra flutuante: modo Sel+Gerar -->
     <div id="selgerar-bar" style="
-         display:none; position:absolute; bottom:18px; left:50%;
-         transform:translateX(-50%); z-index:1200;
-         background:rgba(3,14,6,.96); border:1.5px solid rgba(234,179,8,.65);
-         border-radius:14px; padding:10px 18px;
-         align-items:center; gap:14px;
-         box-shadow:0 4px 24px rgba(0,0,0,.7); backdrop-filter:blur(8px);
-         white-space:nowrap; max-width:calc(100vw - 24px);">
-      <span style="color:#fde68a;font-size:12px;font-weight:800;">🔀 Clique nas ilhas para selecionar</span>
+         display:none; position:fixed; bottom:22px; left:50%;
+         transform:translateX(-50%); z-index:9999;
+         background:rgba(3,14,6,.97); border:2px solid rgba(234,179,8,.75);
+         border-radius:14px; padding:10px 16px;
+         align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;
+         box-shadow:0 4px 28px rgba(0,0,0,.80); backdrop-filter:blur(10px);
+         max-width:calc(100vw - 20px); box-sizing:border-box;">
+      <span style="color:#fde68a;font-size:12px;font-weight:800;white-space:nowrap;">🔀 Clique nas ilhas para selecionar</span>
       <span id="selgerar-count"
-            style="background:rgba(234,179,8,.18);border:1px solid rgba(234,179,8,.50);
+            style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.45);
                    color:#fde68a;font-size:11px;font-weight:800;
-                   padding:2px 11px;border-radius:999px;min-width:80px;text-align:center;">
+                   padding:3px 12px;border-radius:999px;min-width:110px;text-align:center;">
         0 selecionadas
       </span>
       <button onclick="confirmarSelGerar()"
               style="background:linear-gradient(135deg,#16a34a,#15803d);border:none;
-                     color:#fff;border-radius:9px;padding:7px 18px;font-size:12px;
-                     font-weight:800;cursor:pointer;font-family:inherit;">
-        ✅ Gerar Camada
+                     color:#fff;border-radius:9px;padding:8px 18px;font-size:13px;
+                     font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;">
+        ✅ Gerar Nova Camada
       </button>
       <button onclick="cancelarSelGerar()"
               style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);
-                     color:rgba(255,255,255,.75);border-radius:9px;padding:7px 14px;font-size:12px;
-                     font-weight:700;cursor:pointer;font-family:inherit;">
+                     color:rgba(255,255,255,.75);border-radius:9px;padding:8px 14px;font-size:13px;
+                     font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;">
         ✕ Cancelar
       </button>
     </div>
@@ -577,7 +577,7 @@ select.pp-input option { background:#0d2418; }
       <div class="tb-sep"></div>
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
       <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
-      <button id="btn-selgerar" onclick="startSelGerar()" title="Clicar nas ilhas para selecionar e gerar nova camada"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
+      <button id="btn-selgerar" onclick="toggleSelGerar()" title="Selecionar ilhas e gerar nova camada (clicar de novo cancela)"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
     </div>
     <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
     <div id="draw-action-bar" style="display:none;">
@@ -951,6 +951,8 @@ function cancelModes(silent){
   _showUndoBtn(false);
   hint(null);
   activeMode=null;
+  /* limpar Sel+Gerar se ativo — evita duplicação de layers */
+  if(_sg && _sg.active) _sgLimpar();
 }
 
 function cancelAll(){
@@ -1810,6 +1812,27 @@ var _sg = {
 var _SG_COR_SEL  = '#eab308';  /* amarelo — selecionado */
 var _SG_COR_IDLE = 'rgba(255,255,255,0.55)';  /* branco — não selecionado */
 
+function toggleSelGerar(){
+  if(_sg && _sg.active){ _sgLimpar(); return; }
+  startSelGerar();
+}
+
+/* Limpeza interna sem recarregar a camada (para cancelamento interno) */
+function _sgLimpar(){
+  try{ if(_sg.group){_sg.group.remove();_sg.group=null;} }catch(e){}
+  /* Restaurar estilo da camada original */
+  try{
+    var t=TALHOES.find(function(x){return x.id===_sg.sourceId;});
+    if(t && layers[t.id]) reloadLayer(t);
+  }catch(e){}
+  var bar=document.getElementById('selgerar-bar');
+  if(bar) bar.style.display='none';
+  try{ map.getContainer().style.cursor=''; }catch(e){}
+  var btn=document.getElementById('btn-selgerar');
+  if(btn) btn.classList.remove('active');
+  _sg.active=false; _sg.sourceId=null; _sg.ilhas=[];
+}
+
 function startSelGerar(){
   if(!currentId){ toast('Selecione uma camada primeiro.','warn'); return; }
   if(typeof turf==='undefined'){ toast('turf.js não carregado.','err'); return; }
@@ -1831,7 +1854,9 @@ function startSelGerar(){
     return;
   }
 
-  cancelModes();
+  /* Garantir limpeza completa de sessão anterior */
+  if(_sg && _sg.group){ try{_sg.group.remove();}catch(e){} _sg.group=null; }
+  cancelModes(true);
   document.getElementById('btn-selgerar').classList.add('active');
   _sg.active   = true;
   _sg.sourceId = currentId;
@@ -1896,17 +1921,8 @@ function _sgAtualizarContador(){
 }
 
 function cancelarSelGerar(){
-  if(!_sg.active) return;
-  /* Restaurar camada original */
-  var t = TALHOES.find(function(x){return x.id===_sg.sourceId;});
-  if(t) reloadLayer(t);
-  /* Remover layers temporários */
-  if(_sg.group){ _sg.group.remove(); _sg.group=null; }
-  /* Fechar barra */
-  document.getElementById('selgerar-bar').style.display='none';
-  map.getContainer().style.cursor='';
-  document.getElementById('btn-selgerar').classList.remove('active');
-  _sg.active=false; _sg.sourceId=null; _sg.ilhas=[];
+  if(!_sg || !_sg.active) return;
+  _sgLimpar();
 }
 
 function confirmarSelGerar(){
