@@ -2389,13 +2389,21 @@ function toggleVisibilidade(e,id){
   var l = layers[id];
   if(!l) return;
   if(hiddenIds.has(id)){
-    /* Mostrar: adicionar de volta ao mapa */
+    /* ── Mostrar ── */
     hiddenIds.delete(id);
     l.addTo(map);
+    /* Restaurar tooltip do nome */
+    l.closeTooltip(); l.unbindTooltip();
+    var t = TALHOES.find(function(x){return x.id===id;});
+    if(t) l.bindTooltip(t.nome,{permanent:true,direction:'center',className:'layer-label'});
+    l.openTooltip();
   } else {
-    /* Ocultar: remover do mapa sem deletar */
+    /* ── Ocultar ── */
     hiddenIds.add(id);
+    /* Remover layer do mapa (inclui tooltip permanente) */
     map.removeLayer(l);
+    /* Remover sub-area markers se existirem */
+    if(l._subAreaGroup){ l._subAreaGroup.remove(); l._subAreaGroup=null; }
     /* Fechar painel se esta camada estava selecionada */
     if(currentId===id) closePropPanel();
   }
