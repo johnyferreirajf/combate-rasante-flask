@@ -557,7 +557,8 @@ select.pp-input option { background:#0d2418; }
       <div class="tb-sep"></div>
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
       <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
-      <button id="btn-selgerar" onclick="startSelGerar()" title="Clicar nas ilhas para selecionar e gerar nova camada"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
+      <button id="btn-selgerar" onclick="toggleSelGerar()" title="Selecionar ilhas e gerar nova camada (clicar de novo cancela)"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
+      <button id="btn-gerar-camada" onclick="confirmarSelGerar()" title="Gerar nova camada com as ilhas selecionadas" style="display:none;background:linear-gradient(135deg,#16a34a,#15803d);border:1px solid rgba(34,197,94,.6);color:#fff;"><span class="tb-icon">✅</span><span class="tb-label">Gerar</span></button>
     </div>
     <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
     <div id="draw-action-bar" style="display:none;">
@@ -779,8 +780,9 @@ function addLayer(t){
   var w     = isSel ? 3   : 2;
   var l=L.geoJSON(t.geojson,{style:{color:cor,fillColor:cor,fillOpacity:fOp,weight:w}}).addTo(map);
   l.on('click',function(){openPanel(t.id);});
-  /* Tooltip com nome permanente no centro */
-  l.bindTooltip(t.nome,{
+  /* Tooltip permanente: nome + área */
+  var lblArea = (t.area_ha && t.area_ha > 0) ? ('\n▲ '+parseFloat(t.area_ha).toFixed(2)+' ha') : '';
+  l.bindTooltip(t.nome + lblArea,{
     permanent:true, direction:'center',
     className:'layer-label'
   });
@@ -1823,6 +1825,11 @@ var _sg = {
 var _SG_COR_SEL  = '#eab308';  /* amarelo — selecionado */
 var _SG_COR_IDLE = 'rgba(255,255,255,0.55)';  /* branco — não selecionado */
 
+function toggleSelGerar(){
+  if(_sg && _sg.active){ _sgLimpar(); return; }
+  startSelGerar();
+}
+
 function startSelGerar(){
   if(!currentId){ toast('Selecione uma camada primeiro.','warn'); return; }
   if(typeof turf==='undefined'){ toast('turf.js não carregado.','err'); return; }
@@ -1856,7 +1863,7 @@ function startSelGerar(){
   if(layers[currentId]) layers[currentId].setStyle({opacity:0.15,fillOpacity:0.05});
 
   /* Criar layer por ilha */
-  _sg.group = L.layerGroup().addTo(map);
+  _sg.group = L.featureGroup().addTo(map);
   _sg.ilhas.forEach(function(ilha,i){
     var l = L.geoJSON(ilha.feature, {
       style:{color:_SG_COR_IDLE,weight:2.5,
@@ -1865,16 +1872,14 @@ function startSelGerar(){
       interactive:true
     });
 
-    /* Popup com área — aparece ao clicar, não permanente */
-    l.bindPopup(
-      '<div style="text-align:center;font-weight:900;font-size:14px;color:#fff;'+
-      'background:rgba(3,14,6,.92);padding:6px 14px;border-radius:8px;'+
-      'border:1.5px solid rgba(234,179,8,.60);">'+
-      ilha.area.toFixed(2)+' ha</div>',
-      {className:'sg-popup',closeButton:false,offset:[0,-6]}
-    );
+    /* Área exibida via tooltip da camada ao selecionar na sidebar */
 
     /* Clique: toggle amarelo + mostrar área no popup */
+    /* Tooltip permanente com área durante o modo Sel+Gerar */
+    l.bindTooltip(ilha.area.toFixed(2)+' ha',{
+      permanent:true, direction:'center', className:'layer-label'
+    });
+
     l.on('click',function(e){
       L.DomEvent.stopPropagation(e);
       ilha.sel = !ilha.sel;
@@ -1882,12 +1887,10 @@ function startSelGerar(){
         l.setStyle({color:_SG_COR_SEL,weight:4,
                     fillColor:_SG_COR_SEL,fillOpacity:0.45,
                     dashArray:null});
-        l.openPopup();
       } else {
         l.setStyle({color:_SG_COR_IDLE,weight:2.5,
                     fillColor:t.cor||'#22c55e',fillOpacity:0.22,
                     dashArray:'6 4'});
-        l.closePopup();
       }
       _sgAtualizarContador();
     });
@@ -1906,12 +1909,32 @@ function startSelGerar(){
 
 function _sgAtualizarContador(){
   var n = _sg.ilhas.filter(function(i){return i.sel;}).length;
+  /* Atualizar contador na barra flutuante */
   var el = document.getElementById('selgerar-count');
   if(el){
     el.textContent = n + (n===1?' selecionada':' selecionadas');
     el.style.background = n>0 ? 'rgba(234,179,8,.28)' : 'rgba(234,179,8,.10)';
     el.style.borderColor = n>0 ? 'rgba(234,179,8,.70)' : 'rgba(234,179,8,.35)';
   }
+  /* Mostrar/esconder botão "Gerar" na toolbar */
+  var btnGerar = document.getElementById('btn-gerar-camada');
+  if(btnGerar) btnGerar.style.display = n > 0 ? '' : 'none';
+}
+
+function _sgLimpar(){
+  try{ if(_sg.group){_sg.group.remove();_sg.group=null;} }catch(e){}
+  try{
+    var t=TALHOES.find(function(x){return x.id===_sg.sourceId;});
+    if(t && layers[t.id]) reloadLayer(t);
+  }catch(e){}
+  var bar=document.getElementById('selgerar-bar');
+  if(bar) bar.style.display='none';
+  var btnG=document.getElementById('btn-gerar-camada');
+  if(btnG) btnG.style.display='none';
+  try{ map.getContainer().style.cursor=''; }catch(e){}
+  var btn=document.getElementById('btn-selgerar');
+  if(btn) btn.classList.remove('active');
+  _sg.active=false; _sg.sourceId=null; _sg.ilhas=[];
 }
 
 function cancelarSelGerar(){
