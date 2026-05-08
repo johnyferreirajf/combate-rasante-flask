@@ -776,6 +776,7 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/Worl
 var layers       = {};
 var currentId    = null;
 var hiddenIds    = new Set();  /* IDs de camadas ocultas */
+var _subAreasGroup = null;     /* L.featureGroup global dos markers de área */
 var drawCtrl     = null;
 var editHandler  = null;
 var editLayer    = null;
@@ -1015,11 +1016,11 @@ function _mostrarAreasSubPoligonos(id){
   });
   l.openTooltip();
 
-  /* Criar um L.featureGroup temporário com markers de área por sub-polígono */
-  var subGroup = L.featureGroup().addTo(map);
+  /* Criar grupo GLOBAL de markers de área */
+  _subAreasGroup = L.featureGroup().addTo(map);
   polys.forEach(function(f){
     var area = turf.area(f)/10000;
-    if(area < 0.01) return;  /* ignorar polígonos quase zero */
+    if(area < 0.01) return;
     var centro = turf.centroid(f).geometry.coordinates;
     var marker = L.marker([centro[1], centro[0]], {
       icon: L.divIcon({
@@ -1031,29 +1032,31 @@ function _mostrarAreasSubPoligonos(id){
       interactive: false,
       zIndexOffset: 500
     });
-    subGroup.addLayer(marker);
+    _subAreasGroup.addLayer(marker);
   });
-
-  /* Guardar referência para limpar depois */
-  l._subAreaGroup = subGroup;
+  /* Guardar referência também na layer para compatibilidade */
+  l._subAreaGroup = _subAreasGroup;
 }
 
 function _limparAreasSubPoligonos(){
-  /* Para cada camada, remover grupo de sub-áreas e restaurar tooltip simples */
+  /* Remover grupo global de markers de área */
+  if(_subAreasGroup){
+    try{ _subAreasGroup.remove(); }catch(e){}
+    _subAreasGroup = null;
+  }
+  /* Limpar referências nas layers e restaurar tooltips */
   TALHOES.forEach(function(t){
     var l = layers[t.id]; if(!l) return;
-    if(l._subAreaGroup){
-      l._subAreaGroup.remove();
-      l._subAreaGroup = null;
-      /* Restaurar tooltip simples */
-      l.closeTooltip();
-      l.unbindTooltip();
-      l.bindTooltip(t.nome,{
-        permanent:true, direction:'center',
-        className:'layer-label'
-      });
-      l.openTooltip();
-    }
+    l._subAreaGroup = null;
+    /* Restaurar tooltip simples se a camada tiver tooltip com "·" (foi modificado) */
+    try{
+      var tip = l.getTooltip();
+      if(tip && tip.getContent && tip.getContent().indexOf(' · ') !== -1){
+        l.closeTooltip(); l.unbindTooltip();
+        l.bindTooltip(t.nome,{permanent:true,direction:'center',className:'layer-label'});
+        l.openTooltip();
+      }
+    }catch(e){}
   });
 }
 
@@ -2400,10 +2403,9 @@ function toggleVisibilidade(e,id){
   } else {
     /* ── Ocultar ── */
     hiddenIds.add(id);
-    /* Remover layer do mapa (inclui tooltip permanente) */
+    /* Limpar markers de área (grupo global) antes de remover a layer */
+    _limparAreasSubPoligonos();
     map.removeLayer(l);
-    /* Remover sub-area markers se existirem */
-    if(l._subAreaGroup){ l._subAreaGroup.remove(); l._subAreaGroup=null; }
     /* Fechar painel se esta camada estava selecionada */
     if(currentId===id) closePropPanel();
   }
@@ -2420,9 +2422,9 @@ function excluir(e,id){
     /* Garantir que o preview de perímetro some junto com a camada */
     if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
     _periTemp=null; _periArea=null;
-    /* 1. Limpar sub-area markers antes de qualquer outra coisa */
+    /* 1. Limpar markers de área (grupo global) e remover layer */
+    _limparAreasSubPoligonos();
     if(layers[id]){
-      if(layers[id]._subAreaGroup){ layers[id]._subAreaGroup.remove(); layers[id]._subAreaGroup=null; }
       map.removeLayer(layers[id]);
       delete layers[id];
     }
