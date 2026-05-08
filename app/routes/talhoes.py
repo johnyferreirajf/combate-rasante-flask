@@ -762,7 +762,7 @@ def gis_lista_clientes():
     emp = get_current_employee()
     if not emp or not emp.acesso_gis:
         abort(403)
-    clientes = User.query.order_by(User.nome).all()
+    clientes = User.query.order_by(User.name).all()
     return render_template("talhoes/gis_lista_clientes.html",
                            funcionario=emp, clientes=clientes)
 

@@ -34,7 +34,7 @@
       {% for cl in clientes %}
       <div class="cliente-item">
         <div>
-          <div class="cliente-nome">{{ cl.nome }}</div>
+          <div class="cliente-nome">{{ cl.name }}</div>
           <div class="cliente-email">{{ cl.email }}</div>
         </div>
         <a href="{{ url_for('talhoes.gis_mapa_cliente', uid=cl.id) }}" class="btn-gis">
