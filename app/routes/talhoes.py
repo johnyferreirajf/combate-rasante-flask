@@ -11,7 +11,8 @@ from flask import (Blueprint, render_template, request, redirect,
 
 from app import db
 from app.models.talhao import Talhao, SolicitacaoAplicacao
-from app.utils.security import login_required, get_current_user
+from app.utils.security import login_required, get_current_user, employee_login_required, get_current_employee
+from app.models import User, Employee
 
 talhoes_bp = Blueprint("talhoes", __name__, url_prefix="/talhoes")
 
@@ -750,6 +751,124 @@ setTimeout(function(){{ window.TILES_READY = true; }}, 8000);
     except Exception as e:
         current_app.logger.error(f"mapa_preview error: {e}")
         return jsonify({{"erro": str(e)}}), 500
+
+
+# ── GIS de Clientes para Funcionários ─────────────────────────
+
+@talhoes_bp.route("/funcionario/clientes")
+@employee_login_required
+def gis_lista_clientes():
+    """Funcionário vê lista de clientes para acessar o GIS."""
+    emp = get_current_employee()
+    if not emp or not emp.acesso_gis:
+        abort(403)
+    clientes = User.query.order_by(User.nome).all()
+    return render_template("talhoes/gis_lista_clientes.html",
+                           funcionario=emp, clientes=clientes)
+
+
+@talhoes_bp.route("/funcionario/mapa/<int:uid>")
+@employee_login_required
+def gis_mapa_cliente(uid):
+    """Funcionário acessa o GIS de um cliente específico."""
+    emp = get_current_employee()
+    if not emp or not emp.acesso_gis:
+        abort(403)
+    cliente = User.query.get_or_404(uid)
+    talhoes = Talhao.query.filter_by(user_id=uid).all()
+    talhoes_json = json.dumps([{
+        "id":        t.id,
+        "nome":      t.nome or "",
+        "cultura":   t.cultura or "",
+        "cor":       t.cor or "#22c55e",
+        "area_ha":   float(t.area_ha or 0),
+        "geojson":   json.loads(t.geojson) if isinstance(t.geojson, str) else t.geojson,
+        "data_voo":  t.data_voo.strftime("%d/%m/%Y") if t.data_voo else "",
+        "pista_voo": t.pista_voo or "",
+        "observacoes": t.observacoes or "",
+    } for t in talhoes if t.geojson])
+    return render_template("talhoes/mapa.html",
+                           talhoes_json=talhoes_json,
+                           editar_id=None,
+                           gis_cliente=cliente,
+                           gis_funcionario=emp)
+
+
+@talhoes_bp.route("/funcionario/api/salvar/<int:uid>", methods=["POST"])
+@employee_login_required
+def gis_salvar_cliente(uid):
+    """Funcionário salva talhão no contexto do cliente."""
+    emp = get_current_employee()
+    if not emp or not emp.acesso_gis:
+        return jsonify({"erro": "Sem permissão"}), 403
+    # Reusar a lógica de salvar mas com user_id=uid
+    data    = request.get_json(force=True) or {}
+    tid     = data.get("id")
+    nome    = (data.get("nome") or "").strip() or "Sem nome"
+    geojson = data.get("geojson")
+    if not geojson:
+        return jsonify({"erro": "GeoJSON ausente"}), 400
+    gj_str = json.dumps(geojson)
+    import math as _math
+    def _area(gj):
+        try:
+            coords = []
+            def col(c):
+                if isinstance(c[0], (int, float)): coords.append(c)
+                else: [col(x) for x in c]
+            g = gj.get("geometry") or gj
+            col(g.get("coordinates", []))
+            R = 6371000
+            n = len(coords)
+            if n < 3: return 0
+            a = 0
+            for i in range(n):
+                j = (i+1) % n
+                a += _math.radians(coords[i][0]) * _math.radians(coords[j][1])
+                a -= _math.radians(coords[j][0]) * _math.radians(coords[i][1])
+            return abs(a / 2) * R * R / 10000
+        except: return 0
+    area_ha = _area(geojson)
+    def parse_date(s):
+        if not s: return None
+        for fmt in ["%d/%m/%Y","%Y-%m-%d"]:
+            try:
+                from datetime import datetime as dt
+                return dt.strptime(s, fmt).date()
+            except: pass
+        return None
+    if tid:
+        t = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
+        t.nome        = nome
+        t.geojson     = gj_str
+        t.area_ha     = area_ha
+        t.cor         = data.get("cor") or t.cor
+        t.cultura     = data.get("cultura") or ""
+        t.data_voo    = parse_date(data.get("data_voo"))
+        t.pista_voo   = data.get("pista_voo") or ""
+        t.observacoes = data.get("observacoes") or ""
+    else:
+        t = Talhao(user_id=uid, nome=nome, geojson=gj_str, area_ha=area_ha,
+                   cor=data.get("cor") or "#22c55e",
+                   cultura=data.get("cultura") or "",
+                   data_voo=parse_date(data.get("data_voo")),
+                   pista_voo=data.get("pista_voo") or "",
+                   observacoes=data.get("observacoes") or "")
+        db.session.add(t)
+    db.session.commit()
+    return jsonify({"ok": True, "id": t.id, "area_ha": float(t.area_ha or 0)})
+
+
+@talhoes_bp.route("/funcionario/api/excluir/<int:uid>/<int:tid>", methods=["DELETE"])
+@employee_login_required
+def gis_excluir_cliente(uid, tid):
+    emp = get_current_employee()
+    if not emp or not emp.acesso_gis:
+        return jsonify({"erro": "Sem permissão"}), 403
+    t = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
+    db.session.delete(t)
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 # ── Admin: todas as solicitações ─────────────────────────────

@@ -368,9 +368,10 @@ def admin_funcionario_editar(eid):
             if dup and dup.id != eid:
                 flash("Este usuário já está em uso.", "error")
                 return redirect(url_for("auth.admin_funcionario_editar", eid=eid))
-            emp.name     = nome
-            emp.username = username
-            emp.is_admin = is_admin
+            emp.name       = nome
+            emp.username   = username
+            emp.is_admin   = is_admin
+            emp.acesso_gis = request.form.get("acesso_gis") == "1"
             db.session.commit()
             flash("Dados atualizados!", "success")
 

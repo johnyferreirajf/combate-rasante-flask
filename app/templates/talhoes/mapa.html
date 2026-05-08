@@ -2420,14 +2420,20 @@ function excluir(e,id){
     /* Garantir que o preview de perímetro some junto com a camada */
     if(bufferLayer){map.removeLayer(bufferLayer);bufferLayer=null;}
     _periTemp=null; _periArea=null;
-    /* Remover sub-area markers da camada excluída */
-    if(layers[id] && layers[id]._subAreaGroup){
-      layers[id]._subAreaGroup.remove();
-      layers[id]._subAreaGroup = null;
+    /* 1. Limpar sub-area markers antes de qualquer outra coisa */
+    if(layers[id]){
+      if(layers[id]._subAreaGroup){ layers[id]._subAreaGroup.remove(); layers[id]._subAreaGroup=null; }
+      map.removeLayer(layers[id]);
+      delete layers[id];
     }
-    if(layers[id]){map.removeLayer(layers[id]);delete layers[id];}
+    /* 2. Se era a camada selecionada, fechar painel SEM tentar limpar (já limpou acima) */
+    if(currentId==id){
+      currentId=null;
+      document.getElementById('prop-panel').classList.remove('open');
+      cancelModes(true);
+    }
+    /* 3. Remover da lista */
     TALHOES=TALHOES.filter(function(t){return t.id!=id;});
-    if(currentId==id) closePropPanel();
     renderSidebar(); toast('🗑 Talhão excluído.');
   });
 }

@@ -15,6 +15,7 @@ class Employee(db.Model):
 
     is_admin  = db.Column(db.Boolean, default=False)
     foto_url  = db.Column(db.Text, nullable=True)   # avatar Cloudinary
+    acesso_gis = db.Column(db.Boolean, default=False)  # acesso à plataforma GIS dos clientes
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):

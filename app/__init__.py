@@ -43,6 +43,7 @@ def create_app():
             with db.engine.connect() as _conn:
                 _migrations = [
                     "ALTER TABLE employees ADD COLUMN IF NOT EXISTS foto_url TEXT",
+                    "ALTER TABLE employees ADD COLUMN IF NOT EXISTS acesso_gis BOOLEAN NOT NULL DEFAULT FALSE",
                     "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS cloudinary_url TEXT",
                     "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS cloudinary_public_id VARCHAR(255)",
                     "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS file_size INTEGER",

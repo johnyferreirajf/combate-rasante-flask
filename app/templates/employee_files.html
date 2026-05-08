@@ -18,6 +18,13 @@
 
       <nav class="sp-nav">
         <a class="sp-nav-item active" href="{{ url_for('employee.files') }}">Documentos</a>
+        {% if current_employee and current_employee.acesso_gis %}
+        <a class="sp-nav-item" href="{{ url_for('talhoes.gis_lista_clientes') }}"
+           style="background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);
+                  color:#86efac;font-weight:800;border-radius:8px;padding:6px 14px;">
+          🗺️ Área GIS — Clientes
+        </a>
+        {% endif %}
         <a class="sp-nav-item" href="{{ url_for('employee.trocar_senha') }}">🔑 Trocar Senha</a>
         <a class="sp-nav-item" href="{{ url_for('employee.logout') }}">Sair</a>
       </nav>

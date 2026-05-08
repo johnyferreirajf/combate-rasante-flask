@@ -1,0 +1,51 @@
+{% extends "layout.html" %}
+{% block title %}Área GIS — Clientes{% endblock %}
+{% block head_extra %}
+<style>
+.gis-wrap{width:min(700px,calc(100% - 24px));margin-inline:auto;padding-block:28px 60px;}
+.gis-card{background:rgba(10,40,20,.65);border:1px solid rgba(34,197,94,.25);
+          border-radius:15px;padding:24px;margin-bottom:14px;backdrop-filter:blur(12px);}
+.gis-card h1{font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:4px;}
+.cliente-item{display:flex;align-items:center;justify-content:space-between;
+              padding:12px 16px;background:rgba(3,14,6,.60);
+              border:1px solid rgba(255,255,255,.10);border-radius:11px;margin-bottom:8px;
+              transition:border-color .2s;}
+.cliente-item:hover{border-color:rgba(34,197,94,.40);background:rgba(34,197,94,.08);}
+.cliente-nome{font-weight:800;font-size:14px;color:#fff;}
+.cliente-email{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;}
+.btn-gis{background:linear-gradient(135deg,#16a34a,#15803d);border:none;color:#fff;
+         border-radius:9px;padding:8px 18px;font-size:13px;font-weight:800;
+         cursor:pointer;text-decoration:none;white-space:nowrap;}
+.btn-gis:hover{opacity:.88;}
+.empty{text-align:center;padding:40px;color:rgba(255,255,255,.45);}
+</style>
+{% endblock %}
+{% block content %}
+<section class="section">
+<div class="gis-wrap">
+  <div class="gis-card">
+    <h1>🗺️ Área GIS — Clientes</h1>
+    <p style="color:rgba(255,255,255,.50);font-size:13px;margin-bottom:20px;">
+      Olá, <strong style="color:#86efac;">{{ funcionario.name }}</strong>. 
+      Selecione um cliente para acessar e editar os talhões dele.
+    </p>
+
+    {% if clientes %}
+      {% for cl in clientes %}
+      <div class="cliente-item">
+        <div>
+          <div class="cliente-nome">{{ cl.nome }}</div>
+          <div class="cliente-email">{{ cl.email }}</div>
+        </div>
+        <a href="{{ url_for('talhoes.gis_mapa_cliente', uid=cl.id) }}" class="btn-gis">
+          🗺️ Abrir GIS
+        </a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">Nenhum cliente cadastrado ainda.</div>
+    {% endif %}
+  </div>
+</div>
+</section>
+{% endblock %}

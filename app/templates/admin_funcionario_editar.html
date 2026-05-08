@@ -52,12 +52,25 @@
           <input class="ei" type="text" name="username" value="{{ funcionario.username }}" required>
         </div>
       </div>
-      <div>
-        <label class="el" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label class="el" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;">
           <input type="checkbox" name="is_admin" value="1"
                  {% if funcionario.is_admin %}checked{% endif %}
-                 style="width:auto;">
-          Administrador painel funcionário
+                 style="width:16px;height:16px;cursor:pointer;accent-color:#22c55e;">
+          <span>⚙️ Administrador painel funcionário</span>
+        </label>
+        <label class="el" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;
+               background:rgba(34,197,94,.10);border:1px solid rgba(34,197,94,.30);
+               border-radius:9px;padding:8px 12px;">
+          <input type="checkbox" name="acesso_gis" value="1"
+                 {% if funcionario.acesso_gis %}checked{% endif %}
+                 style="width:16px;height:16px;cursor:pointer;accent-color:#22c55e;">
+          <span>
+            🗺️ <strong style="color:#86efac;">Área GIS — Clientes</strong><br>
+            <small style="color:rgba(255,255,255,.55);font-weight:400;">
+              Permite ao funcionário acessar e editar talhões de qualquer cliente
+            </small>
+          </span>
         </label>
       </div>
       <div class="er">
