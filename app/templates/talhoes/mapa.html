@@ -755,8 +755,12 @@ select.pp-input option { background:#0d2418; }
 
 <script>
 /* ── Dados ── */
-var TALHOES = {{ talhoes_json | safe }};
-var EDIT_ID = {{ editar_id | tojson }};
+var TALHOES  = {{ talhoes_json | safe }};
+var EDIT_ID  = {{ editar_id | tojson }};
+var GIS_UID  = {{ gis_uid | tojson if gis_uid is defined else "null" }};
+/* Se GIS_UID != null, usar rotas do funcionário */
+function _apiSalvar(){ return GIS_UID ? '/talhoes/funcionario/api/salvar/'+GIS_UID : '/talhoes/api/salvar'; }
+function _apiExcluir(tid){ return GIS_UID ? '/talhoes/funcionario/api/excluir/'+GIS_UID+'/'+tid : '/talhoes/api/excluir/'+tid; }
 
 /* ── Mapa ── */
 var _isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window);
@@ -952,7 +956,7 @@ function excluirSelecionados(){
   }
   function next(){
     if(!fila.length) return; var id=fila.shift();
-    fetch('/talhoes/api/excluir/'+id,{method:'DELETE'}).then(function(r){return r.json();})
+    fetch(_apiExcluir(id),{method:'DELETE'}).then(function(r){return r.json();})
     .then(function(d){
       if(d.ok){if(layers[id]){map.removeLayer(layers[id]);delete layers[id];}TALHOES=TALHOES.filter(function(t){return t.id!=id;});feito++;}
       else erros++; up();fim();next();
@@ -1578,7 +1582,7 @@ function confirmarExclusao(){
         geojson:     t.geojson
       };
 
-      fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},
+      fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify(payloadPrincipal)})
       .then(function(r){return r.json();})
       .then(function(d){
@@ -1597,7 +1601,7 @@ function confirmarExclusao(){
                        ' da camada: '+(payloadPrincipal.nome||t.nome),
           geojson:     exclusaoGeom
         };
-        return fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},
+        return fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},
                body:JSON.stringify(payloadEx)});
       })
       .then(function(r){return r.json();})
@@ -1907,7 +1911,7 @@ function _salvarAmbas(){
 
   /* Salvar Parte A — atualiza o talhão atual */
   var payloadA=Object.assign({},base,{id:currentId, nome:nomeA, geojson:featA});
-  fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadA)})
+  fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadA)})
   .then(function(r){return r.json();})
   .then(function(d){
     if(d.erro) throw new Error(d.erro);
@@ -1921,7 +1925,7 @@ function _salvarAmbas(){
 
     /* Salvar Parte B — nova camada */
     var payloadB=Object.assign({},base,{nome:nomeB, geojson:featB});
-    return fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadB)});
+    return fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadB)});
   })
   .then(function(r){return r.json();})
   .then(function(d){
@@ -2128,7 +2132,7 @@ function confirmarSelGerar(){
   var novoNome = t.nome+' (2)';
   spin(true,'Gerando "'+novoNome+'"...');
 
-  fetch('/talhoes/api/salvar',{
+  fetch(_apiSalvar(),{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       nome:        novoNome,
@@ -2203,7 +2207,7 @@ function startMesclar(){
         observacoes: maior.observacoes||'',
         geojson:     resultado
       };
-      fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
       .then(function(r){return r.json();})
       .then(function(d){
         if(d.erro) throw new Error(d.erro);
@@ -2228,7 +2232,7 @@ function startMesclar(){
             return;
           }
           var id=fila.shift();
-          fetch('/talhoes/api/excluir/'+id,{method:'DELETE'})
+          fetch(_apiExcluir(id),{method:'DELETE'})
           .then(function(r){return r.json();})
           .then(function(dr){ if(!dr.ok) erros++; next(); })
           .catch(function(){ erros++; next(); });
@@ -2341,7 +2345,7 @@ function salvarTalhao(){
   else{drawnGroup.eachLayer(function(l){geojson=l.toGeoJSON();});}
   if(!geojson){toast('Nenhum polígono disponível.','err');return;}
   spin(true,'Salvando...');
-  fetch('/talhoes/api/salvar',{
+  fetch(_apiSalvar(),{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       id:currentId, nome:nome,
@@ -2415,7 +2419,7 @@ function toggleVisibilidade(e,id){
 function excluir(e,id){
   e.stopPropagation();
   if(!confirm('Excluir este talhão? As solicitações vinculadas também serão removidas.')) return;
-  fetch('/talhoes/api/excluir/'+id,{method:'DELETE'})
+  fetch(_apiExcluir(id),{method:'DELETE'})
   .then(function(r){return r.json();})
   .then(function(d){
     if(!d.ok){toast('Erro ao excluir.','err');return;}
