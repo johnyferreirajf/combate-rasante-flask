@@ -1,49 +1,72 @@
 {% extends "layout.html" %}
-{% block title %}Área GIS — Clientes{% endblock %}
+{% block title %}Sistema GIS — Clientes{% endblock %}
 {% block head_extra %}
 <style>
-.gis-wrap{width:min(700px,calc(100% - 24px));margin-inline:auto;padding-block:28px 60px;}
+.gis-wrap{width:min(700px,calc(100% - 20px));margin-inline:auto;padding-block:24px 60px;}
 .gis-card{background:rgba(10,40,20,.65);border:1px solid rgba(34,197,94,.25);
-          border-radius:15px;padding:24px;margin-bottom:14px;backdrop-filter:blur(12px);}
-.gis-card h1{font-size:1.4rem;font-weight:900;color:#fff;margin-bottom:4px;}
-.cliente-item{display:flex;align-items:center;justify-content:space-between;
-              padding:12px 16px;background:rgba(3,14,6,.60);
-              border:1px solid rgba(255,255,255,.10);border-radius:11px;margin-bottom:8px;
-              transition:border-color .2s;}
-.cliente-item:hover{border-color:rgba(34,197,94,.40);background:rgba(34,197,94,.08);}
-.cliente-nome{font-weight:800;font-size:14px;color:#fff;}
-.cliente-email{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;}
-.btn-gis{background:linear-gradient(135deg,#16a34a,#15803d);border:none;color:#fff;
-         border-radius:9px;padding:8px 18px;font-size:13px;font-weight:800;
-         cursor:pointer;text-decoration:none;white-space:nowrap;}
-.btn-gis:hover{opacity:.88;}
+          border-radius:15px;padding:20px;backdrop-filter:blur(12px);}
+.gis-card h1{font-size:1.3rem;font-weight:900;color:#fff;margin-bottom:4px;}
+.gis-card p{font-size:13px;color:rgba(255,255,255,.55);margin-bottom:16px;}
+
+/* Card do cliente — clicável em mobile inteiro */
+.cliente-card{display:block;text-decoration:none;
+  background:rgba(3,14,6,.60);border:1px solid rgba(255,255,255,.10);
+  border-radius:12px;margin-bottom:10px;overflow:hidden;
+  transition:border-color .2s,background .2s;}
+.cliente-card:hover,.cliente-card:active{
+  border-color:rgba(34,197,94,.50);background:rgba(34,197,94,.08);}
+
+.cliente-inner{display:flex;align-items:center;gap:12px;padding:14px 16px;}
+.cliente-avatar{width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  background:rgba(34,197,94,.20);border:2px solid rgba(34,197,94,.40);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;font-weight:900;color:#86efac;}
+.cliente-info{flex:1;min-width:0;}
+.cliente-nome{font-weight:800;font-size:14px;color:#fff;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cliente-email{font-size:12px;color:rgba(255,255,255,.45);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cliente-arrow{color:rgba(34,197,94,.70);font-size:20px;font-weight:900;flex-shrink:0;}
+
 .empty{text-align:center;padding:40px;color:rgba(255,255,255,.45);}
+
+@media(max-width:480px){
+  .gis-wrap{padding-block:16px 50px;}
+  .gis-card{padding:16px;}
+  .gis-card h1{font-size:1.15rem;}
+}
 </style>
 {% endblock %}
 {% block content %}
 <section class="section">
 <div class="gis-wrap">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <a href="{{ url_for('employee.files') }}"
+       style="color:rgba(255,255,255,.55);text-decoration:none;font-size:13px;">
+      ← Painel Funcionário
+    </a>
+  </div>
+
   <div class="gis-card">
-    <h1>🗺️ Área GIS — Clientes</h1>
-    <p style="color:rgba(255,255,255,.50);font-size:13px;margin-bottom:20px;">
-      Olá, <strong style="color:#86efac;">{{ funcionario.name }}</strong>. 
-      Selecione um cliente para acessar e editar os talhões dele.
-    </p>
+    <h1>🗺️ Sistema GIS — Clientes</h1>
+    <p>Olá, <strong style="color:#86efac;">{{ funcionario.name }}</strong>.
+       Selecione um cliente para acessar e editar os talhões.</p>
 
     {% if clientes %}
       {% for cl in clientes %}
-      <div class="cliente-item">
-        <div>
-          <div class="cliente-nome">{{ cl.name }}</div>
-          <div class="cliente-email">{{ cl.email }}</div>
+      <a class="cliente-card" href="{{ url_for('talhoes.gis_mapa_cliente', uid=cl.id) }}">
+        <div class="cliente-inner">
+          <div class="cliente-avatar">{{ (cl.name or 'C')[0]|upper }}</div>
+          <div class="cliente-info">
+            <div class="cliente-nome">{{ cl.name }}</div>
+            <div class="cliente-email">{{ cl.email }}</div>
+          </div>
+          <div class="cliente-arrow">›</div>
         </div>
-        <a href="{{ url_for('talhoes.gis_mapa_cliente', uid=cl.id) }}" class="btn-gis">
-          🗺️ Abrir GIS
-        </a>
-      </div>
+      </a>
       {% endfor %}
     {% else %}
-      <div class="empty">Nenhum cliente cadastrado ainda.</div>
+      <div class="empty">🌱<br><br>Nenhum cliente cadastrado ainda.</div>
     {% endif %}
   </div>
 </div>
