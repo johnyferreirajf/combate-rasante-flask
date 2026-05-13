@@ -534,6 +534,94 @@ select.pp-input option { background:#0d2418; }
   /* Botão "✦ Ponto" — aparece ao lado do ‹ durante draw mobile */
   /* btn-add-vertex estilizado dentro do draw-action-bar (mobile) */
 }
+
+/* ── Crosshair central (localização) ── */
+#centro-crosshair {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 800;
+  pointer-events: none;
+  display: flex; flex-direction: column; align-items: center;
+}
+#centro-crosshair::before,
+#centro-crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(255,255,255,0.85);
+}
+/* linha horizontal */
+#centro-crosshair::before {
+  width: 18px; height: 1.5px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+/* linha vertical */
+#centro-crosshair::after {
+  width: 1.5px; height: 18px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+}
+#centro-crosshair-dot {
+  width: 4px; height: 4px;
+  background: rgba(255,255,255,0.90);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1.5px rgba(0,0,0,0.5);
+}
+
+/* HUD de coordenadas — canto inferior esquerdo */
+#centro-coords {
+  position: absolute;
+  bottom: 28px; left: 12px;
+  z-index: 800;
+  background: rgba(0,0,0,0.58);
+  color: rgba(255,255,255,0.92);
+  font-size: 11px; font-weight: 700;
+  font-family: monospace;
+  padding: 4px 10px;
+  border-radius: 7px;
+  pointer-events: none;
+  letter-spacing: 0.3px;
+  line-height: 1.6;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+}
+
+/* ── Ferramenta de medição ── */
+#medicao-bar {
+  display: none; position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%); z-index: 10000;
+  background: rgba(3,14,6,.97); border: 2px solid rgba(99,179,237,.70);
+  border-radius: 14px; padding: 10px 16px;
+  align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center;
+  box-shadow: 0 4px 28px rgba(0,0,0,.80); backdrop-filter: blur(10px);
+  max-width: calc(100vw - 20px); box-sizing: border-box;
+}
+#medicao-bar .med-label { color: #93c5fd; font-size: 12px; font-weight: 800; white-space: nowrap; }
+#medicao-bar .med-result {
+  background: rgba(59,130,246,.18); border: 1px solid rgba(99,179,237,.50);
+  color: #bfdbfe; font-size: 13px; font-weight: 900;
+  padding: 4px 14px; border-radius: 999px; min-width: 120px; text-align: center;
+  font-family: monospace;
+}
+#medicao-bar .med-btn {
+  background: rgba(59,130,246,.22); border: 1px solid rgba(99,179,237,.45);
+  color: #93c5fd; border-radius: 9px; padding: 7px 14px;
+  font-size: 12px; font-weight: 800; cursor: pointer; font-family: inherit;
+  white-space: nowrap;
+}
+#medicao-bar .med-btn:hover { background: rgba(59,130,246,.35); }
+#medicao-bar .med-btn-cancel {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.22);
+  color: rgba(255,255,255,.75);
+}
+@media (max-width: 600px) {
+  #medicao-bar { bottom: 72px; padding: 8px 12px; gap: 7px; }
+  #centro-coords { font-size: 10px; bottom: 22px; }
+}
 </style>
 {% endblock %}
 
@@ -545,7 +633,7 @@ select.pp-input option { background:#0d2418; }
     <div id="map-sidebar-header">
       <h2>🗺️ Meus Talhões</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="{{ url_for('talhoes.gis_importar_cliente', uid=gis_uid) if gis_uid is defined and gis_uid else url_for('talhoes.importar') }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
+        <a href="{{ url_for('talhoes.importar') }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
         <span style="color:rgba(255,255,255,.25);">|</span>
         <a href="{{ url_for('talhoes.solicitacoes') }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">📋 Solicitações</a>
         <span style="color:rgba(255,255,255,.25);">|</span>
@@ -574,6 +662,12 @@ select.pp-input option { background:#0d2418; }
 
     <!-- Mira de desenho mobile -->
     <div id="draw-crosshair"><div id="draw-crosshair-dot"></div></div>
+
+    <!-- Crosshair central de localização (sempre visível) -->
+    <div id="centro-crosshair"><div id="centro-crosshair-dot"></div></div>
+
+    <!-- HUD de coordenadas do centro do mapa -->
+    <div id="centro-coords">—</div>
 
     <div id="spinner">
       <div style="text-align:center;width:220px;">
@@ -608,6 +702,9 @@ select.pp-input option { background:#0d2418; }
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
       <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
       <button id="btn-selgerar" onclick="toggleSelGerar()" title="Selecionar ilhas e gerar nova camada (clicar de novo cancela)"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
+      <div class="tb-sep"></div>
+      <button id="btn-medir-linha" onclick="startMedicao('linha')" title="Medir distância em metros"><span class="tb-icon">📏</span><span class="tb-label">Distância</span></button>
+      <button id="btn-medir-area" onclick="startMedicao('area')" title="Medir área em hectares"><span class="tb-icon">⬡</span><span class="tb-label">Área</span></button>
     </div>
     <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
     <div id="draw-action-bar" style="display:none;">
@@ -708,6 +805,15 @@ select.pp-input option { background:#0d2418; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+<!-- Barra de Medição -->
+<div id="medicao-bar">
+  <span class="med-label" id="medicao-label">📏 Clique para medir</span>
+  <span class="med-result" id="medicao-result">—</span>
+  <button class="med-btn" onclick="medicaoUndo()" title="Desfazer último ponto">↩ Desfazer</button>
+  <button class="med-btn" onclick="medicaoLimpar()">🗑 Limpar</button>
+  <button class="med-btn med-btn-cancel" onclick="fecharMedicao()">✕ Fechar</button>
+</div>
+
 <!-- Barra Sel+Gerar: position:fixed fora de qualquer container, z-index máximo -->
 <!-- Aviso Sel+Gerar: aparece acima da barra -->
 <div id="selgerar-aviso" style="
@@ -755,11 +861,8 @@ select.pp-input option { background:#0d2418; }
 
 <script>
 /* ── Dados ── */
-var TALHOES  = {{ talhoes_json | safe }};
-var EDIT_ID  = {{ editar_id | tojson }};
-var GIS_UID  = {{ gis_uid | tojson if gis_uid is defined else "null" }};
-function _apiSalvar(){ return GIS_UID ? '/talhoes/funcionario/api/salvar/'+GIS_UID : '/talhoes/api/salvar'; }
-function _apiExcluir(tid){ return GIS_UID ? '/talhoes/funcionario/api/excluir/'+GIS_UID+'/'+tid : '/talhoes/api/excluir/'+tid; }
+var TALHOES = {{ talhoes_json | safe }};
+var EDIT_ID = {{ editar_id | tojson }};
 
 /* ── Mapa ── */
 var _isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window);
@@ -793,6 +896,14 @@ var _splitLine   = null;
 var drawnGroup   = new L.FeatureGroup().addTo(map);
 var editGroup    = new L.FeatureGroup().addTo(map);
 var previewGroup = new L.FeatureGroup().addTo(map);
+
+/* ── Crosshair central: atualizar coords ao mover o mapa ── */
+map.on('move zoom moveend', atualizarCentroCoords);
+/* Atualizar imediatamente */
+setTimeout(atualizarCentroCoords, 300);
+
+/* ── Fechar medição ao mudar de modo ── */
+var _origCancelModes = cancelModes;
 
 var selectedIds  = new Set();
 var lastClickIdx = -1;
@@ -955,7 +1066,7 @@ function excluirSelecionados(){
   }
   function next(){
     if(!fila.length) return; var id=fila.shift();
-    fetch(_apiExcluir(id),{method:'DELETE'}).then(function(r){return r.json();})
+    fetch('/talhoes/api/excluir/'+id,{method:'DELETE'}).then(function(r){return r.json();})
     .then(function(d){
       if(d.ok){if(layers[id]){map.removeLayer(layers[id]);delete layers[id];}TALHOES=TALHOES.filter(function(t){return t.id!=id;});feito++;}
       else erros++; up();fim();next();
@@ -1107,7 +1218,7 @@ function cancelModes(silent){
   /* Remover cursor tesoura */
   map.getContainer().classList.remove('cursor-scissors');
   /* Reset toolbar */
-  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar','btn-pontes','btn-selgerar'].forEach(function(bid){
+  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar','btn-pontes','btn-selgerar','btn-medir-linha','btn-medir-area'].forEach(function(bid){
     var b=document.getElementById(bid); if(b) b.classList.remove('active');
   });
   document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
@@ -1115,6 +1226,8 @@ function cancelModes(silent){
   _showUndoBtn(false);
   hint(null);
   activeMode=null;
+  /* fechar medição se ativa */
+  if(typeof _med !== 'undefined' && _med.active) fecharMedicao();
 }
 
 function cancelAll(){
@@ -1581,7 +1694,7 @@ function confirmarExclusao(){
         geojson:     t.geojson
       };
 
-      fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},
+      fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},
             body:JSON.stringify(payloadPrincipal)})
       .then(function(r){return r.json();})
       .then(function(d){
@@ -1600,7 +1713,7 @@ function confirmarExclusao(){
                        ' da camada: '+(payloadPrincipal.nome||t.nome),
           geojson:     exclusaoGeom
         };
-        return fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},
+        return fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},
                body:JSON.stringify(payloadEx)});
       })
       .then(function(r){return r.json();})
@@ -1910,7 +2023,7 @@ function _salvarAmbas(){
 
   /* Salvar Parte A — atualiza o talhão atual */
   var payloadA=Object.assign({},base,{id:currentId, nome:nomeA, geojson:featA});
-  fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadA)})
+  fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadA)})
   .then(function(r){return r.json();})
   .then(function(d){
     if(d.erro) throw new Error(d.erro);
@@ -1924,7 +2037,7 @@ function _salvarAmbas(){
 
     /* Salvar Parte B — nova camada */
     var payloadB=Object.assign({},base,{nome:nomeB, geojson:featB});
-    return fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadB)});
+    return fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloadB)});
   })
   .then(function(r){return r.json();})
   .then(function(d){
@@ -2131,7 +2244,7 @@ function confirmarSelGerar(){
   var novoNome = t.nome+' (2)';
   spin(true,'Gerando "'+novoNome+'"...');
 
-  fetch(_apiSalvar(),{
+  fetch('/talhoes/api/salvar',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       nome:        novoNome,
@@ -2160,6 +2273,180 @@ function confirmarSelGerar(){
 }
 
 /* ── Fim Sel+Gerar ── */
+
+/* ══════════════════════════════════════════════════════
+   CROSSHAIR CENTRAL — coordenadas do centro do mapa
+   ══════════════════════════════════════════════════════ */
+function toDMSStr(deg, isLat){
+  var d = Math.abs(deg);
+  var gr = Math.floor(d);
+  var mRaw = (d - gr) * 60;
+  var mn = Math.floor(mRaw);
+  var sg = ((mRaw - mn) * 60).toFixed(1);
+  var dir = isLat ? (deg >= 0 ? 'N' : 'S') : (deg >= 0 ? 'L' : 'O');
+  return gr + '\u00b0' + mn + "'" + sg + '" ' + dir;
+}
+
+function atualizarCentroCoords(){
+  var el = document.getElementById('centro-coords');
+  if(!el || !map) return;
+  var ctr = map.getCenter();
+  el.textContent = toDMSStr(ctr.lat, true) + '\n' + toDMSStr(ctr.lng, false);
+}
+
+/* ══════════════════════════════════════════════════════
+   FERRAMENTA DE MEDIÇÃO — distância (m) e área (ha)
+   ══════════════════════════════════════════════════════ */
+var _med = {
+  tipo:    null,      /* 'linha' | 'area' */
+  pontos:  [],        /* L.LatLng[] */
+  layers:  [],        /* layers desenhadas */
+  active:  false
+};
+
+function startMedicao(tipo){
+  if(_med.active && _med.tipo === tipo){ fecharMedicao(); return; }
+  cancelModes(true);
+  _med.tipo   = tipo;
+  _med.pontos = [];
+  _med.layers = [];
+  _med.active = true;
+
+  document.getElementById('btn-medir-' + tipo).classList.add('active');
+  map.getContainer().style.cursor = 'crosshair';
+
+  var label = tipo === 'linha' ? '📏 Clique para marcar pontos da linha' : '⬡ Clique para marcar vértices da área';
+  document.getElementById('medicao-label').textContent = label;
+  document.getElementById('medicao-result').textContent = '—';
+  document.getElementById('medicao-bar').style.display = 'flex';
+
+  map.on('click', _medOnClick);
+}
+
+function _medOnClick(e){
+  if(!_med.active) return;
+  _med.pontos.push(e.latlng);
+
+  /* Ponto */
+  var dot = L.circleMarker(e.latlng, {
+    radius: 5, color: '#3b82f6', fillColor: '#93c5fd', fillOpacity: 1, weight: 2
+  }).addTo(map);
+  _med.layers.push(dot);
+
+  var n = _med.pontos.length;
+
+  if(_med.tipo === 'linha'){
+    if(n >= 2){
+      var seg = L.polyline([_med.pontos[n-2], _med.pontos[n-1]], {
+        color: '#3b82f6', weight: 2.5, dashArray: '6 4'
+      }).addTo(map);
+      _med.layers.push(seg);
+      /* Distância total */
+      var dist = 0;
+      for(var i = 1; i < _med.pontos.length; i++){
+        dist += _med.pontos[i-1].distanceTo(_med.pontos[i]);
+      }
+      var txt = dist >= 1000
+        ? (dist/1000).toFixed(3) + ' km'
+        : dist.toFixed(1) + ' m';
+      document.getElementById('medicao-result').textContent = txt;
+    }
+  } else {
+    /* Área — desenhar polígono temporário */
+    _med.layers.forEach(function(l){ if(l._isTempPoly){ map.removeLayer(l); } });
+    if(n >= 3){
+      var poly = L.polygon(_med.pontos, {
+        color: '#3b82f6', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.18
+      });
+      poly._isTempPoly = true;
+      poly.addTo(map);
+      _med.layers.push(poly);
+      /* Área via fórmula de Gauss */
+      var ha = _calcAreaHa(_med.pontos);
+      document.getElementById('medicao-result').textContent = ha.toFixed(4) + ' ha';
+    }
+  }
+}
+
+function _calcAreaHa(latlngs){
+  /* Shoelace em metros usando projeção equiretangular simples */
+  var n = latlngs.length;
+  if(n < 3) return 0;
+  var R = 6371000;
+  var lat0 = latlngs[0].lat * Math.PI / 180;
+  var pts = latlngs.map(function(ll){
+    return {
+      x: ll.lng * Math.PI / 180 * R * Math.cos(lat0),
+      y: ll.lat * Math.PI / 180 * R
+    };
+  });
+  var a = 0;
+  for(var i = 0; i < n; i++){
+    var j = (i + 1) % n;
+    a += pts[i].x * pts[j].y - pts[j].x * pts[i].y;
+  }
+  return Math.abs(a / 2) / 10000;
+}
+
+function medicaoUndo(){
+  if(!_med.pontos.length) return;
+  _med.pontos.pop();
+  /* Remover última layer */
+  var l = _med.layers.pop();
+  if(l) map.removeLayer(l);
+  /* Se era área, remover polígono temp e redesenhar */
+  if(_med.tipo === 'area'){
+    _med.layers = _med.layers.filter(function(l){
+      if(l._isTempPoly){ map.removeLayer(l); return false; }
+      return true;
+    });
+    if(_med.pontos.length >= 3){
+      var poly = L.polygon(_med.pontos, {
+        color:'#3b82f6',weight:2,fillColor:'#3b82f6',fillOpacity:0.18
+      });
+      poly._isTempPoly = true;
+      poly.addTo(map);
+      _med.layers.push(poly);
+      document.getElementById('medicao-result').textContent =
+        _calcAreaHa(_med.pontos).toFixed(4) + ' ha';
+    } else {
+      document.getElementById('medicao-result').textContent = '—';
+    }
+  } else {
+    /* Linha: recalcular */
+    if(_med.pontos.length >= 2){
+      var dist = 0;
+      for(var i = 1; i < _med.pontos.length; i++)
+        dist += _med.pontos[i-1].distanceTo(_med.pontos[i]);
+      document.getElementById('medicao-result').textContent =
+        (dist >= 1000 ? (dist/1000).toFixed(3)+' km' : dist.toFixed(1)+' m');
+    } else {
+      document.getElementById('medicao-result').textContent = '—';
+    }
+  }
+}
+
+function medicaoLimpar(){
+  _med.layers.forEach(function(l){ try{ map.removeLayer(l); }catch(e){} });
+  _med.layers = [];
+  _med.pontos = [];
+  document.getElementById('medicao-result').textContent = '—';
+}
+
+function fecharMedicao(){
+  map.off('click', _medOnClick);
+  medicaoLimpar();
+  document.getElementById('medicao-bar').style.display = 'none';
+  try{ map.getContainer().style.cursor = ''; }catch(e){}
+  if(_med.tipo){
+    var btn = document.getElementById('btn-medir-' + _med.tipo);
+    if(btn) btn.classList.remove('active');
+  }
+  _med.active = false;
+  _med.tipo   = null;
+}
+
+/* Garantir que medição fecha ao trocar de modo */
 
 function startMesclar(){
   if(selectedIds.size < 2){
@@ -2206,7 +2493,7 @@ function startMesclar(){
         observacoes: maior.observacoes||'',
         geojson:     resultado
       };
-      fetch(_apiSalvar(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      fetch('/talhoes/api/salvar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
       .then(function(r){return r.json();})
       .then(function(d){
         if(d.erro) throw new Error(d.erro);
@@ -2231,7 +2518,7 @@ function startMesclar(){
             return;
           }
           var id=fila.shift();
-          fetch(_apiExcluir(id),{method:'DELETE'})
+          fetch('/talhoes/api/excluir/'+id,{method:'DELETE'})
           .then(function(r){return r.json();})
           .then(function(dr){ if(!dr.ok) erros++; next(); })
           .catch(function(){ erros++; next(); });
@@ -2344,7 +2631,7 @@ function salvarTalhao(){
   else{drawnGroup.eachLayer(function(l){geojson=l.toGeoJSON();});}
   if(!geojson){toast('Nenhum polígono disponível.','err');return;}
   spin(true,'Salvando...');
-  fetch(_apiSalvar(),{
+  fetch('/talhoes/api/salvar',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       id:currentId, nome:nome,
@@ -2418,7 +2705,7 @@ function toggleVisibilidade(e,id){
 function excluir(e,id){
   e.stopPropagation();
   if(!confirm('Excluir este talhão? As solicitações vinculadas também serão removidas.')) return;
-  fetch(_apiExcluir(id),{method:'DELETE'})
+  fetch('/talhoes/api/excluir/'+id,{method:'DELETE'})
   .then(function(r){return r.json();})
   .then(function(d){
     if(!d.ok){toast('Erro ao excluir.','err');return;}
