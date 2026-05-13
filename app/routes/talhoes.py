@@ -789,7 +789,7 @@ def gis_mapa_cliente(uid):
     } for t in talhoes if t.geojson])
     return render_template("talhoes/mapa.html",
                            talhoes_json=talhoes_json,
-                           editar_id="null",
+                           editar_id=None,
                            culturas=CULTURAS,
                            gis_uid=uid,
                            gis_cliente=cliente,
