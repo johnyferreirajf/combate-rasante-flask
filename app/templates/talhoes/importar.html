@@ -32,7 +32,7 @@ select.fi option{background:#0d2418;}
     {% endfor %}{% endif %}
   {% endwith %}
 
-  <form method="POST" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:14px;">
+  <form method="POST" action="" enctype="multipart/form-data" style="display:flex;flex-direction:column;gap:14px;">
     <div>
       <label class="fl">Arquivo *</label>
       <div class="drop" id="dz" onclick="document.getElementById('fi').click()">
@@ -50,7 +50,7 @@ select.fi option{background:#0d2418;}
         {% for c in culturas %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
       </select></div>
     <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px;">
-      <a href="{{ url_for('talhoes.mapa') }}" class="btn btn--ghost">Cancelar</a>
+      <a href="{{ gis_cancelar_url if gis_cancelar_url is defined else url_for('talhoes.mapa') }}" class="btn btn--ghost">Cancelar</a>
       <button type="submit" class="btn btn--primary">📂 Importar</button>
     </div>
   </form>

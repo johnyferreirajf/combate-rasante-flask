@@ -753,6 +753,93 @@ setTimeout(function(){{ window.TILES_READY = true; }}, 8000);
         return jsonify({{"erro": str(e)}}), 500
 
 
+# ── Importar talhão no contexto do cliente (funcionário) ────────
+
+@talhoes_bp.route("/funcionario/importar/<int:uid>", methods=["GET","POST"])
+@employee_login_required
+def gis_importar_cliente(uid):
+    """Funcionário importa KML/GeoJSON para o talhão de um cliente."""
+    emp = get_current_employee()
+    if not emp or not emp.acesso_gis:
+        abort(403)
+
+    cliente = User.query.get_or_404(uid)
+
+    if request.method == "POST":
+        arq     = request.files.get("arquivo")
+        nome    = (request.form.get("nome") or "").strip()
+        cultura = (request.form.get("cultura") or "").strip()
+
+        if not arq or not arq.filename:
+            flash("Selecione um arquivo KML ou GeoJSON.", "error")
+            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
+
+        raw = arq.read()
+        ext = arq.filename.rsplit(".", 1)[-1].lower()
+        nome = nome or arq.filename.rsplit(".", 1)[0]
+
+        if ext == "kmz":
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                kml_name = next((n for n in z.namelist() if n.endswith(".kml")), None)
+                raw = z.read(kml_name) if kml_name else b""
+            ext = "kml"
+
+        if ext == "kml":
+            features = _parse_kml(raw)
+        elif ext in ("geojson","json"):
+            features = _parse_geojson(raw)
+        else:
+            flash("Formato não suportado. Use KML, KMZ ou GeoJSON.", "error")
+            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
+
+        if not features:
+            flash("Não foi possível ler polígonos do arquivo.", "error")
+            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
+
+        nome_fazenda = nome or arq.filename.rsplit(".", 1)[0]
+
+        if len(features) == 1:
+            geojson_final = features[0]["geojson"]
+            if not nome:
+                nome_fazenda = features[0]["nome"]
+        else:
+            all_rings = []
+            for feat in features:
+                geom  = feat["geojson"].get("geometry", feat["geojson"])
+                gtype = geom.get("type","")
+                if gtype == "Polygon":
+                    all_rings.append(geom["coordinates"])
+                elif gtype == "MultiPolygon":
+                    all_rings.extend(geom["coordinates"])
+            geojson_final = {
+                "type": "Feature",
+                "geometry": {"type": "MultiPolygon", "coordinates": all_rings},
+                "properties": {}
+            }
+
+        gs         = json.dumps(geojson_final)
+        area_total = _area_ha(gs)
+        t          = Talhao(user_id=uid, nome=nome_fazenda,
+                            cultura=cultura, geojson=gs, area_ha=area_total)
+        db.session.add(t)
+        db.session.commit()
+
+        n = len(features)
+        if n == 1:
+            flash(f'Fazenda "{nome_fazenda}" importada! ({area_total:.2f} ha)', "success")
+        else:
+            flash(f'Fazenda "{nome_fazenda}" importada com {n} talhões! '
+                  f'Área total: {area_total:.2f} ha', "success")
+
+        return redirect(url_for("talhoes.gis_mapa_cliente", uid=uid))
+
+    return render_template("talhoes/importar.html",
+                           culturas=CULTURAS,
+                           current_user=cliente,
+                           gis_uid=uid,
+                           gis_cancelar_url=url_for("talhoes.gis_mapa_cliente", uid=uid))
+
+
 # ── GIS de Clientes para Funcionários ─────────────────────────
 
 @talhoes_bp.route("/funcionario/clientes")
@@ -789,9 +876,7 @@ def gis_mapa_cliente(uid):
     } for t in talhoes if t.geojson])
     return render_template("talhoes/mapa.html",
                            talhoes_json=talhoes_json,
-                           editar_id="null",
-                           culturas=CULTURAS,
-                           gis_uid=uid,
+                           editar_id=None,
                            gis_cliente=cliente,
                            gis_funcionario=emp)
 
@@ -799,52 +884,66 @@ def gis_mapa_cliente(uid):
 @talhoes_bp.route("/funcionario/api/salvar/<int:uid>", methods=["POST"])
 @employee_login_required
 def gis_salvar_cliente(uid):
-    """Funcionário salva talhão no contexto do cliente — mesma lógica de api_salvar."""
+    """Funcionário salva talhão no contexto do cliente."""
     emp = get_current_employee()
     if not emp or not emp.acesso_gis:
         return jsonify({"erro": "Sem permissão"}), 403
-
-    data    = request.get_json(silent=True) or {}
-    nome    = (data.get("nome") or "").strip()
+    # Reusar a lógica de salvar mas com user_id=uid
+    data    = request.get_json(force=True) or {}
+    tid     = data.get("id")
+    nome    = (data.get("nome") or "").strip() or "Sem nome"
     geojson = data.get("geojson")
-    if not nome:
-        return jsonify({"erro": "Informe o nome do talhão"}), 400
     if not geojson:
-        return jsonify({"erro": "Polígono inválido"}), 400
-
-    geojson_str = json.dumps(geojson)
-    area = _area_ha(geojson_str)
-
-    from datetime import date as _date
-    data_voo_raw = (data.get("data_voo") or "").strip()
-    try:
-        data_voo_val = _date.fromisoformat(data_voo_raw) if data_voo_raw else None
-    except ValueError:
-        data_voo_val = None
-    pista_voo_val = (data.get("pista_voo") or "").strip()
-
-    tid = data.get("id")
+        return jsonify({"erro": "GeoJSON ausente"}), 400
+    gj_str = json.dumps(geojson)
+    import math as _math
+    def _area(gj):
+        try:
+            coords = []
+            def col(c):
+                if isinstance(c[0], (int, float)): coords.append(c)
+                else: [col(x) for x in c]
+            g = gj.get("geometry") or gj
+            col(g.get("coordinates", []))
+            R = 6371000
+            n = len(coords)
+            if n < 3: return 0
+            a = 0
+            for i in range(n):
+                j = (i+1) % n
+                a += _math.radians(coords[i][0]) * _math.radians(coords[j][1])
+                a -= _math.radians(coords[j][0]) * _math.radians(coords[i][1])
+            return abs(a / 2) * R * R / 10000
+        except: return 0
+    area_ha = _area(geojson)
+    def parse_date(s):
+        if not s: return None
+        for fmt in ["%d/%m/%Y","%Y-%m-%d"]:
+            try:
+                from datetime import datetime as dt
+                return dt.strptime(s, fmt).date()
+            except: pass
+        return None
     if tid:
         t = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
         t.nome        = nome
-        t.cultura     = (data.get("cultura") or "").strip()
-        t.cor         = (data.get("cor") or "#22c55e").strip()
-        t.geojson     = geojson_str
-        t.area_ha     = area
-        t.observacoes = (data.get("observacoes") or "").strip()
-        t.data_voo    = data_voo_val
-        t.pista_voo   = pista_voo_val
+        t.geojson     = gj_str
+        t.area_ha     = area_ha
+        t.cor         = data.get("cor") or t.cor
+        t.cultura     = data.get("cultura") or ""
+        t.data_voo    = parse_date(data.get("data_voo"))
+        t.pista_voo   = data.get("pista_voo") or ""
+        t.observacoes = data.get("observacoes") or ""
     else:
-        t = Talhao(user_id=uid, nome=nome,
-                   cultura=(data.get("cultura") or "").strip(),
-                   cor=(data.get("cor") or "#22c55e").strip(),
-                   geojson=geojson_str, area_ha=area,
-                   observacoes=(data.get("observacoes") or "").strip(),
-                   data_voo=data_voo_val, pista_voo=pista_voo_val)
+        t = Talhao(user_id=uid, nome=nome, geojson=gj_str, area_ha=area_ha,
+                   cor=data.get("cor") or "#22c55e",
+                   cultura=data.get("cultura") or "",
+                   data_voo=parse_date(data.get("data_voo")),
+                   pista_voo=data.get("pista_voo") or "",
+                   observacoes=data.get("observacoes") or "")
         db.session.add(t)
-
     db.session.commit()
-    return jsonify({"ok": True, "id": t.id, "area_ha": area})
+    return jsonify({"ok": True, "id": t.id, "area_ha": float(t.area_ha or 0)})
 
 
 @talhoes_bp.route("/funcionario/api/excluir/<int:uid>/<int:tid>", methods=["DELETE"])

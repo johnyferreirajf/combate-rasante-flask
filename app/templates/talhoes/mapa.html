@@ -545,7 +545,7 @@ select.pp-input option { background:#0d2418; }
     <div id="map-sidebar-header">
       <h2>🗺️ Meus Talhões</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="{{ url_for('talhoes.importar') }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
+        <a href="{{ url_for('talhoes.gis_importar_cliente', uid=gis_uid) if gis_uid is defined and gis_uid else url_for('talhoes.importar') }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
         <span style="color:rgba(255,255,255,.25);">|</span>
         <a href="{{ url_for('talhoes.solicitacoes') }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">📋 Solicitações</a>
         <span style="color:rgba(255,255,255,.25);">|</span>
@@ -758,7 +758,6 @@ select.pp-input option { background:#0d2418; }
 var TALHOES  = {{ talhoes_json | safe }};
 var EDIT_ID  = {{ editar_id | tojson }};
 var GIS_UID  = {{ gis_uid | tojson if gis_uid is defined else "null" }};
-/* Se GIS_UID != null, usar rotas do funcionário */
 function _apiSalvar(){ return GIS_UID ? '/talhoes/funcionario/api/salvar/'+GIS_UID : '/talhoes/api/salvar'; }
 function _apiExcluir(tid){ return GIS_UID ? '/talhoes/funcionario/api/excluir/'+GIS_UID+'/'+tid : '/talhoes/api/excluir/'+tid; }
 
