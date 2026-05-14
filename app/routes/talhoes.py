@@ -762,7 +762,7 @@ def gis_lista_clientes():
     emp = get_current_employee()
     if not emp or not emp.acesso_gis:
         abort(403)
-    clientes = User.query.order_by(User.name).all()
+    clientes = User.query.filter_by(is_admin=False).order_by(User.name).all()
     return render_template("talhoes/gis_lista_clientes.html",
                            funcionario=emp, clientes=clientes)
 
@@ -790,8 +790,6 @@ def gis_mapa_cliente(uid):
     return render_template("talhoes/mapa.html",
                            talhoes_json=talhoes_json,
                            editar_id=None,
-                           culturas=CULTURAS,
-                           gis_uid=uid,
                            gis_cliente=cliente,
                            gis_funcionario=emp)
 
