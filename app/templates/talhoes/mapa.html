@@ -377,23 +377,24 @@ select.pp-input option { background:#0d2418; }
     background: rgba(3,18,8,.95);
     border-bottom: 1px solid rgba(34,197,94,.20);
   }
-  /* Esconder todos os botões originais no mobile */
-  #map-toolbar > button,
-  #map-toolbar > .tb-sep { display: none !important; pointer-events: none; }
-  /* Mostrar só o botão-toolbox */
-  #btn-toolbox { display: flex !important; pointer-events: all !important; }
+  /* Esconder todos os botões da toolbar, EXCETO btn-toolbox */
+  #map-toolbar > button:not(#btn-toolbox),
+  #map-toolbar > .tb-sep { display: none !important; pointer-events: none !important; }
 
-  #btn-toolbox {
-    height: 40px; padding: 0 14px;
+  /* Botão Ferramentas — sempre visível no mobile */
+  #map-toolbar > #btn-toolbox {
+    display: flex !important;
+    pointer-events: all !important;
+    height: 40px; padding: 0 16px;
     background: rgba(3,20,10,.95);
     border: 1.5px solid rgba(34,197,94,.55);
     border-radius: 10px; color: #86efac;
     font-size: 13px; font-weight: 900;
     cursor: pointer; font-family: inherit;
     align-items: center; gap: 6px;
-    white-space: nowrap;
+    white-space: nowrap; flex-shrink: 0;
   }
-  #btn-toolbox .tb-icon { font-size: 16px; }
+  #map-toolbar > #btn-toolbox .tb-icon { font-size: 16px; }
 
   /* Painel dropdown das ferramentas — fixed para sair do overflow:hidden */
   #toolbox-panel {
@@ -482,46 +483,45 @@ select.pp-input option { background:#0d2418; }
     position: fixed !important;
     left: 0; right: 0; bottom: 0; top: auto;
     width: 100% !important;
-    height: 78vh;
-    max-height: 78vh;
+    height: 80vh;
+    max-height: 80vh;
     border-left: none;
-    border-top: 1.5px solid rgba(255,255,255,.20);
+    border-top: 1.5px solid rgba(34,197,94,.35);
     border-radius: 16px 16px 0 0;
     transform: translateY(100%);
-    transition: transform .32s cubic-bezier(.32,1,.32,1);
+    transition: transform .30s cubic-bezier(.32,1,.32,1);
     z-index: 1100;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   #prop-panel.open { transform: translateY(0); }
 
-  /* Alça visual — toque para minimizar */
+  /* Alça — toque fecha o painel */
   #pp-handle {
+    width: 100%; padding: 10px 0 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; cursor: pointer;
+  }
+  #pp-handle::after {
+    content: ''; display: block;
     width: 44px; height: 5px; border-radius: 3px;
-    background: rgba(255,255,255,.35);
-    margin: 10px auto 6px; flex-shrink: 0;
-    cursor: pointer;
+    background: rgba(255,255,255,.40);
   }
 
-  /* Scroll interno livre */
+  /* Scroll interno livre — NÃO interfere com o toque na alça */
   #pp-scroll {
     flex: 1;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    padding-bottom: 40px;
+    padding-bottom: 48px;
     min-height: 0;
   }
   #panel-resizer { display: none; }
 
-  /* Minimizado: só alça visível (48px) */
-  #prop-panel.mini { transform: translateY(calc(100% - 48px)); }
-
-  /* Safe area — respeitar barra de navegação do celular */
-  #prop-panel {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
-  }
+  /* Safe area para barras flutuantes */
   #medicao-bar, #selgerar-aviso, #selgerar-bar {
     bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   }
@@ -1257,16 +1257,17 @@ function cancelAll(){
    1. DESENHAR NOVO TALHÃO
    ════════════════════════════════════════════════════════════ */
 function _miniPanel(){
-  if(window.innerWidth > 768) return;
-  var p = document.getElementById('prop-panel');
-  if(p && p.classList.contains('open')) p.classList.add('mini');
-  _fecharToolbox();
+  /* No mobile: apenas fechar toolbox ao ativar ferramenta — NÃO minimizar o painel */
+  if(window.innerWidth <= 768) _fecharToolbox();
 }
 function _expandPanel(){
+  /* Garantir painel visível */
   var p = document.getElementById('prop-panel');
-  if(p) p.classList.remove('mini');
+  if(p) { p.classList.remove('mini'); }
 }
 function togglePanelMini(){
+  /* Toque na alça: fechar o painel */
+  if(window.innerWidth <= 768){ closePropPanel(); return; }
   var p = document.getElementById('prop-panel');
   if(!p || !p.classList.contains('open')) return;
   if(p.classList.contains('mini')) p.classList.remove('mini');
@@ -1345,55 +1346,28 @@ document.addEventListener('click', function(e){
 }, true);
 
 /* ════════════════════════════════════════════════
-   SWIPE NO PAINEL MOBILE — só via alça e borda superior
+   PAINEL MOBILE: swipe para baixo na alça = fechar
    ════════════════════════════════════════════════ */
 (function(){
-  var startY=null, startX=null, startT, dragging=false;
-  function isMob(){ return window.innerWidth<=768; }
-
-  /* Registrar toque apenas na alça (#pp-handle) ou no topo do painel (primeiros 48px) */
-  document.addEventListener('touchstart', function(e){
-    if(!isMob()) return;
-    var pp = document.getElementById('prop-panel');
-    if(!pp || !pp.classList.contains('open')) return;
+  var sy=null, sx=null, st;
+  function mob(){ return window.innerWidth<=768; }
+  function onStart(e){
+    if(!mob()) return;
+    var h = document.getElementById('pp-handle');
+    if(!h || !h.contains(e.target)) return;
     var t = e.touches[0];
-    var handle = document.getElementById('pp-handle');
-    var panelTop = pp.getBoundingClientRect().top;
-    /* Só iniciar swipe se tocar na alça OU nos primeiros 52px do painel */
-    var inHandle = handle && handle.contains(e.target);
-    var inTopZone = t.clientY - panelTop < 52;
-    if(!inHandle && !inTopZone) return;
-    startY = t.clientY;
-    startX = t.clientX;
-    startT = Date.now();
-    dragging = true;
-  }, {passive:true});
-
-  document.addEventListener('touchmove', function(e){
-    if(!dragging || startY===null) return;
-    var dy = e.touches[0].clientY - startY;
-    var dx = Math.abs(e.touches[0].clientX - startX);
-    /* Movimento mais horizontal que vertical → cancelar */
-    if(dx > Math.abs(dy)+10){ dragging=false; return; }
-    /* Arrastar para cima → expandir */
-    var pp = document.getElementById('prop-panel');
-    if(pp && dy < -20 && pp.classList.contains('mini')){
-      pp.classList.remove('mini');
-    }
-  }, {passive:true});
-
-  document.addEventListener('touchend', function(e){
-    if(!dragging || startY===null){ dragging=false; return; }
-    var pp = document.getElementById('prop-panel');
-    if(!pp){ dragging=false; return; }
-    var dy = e.changedTouches[0].clientY - startY;
-    var dt = Date.now() - startT;
-    /* Swipe rápido para baixo (>50px, <400ms) → minimizar */
-    if(dy > 50 && dt < 400) pp.classList.add('mini');
-    /* Swipe lento mas grande para baixo (>120px) → minimizar também */
-    else if(dy > 120) pp.classList.add('mini');
-    startY=null; dragging=false;
-  }, {passive:true});
+    sy=t.clientY; sx=t.clientX; st=Date.now();
+  }
+  function onEnd(e){
+    if(!mob()||sy===null) return;
+    var t=e.changedTouches[0];
+    var dy=t.clientY-sy, dx=Math.abs(t.clientX-sx), dt=Date.now()-st;
+    sy=null;
+    if(Math.abs(dy)<Math.abs(dx)) return; /* horizontal — ignorar */
+    if(dy>40 && dt<500) closePropPanel();  /* swipe baixo = fechar */
+  }
+  document.addEventListener('touchstart', onStart, {passive:true});
+  document.addEventListener('touchend',   onEnd,   {passive:true});
 })();
 
 /* Observer: sempre que pp-actions ganhar conteúdo novo, expandir o painel */
