@@ -769,15 +769,15 @@ function _apiExcluir(tid){ return GIS_UID ? '/talhoes/funcionario/api/excluir/'+
 var _isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window);
 var map = L.map('map',{
   zoomControl: true,
-  maxZoom: 18,
+  maxZoom: 19,   /* limitar ao nativeZoom para evitar pixels brancos */
   tap: false,          /* desabilitar tap handler do Leaflet — vamos controlar manualmente */
   dragging: true,      /* sempre arrastável */
   touchZoom: true
 }).setView([-18.5,-50],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {attribution:'Esri',maxNativeZoom:18,maxZoom:18}).addTo(map);
+  {attribution:'Esri',maxNativeZoom:19,maxZoom:19}).addTo(map);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  {maxNativeZoom:18,maxZoom:18,opacity:0.7}).addTo(map);
+  {maxNativeZoom:19,maxZoom:19,opacity:0.7}).addTo(map);
 
 /* ── Estado ── */
 var layers       = {};
