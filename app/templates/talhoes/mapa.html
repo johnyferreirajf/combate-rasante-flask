@@ -360,38 +360,84 @@ select.pp-input option { background:#0d2418; }
   /* ── Ocultar controles de zoom do Leaflet no mobile ── */
   .leaflet-control-zoom { display:none !important; }
 
-  /* ── Toolbar flutuante — grade 4 colunas ── */
+  /* ── Toolbar mobile: botão único "Ferramentas" ── */
   #map-toolbar {
-    position:absolute;
-    top:43px;  /* logo abaixo da sidebar de 40px */
-    left:0; right:0; transform:none;
-    max-width:100%;
-    display:grid !important;
-    grid-template-columns:repeat(4,1fr);
-    gap:3px;
-    padding:0 3px;
-    pointer-events:none;
-    z-index:550;
+    position: absolute;
+    top: 43px;
+    left: 0; right: 0;
+    height: 44px;
+    display: flex !important;
+    align-items: center;
+    padding: 0 4px;
+    gap: 4px;
+    z-index: 550;
+    pointer-events: none;
   }
-  #map-toolbar button {
-    pointer-events:all;
-    padding:0; height:44px;
-    font-size:9px; font-weight:800;
-    border-radius:8px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:1px; line-height:1.2; white-space:normal; text-align:center;
-  }
-  #map-toolbar button .tb-icon  { font-size:15px; display:block; }
-  #map-toolbar button .tb-label { font-size:8px;  display:block; opacity:.85; }
+  /* Esconder todos os botões originais no mobile */
+  #map-toolbar > button,
+  #map-toolbar > .tb-sep { display: none !important; pointer-events: none; }
+  /* Mostrar só o botão-toolbox */
+  #btn-toolbox { display: flex !important; pointer-events: all !important; }
 
-  #btn-undo-draw { background:rgba(234,179,8,.22) !important; border-color:rgba(234,179,8,.55) !important; color:#fde68a !important; }
-  .tb-sep { display:none; }
+  #btn-toolbox {
+    height: 40px; padding: 0 14px;
+    background: rgba(3,20,10,.95);
+    border: 1.5px solid rgba(34,197,94,.55);
+    border-radius: 10px; color: #86efac;
+    font-size: 13px; font-weight: 900;
+    cursor: pointer; font-family: inherit;
+    align-items: center; gap: 6px;
+    white-space: nowrap;
+  }
+  #btn-toolbox .tb-icon { font-size: 16px; }
+
+  /* Painel dropdown das ferramentas */
+  #toolbox-panel {
+    display: none;
+    position: absolute;
+    top: 87px; /* 43 sidebar + 44 toolbar */
+    left: 0; right: 0;
+    background: rgba(2,14,6,.97);
+    border-bottom: 1.5px solid rgba(34,197,94,.30);
+    padding: 6px 4px 8px;
+    z-index: 560;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    pointer-events: all;
+    box-shadow: 0 6px 20px rgba(0,0,0,.55);
+    backdrop-filter: blur(10px);
+  }
+  #toolbox-panel.open { display: grid; }
+  #toolbox-panel .tb-btn {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 3px; height: 54px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.13);
+    border-radius: 9px; color: #fff;
+    font-size: 9px; font-weight: 800;
+    cursor: pointer; font-family: inherit;
+    text-align: center; line-height: 1.2;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #toolbox-panel .tb-btn:active,
+  #toolbox-panel .tb-btn.active {
+    background: rgba(34,197,94,.25) !important;
+    border-color: rgba(34,197,94,.55) !important;
+    color: #86efac !important;
+  }
+  #toolbox-panel .tb-btn .tb-icon  { font-size: 18px; display: block; }
+  #toolbox-panel .tb-btn .tb-label { font-size: 8px; display: block; opacity: .85; }
+
+  #btn-undo-draw { display: none !important; }
+  .tb-sep { display: none; }
 
   /* Barra de ação draw — linha dedicada abaixo da toolbar */
   #draw-action-bar {
     position: absolute;
-    /* sidebar(40px) + linha1(44px+3px) + linha2(44px+3px) = 134px */
-    top: 134px;
+    /* sidebar(40px) + toolbar(44px) + gap(3px) = 87px */
+    top: 87px;
     left: 0; right: 0;
     display: none;  /* JS controla via style.display = 'grid' */
     grid-template-columns: repeat(3, 1fr);
@@ -432,9 +478,8 @@ select.pp-input option { background:#0d2418; }
     position: fixed !important;
     left: 0; right: 0; bottom: 0; top: auto;
     width: 100% !important;
-    /* Altura: suficiente para mostrar conteúdo, mas deixa mapa visível */
-    height: 58vh;
-    max-height: 58vh;
+    height: 78vh;
+    max-height: 78vh;
     border-left: none;
     border-top: 1.5px solid rgba(255,255,255,.20);
     border-radius: 16px 16px 0 0;
@@ -443,30 +488,34 @@ select.pp-input option { background:#0d2418; }
     z-index: 1100;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
   #prop-panel.open { transform: translateY(0); }
 
-  /* Alça visual */
-  #prop-panel::before {
-    content:''; display:block; width:36px; height:4px; border-radius:2px;
-    background:rgba(255,255,255,.25); margin:8px auto 4px; flex-shrink:0;
+  /* Alça visual — toque para minimizar */
+  #pp-handle {
+    width: 44px; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,.35);
+    margin: 10px auto 6px; flex-shrink: 0;
+    cursor: pointer;
   }
 
-  /* Scroll interno ocupa o espaço restante */
+  /* Scroll interno livre */
   #pp-scroll {
     flex: 1;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    padding-bottom: 16px;
+    padding-bottom: 40px;
+    min-height: 0;
   }
-  #panel-resizer { display:none; }
+  #panel-resizer { display: none; }
 
-  /* Minimizado: aba de 44px */
-  #prop-panel.mini { transform: translateY(calc(100% - 44px)); }
+  /* Minimizado: só alça visível (48px) */
+  #prop-panel.mini { transform: translateY(calc(100% - 48px)); }
 
   /* Instrução flutuante — abaixo da toolbar */
-  #mode-hint { top:136px; bottom:auto; max-width:calc(100% - 16px); font-size:10px; line-height:1.5; }
+  #mode-hint { top:90px; bottom:auto; max-width:calc(100% - 16px); font-size:10px; line-height:1.5; }
 
   /* Fechar painel — botão grande */
   #pp-scroll > button:first-child { padding:8px 20px; font-size:13px; min-width:80px; }
@@ -637,7 +686,16 @@ select.pp-input option { background:#0d2418; }
     <div id="mode-hint"></div>
 
     <!-- Toolbar -->
+    <!-- Dropdown ferramentas mobile -->
+    <div id="toolbox-panel">
+      <!-- populado via JS no init mobile -->
+    </div>
+
     <div id="map-toolbar">
+      <!-- Botão Ferramentas (visível só no mobile via CSS) -->
+      <button id="btn-toolbox" onclick="toggleToolbox(event)">
+        <span class="tb-icon">🛠️</span> Ferramentas <span id="tb-arrow">▾</span>
+      </button>
       <button id="btn-draw"     onclick="startDraw()"     title="Desenhar novo talhão"><span class="tb-icon">✏️</span><span class="tb-label">Desenhar</span></button>
       <button id="btn-edit"     onclick="toggleEdit()"    title="Editar vértices"><span class="tb-icon">🖊</span><span class="tb-label">Editar</span></button>
       <button id="btn-add-part" onclick="startAddPart()"  title="Add parte"><span class="tb-icon">➕</span><span class="tb-label">Add Parte</span></button>
@@ -694,6 +752,7 @@ select.pp-input option { background:#0d2418; }
     <div id="prop-panel">
       <!-- Alça de resize -->
       <div id="panel-resizer" title="Arrastar para redimensionar"></div>
+      <div id="pp-handle" onclick="togglePanelMini()"></div>
       <div id="pp-scroll">
         <button onclick="closePropPanel()"
           style="display:block;margin-left:auto;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:7px;padding:3px 10px;cursor:pointer;font-size:11px;margin-bottom:10px;">
@@ -1171,6 +1230,7 @@ function cancelModes(silent){
   hint(null);
   activeMode=null;
   if(typeof _med!=='undefined'&&_med.active) fecharMedicao();
+  if(typeof _syncToolboxActive==='function') _syncToolboxActive();
 }
 
 function cancelAll(){
@@ -1185,14 +1245,123 @@ function cancelAll(){
 function _miniPanel(){
   if(window.innerWidth > 768) return;
   var p = document.getElementById('prop-panel');
-  if(p && p.classList.contains('open')){
-    p.classList.add('mini');
-  }
+  if(p && p.classList.contains('open')) p.classList.add('mini');
+  _fecharToolbox();
 }
 function _expandPanel(){
   var p = document.getElementById('prop-panel');
   if(p) p.classList.remove('mini');
 }
+function togglePanelMini(){
+  var p = document.getElementById('prop-panel');
+  if(!p || !p.classList.contains('open')) return;
+  if(p.classList.contains('mini')) p.classList.remove('mini');
+  else p.classList.add('mini');
+}
+
+/* ════════════════════════════════════════════════
+   CAIXA DE FERRAMENTAS MOBILE
+   ════════════════════════════════════════════════ */
+var _toolboxOpen = false;
+
+function toggleToolbox(e){
+  if(e) e.stopPropagation();
+  _toolboxOpen ? _fecharToolbox() : _abrirToolbox();
+}
+function _abrirToolbox(){
+  _toolboxOpen = true;
+  var panel = document.getElementById('toolbox-panel');
+  var arrow = document.getElementById('tb-arrow');
+  if(!panel) return;
+  /* Popular na primeira vez */
+  if(panel.children.length === 0) _popularToolbox();
+  panel.classList.add('open');
+  if(arrow) arrow.textContent = '▴';
+  /* Sincronizar estado active */
+  _syncToolboxActive();
+}
+function _fecharToolbox(){
+  _toolboxOpen = false;
+  var panel = document.getElementById('toolbox-panel');
+  var arrow = document.getElementById('tb-arrow');
+  if(panel) panel.classList.remove('open');
+  if(arrow) arrow.textContent = '▾';
+}
+function _popularToolbox(){
+  var panel = document.getElementById('toolbox-panel');
+  if(!panel) return;
+  panel.innerHTML = '';
+  var toolbar = document.getElementById('map-toolbar');
+  if(!toolbar) return;
+  toolbar.querySelectorAll('button:not(#btn-toolbox):not(#btn-cancel):not(#btn-undo-draw)').forEach(function(btn){
+    var b = document.createElement('button');
+    b.className = 'tb-btn';
+    b.innerHTML = btn.innerHTML;
+    b.id = btn.id ? ('tbx-'+btn.id) : '';
+    /* Copiar onclick */
+    var onclick = btn.getAttribute('onclick');
+    if(onclick){
+      b.setAttribute('onclick', '_fecharToolbox();'+onclick);
+    }
+    if(btn.classList.contains('active')) b.classList.add('active');
+    panel.appendChild(b);
+  });
+}
+function _syncToolboxActive(){
+  var panel = document.getElementById('toolbox-panel');
+  if(!panel) return;
+  var toolbar = document.getElementById('map-toolbar');
+  if(!toolbar) return;
+  var btns = toolbar.querySelectorAll('button:not(#btn-toolbox):not(#btn-cancel):not(#btn-undo-draw)');
+  var tbxBtns = panel.querySelectorAll('.tb-btn');
+  btns.forEach(function(btn, i){
+    if(tbxBtns[i]){
+      if(btn.classList.contains('active')) tbxBtns[i].classList.add('active');
+      else tbxBtns[i].classList.remove('active');
+    }
+  });
+}
+/* Fechar ao clicar fora */
+document.addEventListener('click', function(e){
+  if(!_toolboxOpen) return;
+  var panel = document.getElementById('toolbox-panel');
+  var tbtn  = document.getElementById('btn-toolbox');
+  if(panel && tbtn && !panel.contains(e.target) && !tbtn.contains(e.target))
+    _fecharToolbox();
+}, true);
+
+/* ════════════════════════════════════════════════
+   SWIPE NO PAINEL MOBILE
+   ════════════════════════════════════════════════ */
+(function(){
+  var startY = null, startT;
+  function isMob(){ return window.innerWidth <= 768; }
+  document.addEventListener('touchstart', function(e){
+    if(!isMob()) return;
+    var pp = document.getElementById('prop-panel');
+    if(!pp || !pp.classList.contains('open')) return;
+    startY = e.touches[0].clientY;
+    startT = Date.now();
+  }, {passive:true});
+  document.addEventListener('touchmove', function(e){
+    if(!isMob() || startY === null) return;
+    var pp = document.getElementById('prop-panel');
+    if(!pp) return;
+    var dy = e.touches[0].clientY - startY;
+    /* Arrastar para cima: garantir expandido */
+    if(dy < -10 && pp.classList.contains('mini')) pp.classList.remove('mini');
+  }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if(!isMob() || startY === null) return;
+    var pp = document.getElementById('prop-panel');
+    if(!pp) return;
+    var dy = e.changedTouches[0].clientY - startY;
+    var dt = Date.now() - startT;
+    /* Swipe rápido para baixo (>60px em <350ms) → minimizar */
+    if(dy > 60 && dt < 350) pp.classList.add('mini');
+    startY = null;
+  }, {passive:true});
+})();
 
 /* Observer: sempre que pp-actions ganhar conteúdo novo, expandir o painel */
 (function(){
