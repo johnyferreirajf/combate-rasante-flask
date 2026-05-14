@@ -545,7 +545,11 @@ select.pp-input option { background:#0d2418; }
     <div id="map-sidebar-header">
       <h2>🗺️ Meus Talhões</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="{{ url_for('talhoes.gis_importar_cliente', uid=gis_uid) if gis_uid is defined and gis_uid else url_for('talhoes.importar') }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
+        {% if gis_uid is defined and gis_uid %}
+        <a href="/talhoes/funcionario/importar/{{ gis_uid }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
+        {% else %}
+        <a href="{{ url_for('talhoes.importar') }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
+        {% endif %}
         <span style="color:rgba(255,255,255,.25);">|</span>
         <a href="{{ url_for('talhoes.solicitacoes') }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">📋 Solicitações</a>
         <span style="color:rgba(255,255,255,.25);">|</span>
