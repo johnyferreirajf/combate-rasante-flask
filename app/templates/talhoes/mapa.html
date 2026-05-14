@@ -298,8 +298,8 @@ select.pp-input option { background:#0d2418; }
   body.body--fullscreen header.navbar { display:none !important; }
   /* Compensar: o #map-layout agora tem mais espaço */
   body.body--fullscreen #map-layout {
-    height: calc(100vh - 40px) !important;  /* só sidebar de 40px */
-    padding-top: 44px; /* espaço para toolbar fixed */
+    height: calc(100vh - 40px) !important;
+    padding-top: 34px; /* espaço para toolbar fixed */
   }
 
   /* ── Layout mobile: mapa ocupa tudo menos a sidebar no topo ── */
@@ -307,7 +307,7 @@ select.pp-input option { background:#0d2418; }
     flex-direction: column;
     position: relative;
     height: calc(100vh - 68px - 40px) !important;
-    padding-top: 44px; /* espaço para toolbar fixed */
+    padding-top: 34px; /* espaço para toolbar fixed */
   }
   #map-container { flex:1; min-height:0; }
 
@@ -362,87 +362,94 @@ select.pp-input option { background:#0d2418; }
   /* ── Ocultar controles de zoom do Leaflet no mobile ── */
   .leaflet-control-zoom { display:none !important; }
 
-  /* ── Toolbar mobile: botão único "Ferramentas" ── */
+  /* ── Toolbar mobile: esconder tudo, mostrar só ícone ── */
   #map-toolbar {
     position: fixed;
-    top: 40px; /* imediatamente abaixo da sidebar de 40px */
+    top: 40px;
     left: 0; right: 0;
-    height: 44px;
+    height: 34px;
     display: flex !important;
     align-items: center;
-    padding: 0 4px;
-    gap: 4px;
-    z-index: 620; /* acima da sidebar (600) */
+    padding: 0 6px;
+    z-index: 620;
     pointer-events: none;
-    background: rgba(3,18,8,.95);
-    border-bottom: 1px solid rgba(34,197,94,.20);
+    background: transparent;
   }
-  /* Esconder todos os botões da toolbar, EXCETO btn-toolbox */
   #map-toolbar > button:not(#btn-toolbox),
   #map-toolbar > .tb-sep { display: none !important; pointer-events: none !important; }
 
-  /* Botão Ferramentas — sempre visível no mobile */
+  /* Botão ícone só — quadrado pequeno no canto esquerdo */
   #map-toolbar > #btn-toolbox {
     display: flex !important;
     pointer-events: all !important;
-    height: 40px; padding: 0 16px;
-    background: rgba(3,20,10,.95);
-    border: 1.5px solid rgba(34,197,94,.55);
-    border-radius: 10px; color: #86efac;
-    font-size: 13px; font-weight: 900;
+    width: 34px; height: 34px;
+    padding: 0;
+    background: rgba(3,20,10,.92);
+    border: 1.5px solid rgba(34,197,94,.60);
+    border-radius: 8px; color: #86efac;
+    font-size: 18px; font-weight: 900;
     cursor: pointer; font-family: inherit;
-    align-items: center; gap: 6px;
-    white-space: nowrap; flex-shrink: 0;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,.45);
   }
-  #map-toolbar > #btn-toolbox .tb-icon { font-size: 16px; }
+  /* Esconder o texto "Ferramentas" e a seta — só ícone */
+  #map-toolbar > #btn-toolbox .tb-icon { font-size: 18px; }
+  #map-toolbar > #btn-toolbox #tb-arrow,
+  #map-toolbar > #btn-toolbox span:not(.tb-icon) { display: none !important; }
 
-  /* Painel dropdown das ferramentas — fixed para sair do overflow:hidden */
+  /* Dropdown: grid 5 colunas, botões pequenos, Z acima de TUDO */
   #toolbox-panel {
     display: none;
     position: fixed;
-    top: 84px; /* 40px sidebar + 44px toolbar */
+    top: 74px; /* 40px sidebar + 34px toolbar */
     left: 0; right: 0;
-    background: rgba(2,14,6,.97);
-    border-bottom: 1.5px solid rgba(34,197,94,.30);
-    padding: 6px 4px 8px;
-    z-index: 560;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 4px;
+    background: rgba(2,14,6,.98);
+    border-top: 1px solid rgba(34,197,94,.25);
+    border-bottom: 1px solid rgba(34,197,94,.25);
+    padding: 5px 4px 6px;
+    z-index: 2000; /* acima de TUDO para não sobrepor sidebar */
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3px;
     pointer-events: all;
-    box-shadow: 0 6px 20px rgba(0,0,0,.55);
-    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0,0,0,.70);
+    backdrop-filter: blur(12px);
   }
   #toolbox-panel.open { display: grid; }
   #toolbox-panel .tb-btn {
     display: flex; flex-direction: column;
     align-items: center; justify-content: center;
-    gap: 3px; height: 54px;
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.13);
-    border-radius: 9px; color: #fff;
-    font-size: 9px; font-weight: 800;
+    gap: 2px; height: 46px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 7px; color: #fff;
+    font-size: 8px; font-weight: 800;
     cursor: pointer; font-family: inherit;
-    text-align: center; line-height: 1.2;
-    transition: background .15s;
+    text-align: center; line-height: 1.1;
     -webkit-tap-highlight-color: transparent;
+    padding: 0 2px;
   }
   #toolbox-panel .tb-btn:active,
   #toolbox-panel .tb-btn.active {
-    background: rgba(34,197,94,.25) !important;
+    background: rgba(34,197,94,.22) !important;
     border-color: rgba(34,197,94,.55) !important;
     color: #86efac !important;
   }
-  #toolbox-panel .tb-btn .tb-icon  { font-size: 18px; display: block; }
-  #toolbox-panel .tb-btn .tb-label { font-size: 8px; display: block; opacity: .85; }
+  #toolbox-panel .tb-btn .tb-icon  { font-size: 15px; display: block; }
+  #toolbox-panel .tb-btn .tb-label { font-size: 7px; display: block; opacity: .82; }
 
   #btn-undo-draw { display: none !important; }
   .tb-sep { display: none; }
 
+  /* Ajustar map-layout para toolbar menor (34px) */
+  body.body--fullscreen #map-layout,
+  #map-layout { padding-top: 34px !important; }
+
   /* Barra de ação draw — linha dedicada abaixo da toolbar */
   #draw-action-bar {
     position: absolute;
-    /* sidebar(40px) + toolbar(44px) = 84px */
-    top: 84px;
+    /* sidebar(40px) + toolbar(34px) = 74px */
+    top: 74px;
     left: 0; right: 0;
     display: none;  /* JS controla via style.display = 'grid' */
     grid-template-columns: repeat(3, 1fr);
@@ -527,7 +534,7 @@ select.pp-input option { background:#0d2418; }
   }
 
   /* Instrução flutuante — abaixo da toolbar */
-  #mode-hint { top:92px; bottom:auto; max-width:calc(100% - 16px); font-size:10px; line-height:1.5; z-index:630; }
+  #mode-hint { top:78px; bottom:auto; max-width:calc(100% - 16px); font-size:10px; line-height:1.5; z-index:630; }
 
   /* Fechar painel — botão grande */
   #pp-scroll > button:first-child { padding:8px 20px; font-size:13px; min-width:80px; }
@@ -1344,6 +1351,11 @@ document.addEventListener('click', function(e){
   if(panel && tbtn && !panel.contains(e.target) && !tbtn.contains(e.target))
     _fecharToolbox();
 }, true);
+/* Fechar toolbox ao abrir sidebar */
+(function(){
+  var sh = document.getElementById('map-sidebar-header');
+  if(sh) sh.addEventListener('click', function(){ _fecharToolbox(); });
+})();
 
 /* ════════════════════════════════════════════════
    PAINEL MOBILE: swipe para baixo na alça = fechar
