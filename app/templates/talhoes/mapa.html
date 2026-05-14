@@ -534,45 +534,6 @@ select.pp-input option { background:#0d2418; }
   /* Botão "✦ Ponto" — aparece ao lado do ‹ durante draw mobile */
   /* btn-add-vertex estilizado dentro do draw-action-bar (mobile) */
 }
-
-/* ── Crosshair central de localização ── */
-#centro-crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  z-index:800;pointer-events:none;width:20px;height:20px;}
-#centro-crosshair::before{content:'';position:absolute;background:rgba(255,255,255,.82);
-  width:18px;height:1.5px;top:50%;left:50%;transform:translate(-50%,-50%);}
-#centro-crosshair::after{content:'';position:absolute;background:rgba(255,255,255,.82);
-  width:1.5px;height:18px;top:50%;left:50%;transform:translate(-50%,-50%);}
-#centro-crosshair-dot{width:4px;height:4px;background:rgba(255,255,255,.88);border-radius:50%;
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-  box-shadow:0 0 0 1.5px rgba(0,0,0,.45);}
-/* HUD coordenadas */
-#centro-coords{position:absolute;bottom:28px;left:12px;z-index:800;
-  background:rgba(0,0,0,.55);color:rgba(255,255,255,.90);
-  font-size:11px;font-weight:700;font-family:monospace;
-  padding:4px 10px;border-radius:7px;pointer-events:none;
-  line-height:1.6;backdrop-filter:blur(4px);white-space:pre;}
-/* Barra medição */
-#medicao-bar{display:none;position:fixed;bottom:28px;left:50%;
-  transform:translateX(-50%);z-index:10000;
-  background:rgba(3,14,6,.97);border:2px solid rgba(99,179,237,.70);
-  border-radius:14px;padding:10px 16px;
-  align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
-  box-shadow:0 4px 28px rgba(0,0,0,.80);backdrop-filter:blur(10px);
-  max-width:calc(100vw - 20px);box-sizing:border-box;}
-#medicao-bar .med-label{color:#93c5fd;font-size:12px;font-weight:800;white-space:nowrap;}
-#medicao-bar .med-result{background:rgba(59,130,246,.18);border:1px solid rgba(99,179,237,.50);
-  color:#bfdbfe;font-size:13px;font-weight:900;padding:4px 14px;
-  border-radius:999px;min-width:120px;text-align:center;font-family:monospace;}
-#medicao-bar .med-btn{background:rgba(59,130,246,.22);border:1px solid rgba(99,179,237,.45);
-  color:#93c5fd;border-radius:9px;padding:7px 14px;font-size:12px;
-  font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;}
-#medicao-bar .med-btn:hover{background:rgba(59,130,246,.35);}
-#medicao-bar .med-btn-cancel{background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.75);}
-@media(max-width:600px){
-  #medicao-bar{bottom:72px;padding:8px 12px;gap:7px;}
-  #centro-coords{font-size:10px;bottom:22px;}
-}
 </style>
 {% endblock %}
 
@@ -617,10 +578,6 @@ select.pp-input option { background:#0d2418; }
 
     <!-- Mira de desenho mobile -->
     <div id="draw-crosshair"><div id="draw-crosshair-dot"></div></div>
-    <!-- Crosshair central de localização -->
-    <div id="centro-crosshair"><div id="centro-crosshair-dot"></div></div>
-    <!-- HUD de coordenadas -->
-    <div id="centro-coords">—</div>
 
     <div id="spinner">
       <div style="text-align:center;width:220px;">
@@ -655,9 +612,6 @@ select.pp-input option { background:#0d2418; }
       <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
       <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
       <button id="btn-selgerar" onclick="toggleSelGerar()" title="Selecionar ilhas e gerar nova camada (clicar de novo cancela)"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
-      <div class="tb-sep"></div>
-      <button id="btn-medir-linha" onclick="startMedicao('linha')" title="Medir distância em metros"><span class="tb-icon">📏</span><span class="tb-label">Distância</span></button>
-      <button id="btn-medir-area" onclick="startMedicao('area')" title="Medir área em hectares"><span class="tb-icon">⬡</span><span class="tb-label">Área</span></button>
     </div>
     <!-- Barra de ação draw — aparece abaixo da toolbar quando draw ativo -->
     <div id="draw-action-bar" style="display:none;">
@@ -758,14 +712,6 @@ select.pp-input option { background:#0d2418; }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
-<!-- Barra de Medição -->
-<div id="medicao-bar">
-  <span class="med-label" id="medicao-label">📏 Clique para medir</span>
-  <span class="med-result" id="medicao-result">—</span>
-  <button class="med-btn" onclick="medicaoUndo()">↩ Desfazer</button>
-  <button class="med-btn" onclick="medicaoLimpar()">🗑 Limpar</button>
-  <button class="med-btn med-btn-cancel" onclick="fecharMedicao()">✕ Fechar</button>
-</div>
 <!-- Barra Sel+Gerar: position:fixed fora de qualquer container, z-index máximo -->
 <!-- Aviso Sel+Gerar: aparece acima da barra -->
 <div id="selgerar-aviso" style="
@@ -823,15 +769,15 @@ function _apiExcluir(tid){ return GIS_UID ? '/talhoes/funcionario/api/excluir/'+
 var _isMobileDevice = window.innerWidth <= 768 || ('ontouchstart' in window);
 var map = L.map('map',{
   zoomControl: true,
-  maxZoom: 22,
+  maxZoom: 19,   /* limitar ao nativeZoom para evitar pixels brancos */
   tap: false,          /* desabilitar tap handler do Leaflet — vamos controlar manualmente */
   dragging: true,      /* sempre arrastável */
   touchZoom: true
 }).setView([-18.5,-50],9);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  {attribution:'Esri',maxZoom:22,maxNativeZoom:19}).addTo(map);
+  {attribution:'Esri',maxNativeZoom:19,maxZoom:19}).addTo(map);
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-  {maxZoom:22,maxNativeZoom:19,opacity:0.7}).addTo(map);
+  {maxNativeZoom:19,maxZoom:19,opacity:0.7}).addTo(map);
 
 /* ── Estado ── */
 var layers       = {};
@@ -851,9 +797,6 @@ var _splitLine   = null;
 var drawnGroup   = new L.FeatureGroup().addTo(map);
 var editGroup    = new L.FeatureGroup().addTo(map);
 var previewGroup = new L.FeatureGroup().addTo(map);
-/* Coordenadas do centro do mapa */
-map.on('move zoom moveend', atualizarCentroCoords);
-setTimeout(atualizarCentroCoords, 300);
 
 var selectedIds  = new Set();
 var lastClickIdx = -1;
@@ -1168,7 +1111,7 @@ function cancelModes(silent){
   /* Remover cursor tesoura */
   map.getContainer().classList.remove('cursor-scissors');
   /* Reset toolbar */
-  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar','btn-pontes','btn-selgerar','btn-medir-linha','btn-medir-area'].forEach(function(bid){
+  ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar','btn-pontes','btn-selgerar'].forEach(function(bid){
     var b=document.getElementById(bid); if(b) b.classList.remove('active');
   });
   document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
@@ -1176,7 +1119,6 @@ function cancelModes(silent){
   _showUndoBtn(false);
   hint(null);
   activeMode=null;
-  if(typeof _med!=='undefined' && _med.active) fecharMedicao();
 }
 
 function cancelAll(){
@@ -2222,121 +2164,6 @@ function confirmarSelGerar(){
 }
 
 /* ── Fim Sel+Gerar ── */
-
-/* ══ Crosshair coords ══ */
-function _toDMS(deg,isLat){
-  var d=Math.abs(deg),gr=Math.floor(d);
-  var mRaw=(d-gr)*60,mn=Math.floor(mRaw);
-  var sg=((mRaw-mn)*60).toFixed(1);
-  var dir=isLat?(deg>=0?'N':'S'):(deg>=0?'L':'O');
-  return gr+'\u00b0'+mn+"'"+sg+'" '+dir;
-}
-function atualizarCentroCoords(){
-  var el=document.getElementById('centro-coords'); if(!el||!map) return;
-  var ctr=map.getCenter();
-  el.textContent=_toDMS(ctr.lat,true)+'\n'+_toDMS(ctr.lng,false);
-}
-
-/* ══ Medição de distância e área ══ */
-var _med={tipo:null,pts:[],layers:[],active:false};
-
-function startMedicao(tipo){
-  if(_med.active&&_med.tipo===tipo){fecharMedicao();return;}
-  cancelModes(true);
-  _med.tipo=tipo;_med.pts=[];_med.layers=[];_med.active=true;
-  document.getElementById('btn-medir-'+tipo).classList.add('active');
-  map.getContainer().style.cursor='crosshair';
-  document.getElementById('medicao-label').textContent=
-    tipo==='linha'?'📏 Clique para marcar pontos':'⬡ Clique para marcar vértices';
-  document.getElementById('medicao-result').textContent='—';
-  document.getElementById('medicao-bar').style.display='flex';
-  map.on('click',_medClick);
-}
-
-function _medClick(e){
-  if(!_med.active) return;
-  _med.pts.push(e.latlng);
-  var n=_med.pts.length;
-  var dot=L.circleMarker(e.latlng,{radius:5,color:'#3b82f6',
-    fillColor:'#93c5fd',fillOpacity:1,weight:2}).addTo(map);
-  _med.layers.push({type:'dot',layer:dot});
-
-  if(_med.tipo==='linha'){
-    if(n>=2){
-      var seg=L.polyline([_med.pts[n-2],_med.pts[n-1]],
-        {color:'#3b82f6',weight:2.5,dashArray:'6 4'}).addTo(map);
-      _med.layers.push({type:'seg',layer:seg});
-      var dist=0;
-      for(var i=1;i<_med.pts.length;i++) dist+=_med.pts[i-1].distanceTo(_med.pts[i]);
-      document.getElementById('medicao-result').textContent=
-        dist>=1000?(dist/1000).toFixed(3)+' km':dist.toFixed(1)+' m';
-    }
-  } else {
-    _med.layers=_med.layers.filter(function(o){
-      if(o.type==='poly'){map.removeLayer(o.layer);return false;} return true;
-    });
-    if(n>=3){
-      var poly=L.polygon(_med.pts,{color:'#3b82f6',weight:2,
-        fillColor:'#3b82f6',fillOpacity:0.18}).addTo(map);
-      _med.layers.push({type:'poly',layer:poly});
-      document.getElementById('medicao-result').textContent=
-        _calcHa(_med.pts).toFixed(4)+' ha';
-    }
-  }
-}
-
-function _calcHa(lls){
-  var n=lls.length; if(n<3) return 0;
-  var R=6371000,lat0=lls[0].lat*Math.PI/180;
-  var pts=lls.map(function(ll){return{
-    x:ll.lng*Math.PI/180*R*Math.cos(lat0),y:ll.lat*Math.PI/180*R};});
-  var a=0;
-  for(var i=0;i<n;i++){var j=(i+1)%n;a+=pts[i].x*pts[j].y-pts[j].x*pts[i].y;}
-  return Math.abs(a/2)/10000;
-}
-
-function medicaoUndo(){
-  if(!_med.pts.length) return;
-  var n=_med.pts.length;
-  _med.pts.pop();
-  if(_med.tipo==='linha'){
-    if(n>=2){ var s=_med.layers.pop(); if(s) map.removeLayer(s.layer); }
-    var d=_med.layers.pop(); if(d) map.removeLayer(d.layer);
-    if(_med.pts.length>=2){
-      var dist=0;
-      for(var i=1;i<_med.pts.length;i++) dist+=_med.pts[i-1].distanceTo(_med.pts[i]);
-      document.getElementById('medicao-result').textContent=
-        dist>=1000?(dist/1000).toFixed(3)+' km':dist.toFixed(1)+' m';
-    } else { document.getElementById('medicao-result').textContent='—'; }
-  } else {
-    _med.layers=_med.layers.filter(function(o){
-      if(o.type==='poly'){map.removeLayer(o.layer);return false;} return true;
-    });
-    var d=_med.layers.pop(); if(d) map.removeLayer(d.layer);
-    if(_med.pts.length>=3){
-      var poly=L.polygon(_med.pts,{color:'#3b82f6',weight:2,
-        fillColor:'#3b82f6',fillOpacity:0.18}).addTo(map);
-      _med.layers.push({type:'poly',layer:poly});
-      document.getElementById('medicao-result').textContent=
-        _calcHa(_med.pts).toFixed(4)+' ha';
-    } else { document.getElementById('medicao-result').textContent='—'; }
-  }
-}
-
-function medicaoLimpar(){
-  _med.layers.forEach(function(o){try{map.removeLayer(o.layer);}catch(e){}});
-  _med.layers=[];_med.pts=[];
-  document.getElementById('medicao-result').textContent='—';
-}
-
-function fecharMedicao(){
-  map.off('click',_medClick);
-  medicaoLimpar();
-  document.getElementById('medicao-bar').style.display='none';
-  try{map.getContainer().style.cursor='';}catch(e){}
-  if(_med.tipo){ var b=document.getElementById('btn-medir-'+_med.tipo); if(b) b.classList.remove('active'); }
-  _med.active=false;_med.tipo=null;
-}
 
 function startMesclar(){
   if(selectedIds.size < 2){
