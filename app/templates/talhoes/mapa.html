@@ -441,17 +441,16 @@ select.pp-input option { background:#0d2418; }
   body.body--fullscreen #map-layout,
   #map-layout { padding-top: 34px !important; }
 
-  /* Barra de ação draw — linha dedicada abaixo da toolbar */
+  /* Barra de ação draw — fixada na parte INFERIOR do mapa */
   #draw-action-bar {
-    position: absolute;
-    /* sidebar(40px) + toolbar(34px) = 74px */
-    top: 74px;
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
     left: 0; right: 0;
-    display: none;  /* JS controla via style.display = 'grid' */
+    display: none;
     grid-template-columns: repeat(3, 1fr);
-    gap: 3px;
-    padding: 0 3px;
-    z-index: 551;
+    gap: 4px;
+    padding: 0 6px;
+    z-index: 1050;
     pointer-events: none;
   }
   #draw-action-bar button {
@@ -472,10 +471,10 @@ select.pp-input option { background:#0d2418; }
   #btn-add-vertex { background: rgba(34,197,94,.30) !important; border-color: rgba(34,197,94,.70) !important; color: #86efac !important; }
   #btn-undo-draw  { background: rgba(234,179,8,.22) !important; border-color: rgba(234,179,8,.55) !important; color: #fde68a !important; }
 
-  /* hint desce abaixo da barra de draw */
+  /* hint — acima dos botões de draw-action-bar */
   #mode-hint {
-    top: calc(44px + 3*44px + 3*3px + 10px);
-    bottom: auto;
+    top: auto !important;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 60px);
     max-width: calc(100% - 16px);
     font-size: 10px; line-height: 1.5;
     z-index: 560;
@@ -500,6 +499,15 @@ select.pp-input option { background:#0d2418; }
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   #prop-panel.open { transform: translateY(0); }
+  /* Minimizado por ferramenta — alça verde visível, clique restaura */
+  #prop-panel.mini {
+    transform: translateY(calc(100% - 52px)) !important;
+    transition: transform .30s cubic-bezier(.32,1,.32,1) !important;
+  }
+  #prop-panel.mini #pp-handle::after {
+    background: rgba(34,197,94,.70);
+    width: 60px;
+  }
 
   /* Alça — toque fecha o painel */
   #pp-handle {
@@ -524,8 +532,17 @@ select.pp-input option { background:#0d2418; }
   }
   #panel-resizer { display: none; }
 
-  /* Safe area para barras flutuantes */
-  #medicao-bar, #selgerar-aviso, #selgerar-bar {
+  /* Safe area — botões do celular */
+  #map-layout {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  #prop-panel {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  #medicao-bar, #selgerar-bar, #selgerar-aviso {
+    bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  }
+  #centro-coords {
     bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -1259,22 +1276,16 @@ function cancelAll(){
    ════════════════════════════════════════════════════════════ */
 function _miniPanel(){
   if(window.innerWidth > 768) return;
-  /* Mobile: fechar toolbox E fechar painel de info para liberar o mapa */
   _fecharToolbox();
+  /* Fechar painel completamente — usuário reabre tocando na camada */
   var pp = document.getElementById('prop-panel');
   if(pp && pp.classList.contains('open')){
-    /* Minimizar (não fechar) para manter dados — toque na alça reabre */
-    pp.style.transform = 'translateY(calc(100% - 48px))';
-    pp.dataset.minimized = '1';
+    pp.classList.add('mini');  /* usa só classe CSS */
   }
 }
 function _expandPanel(){
   var pp = document.getElementById('prop-panel');
-  if(pp){
-    pp.style.transform = '';
-    pp.dataset.minimized = '';
-    pp.classList.remove('mini');
-  }
+  if(pp){ pp.classList.remove('mini'); pp.style.transform=''; }
 }
 function _expandPanel(){
   /* Garantir painel visível */
@@ -1284,17 +1295,14 @@ function _expandPanel(){
 function togglePanelMini(){
   if(window.innerWidth > 768){
     var p = document.getElementById('prop-panel');
-    if(!p || !p.classList.contains('open')) return;
+    if(!p||!p.classList.contains('open')) return;
     p.classList.toggle('mini'); return;
   }
-  /* Mobile: se estava minimizado por ferramenta, restaurar */
+  /* Mobile: alça → restaurar se mini, senão fechar */
   var pp = document.getElementById('prop-panel');
   if(!pp) return;
-  if(pp.dataset.minimized === '1'){
-    _expandPanel(); return;
-  }
-  /* Senão fechar */
-  closePropPanel();
+  if(pp.classList.contains('mini')){ _expandPanel(); }
+  else { closePropPanel(); }
 }
 
 /* ════════════════════════════════════════════════
