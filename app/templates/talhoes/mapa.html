@@ -367,12 +367,13 @@ select.pp-input option { background:#0d2418; }
   /* ── Toolbar mobile: esconder tudo, mostrar só ícone ── */
   #map-toolbar {
     position: fixed;
-    top: 40px;
-    left: 0; right: 0;
+    top: 40px;   /* grudado abaixo da sidebar */
+    left: 8px;   /* evitar corte */
+    right: 0;
     height: 34px;
     display: flex !important;
     align-items: center;
-    padding: 0 6px 0 14px; /* 14px esquerda para não cortar */
+    padding: 0;
     z-index: 620;
     pointer-events: none;
     background: transparent;
@@ -434,7 +435,7 @@ select.pp-input option { background:#0d2418; }
   #toolbox-panel .tb-btn .tb-icon  { font-size: 15px; display: block; }
   #toolbox-panel .tb-btn .tb-label { font-size: 7px; display: block; opacity: .82; }
 
-  #btn-undo-draw { display: none !important; }
+  /* btn-undo-draw: visível no mobile via draw-action-bar */
   .tb-sep { display: none; }
 
   /* Ajustar map-layout para toolbar menor (34px) */
@@ -444,13 +445,13 @@ select.pp-input option { background:#0d2418; }
   /* Barra de ação draw — fixada na parte INFERIOR do mapa */
   #draw-action-bar {
     position: fixed;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 44px);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 56px);
     left: 0; right: 0;
     display: none;
     grid-template-columns: repeat(3, 1fr);
     gap: 4px;
     padding: 0 6px;
-    z-index: 1050;
+    z-index: 1150; /* acima do painel */
     pointer-events: none;
   }
   #draw-action-bar button {
@@ -1208,6 +1209,7 @@ function _limparAreasSubPoligonos(){
 }
 
 function closePropPanel(){
+  if(typeof _talhaoBackup!=='undefined'&&_talhaoBackup) _restaurarBackup();
   cancelModes(true);
   _limparAreasSubPoligonos();
   var pp = document.getElementById('prop-panel');
@@ -1305,11 +1307,19 @@ function togglePanelMini(){
     if(!p||!p.classList.contains('open')) return;
     p.classList.toggle('mini'); return;
   }
-  /* Mobile: alça → restaurar se mini, senão fechar */
+  /* Mobile: mini → expandir | expandido → mini | 2º toque no expandido → fechar */
   var pp = document.getElementById('prop-panel');
   if(!pp) return;
-  if(pp.classList.contains('mini')){ _expandPanel(); }
-  else { closePropPanel(); }
+  if(pp.classList.contains('mini')){
+    _expandPanel();  /* mini → expandido */
+  } else if(pp._handleTap){
+    clearTimeout(pp._handleTap);
+    pp._handleTap = null;
+    closePropPanel();  /* 2º toque rápido → fechar */
+  } else {
+    pp.classList.add('mini');  /* 1º toque → mini */
+    pp._handleTap = setTimeout(function(){ pp._handleTap = null; }, 600);
+  }
 }
 
 /* ════════════════════════════════════════════════
@@ -1699,11 +1709,30 @@ function startHole(){
   _showUndoBtn(true);
 }
 
+/* Backup do talhão para reverter sem salvar */
+var _talhaoBackup = null;
+function _salvarBackup(t){
+  _talhaoBackup = {id:t.id, geojson:JSON.stringify(t.geojson), area_ha:t.area_ha};
+}
+function _restaurarBackup(){
+  if(!_talhaoBackup) return;
+  var t = TALHOES.find(function(x){return x.id==_talhaoBackup.id;});
+  if(t){
+    t.geojson = JSON.parse(_talhaoBackup.geojson);
+    t.area_ha = _talhaoBackup.area_ha;
+    reloadLayer(t);
+    var el = document.getElementById('pp-area');
+    if(el) el.textContent='📐 '+t.area_ha.toFixed(2)+' ha';
+  }
+  _talhaoBackup = null;
+}
+
 function _onHoleDrawn(layer){
   var holeFeat=layer.toGeoJSON();
   var t=TALHOES.find(function(x){return x.id==currentId;});
   if(!t){cancelModes(false);return;}
   if(typeof turf==='undefined'){toast('turf.js não carregado.','err');cancelModes(false);return;}
+  _salvarBackup(t);  /* salvar estado antes de modificar */
   spin(true,'Calculando área de exclusão...');
   setTimeout(function(){
     try{
@@ -1713,9 +1742,10 @@ function _onHoleDrawn(layer){
       t.geojson=result; t.area_ha=turf.area(result)/10000;
       document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
       reloadLayer(t); spin(false); drawCtrl=null; _showUndoBtn(false); cancelModes(false);
+      _expandPanel();
       toast('✅ Área de exclusão criada! Clique em Salvar.','',3500);
     }catch(err){
-      spin(false); cancelModes(false);
+      _talhaoBackup=null; spin(false); cancelModes(false);
       toast('Erro: '+err.message,'err',5000);
     }
   },50);
@@ -2762,7 +2792,7 @@ function salvarTalhao(){
     document.getElementById('pp-actions').style.display='flex';
     document.getElementById('pp-title').textContent='Editar Talhão';
     renderAcoes(d.id); renderSidebar();
-    toast('✅ Talhão salvo!');
+    _talhaoBackup=null; toast('✅ Talhão salvo!');
   })
   .catch(function(){spin(false);toast('Erro ao salvar.','err');});
 }
