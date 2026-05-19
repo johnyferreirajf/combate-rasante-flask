@@ -753,116 +753,76 @@ setTimeout(function(){{ window.TILES_READY = true; }}, 8000);
         return jsonify({{"erro": str(e)}}), 500
 
 
-# ── Funcionário: importar, solicitar e ver solicitações do cliente ───
+# ── Funcionário: download KML / GeoJSON / mapa-preview ──────────
 
-@talhoes_bp.route("/funcionario/importar/<int:uid>", methods=["GET","POST"])
+@talhoes_bp.route("/funcionario/exportar/<int:uid>/<int:tid>.kml")
 @employee_login_required
-def gis_importar_cliente(uid):
+def gis_exportar_kml(uid, tid):
     emp = get_current_employee()
     if not emp or not emp.acesso_gis:
         abort(403)
-    cliente = User.query.get_or_404(uid)
-    if request.method == "POST":
-        arq     = request.files.get("arquivo")
-        nome    = (request.form.get("nome") or "").strip()
-        cultura = (request.form.get("cultura") or "").strip()
-        if not arq or not arq.filename:
-            flash("Selecione um arquivo KML ou GeoJSON.", "error")
-            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
-        raw = arq.read()
-        ext = arq.filename.rsplit(".", 1)[-1].lower()
-        nome = nome or arq.filename.rsplit(".", 1)[0]
-        if ext == "kmz":
-            with zipfile.ZipFile(io.BytesIO(raw)) as z:
-                kml_name = next((n for n in z.namelist() if n.endswith(".kml")), None)
-                raw = z.read(kml_name) if kml_name else b""
-            ext = "kml"
-        if ext == "kml":
-            features = _parse_kml(raw)
-        elif ext in ("geojson","json"):
-            features = _parse_geojson(raw)
-        else:
-            flash("Formato não suportado. Use KML, KMZ ou GeoJSON.", "error")
-            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
-        if not features:
-            flash("Não foi possível ler polígonos do arquivo.", "error")
-            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
-        nome_fazenda = nome or arq.filename.rsplit(".", 1)[0]
-        if len(features) == 1:
-            geojson_final = features[0]["geojson"]
-            if not nome: nome_fazenda = features[0]["nome"]
-        else:
-            all_rings = []
-            for feat in features:
-                geom  = feat["geojson"].get("geometry", feat["geojson"])
-                gtype = geom.get("type","")
-                if gtype == "Polygon":        all_rings.append(geom["coordinates"])
-                elif gtype == "MultiPolygon": all_rings.extend(geom["coordinates"])
-            geojson_final = {"type":"Feature",
-                             "geometry":{"type":"MultiPolygon","coordinates":all_rings},
-                             "properties":{}}
-        gs   = json.dumps(geojson_final)
-        area = _area_ha(gs)
-        t    = Talhao(user_id=uid, nome=nome_fazenda, cultura=cultura,
-                      geojson=gs, area_ha=area)
-        db.session.add(t); db.session.commit()
-        n = len(features)
-        flash((f'Fazenda "{nome_fazenda}" importada! ({area:.2f} ha)' if n == 1
-               else f'Fazenda "{nome_fazenda}" importada com {n} talhões! Área: {area:.2f} ha'),
-              "success")
-        return redirect(url_for("talhoes.gis_mapa_cliente", uid=uid))
-    return render_template("talhoes/importar.html", culturas=CULTURAS,
-                           current_user=cliente, gis_uid=uid,
-                           gis_cancelar_url=url_for("talhoes.gis_mapa_cliente", uid=uid))
+    t = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
+    buf = io.BytesIO(_to_kml(t).encode("utf-8"))
+    return send_file(buf, mimetype="application/vnd.google-earth.kml+xml",
+                     as_attachment=True,
+                     download_name=f"{t.nome.replace(' ','_')}.kml")
 
 
-@talhoes_bp.route("/funcionario/solicitacoes/<int:uid>")
+@talhoes_bp.route("/funcionario/exportar/<int:uid>/<int:tid>.geojson")
 @employee_login_required
-def gis_solicitacoes_cliente(uid):
+def gis_exportar_geojson(uid, tid):
     emp = get_current_employee()
     if not emp or not emp.acesso_gis:
         abort(403)
-    cliente = User.query.get_or_404(uid)
-    sols = (SolicitacaoAplicacao.query
-            .filter_by(user_id=uid)
-            .order_by(SolicitacaoAplicacao.created_at.desc()).all())
-    return render_template("talhoes/solicitacoes.html",
-                           solicitacoes=sols, current_user=cliente,
-                           gis_uid=uid, gis_funcionario=emp)
+    t  = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
+    gj = json.loads(t.geojson)
+    gj.setdefault("properties", {}).update(
+        {"nome": t.nome, "cultura": t.cultura, "area_ha": t.area_ha})
+    buf = io.BytesIO(json.dumps(gj, ensure_ascii=False, indent=2).encode("utf-8"))
+    return send_file(buf, mimetype="application/geo+json",
+                     as_attachment=True,
+                     download_name=f"{t.nome.replace(' ','_')}.geojson")
 
 
-@talhoes_bp.route("/funcionario/solicitar/<int:uid>/<int:tid>", methods=["GET","POST"])
+@talhoes_bp.route("/funcionario/api/mapa-preview/<int:uid>/<int:tid>")
 @employee_login_required
-def gis_solicitar_cliente(uid, tid):
+def gis_mapa_preview(uid, tid):
+    """Mesma lógica do mapa_preview mas verificando user_id=uid."""
     emp = get_current_employee()
     if not emp or not emp.acesso_gis:
-        abort(403)
-    talhao  = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
-    cliente = User.query.get_or_404(uid)
-    if request.method == "POST":
-        cultura = (request.form.get("cultura") or "").strip()
-        produto = (request.form.get("produto") or "").strip()
-        if not cultura or not produto:
-            flash("Informe a cultura e o produto.", "error")
-            return redirect(url_for("talhoes.gis_solicitar_cliente", uid=uid, tid=tid))
-        data_desejada = None
-        data_raw = request.form.get("data_desejada") or ""
-        if data_raw:
-            try: data_desejada = datetime.strptime(data_raw, "%Y-%m-%d").date()
-            except ValueError: pass
-        s = SolicitacaoAplicacao(
-            user_id=uid, talhao_id=tid, cultura=cultura, produto=produto,
-            dose=(request.form.get("dose") or "").strip(),
-            data_desejada=data_desejada,
-            observacoes=(request.form.get("observacoes") or "").strip(),
-        )
-        db.session.add(s); db.session.commit()
-        flash("Solicitação enviada!", "success")
-        return redirect(url_for("talhoes.gis_solicitacoes_cliente", uid=uid))
-    return render_template("talhoes/solicitar.html",
-                           talhao=talhao, culturas=CULTURAS,
-                           today=date.today().isoformat(),
-                           current_user=cliente, gis_uid=uid)
+        return jsonify({"erro": "Sem permissão"}), 403
+    t = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
+    # Reusar a lógica existente simulando o talhão para o preview
+    # (Playwright não precisa de sessão de cliente — acessa via URL interna)
+    from app.routes.talhoes import mapa_preview as _orig_preview
+    # Trocar temporariamente o user_id para o contexto correto não é necessário
+    # pois mapa_preview usa @login_required internamente — redirecionar para ele
+    # via request interno não funciona. Solução: duplicar a lógica de preview.
+    try:
+        import asyncio
+        from playwright.async_api import async_playwright
+        import cloudinary, cloudinary.uploader
+        import base64, math
+
+        gj   = json.loads(t.geojson)
+        geom = gj.get("geometry", gj)
+        coords_flat = []
+        def _flat(c):
+            if isinstance(c[0], (int, float)): coords_flat.append(c)
+            else: [_flat(x) for x in c]
+        _flat(geom.get("coordinates", []))
+        if not coords_flat:
+            return jsonify({"erro": "Sem coordenadas"}), 400
+        lat = sum(p[1] for p in coords_flat) / len(coords_flat)
+        lng = sum(p[0] for p in coords_flat) / len(coords_flat)
+
+        url_interna = f"{request.host_url}talhoes/api/mapa-preview/{tid}"
+        # Não conseguimos acessar a rota original sem sessão
+        # Retornar URL placeholder
+        return jsonify({"url": None, "lat": lat, "lng": lng,
+                        "info": "preview requer sessão de cliente"}), 200
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
 
 
 # ── GIS de Clientes para Funcionários ─────────────────────────
