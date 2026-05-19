@@ -590,7 +590,8 @@ select.pp-input option { background:#0d2418; }
         {% if gis_uid is defined and gis_uid %}
         <a href="/talhoes/funcionario/solicitacoes/{{ gis_uid }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">📋 Solicitações</a>
         {% else %}
-        
+        <a href="{{ url_for('talhoes.solicitacoes') }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">📋 Solicitações</a>
+        {% endif %}
         <span style="color:rgba(255,255,255,.25);">|</span>
         <a href="{{ url_for('main.painel') }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">← Painel</a>
       </div>
