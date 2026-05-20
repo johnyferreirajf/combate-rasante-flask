@@ -17,6 +17,6 @@ RUN playwright install --with-deps chromium \
 
 COPY . .
 
-EXPOSE 8000
+RUN chmod +x /app/start.sh
 
-CMD ["sh", "-c", "gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120"]
+CMD ["/app/start.sh"]
