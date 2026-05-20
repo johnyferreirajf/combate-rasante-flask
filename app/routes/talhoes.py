@@ -208,7 +208,7 @@ def _to_kml(t: Talhao) -> str:
         )
         return (
             f"<Placemark>"
-            f"<n>{nome_pm}</n>"
+            f"<name>{nome_pm}</name>"
             f"<description>{desc}</description>"
             f"{style_ref}"
             f"<Polygon>"
@@ -234,7 +234,7 @@ def _to_kml(t: Talhao) -> str:
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<kml xmlns="http://www.opengis.net/kml/2.2">\n'
-        f'  <Document>\n    <n>{t.nome}</n>\n{style_block}    {body}\n  </Document>\n</kml>'
+        f'  <Document>\n    <name>{t.nome}</name>\n{style_block}    {body}\n  </Document>\n</kml>'
     )
 
 
@@ -260,6 +260,7 @@ def mapa():
         "geojson":  json.loads(t.geojson),
         "data_voo": t.data_voo.isoformat() if t.data_voo else "",
         "pista_voo":t.pista_voo or "",
+        "observacoes": t.observacoes or "",
     } for t in talhoes])
     editar_id = request.args.get("editar", "null")
     return render_template("talhoes/mapa.html",
@@ -810,7 +811,7 @@ def gis_mapa_cliente(uid):
         "cor":       t.cor or "#22c55e",
         "area_ha":   float(t.area_ha or 0),
         "geojson":   json.loads(t.geojson) if isinstance(t.geojson, str) else t.geojson,
-        "data_voo":  t.data_voo.strftime("%d/%m/%Y") if t.data_voo else "",
+        "data_voo":  t.data_voo.isoformat() if t.data_voo else "",
         "pista_voo": t.pista_voo or "",
         "observacoes": t.observacoes or "",
     } for t in talhoes if t.geojson])
@@ -881,6 +882,154 @@ def gis_excluir_cliente(uid, tid):
     db.session.delete(t)
     db.session.commit()
     return jsonify({"ok": True})
+
+
+# ── Funcionário: importar KML/GeoJSON para um cliente ─────────
+
+@talhoes_bp.route("/funcionario/importar/<int:uid>", methods=["GET", "POST"])
+@employee_login_required
+def gis_importar_cliente(uid):
+    emp = get_current_employee()
+    if not emp or not emp.acesso_gis:
+        abort(403)
+    cliente = User.query.get_or_404(uid)
+
+    if request.method == "POST":
+        arq     = request.files.get("arquivo")
+        nome    = (request.form.get("nome") or "").strip()
+        cultura = (request.form.get("cultura") or "").strip()
+        if not arq or not arq.filename:
+            flash("Selecione um arquivo KML ou GeoJSON.", "error")
+            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
+
+        raw = arq.read()
+        ext = arq.filename.rsplit(".", 1)[-1].lower()
+        nome = nome or arq.filename.rsplit(".", 1)[0]
+
+        if ext == "kmz":
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                kml_name = next((n for n in z.namelist() if n.endswith(".kml")), None)
+                raw = z.read(kml_name) if kml_name else b""
+            ext = "kml"
+
+        if ext == "kml":
+            features = _parse_kml(raw)
+        elif ext in ("geojson", "json"):
+            features = _parse_geojson(raw)
+        else:
+            flash("Formato não suportado. Use KML, KMZ ou GeoJSON.", "error")
+            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
+
+        if not features:
+            flash("Não foi possível ler polígonos do arquivo.", "error")
+            return redirect(url_for("talhoes.gis_importar_cliente", uid=uid))
+
+        nome_fazenda = nome or arq.filename.rsplit(".", 1)[0]
+        if len(features) == 1:
+            geojson_final = features[0]["geojson"]
+            if not nome:
+                nome_fazenda = features[0]["nome"]
+        else:
+            all_rings = []
+            for feat in features:
+                geom  = feat["geojson"].get("geometry", feat["geojson"])
+                gtype = geom.get("type", "")
+                if gtype == "Polygon":
+                    all_rings.append(geom["coordinates"])
+                elif gtype == "MultiPolygon":
+                    all_rings.extend(geom["coordinates"])
+            geojson_final = {
+                "type": "Feature",
+                "geometry": {"type": "MultiPolygon", "coordinates": all_rings},
+                "properties": {}
+            }
+
+        gs         = json.dumps(geojson_final)
+        area_total = _area_ha(gs)
+        t          = Talhao(user_id=uid, nome=nome_fazenda,
+                            cultura=cultura, geojson=gs, area_ha=area_total)
+        db.session.add(t)
+        db.session.commit()
+        n_pol = len(features)
+        if n_pol == 1:
+            flash(f'Fazenda "{nome_fazenda}" importada! ({area_total:.2f} ha)', "success")
+        else:
+            flash(f'Fazenda "{nome_fazenda}" importada com {n_pol} talhões! '
+                  f'Área total: {area_total:.2f} ha', "success")
+        return redirect(url_for("talhoes.gis_mapa_cliente", uid=uid))
+
+    return render_template("talhoes/importar.html",
+                           culturas=CULTURAS,
+                           gis_uid=uid,
+                           gis_cliente=cliente,
+                           current_user=None)
+
+
+# ── Funcionário: listar solicitações de um cliente ────────────
+
+@talhoes_bp.route("/funcionario/solicitacoes/<int:uid>")
+@employee_login_required
+def gis_solicitacoes_cliente(uid):
+    emp = get_current_employee()
+    if not emp or not emp.acesso_gis:
+        abort(403)
+    cliente = User.query.get_or_404(uid)
+    sols = (SolicitacaoAplicacao.query
+            .filter_by(user_id=uid)
+            .order_by(SolicitacaoAplicacao.created_at.desc())
+            .all())
+    return render_template("talhoes/solicitacoes.html",
+                           solicitacoes=sols,
+                           gis_uid=uid,
+                           gis_cliente=cliente,
+                           current_user=None)
+
+
+# ── Funcionário: criar solicitação para talhão de um cliente ──
+
+@talhoes_bp.route("/funcionario/solicitar/<int:uid>/<int:tid>", methods=["GET", "POST"])
+@employee_login_required
+def gis_solicitar_cliente(uid, tid):
+    emp = get_current_employee()
+    if not emp or not emp.acesso_gis:
+        abort(403)
+    cliente = User.query.get_or_404(uid)
+    talhao  = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
+
+    if request.method == "POST":
+        cultura = (request.form.get("cultura") or "").strip()
+        produto = (request.form.get("produto") or "").strip()
+        if not cultura or not produto:
+            flash("Informe a cultura e o produto.", "error")
+            return redirect(url_for("talhoes.gis_solicitar_cliente", uid=uid, tid=tid))
+
+        data_desejada = None
+        data_raw = request.form.get("data_desejada") or ""
+        if data_raw:
+            try:
+                data_desejada = datetime.strptime(data_raw, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
+        s = SolicitacaoAplicacao(
+            user_id=uid, talhao_id=talhao.id,
+            cultura=cultura, produto=produto,
+            dose=(request.form.get("dose") or "").strip(),
+            data_desejada=data_desejada,
+            observacoes=(request.form.get("observacoes") or "").strip(),
+        )
+        db.session.add(s)
+        db.session.commit()
+        flash("Solicitação enviada com sucesso!", "success")
+        return redirect(url_for("talhoes.gis_solicitacoes_cliente", uid=uid))
+
+    return render_template("talhoes/solicitar.html",
+                           talhao=talhao,
+                           culturas=CULTURAS,
+                           today=date.today().isoformat(),
+                           gis_uid=uid,
+                           gis_cliente=cliente,
+                           current_user=None)
 
 
 # ── Admin: todas as solicitações ─────────────────────────────
