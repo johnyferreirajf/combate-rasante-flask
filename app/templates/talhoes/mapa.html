@@ -360,38 +360,10 @@ select.pp-input option { background:#0d2418; }
   /* ── Ocultar controles de zoom do Leaflet no mobile ── */
   .leaflet-control-zoom { display:none !important; }
 
-  /* ── Toolbar flutuante — grade 4 colunas ── */
-  #map-toolbar {
-    position:absolute;
-    top:43px;  /* logo abaixo da sidebar de 40px */
-    left:0; right:0; transform:none;
-    max-width:100%;
-    display:grid !important;
-    grid-template-columns:repeat(4,1fr);
-    gap:3px;
-    padding:0 3px;
-    pointer-events:none;
-    z-index:550;
-  }
-  #map-toolbar button {
-    pointer-events:all;
-    padding:0; height:44px;
-    font-size:9px; font-weight:800;
-    border-radius:8px;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:1px; line-height:1.2; white-space:normal; text-align:center;
-  }
-  #map-toolbar button .tb-icon  { font-size:15px; display:block; }
-  #map-toolbar button .tb-label { font-size:8px;  display:block; opacity:.85; }
-
-  #btn-undo-draw { background:rgba(234,179,8,.22) !important; border-color:rgba(234,179,8,.55) !important; color:#fde68a !important; }
-  .tb-sep { display:none; }
-
   /* Barra de ação draw — linha dedicada abaixo da toolbar */
   #draw-action-bar {
     position: absolute;
-    /* sidebar(40px) + linha1(44px+3px) + linha2(44px+3px) = 134px */
-    top: 134px;
+    /* posicionamento final: fixo pelo segundo bloco media */
     left: 0; right: 0;
     display: none;  /* JS controla via style.display = 'grid' */
     grid-template-columns: repeat(3, 1fr);
@@ -465,9 +437,6 @@ select.pp-input option { background:#0d2418; }
   /* Minimizado: aba de 44px */
   #prop-panel.mini { transform: translateY(calc(100% - 44px)); }
 
-  /* Instrução flutuante — abaixo da toolbar */
-  #mode-hint { top:136px; bottom:auto; max-width:calc(100% - 16px); font-size:10px; line-height:1.5; }
-
   /* Fechar painel — botão grande */
   #pp-scroll > button:first-child { padding:8px 20px; font-size:13px; min-width:80px; }
 
@@ -490,8 +459,8 @@ select.pp-input option { background:#0d2418; }
   #draw-crosshair {
     display:none;
     position:absolute;
-    /* Centro da área visível: abaixo das 2 linhas de toolbar (44+44+44=132px da sidebar+toolbar) */
-    top:calc(132px + (100% - 132px) / 2);
+    /* Centro da área visível: abaixo de sidebar(40px) + toolbar(34px) = 74px */
+    top:calc(74px + (100% - 74px) / 2);
     left:50%;
     transform:translate(-50%,-50%);
     z-index:900;
@@ -614,7 +583,8 @@ select.pp-input option { background:#0d2418; }
   }
   #toolbox-panel .tb-btn .tb-icon { font-size:15px; display:block; }
   #toolbox-panel .tb-btn .tb-label { font-size:7px; display:block; opacity:.82; }
-  #btn-undo-draw { display:none !important; }
+  /* btn-undo-draw: oculto no toolbox-panel (só aparece via JS no draw-action-bar) */
+  #toolbox-panel #tbx-btn-undo-draw { display:none !important; }
   .tb-sep { display:none; }
   /* ── Prop-panel bottom sheet ── */
   #prop-panel {
@@ -659,9 +629,10 @@ select.pp-input option { background:#0d2418; }
   #map-layout {
     flex-direction:column; position:relative;
     height:calc(100vh - 68px - 40px) !important;
-    padding-top:34px; padding-bottom:env(safe-area-inset-bottom,0px);
+    padding-top:74px; /* sidebar(40px) + toolbar(34px) */
+    padding-bottom:env(safe-area-inset-bottom,0px);
   }
-  body.body--fullscreen #map-layout { height:calc(100vh - 40px) !important; padding-top:34px; }
+  body.body--fullscreen #map-layout { height:calc(100vh - 40px) !important; padding-top:74px; }
   /* ── Sidebar ── */
   #map-sidebar { flex-shrink:0; height:auto; max-height:40px; overflow:visible; }
   #map-sidebar.expanded { max-height:320px; }
@@ -713,9 +684,15 @@ select.pp-input option { background:#0d2418; }
     <div id="talhoes-list"></div>
     <div style="padding:8px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;gap:6px;">
       <button id="btn-sel-all" onclick="selecionarTodos()">☑ Selecionar todos</button>
+      {% if gis_uid is defined and gis_uid %}
+      <a href="/talhoes/funcionario/solicitacoes/{{ gis_uid }}" style="display:block;text-align:center;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.38);color:#86efac;border-radius:9px;padding:7px;font-size:11px;font-weight:700;text-decoration:none;">
+        ✈️ Ver Solicitações
+      </a>
+      {% else %}
       <a href="{{ url_for('talhoes.solicitacoes') }}" style="display:block;text-align:center;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.38);color:#86efac;border-radius:9px;padding:7px;font-size:11px;font-weight:700;text-decoration:none;">
         ✈️ Ver Solicitações
       </a>
+      {% endif %}
     </div>
     <!-- Alça de resize -->
     <div id="sidebar-resizer" title="Arrastar para redimensionar"></div>
@@ -1252,7 +1229,7 @@ function renderAcoes(id){
   document.getElementById('pp-actions').style.display='flex';
   document.getElementById('pp-actions').innerHTML=
     '<button class="pp-btn pp-btn-yellow" onclick="gerarPerimetro()">⚙️ Gerar Perímetro Inteiro</button>'+
-    '<a class="pp-btn pp-btn-green" href="/talhoes/solicitar/'+id+'">✈️ Solicitar Aplicação</a>'+
+    '<a class="pp-btn pp-btn-green" href="'+(GIS_UID?'/talhoes/funcionario/solicitar/'+GIS_UID+'/'+id:'/talhoes/solicitar/'+id)+'">✈️ Solicitar Aplicação</a>'+
     '<a class="pp-btn pp-btn-ghost" href="'+(GIS_UID?'/talhoes/funcionario/exportar/'+GIS_UID+'/'+id+'.kml':'/talhoes/exportar/'+id+'.kml')+'">⬇ Baixar KML</a>'+
     '<a class="pp-btn pp-btn-ghost" href="'+(GIS_UID?'/talhoes/funcionario/exportar/'+GIS_UID+'/'+id+'.geojson':'/talhoes/exportar/'+id+'.geojson')+'">⬇ Baixar GeoJSON</a>'+
     '<button class="pp-btn pp-btn-red" onclick="excluirAtual()">🗑 Excluir Talhão</button>';
@@ -1285,7 +1262,7 @@ function cancelModes(silent){
   ['btn-draw','btn-edit','btn-add-part','btn-hole','btn-exclusao','btn-split','btn-mesclar','btn-pontes','btn-selgerar','btn-medir-linha','btn-medir-area'].forEach(function(bid){
     var b=document.getElementById(bid); if(b) b.classList.remove('active');
   });
-  document.getElementById('btn-edit').textContent='🖊 Editar Vértices';
+  document.getElementById('btn-edit').innerHTML='<span class="tb-icon">🖊</span><span class="tb-label">Editar Vértices</span>';
   document.getElementById('btn-cancel').style.display='none';
   _showUndoBtn(false);
   hint(null);
@@ -1529,8 +1506,8 @@ function addVertexFromCrosshair(){
   var container = map.getContainer();
   var rect      = container.getBoundingClientRect();
 
-  /* Centro visível do mapa: sidebar(40px) + barra draw(44px+3px) + toolbar2linhas */
-  var toolbarH = window.innerWidth <= 768 ? 134 : 0;
+  /* Centro visível do mapa: sidebar(40px) + toolbar(34px) = 74px */
+  var toolbarH = window.innerWidth <= 768 ? 74 : 0;
   var visH     = rect.height - toolbarH;
   var cp       = L.point(rect.width / 2, toolbarH + visH / 2);
   var ll       = map.containerPointToLatLng(cp);
@@ -1676,7 +1653,7 @@ function toggleEdit(){
 
   activeMode='edit';
   document.getElementById('btn-edit').classList.add('active');
-  document.getElementById('btn-edit').textContent='✅ Confirmar Edição';
+  document.getElementById('btn-edit').innerHTML='<span class="tb-icon">✅</span><span class="tb-label">Confirmar</span>';
   hint('Arraste os pontos brancos para mover vértices.<br><small style="opacity:.7">Passe o mouse sobre um vértice e pressione <kbd style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:4px;">Delete</kbd> para removê-lo.</small>');
 }
 
@@ -3184,7 +3161,7 @@ map.on('move zoom', function(){
   try{
     var container = map.getContainer();
     var rect      = container.getBoundingClientRect();
-    var toolbarH  = window.innerWidth <= 768 ? 134 : 0;
+    var toolbarH  = window.innerWidth <= 768 ? 74 : 0;
     var visH      = rect.height - toolbarH;
     var cp        = L.point(rect.width/2, toolbarH+visH/2);
     var latlngs   = drawCtrl._poly.getLatLngs();
