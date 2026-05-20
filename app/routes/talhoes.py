@@ -753,77 +753,32 @@ setTimeout(function(){{ window.TILES_READY = true; }}, 8000);
         return jsonify({{"erro": str(e)}}), 500
 
 
-# ── Funcionário: download KML / GeoJSON / mapa-preview ──────────
+# ── Funcionário: download KML / GeoJSON ──────────────────────────
 
 @talhoes_bp.route("/funcionario/exportar/<int:uid>/<int:tid>.kml")
 @employee_login_required
 def gis_exportar_kml(uid, tid):
     emp = get_current_employee()
-    if not emp or not emp.acesso_gis:
-        abort(403)
+    if not emp or not emp.acesso_gis: abort(403)
     t = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
     buf = io.BytesIO(_to_kml(t).encode("utf-8"))
     return send_file(buf, mimetype="application/vnd.google-earth.kml+xml",
                      as_attachment=True,
                      download_name=f"{t.nome.replace(' ','_')}.kml")
 
-
 @talhoes_bp.route("/funcionario/exportar/<int:uid>/<int:tid>.geojson")
 @employee_login_required
 def gis_exportar_geojson(uid, tid):
     emp = get_current_employee()
-    if not emp or not emp.acesso_gis:
-        abort(403)
+    if not emp or not emp.acesso_gis: abort(403)
     t  = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
     gj = json.loads(t.geojson)
-    gj.setdefault("properties", {}).update(
-        {"nome": t.nome, "cultura": t.cultura, "area_ha": t.area_ha})
-    buf = io.BytesIO(json.dumps(gj, ensure_ascii=False, indent=2).encode("utf-8"))
+    gj.setdefault("properties",{}).update(
+        {"nome":t.nome,"cultura":t.cultura,"area_ha":t.area_ha})
+    buf = io.BytesIO(json.dumps(gj,ensure_ascii=False,indent=2).encode("utf-8"))
     return send_file(buf, mimetype="application/geo+json",
                      as_attachment=True,
                      download_name=f"{t.nome.replace(' ','_')}.geojson")
-
-
-@talhoes_bp.route("/funcionario/api/mapa-preview/<int:uid>/<int:tid>")
-@employee_login_required
-def gis_mapa_preview(uid, tid):
-    """Mesma lógica do mapa_preview mas verificando user_id=uid."""
-    emp = get_current_employee()
-    if not emp or not emp.acesso_gis:
-        return jsonify({"erro": "Sem permissão"}), 403
-    t = Talhao.query.filter_by(id=tid, user_id=uid).first_or_404()
-    # Reusar a lógica existente simulando o talhão para o preview
-    # (Playwright não precisa de sessão de cliente — acessa via URL interna)
-    from app.routes.talhoes import mapa_preview as _orig_preview
-    # Trocar temporariamente o user_id para o contexto correto não é necessário
-    # pois mapa_preview usa @login_required internamente — redirecionar para ele
-    # via request interno não funciona. Solução: duplicar a lógica de preview.
-    try:
-        import asyncio
-        from playwright.async_api import async_playwright
-        import cloudinary, cloudinary.uploader
-        import base64, math
-
-        gj   = json.loads(t.geojson)
-        geom = gj.get("geometry", gj)
-        coords_flat = []
-        def _flat(c):
-            if isinstance(c[0], (int, float)): coords_flat.append(c)
-            else: [_flat(x) for x in c]
-        _flat(geom.get("coordinates", []))
-        if not coords_flat:
-            return jsonify({"erro": "Sem coordenadas"}), 400
-        lat = sum(p[1] for p in coords_flat) / len(coords_flat)
-        lng = sum(p[0] for p in coords_flat) / len(coords_flat)
-
-        url_interna = f"{request.host_url}talhoes/api/mapa-preview/{tid}"
-        # Não conseguimos acessar a rota original sem sessão
-        # Retornar URL placeholder
-        return jsonify({"url": None, "lat": lat, "lng": lng,
-                        "info": "preview requer sessão de cliente"}), 200
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
-
 
 # ── GIS de Clientes para Funcionários ─────────────────────────
 
