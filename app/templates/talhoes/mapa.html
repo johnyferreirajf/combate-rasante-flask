@@ -570,6 +570,119 @@ select.pp-input option { background:#0d2418; }
   #medicao-bar{bottom:72px;padding:8px 12px;gap:7px;}
   #centro-coords{font-size:10px;bottom:22px;}
 }
+
+/* ── Toolbar mobile ── */
+@media(max-width:768px){
+  #map-toolbar {
+    position:fixed; top:40px; left:52px; right:0;
+    height:34px; display:flex !important; align-items:center;
+    padding:0; z-index:620; pointer-events:none; background:transparent;
+  }
+  #map-toolbar > button:not(#btn-toolbox),
+  #map-toolbar > .tb-sep { display:none !important; pointer-events:none !important; }
+  #map-toolbar > #btn-toolbox {
+    display:flex !important; pointer-events:all !important;
+    width:34px; height:34px; padding:0;
+    background:rgba(3,20,10,.92); border:1.5px solid rgba(34,197,94,.60);
+    border-radius:8px; color:#86efac; font-size:20px; line-height:1;
+    cursor:pointer; font-family:inherit;
+    align-items:center; justify-content:center; flex-shrink:0;
+    box-shadow:0 2px 8px rgba(0,0,0,.45);
+  }
+  #toolbox-panel {
+    display:none; position:fixed; top:74px; left:0; right:0;
+    background:rgba(2,14,6,.75); border-bottom:1px solid rgba(34,197,94,.20);
+    padding:5px 4px 6px; z-index:2000;
+    grid-template-columns:repeat(5,1fr); gap:3px;
+    pointer-events:all; box-shadow:0 4px 16px rgba(0,0,0,.50);
+    backdrop-filter:blur(14px);
+  }
+  #toolbox-panel.open { display:grid; }
+  #toolbox-panel .tb-btn {
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:2px; height:46px;
+    background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.12);
+    border-radius:7px; color:#fff; font-size:8px; font-weight:800;
+    cursor:pointer; font-family:inherit; text-align:center; line-height:1.1;
+    -webkit-tap-highlight-color:transparent; padding:0 2px;
+  }
+  #toolbox-panel .tb-btn:active,
+  #toolbox-panel .tb-btn.active {
+    background:rgba(34,197,94,.22) !important;
+    border-color:rgba(34,197,94,.55) !important; color:#86efac !important;
+  }
+  #toolbox-panel .tb-btn .tb-icon { font-size:15px; display:block; }
+  #toolbox-panel .tb-btn .tb-label { font-size:7px; display:block; opacity:.82; }
+  #btn-undo-draw { display:none !important; }
+  .tb-sep { display:none; }
+  /* ── Prop-panel bottom sheet ── */
+  #prop-panel {
+    position:fixed !important; left:0; right:0; bottom:0; top:auto;
+    width:100% !important; height:62vh; max-height:62vh;
+    border-left:none; border-top:1.5px solid rgba(34,197,94,.35);
+    border-radius:16px 16px 0 0;
+    transform:translateY(100%);
+    transition:transform .30s cubic-bezier(.32,1,.32,1);
+    z-index:1100; display:flex; flex-direction:column; overflow:hidden;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  #prop-panel.open  { transform:translateY(0); }
+  #prop-panel.mini  { transform:translateY(calc(100% - 52px)) !important; transition:transform .30s cubic-bezier(.32,1,.32,1) !important; }
+  #prop-panel.mini #pp-handle::after { background:rgba(34,197,94,.70); width:60px; }
+  #prop-panel.dragging { transition:none !important; }
+  #pp-handle {
+    width:100%; padding:10px 0 6px;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; cursor:pointer;
+  }
+  #pp-handle::after {
+    content:''; display:block; width:44px; height:5px; border-radius:3px;
+    background:rgba(255,255,255,.40);
+  }
+  #pp-scroll {
+    flex:1; overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+    padding-bottom:48px; min-height:0;
+  }
+  #panel-resizer { display:none; }
+  /* ── Draw-action-bar acima do painel ── */
+  #draw-action-bar {
+    position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 56px);
+    left:0; right:0; display:none;
+    grid-template-columns:repeat(3,1fr); gap:4px; padding:0 6px;
+    z-index:1150; pointer-events:none;
+  }
+  /* ── Mode hint ── */
+  #mode-hint { top:auto !important; bottom:calc(env(safe-area-inset-bottom,0px)+60px); max-width:calc(100% - 16px); font-size:10px; line-height:1.5; z-index:560; }
+  /* ── Map-layout ── */
+  #map-layout {
+    flex-direction:column; position:relative;
+    height:calc(100vh - 68px - 40px) !important;
+    padding-top:34px; padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  body.body--fullscreen #map-layout { height:calc(100vh - 40px) !important; padding-top:34px; }
+  /* ── Sidebar ── */
+  #map-sidebar { flex-shrink:0; height:auto; max-height:40px; overflow:visible; }
+  #map-sidebar.expanded { max-height:320px; }
+  #map-sidebar-header { height:40px; min-height:40px; }
+  #map-sidebar > .t-list { overflow-x:hidden; overflow-y:auto; flex-direction:column; max-height:220px; }
+  .t-item { flex-shrink:0; min-width:100px; flex-direction:column; align-items:flex-start; padding:4px 6px; }
+  .t-item__name { font-size:11px !important; font-weight:800; }
+  .t-item__sub  { font-size:9px !important; }
+  #map-sidebar.expanded .t-item { min-width:unset; flex-direction:row; }
+  #map-sidebar > div:last-child { display:none; }
+  #map-sidebar.expanded > div:last-child { display:flex; flex-direction:column; gap:4px; padding:5px 8px; }
+  #map-container { flex:1; min-height:0; }
+  /* ── Safe area barras flutuantes ── */
+  #medicao-bar,#selgerar-bar,#selgerar-aviso { bottom:calc(28px + env(safe-area-inset-bottom,0px)); }
+  #centro-coords { bottom:calc(28px + env(safe-area-inset-bottom,0px)); }
+  /* ── Ocultar zoom leaflet ── */
+  .leaflet-control-zoom { display:none; }
+  /* ── t-item botoes ── */
+  .t-item__del { font-size:12px; }
+  .t-item__vis { font-size:11px; }
+}
 </style>
 {% endblock %}
 
@@ -584,14 +697,10 @@ select.pp-input option { background:#0d2418; }
         {% if gis_uid is defined and gis_uid %}
         <a href="/talhoes/funcionario/importar/{{ gis_uid }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
         {% else %}
-        <a href="{{ url_for('talhoes.gis_importar_cliente', uid=gis_uid) if gis_uid is defined and gis_uid else url_for('talhoes.importar') }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
+        <a href="{{ url_for('talhoes.importar') }}" style="font-size:11px;color:rgba(34,197,94,.80);text-decoration:none;">📂 Importar</a>
         {% endif %}
         <span style="color:rgba(255,255,255,.25);">|</span>
-        {% if gis_uid is defined and gis_uid %}
-        <a href="/talhoes/funcionario/solicitacoes/{{ gis_uid }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">📋 Solicitações</a>
-        {% else %}
         <a href="{{ url_for('talhoes.solicitacoes') }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">📋 Solicitações</a>
-        {% endif %}
         <span style="color:rgba(255,255,255,.25);">|</span>
         <a href="{{ url_for('main.painel') }}" style="font-size:11px;color:rgba(255,255,255,.50);text-decoration:none;">← Painel</a>
       </div>
@@ -641,7 +750,10 @@ select.pp-input option { background:#0d2418; }
     <div id="mode-hint"></div>
 
     <!-- Toolbar -->
+    <!-- Dropdown ferramentas mobile -->
+    <div id="toolbox-panel"></div>
     <div id="map-toolbar">
+      <button id="btn-toolbox" onclick="toggleToolbox(event)" title="Ferramentas">🛠️</button>
       <button id="btn-draw"     onclick="startDraw()"     title="Desenhar novo talhão"><span class="tb-icon">✏️</span><span class="tb-label">Desenhar</span></button>
       <button id="btn-edit"     onclick="toggleEdit()"    title="Editar vértices"><span class="tb-icon">🖊</span><span class="tb-label">Editar</span></button>
       <button id="btn-add-part" onclick="startAddPart()"  title="Add parte"><span class="tb-icon">➕</span><span class="tb-label">Add Parte</span></button>
@@ -698,6 +810,7 @@ select.pp-input option { background:#0d2418; }
     <div id="prop-panel">
       <!-- Alça de resize -->
       <div id="panel-resizer" title="Arrastar para redimensionar"></div>
+      <div id="pp-handle" onclick="togglePanelMini()"></div>
       <div id="pp-scroll">
         <button onclick="closePropPanel()"
           style="display:block;margin-left:auto;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:7px;padding:3px 10px;cursor:pointer;font-size:11px;margin-bottom:10px;">
@@ -1123,9 +1236,11 @@ function _limparAreasSubPoligonos(){
 }
 
 function closePropPanel(){
+  if(typeof _talhaoBackup!=='undefined'&&_talhaoBackup) _restaurarBackup();
   cancelModes(true);
   _limparAreasSubPoligonos();
-  document.getElementById('prop-panel').classList.remove('open');
+  var _pp = document.getElementById('prop-panel');
+  if(_pp){ _pp.classList.remove('open'); _pp.classList.remove('mini'); _pp.style.transform=''; }
   currentId=null; drawnGroup.clearLayers();
   Object.values(layers).forEach(function(l){l.setStyle({weight:2,opacity:1});});
   renderSidebar();
@@ -1136,9 +1251,9 @@ function renderAcoes(id){
   document.getElementById('pp-actions').style.display='flex';
   document.getElementById('pp-actions').innerHTML=
     '<button class="pp-btn pp-btn-yellow" onclick="gerarPerimetro()">⚙️ Gerar Perímetro Inteiro</button>'+
-    '<a class="pp-btn pp-btn-green" href="'+(GIS_UID?'/talhoes/funcionario/solicitar/'+GIS_UID+'/'+id:'/talhoes/solicitar/'+id)+'">✈️ Solicitar Aplicação</a>'+
-    '<a class="pp-btn pp-btn-ghost" href="'+(GIS_UID?'/talhoes/funcionario/exportar/'+GIS_UID+'/'+id+'.kml':'/talhoes/exportar/'+id+'.kml')+'">⬇ Baixar KML</a>'+
-    '<a class="pp-btn pp-btn-ghost" href="'+(GIS_UID?'/talhoes/funcionario/exportar/'+GIS_UID+'/'+id+'.geojson':'/talhoes/exportar/'+id+'.geojson')+'">⬇ Baixar GeoJSON</a>'+
+    '<a class="pp-btn pp-btn-green" href="/talhoes/solicitar/'+id+'">✈️ Solicitar Aplicação</a>'+
+    '<a class="pp-btn pp-btn-ghost" href="/talhoes/exportar/'+id+'.kml">⬇ Baixar KML</a>'+
+    '<a class="pp-btn pp-btn-ghost" href="/talhoes/exportar/'+id+'.geojson">⬇ Baixar GeoJSON</a>'+
     '<button class="pp-btn pp-btn-red" onclick="excluirAtual()">🗑 Excluir Talhão</button>';
 }
 
@@ -1175,6 +1290,7 @@ function cancelModes(silent){
   hint(null);
   activeMode=null;
   if(typeof _med!=='undefined'&&_med.active) fecharMedicao();
+  if(typeof _syncToolboxActive==='function') _syncToolboxActive();
 }
 
 function cancelAll(){
@@ -1188,15 +1304,140 @@ function cancelAll(){
    ════════════════════════════════════════════════════════════ */
 function _miniPanel(){
   if(window.innerWidth > 768) return;
-  var p = document.getElementById('prop-panel');
-  if(p && p.classList.contains('open')){
-    p.classList.add('mini');
+  _fecharToolbox();
+  var pp = document.getElementById('prop-panel');
+  if(pp && pp.classList.contains('open')){
+    pp.style.transform = '';
+    pp.classList.add('mini');
   }
 }
 function _expandPanel(){
-  var p = document.getElementById('prop-panel');
-  if(p) p.classList.remove('mini');
+  var pp = document.getElementById('prop-panel');
+  if(pp){ pp.classList.remove('mini'); pp.style.transform = ''; }
 }
+function togglePanelMini(){
+  if(window.innerWidth > 768){
+    var p = document.getElementById('prop-panel');
+    if(!p||!p.classList.contains('open')) return;
+    p.classList.toggle('mini'); return;
+  }
+  var pp = document.getElementById('prop-panel');
+  if(!pp) return;
+  if(pp.classList.contains('mini')){ _expandPanel(); }
+  else { closePropPanel(); }
+}
+
+/* ════ CAIXA DE FERRAMENTAS MOBILE ════ */
+var _toolboxOpen = false;
+function toggleToolbox(e){
+  if(e) e.stopPropagation();
+  _toolboxOpen ? _fecharToolbox() : _abrirToolbox();
+}
+function _abrirToolbox(){
+  _toolboxOpen = true;
+  var panel = document.getElementById('toolbox-panel');
+  if(!panel) return;
+  if(panel.children.length === 0) _popularToolbox();
+  panel.classList.add('open');
+  _syncToolboxActive();
+}
+function _fecharToolbox(){
+  _toolboxOpen = false;
+  var panel = document.getElementById('toolbox-panel');
+  if(panel) panel.classList.remove('open');
+}
+function _popularToolbox(){
+  var panel = document.getElementById('toolbox-panel');
+  if(!panel) return;
+  panel.innerHTML = '';
+  var toolbar = document.getElementById('map-toolbar');
+  if(!toolbar) return;
+  toolbar.querySelectorAll('button:not(#btn-toolbox):not(#btn-cancel):not(#btn-undo-draw)').forEach(function(btn){
+    var b = document.createElement('button');
+    b.className = 'tb-btn';
+    b.innerHTML = btn.innerHTML;
+    b.id = btn.id ? ('tbx-'+btn.id) : '';
+    var onclick = btn.getAttribute('onclick');
+    if(onclick) b.setAttribute('onclick', '_fecharToolbox();_miniPanel();'+onclick);
+    if(btn.classList.contains('active')) b.classList.add('active');
+    panel.appendChild(b);
+  });
+}
+function _syncToolboxActive(){
+  var panel = document.getElementById('toolbox-panel');
+  if(!panel) return;
+  var toolbar = document.getElementById('map-toolbar');
+  if(!toolbar) return;
+  var btns = toolbar.querySelectorAll('button:not(#btn-toolbox):not(#btn-cancel):not(#btn-undo-draw)');
+  var tbxBtns = panel.querySelectorAll('.tb-btn');
+  btns.forEach(function(btn,i){
+    if(tbxBtns[i]){
+      if(btn.classList.contains('active')) tbxBtns[i].classList.add('active');
+      else tbxBtns[i].classList.remove('active');
+    }
+  });
+}
+document.addEventListener('click', function(e){
+  if(!_toolboxOpen) return;
+  var panel = document.getElementById('toolbox-panel');
+  var tbtn  = document.getElementById('btn-toolbox');
+  if(panel && tbtn && !panel.contains(e.target) && !tbtn.contains(e.target))
+    _fecharToolbox();
+}, true);
+(function(){
+  var sh = document.getElementById('map-sidebar-header');
+  if(sh) sh.addEventListener('click', function(){ _fecharToolbox(); });
+})();
+
+/* ════ SWIPE/DRAG NO PAINEL MOBILE ════ */
+(function(){
+  var pp, startY, startTranslate, lastY, lastT, isDragging=false;
+  function getMob(){ return window.innerWidth<=768; }
+  function getTranslate(el){
+    var st = window.getComputedStyle(el).transform;
+    if(!st||st==='none') return 0;
+    var m = st.match(/matrix\([^,]+,[^,]+,[^,]+,[^,]+,[^,]+,([^)]+)\)/);
+    return m ? parseFloat(m[1]) : 0;
+  }
+  document.addEventListener('touchstart',function(e){
+    if(!getMob()) return;
+    var h = document.getElementById('pp-handle');
+    if(!h||!h.contains(e.target)) return;
+    pp = document.getElementById('prop-panel');
+    if(!pp||!pp.classList.contains('open')) return;
+    startY = e.touches[0].clientY;
+    startTranslate = getTranslate(pp);
+    lastY = startY; lastT = Date.now();
+    isDragging = true; pp.classList.add('dragging');
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!isDragging||!pp) return;
+    var cy = e.touches[0].clientY;
+    var dy = cy - startY;
+    var newTy = startTranslate + dy;
+    var maxDown = pp.offsetHeight - 52;
+    newTy = Math.max(0, Math.min(newTy, maxDown));
+    pp.style.transform = 'translateY('+newTy+'px)';
+    lastY = cy; lastT = Date.now();
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(!isDragging||!pp){ isDragging=false; return; }
+    pp.classList.remove('dragging');
+    isDragging = false;
+    var cy = e.changedTouches[0].clientY;
+    var dy = cy - startY;
+    var dt = Date.now() - lastT + 1;
+    var vel = (cy - lastY) / dt;
+    if(vel > 0.5){ pp.style.transform=''; closePropPanel(); return; }
+    var panelH = pp.offsetHeight;
+    var currentTy = startTranslate + dy;
+    currentTy = Math.max(0, Math.min(currentTy, panelH-52));
+    pp.style.transform = '';
+    if(currentTy > panelH * 0.60){ closePropPanel(); }
+    else { var pct=Math.round(currentTy/panelH*100); pp.style.transform='translateY('+pct+'%)'; }
+    pp = null;
+  },{passive:true});
+})();
 
 /* Observer: sempre que pp-actions ganhar conteúdo novo, expandir o painel */
 (function(){
@@ -1489,6 +1730,7 @@ function _onHoleDrawn(layer){
   var t=TALHOES.find(function(x){return x.id==currentId;});
   if(!t){cancelModes(false);return;}
   if(typeof turf==='undefined'){toast('turf.js não carregado.','err');cancelModes(false);return;}
+  _salvarBackup(t);
   spin(true,'Calculando área de exclusão...');
   setTimeout(function(){
     try{
@@ -2325,6 +2567,24 @@ function fecharMedicao(){
   _med.active=false;_med.tipo=null;
 }
 
+/* ── Backup/Restore sem salvar ── */
+var _talhaoBackup = null;
+function _salvarBackup(t){
+  _talhaoBackup = {id:t.id, geojson:JSON.stringify(t.geojson), area_ha:t.area_ha};
+}
+function _restaurarBackup(){
+  if(!_talhaoBackup) return;
+  var t = TALHOES.find(function(x){return x.id==_talhaoBackup.id;});
+  if(t){
+    t.geojson = JSON.parse(_talhaoBackup.geojson);
+    t.area_ha = _talhaoBackup.area_ha;
+    reloadLayer(t);
+    var el = document.getElementById('pp-area');
+    if(el) el.textContent='📐 '+t.area_ha.toFixed(2)+' ha';
+  }
+  _talhaoBackup = null;
+}
+
 function startMesclar(){
   if(selectedIds.size < 2){
     toast('Selecione 2 ou mais camadas na sidebar para mesclar (Ctrl+clique ou Shift+clique).','warn',4000);
@@ -2547,7 +2807,7 @@ function salvarTalhao(){
     document.getElementById('pp-actions').style.display='flex';
     document.getElementById('pp-title').textContent='Editar Talhão';
     renderAcoes(d.id); renderSidebar();
-    toast('✅ Talhão salvo!');
+    _talhaoBackup=null; toast('✅ Talhão salvo!');
   })
   .catch(function(){spin(false);toast('Erro ao salvar.','err');});
 }
