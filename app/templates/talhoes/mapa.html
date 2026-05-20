@@ -1148,15 +1148,13 @@ function openPanel(id){
   Object.entries(layers).forEach(function(e){
     var isAct = String(e[0])==String(id);
     var tObj  = TALHOES.find(function(x){return x.id==parseInt(e[0]);});
+    var cor   = tObj ? tObj.cor : '#22c55e';
     e[1].setStyle({
-      var cor = tObj ? tObj.cor : '#22c55e';
-      e[1].setStyle({
-        color:       cor,
-        fillColor:   cor,
-        weight:      isAct ? 3   : 1.5,
-        opacity:     isAct ? 1   : 0.40,
-        fillOpacity: isAct ? 0.44 : 0.12
-      });
+      color:       cor,
+      fillColor:   cor,
+      weight:      isAct ? 3    : 1.5,
+      opacity:     isAct ? 1    : 0.40,
+      fillOpacity: isAct ? 0.44 : 0.12
     });
   });
   renderSidebar();
