@@ -637,10 +637,11 @@ select.pp-input option { background:#0d2418; }
   #map-layout {
     flex-direction:column; position:relative;
     height:calc(100vh - 68px - 40px) !important;
-    padding-top:74px; /* sidebar(40px) + toolbar(34px) */
+    padding-top:0;
     padding-bottom:env(safe-area-inset-bottom,0px);
+    background:#071a0d; /* fundo escuro para cobrir qualquer gap */
   }
-  body.body--fullscreen #map-layout { height:calc(100vh - 40px) !important; padding-top:74px; }
+  body.body--fullscreen #map-layout { height:calc(100vh - 40px) !important; padding-top:0; background:#071a0d; }
   /* ── Sidebar ── */
   #map-sidebar { flex-shrink:0; height:auto; max-height:40px; overflow:hidden; }
   #map-sidebar.expanded { max-height:320px; }
@@ -1005,11 +1006,16 @@ function addLayer(t){
   if(!hiddenIds.has(t.id)) l.addTo(map);  /* respeitar visibilidade */
   l.on('click',function(){openPanel(t.id);});
   /* Tooltip: permanente no desktop, só hover no mobile (não polui a tela) */
-  l.bindTooltip(t.nome,{
-    permanent: window.innerWidth > 768,
-    direction:'center',
-    className:'layer-label'
-  });
+  var _isDesktop = window.innerWidth > 768;
+  /* No mobile: tooltip só permanente no desktop. No mobile não vinculamos tooltip
+     (o nome já aparece na sidebar) para evitar caixa branca ao tocar no polígono */
+  if(_isDesktop){
+    l.bindTooltip(t.nome,{
+      permanent: true,
+      direction:'center',
+      className:'layer-label'
+    });
+  }
   layers[t.id]=l;
 }
 /* Atualizar estilo de highlight nas camadas selecionadas */
@@ -1143,11 +1149,14 @@ function openPanel(id){
     var isAct = String(e[0])==String(id);
     var tObj  = TALHOES.find(function(x){return x.id==parseInt(e[0]);});
     e[1].setStyle({
-      weight:      isAct ? 3.5 : 2,
-      opacity:     isAct ? 1   : 0.45,
-      fillOpacity: isAct ? 0.32 : 0.18,
-      color:       isAct ? '#86efac' : (tObj ? tObj.cor : '#22c55e'),
-      fillColor:   isAct ? '#86efac' : (tObj ? tObj.cor : '#22c55e')
+      var cor = tObj ? tObj.cor : '#22c55e';
+      e[1].setStyle({
+        color:       cor,
+        fillColor:   cor,
+        weight:      isAct ? 3   : 1.5,
+        opacity:     isAct ? 1   : 0.40,
+        fillOpacity: isAct ? 0.44 : 0.12
+      });
     });
   });
   renderSidebar();
@@ -1224,8 +1233,10 @@ function _limparAreasSubPoligonos(){
       var tip = l.getTooltip();
       if(tip && tip.getContent && tip.getContent().indexOf(' · ') !== -1){
         l.closeTooltip(); l.unbindTooltip();
-        l.bindTooltip(t.nome,{permanent:true,direction:'center',className:'layer-label'});
-        l.openTooltip();
+        if(window.innerWidth > 768){
+          l.bindTooltip(t.nome,{permanent:true,direction:'center',className:'layer-label'});
+          l.openTooltip();
+        }
       }
     }catch(e){}
   });
@@ -1434,12 +1445,12 @@ document.addEventListener('click', function(e){
     var dy = cy - startY;
     var dt = Date.now() - lastT + 1;
     var vel = (cy - lastY) / dt;
-    if(vel > 0.5){ pp.style.transform=''; closePropPanel(); return; }
+    if(vel > 0.5){ pp.style.transform=''; _miniPanel(); return; }
     var panelH = pp.offsetHeight;
     var currentTy = startTranslate + dy;
     currentTy = Math.max(0, Math.min(currentTy, panelH-52));
     pp.style.transform = '';
-    if(currentTy > panelH * 0.60){ closePropPanel(); }
+    if(currentTy > panelH * 0.60){ _miniPanel(); }
     else { var pct=Math.round(currentTy/panelH*100); pp.style.transform='translateY('+pct+'%)'; }
     pp = null;
   },{passive:true});
@@ -2835,10 +2846,11 @@ function toggleVisibilidade(e,id){
     /* ── Mostrar ── */
     hiddenIds.delete(id);
     l.addTo(map);
-    /* Restaurar tooltip do nome */
+    /* Restaurar tooltip do nome — só no desktop */
     l.closeTooltip(); l.unbindTooltip();
     var t = TALHOES.find(function(x){return x.id===id;});
-    if(t) l.bindTooltip(t.nome,{permanent:true,direction:'center',className:'layer-label'});
+    if(t && window.innerWidth > 768)
+      l.bindTooltip(t.nome,{permanent:true,direction:'center',className:'layer-label'});
     l.openTooltip();
   } else {
     /* ── Ocultar ── */
@@ -3139,10 +3151,9 @@ function cancelarPerimetro(){
     if(!isMobile() || swipeStartY === null) return;
     var dy   = e.changedTouches[0].clientY - swipeStartY;
     var dt   = Date.now() - swipeStartTime;
-    /* Só fechar com swipe bem explícito: >100px rápido ou >200px lento
-       para não fechar acidentalmente ao rolar o conteúdo do painel */
-    if((dy > 100 && dt < 250) || dy > 200){
-      closePropPanel();
+    /* Swipe para baixo → minimizar (só o botão ✕ fecha de verdade) */
+    if((dy > 80 && dt < 300) || dy > 160){
+      _miniPanel();
     }
     swipeStartY = null;
   }, {passive:true});
