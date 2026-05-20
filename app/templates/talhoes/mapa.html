@@ -58,7 +58,7 @@ body.body--fullscreen .flash-stack { display:none !important; }
 .t-item { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:10px; cursor:pointer; border:1px solid transparent; margin-bottom:5px; transition:background .15s; }
 .t-item:hover  { background:rgba(255,255,255,.06); }
 .t-item.active { background:rgba(34,197,94,.12); border-color:rgba(34,197,94,.30); }
-.t-item.selected { background:rgba(234,179,8,.22)!important; border-color:rgba(234,179,8,.55)!important; }
+.t-item.selected { background:rgba(134,239,172,.16)!important; border-color:rgba(34,197,94,.55)!important; }
 .t-item__dot  { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
 .t-item__info { flex:1; min-width:0; }
 .t-item__nome { font-size:12px; font-weight:700; color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -69,7 +69,7 @@ body.body--fullscreen .flash-stack { display:none !important; }
 .t-item__vis:hover { color:rgba(255,255,255,.80); }
 .t-item__vis.hidden { color:rgba(255,255,255,.20); }
 .t-item__check { width:14px; height:14px; border-radius:3px; border:1.5px solid rgba(255,255,255,.30); background:rgba(0,0,0,.30); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; color:#fff; }
-.t-item.selected .t-item__check { background:#eab308; border-color:#eab308; }
+.t-item.selected .t-item__check { background:#22c55e; border-color:#16a34a; color:#fff; }
 #sel-toolbar { display:none; padding:6px 8px; background:rgba(239,68,68,.18); border-top:1px solid rgba(239,68,68,.35); gap:6px; align-items:center; flex-shrink:0; }
 #sel-toolbar.show { display:flex; }
 #sel-count { font-size:11px; font-weight:800; color:#fca5a5; flex:1; }
@@ -190,6 +190,14 @@ select.pp-input option { background:#0d2418; }
   pointer-events:none;
 }
 .layer-label::before { display:none !important; }
+/* Override Leaflet base tooltip background for our custom classes */
+.leaflet-tooltip.layer-label,
+.leaflet-tooltip.layer-label--main {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 0 !important;
+}
 
 .sg-popup .leaflet-popup-content-wrapper {
   background: transparent !important;
@@ -545,7 +553,7 @@ select.pp-input option { background:#0d2418; }
   #map-toolbar {
     position:fixed; top:40px; left:0; right:0;
     height:34px; display:flex !important; align-items:center;
-    padding:0 0 0 8px; z-index:620; pointer-events:none; background:transparent;
+    padding:0 0 0 52px; z-index:620; pointer-events:none; background:transparent;
   }
   #map-toolbar > button:not(#btn-toolbox),
   #map-toolbar > .tb-sep { display:none !important; pointer-events:none !important; }
@@ -634,7 +642,7 @@ select.pp-input option { background:#0d2418; }
   }
   body.body--fullscreen #map-layout { height:calc(100vh - 40px) !important; padding-top:74px; }
   /* ── Sidebar ── */
-  #map-sidebar { flex-shrink:0; height:auto; max-height:40px; overflow:visible; }
+  #map-sidebar { flex-shrink:0; height:auto; max-height:40px; overflow:hidden; }
   #map-sidebar.expanded { max-height:320px; }
   #map-sidebar-header { height:40px; min-height:40px; }
   #map-sidebar > .t-list { overflow-x:hidden; overflow-y:auto; flex-direction:column; max-height:220px; }
@@ -990,9 +998,9 @@ function areaFromFeature(feat){
 /* ── Camadas no mapa ── */
 function addLayer(t){
   var isSel = selectedIds.has(t.id);
-  var cor   = isSel ? '#eab308' : t.cor;
-  var fOp   = isSel ? 0.40 : 0.25;
-  var w     = isSel ? 3   : 2;
+  var cor   = isSel ? _COR_SEL_LAYER : t.cor;
+  var fOp   = isSel ? _COR_SEL_FILL : 0.25;
+  var w     = isSel ? 3.5 : 2;
   var l=L.geoJSON(t.geojson,{style:{color:cor,fillColor:cor,fillOpacity:fOp,weight:w}});
   if(!hiddenIds.has(t.id)) l.addTo(map);  /* respeitar visibilidade */
   l.on('click',function(){openPanel(t.id);});
@@ -1009,8 +1017,8 @@ function _updateLayerHighlights(){
   TALHOES.forEach(function(t){
     var l=layers[t.id]; if(!l) return;
     var isSel=selectedIds.has(t.id);
-    var cor=isSel?'#eab308':t.cor;
-    l.setStyle({color:cor,fillColor:cor,fillOpacity:isSel?0.40:0.25,weight:isSel?3:2});
+    var cor=isSel?_COR_SEL_LAYER:t.cor;
+    l.setStyle({color:cor,fillColor:cor,fillOpacity:isSel?_COR_SEL_FILL:0.25,weight:isSel?3.5:2});
   });
 }
 function reloadLayer(t){
@@ -1131,7 +1139,17 @@ function openPanel(id){
   renderAcoes(id);
   document.getElementById('prop-panel').classList.add('open');
   _expandPanel();  /* garantir que o painel está expandido ao abrir */
-  Object.entries(layers).forEach(function(e){e[1].setStyle({weight:e[0]==id?3:2,opacity:e[0]==id?1:0.6});});
+  Object.entries(layers).forEach(function(e){
+    var isAct = String(e[0])==String(id);
+    var tObj  = TALHOES.find(function(x){return x.id==parseInt(e[0]);});
+    e[1].setStyle({
+      weight:      isAct ? 3.5 : 2,
+      opacity:     isAct ? 1   : 0.45,
+      fillOpacity: isAct ? 0.32 : 0.18,
+      color:       isAct ? '#86efac' : (tObj ? tObj.cor : '#22c55e'),
+      fillColor:   isAct ? '#86efac' : (tObj ? tObj.cor : '#22c55e')
+    });
+  });
   renderSidebar();
   /* Mostrar áreas por sub-polígono na camada selecionada */
   _mostrarAreasSubPoligonos(id);
@@ -1220,7 +1238,10 @@ function closePropPanel(){
   var _pp = document.getElementById('prop-panel');
   if(_pp){ _pp.classList.remove('open'); _pp.classList.remove('mini'); _pp.style.transform=''; }
   currentId=null; drawnGroup.clearLayers();
-  Object.values(layers).forEach(function(l){l.setStyle({weight:2,opacity:1});});
+  Object.entries(layers).forEach(function(e){
+    var tObj = TALHOES.find(function(x){return x.id==parseInt(e[0]);});
+    if(tObj) e[1].setStyle({weight:2,opacity:1,fillOpacity:0.25,color:tObj.cor,fillColor:tObj.cor});
+  });
   renderSidebar();
 }
 
@@ -1617,6 +1638,7 @@ function toggleEdit(){
       }
     }
     cancelModes(false);
+    _expandPanel();
     toast('✅ Vértices atualizados! Clique em Salvar para confirmar.','',3500);
     return;
   }
@@ -1692,6 +1714,7 @@ function _onAddPartDrawn(layer){
   document.getElementById('btn-cancel').style.display='none';
   _showUndoBtn(false);
   hint(null);
+  _expandPanel();  /* reabrir painel após adicionar parte */
   toast('✅ Parte adicionada! Clique em Salvar.','',3500);
 }
 
@@ -1725,6 +1748,7 @@ function _onHoleDrawn(layer){
       t.geojson=result; t.area_ha=turf.area(result)/10000;
       document.getElementById('pp-area').textContent='📐 '+t.area_ha.toFixed(2)+' ha';
       reloadLayer(t); spin(false); drawCtrl=null; _showUndoBtn(false); cancelModes(false);
+      _expandPanel();  /* reabrir painel após conclusão */
       toast('✅ Área de exclusão criada! Clique em Salvar.','',3500);
     }catch(err){
       spin(false); cancelModes(false);
@@ -2258,8 +2282,12 @@ var _sg = {
   active:     false
 };
 
-var _SG_COR_SEL  = '#eab308';  /* amarelo — selecionado */
+var _SG_COR_SEL  = '#eab308';  /* amarelo — selecionado Sel+Gerar */
 var _SG_COR_IDLE = 'rgba(255,255,255,0.55)';  /* branco — não selecionado */
+
+/* ── Cor de seleção na sidebar (camada selecionada via Ctrl/Shift+clique) ── */
+var _COR_SEL_LAYER = '#86efac';   /* verde claro brilhante */
+var _COR_SEL_FILL  = 0.38;        /* fillOpacity da camada selecionada */
 
 function toggleSelGerar(){
   if(_sg && _sg.active){ _sgLimpar(); return; }
