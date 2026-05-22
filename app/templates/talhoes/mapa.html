@@ -749,7 +749,7 @@ select.pp-input option { background:#0d2418; }
       <button id="btn-perimetro" onclick="gerarPerimetro()" title="Perímetro"><span class="tb-icon">⚙️</span><span class="tb-label">Perímetro</span></button>
       <button onclick="fitAll()" title="Ver tudo"><span class="tb-icon">🔍</span><span class="tb-label">Ver Todos</span></button>
       <div class="tb-sep"></div>
-      <button id="btn-mesclar" onclick="startMesclar()" title="Mesclar camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Mesclar</span></button>
+      <button id="btn-mesclar" onclick="startMesclar()" title="Unir camadas selecionadas"><span class="tb-icon">🔗</span><span class="tb-label">Unir Camadas</span></button>
       <button id="btn-pontes" onclick="startUnirPontes()" title="Unir ilhas com pontes finas"><span class="tb-icon">🌉</span><span class="tb-label">Pontes</span></button>
       <button id="btn-selgerar" onclick="toggleSelGerar()" title="Selecionar ilhas e gerar nova camada (clicar de novo cancela)"><span class="tb-icon">🔀</span><span class="tb-label">Sel+Gerar</span></button>
       <div class="tb-sep"></div>
@@ -2279,7 +2279,7 @@ function _cancelarSplit(){
   toast('Divisão cancelada — polígono original restaurado.');
 }
 
-/* ── Mesclar camadas ── */
+/* ── Unir Camadas ── */
 /* ══════════════════════════════════════════════════════════
    SEL+GERAR — Selecionar ilhas clicando no mapa → nova camada
    ══════════════════════════════════════════════════════════ */
@@ -2609,7 +2609,7 @@ function _restaurarBackup(){
 
 function startMesclar(){
   if(selectedIds.size < 2){
-    toast('Selecione 2 ou mais camadas na sidebar para mesclar (Ctrl+clique ou Shift+clique).','warn',4000);
+    toast('Selecione 2 ou mais camadas na sidebar para unir (Ctrl+clique ou Shift+clique).','warn',4000);
     return;
   }
   var ids   = Array.from(selectedIds);
@@ -2619,7 +2619,7 @@ function startMesclar(){
   /* Camada maior em ha = herda os atributos */
   var maior = talhs.reduce(function(a,b){ return (a.area_ha||0)>=(b.area_ha||0)?a:b; });
 
-  if(!confirm('Mesclar '+talhs.length+' camadas em uma só?\nA camada resultante usará os atributos de "'+maior.nome+'" (maior área).\nEsta ação não pode ser desfeita.')) return;
+  if(!confirm('Unir '+talhs.length+' camadas em uma só?\nA camada resultante usará os atributos de "'+maior.nome+'" (maior área).\nEsta ação não pode ser desfeita.')) return;
 
   if(typeof turf==='undefined'){ toast('turf.js não carregado.','err'); return; }
 
@@ -2686,7 +2686,7 @@ function startMesclar(){
       })
       .catch(function(err){ spin(false); toast('Erro ao salvar: '+err.message,'err',5000); });
     }catch(err){
-      spin(false); toast('Erro ao mesclar: '+err.message,'err',5000);
+      spin(false); toast('Erro ao unir: '+err.message,'err',5000);
     }
   },60);
 }

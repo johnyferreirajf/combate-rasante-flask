@@ -892,3 +892,120 @@ def preview(file_id: int):
         return resp
 
     abort(404)
+
+
+# ── Análise de Aplicação: parse KMZ/KML → retorna tiros como JSON ──────────
+
+@employee_bp.route("/analise_aplicacao/<int:file_id>")
+@employee_login_required
+def analise_aplicacao(file_id: int):
+    """Baixa KMZ/KML e retorna os tiros como GeoJSON para a animação."""
+    import urllib.request as _ur
+    import zipfile, io, re, json as _json
+    import xml.etree.ElementTree as ET
+
+    item = EmployeeFile.query.get_or_404(file_id)
+    fname = (item.original_filename or "").lower()
+    is_kmz = fname.endswith(".kmz")
+    is_kml = fname.endswith(".kml")
+
+    if not (is_kmz or is_kml):
+        return _json.dumps({"erro": "Arquivo não é KML/KMZ"}), 400, {"Content-Type": "application/json"}
+
+    # Download do arquivo
+    cloud_url = getattr(item, "cloudinary_url", None)
+    try:
+        if cloud_url:
+            req = _ur.Request(cloud_url, headers={"User-Agent": "Mozilla/5.0"})
+            with _ur.urlopen(req, timeout=30) as resp:
+                raw = resp.read()
+        else:
+            abs_path = _safe_abs_path(item.stored_filename)
+            with open(abs_path, "rb") as f:
+                raw = f.read()
+    except Exception as e:
+        return _json.dumps({"erro": str(e)}), 500, {"Content-Type": "application/json"}
+
+    # Extrair KML de KMZ
+    if is_kmz:
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                kml_name = next((n for n in z.namelist() if n.endswith(".kml")), None)
+                raw = z.read(kml_name) if kml_name else b""
+        except Exception as e:
+            return _json.dumps({"erro": "Erro ao extrair KMZ: " + str(e)}), 500, {"Content-Type": "application/json"}
+
+    # Parsear KML
+    try:
+        root = ET.fromstring(raw)
+    except Exception as e:
+        return _json.dumps({"erro": "Erro ao parsear KML: " + str(e)}), 500, {"Content-Type": "application/json"}
+
+    ns_map = {"kml": "http://www.opengis.net/kml/2.2"}
+    # Detectar namespace automaticamente
+    tag = root.tag
+    ns_uri = tag[1:tag.index("}")] if tag.startswith("{") else ""
+    ns = {"k": ns_uri} if ns_uri else {}
+    def find_all(el, path):
+        if ns:
+            return el.findall(".//{%s}%s" % (ns_uri, path))
+        return el.findall(".//" + path)
+    def find_one(el, path):
+        if ns:
+            return el.find(".//{%s}%s" % (ns_uri, path))
+        return el.find(".//" + path)
+
+    tiros = []
+    placemarks = find_all(root, "Placemark")
+    for pm in placemarks:
+        name_el = find_one(pm, "name")
+        name = (name_el.text or "").strip() if name_el is not None else ""
+        m = re.match(r"Tiro\s+(\d+)", name, re.IGNORECASE)
+        if not m:
+            continue
+        num = int(m.group(1))
+        poly = find_one(pm, "Polygon")
+        if poly is None:
+            continue
+        coords_el = find_one(poly, "coordinates")
+        if coords_el is None:
+            continue
+        pts = []
+        for token in (coords_el.text or "").strip().split():
+            parts = token.split(",")
+            if len(parts) >= 2:
+                try:
+                    pts.append([float(parts[1]), float(parts[0])])  # [lat, lon]
+                except ValueError:
+                    pass
+        if len(pts) < 3:
+            continue
+        # Centróide
+        lat_c = sum(p[0] for p in pts) / len(pts)
+        lon_c = sum(p[1] for p in pts) / len(pts)
+        # Eixo principal: dois pontos mais distantes (bounding box short/long axis)
+        lats = [p[0] for p in pts]
+        lons = [p[1] for p in pts]
+        lat_range = max(lats) - min(lats)
+        lon_range = max(lons) - min(lons)
+        lat_m = lat_range * 111000
+        lon_m = lon_range * 111000 * abs(__import__("math").cos(__import__("math").radians(lat_c)))
+        if lon_m > lat_m:
+            entry = [lat_c, min(lons)]
+            exit_pt = [lat_c, max(lons)]
+        else:
+            entry = [min(lats), lon_c]
+            exit_pt = [max(lats), lon_c]
+
+        tiros.append({
+            "num": num,
+            "name": name,
+            "polygon": pts,
+            "centroid": [lat_c, lon_c],
+            "entry": entry,
+            "exit": exit_pt,
+        })
+
+    tiros.sort(key=lambda x: x["num"])
+    result = _json.dumps({"tiros": tiros})
+    return result, 200, {"Content-Type": "application/json"}
