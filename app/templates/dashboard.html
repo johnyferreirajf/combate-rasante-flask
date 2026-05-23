@@ -350,17 +350,19 @@ function setupAnim(tiros, track, summary){
 
   // Limpar camadas
   if(_plane){_map.removeLayer(_plane);_plane=null;}
-  if(_trackLine){_map.removeLayer(_trackLine);_trackLine=null;}
+  if(_trackLine){if(_trackLine.clearLayers)_trackLine.clearLayers();_map.removeLayer(_trackLine);_trackLine=null;}
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória completa com manobras (arcos de Bézier entre tiros)
-  var sprayPath=buildSprayPolyline(tiros);
-  if(sprayPath.length>1){
-    _trackLine=L.polyline(sprayPath,{
-      color:'rgba(255,255,255,0.60)',weight:1.5,dashArray:'5,4',opacity:0.85
-    }).addTo(_map);
-  }
+  // Trajetória REAL = contornos dos polígonos de tiro (as bordas GPS traçadas pelo avião)
+  var _trackGroup = L.layerGroup().addTo(_map);
+  tiros.forEach(function(t){
+    var ll=t.polygon.map(function(p){return[p[0],p[1]];});
+    L.polyline(ll,{
+      color:'rgba(255,255,255,0.65)',weight:1.2,opacity:0.8
+    }).addTo(_trackGroup);
+  });
+  _trackLine = _trackGroup;
 
   // Tiros (polígonos verdes semi-transparentes)
   var bounds=L.latLngBounds();
@@ -811,17 +813,19 @@ function setupAnim(tiros, track, summary){
 
   // Limpar camadas
   if(_plane){_map.removeLayer(_plane);_plane=null;}
-  if(_trackLine){_map.removeLayer(_trackLine);_trackLine=null;}
+  if(_trackLine){if(_trackLine.clearLayers)_trackLine.clearLayers();_map.removeLayer(_trackLine);_trackLine=null;}
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória completa com manobras (arcos de Bézier entre tiros)
-  var sprayPath=buildSprayPolyline(tiros);
-  if(sprayPath.length>1){
-    _trackLine=L.polyline(sprayPath,{
-      color:'rgba(255,255,255,0.60)',weight:1.5,dashArray:'5,4',opacity:0.85
-    }).addTo(_map);
-  }
+  // Trajetória REAL = contornos dos polígonos de tiro (as bordas GPS traçadas pelo avião)
+  var _trackGroup = L.layerGroup().addTo(_map);
+  tiros.forEach(function(t){
+    var ll=t.polygon.map(function(p){return[p[0],p[1]];});
+    L.polyline(ll,{
+      color:'rgba(255,255,255,0.65)',weight:1.2,opacity:0.8
+    }).addTo(_trackGroup);
+  });
+  _trackLine = _trackGroup;
 
   // Tiros (polígonos verdes semi-transparentes)
   var bounds=L.latLngBounds();
@@ -1440,17 +1444,19 @@ function setupAnim(tiros, track, summary){
 
   // Limpar camadas
   if(_plane){_map.removeLayer(_plane);_plane=null;}
-  if(_trackLine){_map.removeLayer(_trackLine);_trackLine=null;}
+  if(_trackLine){if(_trackLine.clearLayers)_trackLine.clearLayers();_map.removeLayer(_trackLine);_trackLine=null;}
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória completa com manobras (arcos de Bézier entre tiros)
-  var sprayPath=buildSprayPolyline(tiros);
-  if(sprayPath.length>1){
-    _trackLine=L.polyline(sprayPath,{
-      color:'rgba(255,255,255,0.60)',weight:1.5,dashArray:'5,4',opacity:0.85
-    }).addTo(_map);
-  }
+  // Trajetória REAL = contornos dos polígonos de tiro (as bordas GPS traçadas pelo avião)
+  var _trackGroup = L.layerGroup().addTo(_map);
+  tiros.forEach(function(t){
+    var ll=t.polygon.map(function(p){return[p[0],p[1]];});
+    L.polyline(ll,{
+      color:'rgba(255,255,255,0.65)',weight:1.2,opacity:0.8
+    }).addTo(_trackGroup);
+  });
+  _trackLine = _trackGroup;
 
   // Tiros (polígonos verdes semi-transparentes)
   var bounds=L.latLngBounds();
@@ -1944,17 +1950,19 @@ function setupAnim(tiros, track, summary){
 
   // Limpar camadas
   if(_plane){_map.removeLayer(_plane);_plane=null;}
-  if(_trackLine){_map.removeLayer(_trackLine);_trackLine=null;}
+  if(_trackLine){if(_trackLine.clearLayers)_trackLine.clearLayers();_map.removeLayer(_trackLine);_trackLine=null;}
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória completa com manobras (arcos de Bézier entre tiros)
-  var sprayPath=buildSprayPolyline(tiros);
-  if(sprayPath.length>1){
-    _trackLine=L.polyline(sprayPath,{
-      color:'rgba(255,255,255,0.60)',weight:1.5,dashArray:'5,4',opacity:0.85
-    }).addTo(_map);
-  }
+  // Trajetória REAL = contornos dos polígonos de tiro (as bordas GPS traçadas pelo avião)
+  var _trackGroup = L.layerGroup().addTo(_map);
+  tiros.forEach(function(t){
+    var ll=t.polygon.map(function(p){return[p[0],p[1]];});
+    L.polyline(ll,{
+      color:'rgba(255,255,255,0.65)',weight:1.2,opacity:0.8
+    }).addTo(_trackGroup);
+  });
+  _trackLine = _trackGroup;
 
   // Tiros (polígonos verdes semi-transparentes)
   var bounds=L.latLngBounds();
