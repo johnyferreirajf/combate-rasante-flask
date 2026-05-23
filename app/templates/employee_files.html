@@ -545,7 +545,7 @@ window.fecharAnalise=function(){
               {% endif %}
               {% if not it.is_folder and it.type|lower in ['kml','kmz'] %}
                 <button class="sp-badge-analise"
-                        onclick="abrirAnalise({{ it.file_id }}, {{ it.display|e }}, '/analise_aplicacao/')"
+                        onclick="abrirAnalise({{ it.file_id }}, '{{ it.display|e }}', '/analise_aplicacao/')"
                         title="Ver animação da aplicação aérea">
                   ✈️ Análise de Aplicação
                 </button>
