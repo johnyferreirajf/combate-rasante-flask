@@ -573,19 +573,36 @@ function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;ret
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
 /* ── Construir passos de animação usando entry/exit do backend ── */
-function buildSteps(tiros){
+function buildSteps(tiros, track){
   if(!tiros||!tiros.length)return[];
-  var steps=[],F=60,prevExit=null;
+  var steps=[], F=60, prevExit=null;
+
+  /* ── 1. Aproximação via GPS track real ──────────────────────────────────
+     Usa pontos do track dentro de 600m (≈0.0054°) do primeiro tiro.
+     O avião começa seguindo a linha GPS real antes de entrar no campo. */
+  if(track&&track.length>0&&tiros[0]){
+    var firstLat=tiros[0].centroid[0];
+    var START_MARGIN=0.0054; // ~600m south of first tiro
+    var approach=track.filter(function(p){
+      return p[0]>=firstLat-START_MARGIN;
+    });
+    // Só últimos 80 pontos para não sobrecarregar
+    if(approach.length>80) approach=approach.slice(approach.length-80);
+    approach.forEach(function(p,idx){
+      steps.push({pos:[p[0],p[1]],ti:0,in:false});
+    });
+    if(steps.length>0) prevExit=steps[steps.length-1].pos;
+  }
+
+  /* ── 2. Passa pelos tiros em sequência ──────────────────────────────────*/
   tiros.forEach(function(t,i){
     if(!t||!t.entry||!t.exit)return;
-    // Escolher entrada pelo lado mais próximo do exit anterior
     var entry=t.entry, exitPt=t.exit;
     if(prevExit&&_dist(prevExit,t.exit)<_dist(prevExit,t.entry)){
       entry=t.exit; exitPt=t.entry;
     }
-    // Interpolação direta (sem arcos — o contorno dos polígonos já é a trajetória)
     if(prevExit){
-      var T=15;
+      var T=12;
       for(var k=1;k<=T;k++){
         var r=k/T;
         steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
@@ -599,6 +616,17 @@ function buildSteps(tiros){
     }
     prevExit=exitPt;
   });
+
+  /* ── 3. Saída: ~300m além do último tiro ────────────────────────────────*/
+  if(prevExit){
+    var EXIT_M=0.0027; // ~300m
+    var dep=[prevExit[0]+EXIT_M, prevExit[1]];
+    for(var k=1;k<=20;k++){
+      var r=k/20;
+      steps.push({pos:[prevExit[0]+(dep[0]-prevExit[0])*r, prevExit[1]],
+                  ti:tiros.length-1, in:false});
+    }
+  }
   return steps;
 }
 
@@ -657,14 +685,17 @@ function _initScrub(){
    Robusto: nunca lança exceção independente do polígono. */
 
 function _areaHa(pts){
+  /* Shoelace em coordenadas projetadas (metros) — fórmula correta */
   if(!pts||pts.length<3)return 0;
-  var n=pts.length,a=0;
+  var R=6371000,D=Math.PI/180,n=pts.length,latC=0;
+  for(var k=0;k<n;k++)latC+=pts[k][0];
+  var cosC=Math.cos(latC/n*D),a=0;
   for(var i=0,j=n-1;i<n;j=i++){
-    var dlon=(pts[i][1]-pts[j][1])*Math.PI/180;
-    var lat=(pts[i][0]+pts[j][0])/2*Math.PI/180;
-    a+=dlon*Math.cos(lat);
+    var xi=pts[i][1]*D*R*cosC, yi=pts[i][0]*D*R;
+    var xj=pts[j][1]*D*R*cosC, yj=pts[j][0]*D*R;
+    a+=xi*yj-xj*yi;
   }
-  return Math.abs(a)*6371000*6371000/20000;
+  return Math.abs(a)/2/10000;
 }
 
 function _bbox(pts){
@@ -825,7 +856,7 @@ function setupAnim(tiros, track, summary){
     if(!t||!t.polygon||!t.polygon.length)return;
     try{
       var ll=t.polygon.map(function(p){return[p[0],p[1]];});
-      var poly=L.polygon(ll,{color:'#22c55e',weight:1.2,fillColor:'#22c55e',fillOpacity:0.06,opacity:0.45}).addTo(_map);
+      var poly=L.polygon(ll,{color:'#22c55e',weight:1.2,fillColor:'#22c55e',fillOpacity:0.20,opacity:0.85}).addTo(_map);
       _polys.push(poly);
     }catch(e){_polys.push(null);}
   });
@@ -834,7 +865,7 @@ function setupAnim(tiros, track, summary){
   setTimeout(function(){try{_map.invalidateSize();}catch(e){}},200);
 
   // Passos de animação
-  _steps=buildSteps(tiros);_total=_steps.length;
+  _steps=buildSteps(tiros,track);_total=_steps.length;
   _tiroInCount=new Array(tiros.length).fill(0);
   _tiroDoneCount=new Array(tiros.length).fill(0);
   _steps.forEach(function(s){if(s&&s.in)_tiroInCount[s.ti]++;});
