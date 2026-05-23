@@ -402,46 +402,59 @@ function _initScrub(){
 
 /* ── Turf: sobreposição ── */
 function toTurfPoly(pts){
-  var coords=pts.map(function(p){return[p[1],p[0]];});
-  if(coords.length<3)return null;
-  if(coords[0][0]!==coords[coords.length-1][0]||coords[0][1]!==coords[coords.length-1][1])coords.push(coords[0].slice());
-  try{return turf.polygon([coords]);}catch(e){return null;}
+  if(!pts||pts.length<3)return null;
+  try{
+    var coords=pts.map(function(p){return[p[1],p[0]];});
+    if(coords[0][0]!==coords[coords.length-1][0]||coords[0][1]!==coords[coords.length-1][1])
+      coords.push(coords[0].slice());
+    return turf.polygon([coords]);
+  }catch(e){return null;}
 }
 function drawGeom(feat,style){
-  var g=(feat.geometry||feat);
-  var gtype=(feat.geometry||feat).type;
-  var coords=(feat.geometry||feat).coordinates;
-  if(gtype==='Polygon')return[L.polygon(coords[0].map(function(c){return[c[1],c[0]];}),style).addTo(_map)];
-  if(gtype==='MultiPolygon')return coords.map(function(poly){return L.polygon(poly[0].map(function(c){return[c[1],c[0]];}),style).addTo(_map);});
+  try{
+    var g=(feat.geometry||feat),gtype=g.type,coords=g.coordinates;
+    if(gtype==='Polygon')return[L.polygon(coords[0].map(function(c){return[c[1],c[0]];}),style).addTo(_map)];
+    if(gtype==='MultiPolygon')return coords.map(function(poly){return L.polygon(poly[0].map(function(c){return[c[1],c[0]];}),style).addTo(_map);});
+  }catch(e){}
   return[];
+}
+/* Área simples via Shoelace — sem Turf, funciona com qualquer polígono */
+function _areaHa(pts){
+  var n=pts.length,a=0;
+  for(var i=0,j=n-1;i<n;j=i++){
+    var dlon=(pts[i][1]-pts[j][1])*Math.PI/180;
+    var lat=(pts[i][0]+pts[j][0])/2*Math.PI/180;
+    a+=dlon*Math.cos(lat);
+  }
+  return Math.abs(a)*6371000*6371000/20000;
 }
 function computeOverlap(tiros,cb){
   document.getElementById('analise-loading-msg').textContent='Calculando sobreposição...';
   document.getElementById('analise-loading').style.display='flex';
   setTimeout(function(){
-    var tpolys=tiros.map(function(t){return toTurfPoly(t.polygon);});
-    var totalM2=0;
-    tpolys.forEach(function(p){if(p)try{totalM2+=turf.area(p);}catch(e){}});
-    var unionAll=null;
-    tpolys.forEach(function(p){
-      if(!p)return;
-      if(!unionAll){unionAll=p;return;}
-      try{unionAll=turf.union(unionAll,p)||unionAll;}catch(e){}
-    });
-    var effectiveM2=totalM2;
-    try{if(unionAll)effectiveM2=turf.area(unionAll);}catch(e){}
-    var overlapM2=Math.max(0,totalM2-effectiveM2);
-    var interFeats=[];
-    for(var i=0;i<tpolys.length;i++){
-      if(!tpolys[i])continue;
-      for(var j=i+1;j<tpolys.length;j++){
-        if(!tpolys[j])continue;
-        try{var inter=turf.intersect(tpolys[i],tpolys[j]);if(inter)interFeats.push(inter);}catch(e){}
+    /* Área total sempre funciona */
+    var totalHa=0;
+    tiros.forEach(function(t){totalHa+=_areaHa(t.polygon);});
+
+    var overlapHa=0,interFeats=[];
+    try{
+      var tpolys=tiros.map(function(t){return toTurfPoly(t.polygon);});
+      var vp=tpolys.filter(Boolean);
+      if(vp.length>1){
+        var u=vp[0];
+        for(var i=1;i<vp.length;i++){try{u=turf.union(u,vp[i])||u;}catch(e){}}
+        try{overlapHa=Math.max(0,totalHa-turf.area(u)/10000);}catch(e){}
+        for(var i=0;i<vp.length&&interFeats.length<300;i++){
+          for(var j=i+1;j<vp.length;j++){
+            try{var x=turf.intersect(vp[i],vp[j]);if(x)interFeats.push(x);}catch(e){}
+          }
+        }
       }
-    }
+    }catch(e){ overlapHa=0; interFeats=[]; }
+
     document.getElementById('analise-loading').style.display='none';
-    cb({totalHa:totalM2/10000,effectiveHa:effectiveM2/10000,overlapHa:overlapM2/10000,
-        overlapPct:totalM2>0?(overlapM2/totalM2*100):0,interFeats:interFeats});
+    cb({totalHa:totalHa,effectiveHa:totalHa-overlapHa,overlapHa:overlapHa,
+        overlapPct:totalHa>0?(overlapHa/totalHa*100):0,interFeats:interFeats});
   },80);
 }
 
