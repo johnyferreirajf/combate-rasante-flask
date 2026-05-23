@@ -90,18 +90,86 @@ function planeIcon(h){
   });
 }
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
-function lerp(a,b,n){var p=[];for(var i=0;i<=n;i++){var t=i/n;p.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}return p;}
+/* ── Distância euclidiana aproximada em graus ── */
+function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Construir passos de animação ── */
+/* ── Arco de Bézier quadrático entre dois pontos ──
+   Cria a curva de manobra (virada) entre os tiros  */
+function _bezierArc(from,to,n,side){
+  // Vetor from→to
+  var dy=to[0]-from[0], dx=to[1]-from[1];
+  var len=Math.sqrt(dy*dy+dx*dx)||1;
+  // Ponto de controle perpendicular ao meio
+  var mid=[(from[0]+to[0])/2,(from[1]+to[1])/2];
+  var scale=Math.max(0.6,len)*1.3*(side?1:-1);
+  var ctrl=[mid[0]+(-dx/len)*scale, mid[1]+(dy/len)*scale];
+  var pts=[];
+  for(var i=0;i<=n;i++){
+    var t=i/n;
+    pts.push([
+      (1-t)*(1-t)*from[0]+2*(1-t)*t*ctrl[0]+t*t*to[0],
+      (1-t)*(1-t)*from[1]+2*(1-t)*t*ctrl[1]+t*t*to[1]
+    ]);
+  }
+  return pts;
+}
+
+/* ── Construir passos com entrada alternada e manobras reais ── */
 function buildSteps(tiros){
-  var s=[],T=25,F=70;
+  var steps=[],F=70,ARC=22;
+  var prevExit=null;
+  var side=true; // alterna a direção da curva
+
   for(var i=0;i<tiros.length;i++){
     var t=tiros[i];
-    var from=s.length?s[s.length-1].pos:t.entry;
-    lerp(from,t.entry,T).slice(1).forEach(function(p){s.push({pos:p,ti:i,in:false});});
-    lerp(t.entry,t.exit,F).slice(1).forEach(function(p){s.push({pos:p,ti:i,in:true});});
+    var entry,exitPt;
+
+    if(prevExit===null){
+      entry=t.entry; exitPt=t.exit;
+    } else {
+      // Escolhe direção: entra pelo lado mais próximo do exit anterior
+      var dEntry=_dist(prevExit,t.entry);
+      var dExit =_dist(prevExit,t.exit);
+      if(dEntry<=dExit){ entry=t.entry; exitPt=t.exit; }
+      else             { entry=t.exit;  exitPt=t.entry; }
+    }
+
+    // Arco de manobra (virada)
+    if(prevExit!==null){
+      var arc=_bezierArc(prevExit,entry,ARC,side);
+      arc.forEach(function(p){steps.push({pos:p,ti:i,in:false});});
+      side=!side;
+    }
+
+    // Passagem do tiro (entrada → saída)
+    var seg=[];
+    for(var k=0;k<=F;k++){var r=k/F;seg.push([entry[0]+(exitPt[0]-entry[0])*r,entry[1]+(exitPt[1]-entry[1])*r]);}
+    seg.forEach(function(p,j){if(j>0)steps.push({pos:p,ti:i,in:true});});
+
+    prevExit=exitPt;
   }
-  return s;
+  return steps;
+}
+
+/* ── Trajetória completa para o polyline (inclui manobras) ── */
+function buildSprayPolyline(tiros){
+  var path=[],ARC=22,side=true,prevExit=null;
+  for(var i=0;i<tiros.length;i++){
+    var t=tiros[i],entry,exitPt;
+    if(prevExit===null){entry=t.entry;exitPt=t.exit;}
+    else{
+      var dEntry=_dist(prevExit,t.entry),dExit=_dist(prevExit,t.exit);
+      if(dEntry<=dExit){entry=t.entry;exitPt=t.exit;}else{entry=t.exit;exitPt=t.entry;}
+    }
+    if(prevExit!==null){
+      _bezierArc(prevExit,entry,ARC,side).forEach(function(p){path.push([p[0],p[1]]);});
+      side=!side;
+    }
+    path.push([entry[0],entry[1]]);
+    path.push([exitPt[0],exitPt[1]]);
+    prevExit=exitPt;
+  }
+  return path;
 }
 
 /* ── Ir para posição específica (scrub) ── */
@@ -248,16 +316,11 @@ function setupAnim(tiros, track, summary){
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória da pulverização: construída a partir da sequência de tiros
-  // (entry→exit de cada tiro conectados em ordem = caminho real da aplicação)
-  var sprayPath=[];
-  tiros.forEach(function(t){
-    sprayPath.push([t.entry[0],t.entry[1]]);
-    sprayPath.push([t.exit[0], t.exit[1]]);
-  });
+  // Trajetória completa com manobras (arcos de Bézier entre tiros)
+  var sprayPath=buildSprayPolyline(tiros);
   if(sprayPath.length>1){
     _trackLine=L.polyline(sprayPath,{
-      color:'rgba(255,255,255,0.50)',weight:1.5,dashArray:'5,4',opacity:0.75
+      color:'rgba(255,255,255,0.60)',weight:1.5,dashArray:'5,4',opacity:0.85
     }).addTo(_map);
   }
 
@@ -450,18 +513,86 @@ function planeIcon(h){
   });
 }
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
-function lerp(a,b,n){var p=[];for(var i=0;i<=n;i++){var t=i/n;p.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}return p;}
+/* ── Distância euclidiana aproximada em graus ── */
+function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Construir passos de animação ── */
+/* ── Arco de Bézier quadrático entre dois pontos ──
+   Cria a curva de manobra (virada) entre os tiros  */
+function _bezierArc(from,to,n,side){
+  // Vetor from→to
+  var dy=to[0]-from[0], dx=to[1]-from[1];
+  var len=Math.sqrt(dy*dy+dx*dx)||1;
+  // Ponto de controle perpendicular ao meio
+  var mid=[(from[0]+to[0])/2,(from[1]+to[1])/2];
+  var scale=Math.max(0.6,len)*1.3*(side?1:-1);
+  var ctrl=[mid[0]+(-dx/len)*scale, mid[1]+(dy/len)*scale];
+  var pts=[];
+  for(var i=0;i<=n;i++){
+    var t=i/n;
+    pts.push([
+      (1-t)*(1-t)*from[0]+2*(1-t)*t*ctrl[0]+t*t*to[0],
+      (1-t)*(1-t)*from[1]+2*(1-t)*t*ctrl[1]+t*t*to[1]
+    ]);
+  }
+  return pts;
+}
+
+/* ── Construir passos com entrada alternada e manobras reais ── */
 function buildSteps(tiros){
-  var s=[],T=25,F=70;
+  var steps=[],F=70,ARC=22;
+  var prevExit=null;
+  var side=true; // alterna a direção da curva
+
   for(var i=0;i<tiros.length;i++){
     var t=tiros[i];
-    var from=s.length?s[s.length-1].pos:t.entry;
-    lerp(from,t.entry,T).slice(1).forEach(function(p){s.push({pos:p,ti:i,in:false});});
-    lerp(t.entry,t.exit,F).slice(1).forEach(function(p){s.push({pos:p,ti:i,in:true});});
+    var entry,exitPt;
+
+    if(prevExit===null){
+      entry=t.entry; exitPt=t.exit;
+    } else {
+      // Escolhe direção: entra pelo lado mais próximo do exit anterior
+      var dEntry=_dist(prevExit,t.entry);
+      var dExit =_dist(prevExit,t.exit);
+      if(dEntry<=dExit){ entry=t.entry; exitPt=t.exit; }
+      else             { entry=t.exit;  exitPt=t.entry; }
+    }
+
+    // Arco de manobra (virada)
+    if(prevExit!==null){
+      var arc=_bezierArc(prevExit,entry,ARC,side);
+      arc.forEach(function(p){steps.push({pos:p,ti:i,in:false});});
+      side=!side;
+    }
+
+    // Passagem do tiro (entrada → saída)
+    var seg=[];
+    for(var k=0;k<=F;k++){var r=k/F;seg.push([entry[0]+(exitPt[0]-entry[0])*r,entry[1]+(exitPt[1]-entry[1])*r]);}
+    seg.forEach(function(p,j){if(j>0)steps.push({pos:p,ti:i,in:true});});
+
+    prevExit=exitPt;
   }
-  return s;
+  return steps;
+}
+
+/* ── Trajetória completa para o polyline (inclui manobras) ── */
+function buildSprayPolyline(tiros){
+  var path=[],ARC=22,side=true,prevExit=null;
+  for(var i=0;i<tiros.length;i++){
+    var t=tiros[i],entry,exitPt;
+    if(prevExit===null){entry=t.entry;exitPt=t.exit;}
+    else{
+      var dEntry=_dist(prevExit,t.entry),dExit=_dist(prevExit,t.exit);
+      if(dEntry<=dExit){entry=t.entry;exitPt=t.exit;}else{entry=t.exit;exitPt=t.entry;}
+    }
+    if(prevExit!==null){
+      _bezierArc(prevExit,entry,ARC,side).forEach(function(p){path.push([p[0],p[1]]);});
+      side=!side;
+    }
+    path.push([entry[0],entry[1]]);
+    path.push([exitPt[0],exitPt[1]]);
+    prevExit=exitPt;
+  }
+  return path;
 }
 
 /* ── Ir para posição específica (scrub) ── */
@@ -608,16 +739,11 @@ function setupAnim(tiros, track, summary){
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória da pulverização: construída a partir da sequência de tiros
-  // (entry→exit de cada tiro conectados em ordem = caminho real da aplicação)
-  var sprayPath=[];
-  tiros.forEach(function(t){
-    sprayPath.push([t.entry[0],t.entry[1]]);
-    sprayPath.push([t.exit[0], t.exit[1]]);
-  });
+  // Trajetória completa com manobras (arcos de Bézier entre tiros)
+  var sprayPath=buildSprayPolyline(tiros);
   if(sprayPath.length>1){
     _trackLine=L.polyline(sprayPath,{
-      color:'rgba(255,255,255,0.50)',weight:1.5,dashArray:'5,4',opacity:0.75
+      color:'rgba(255,255,255,0.60)',weight:1.5,dashArray:'5,4',opacity:0.85
     }).addTo(_map);
   }
 
@@ -978,18 +1104,86 @@ function planeIcon(h){
   });
 }
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
-function lerp(a,b,n){var p=[];for(var i=0;i<=n;i++){var t=i/n;p.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}return p;}
+/* ── Distância euclidiana aproximada em graus ── */
+function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Construir passos de animação ── */
+/* ── Arco de Bézier quadrático entre dois pontos ──
+   Cria a curva de manobra (virada) entre os tiros  */
+function _bezierArc(from,to,n,side){
+  // Vetor from→to
+  var dy=to[0]-from[0], dx=to[1]-from[1];
+  var len=Math.sqrt(dy*dy+dx*dx)||1;
+  // Ponto de controle perpendicular ao meio
+  var mid=[(from[0]+to[0])/2,(from[1]+to[1])/2];
+  var scale=Math.max(0.6,len)*1.3*(side?1:-1);
+  var ctrl=[mid[0]+(-dx/len)*scale, mid[1]+(dy/len)*scale];
+  var pts=[];
+  for(var i=0;i<=n;i++){
+    var t=i/n;
+    pts.push([
+      (1-t)*(1-t)*from[0]+2*(1-t)*t*ctrl[0]+t*t*to[0],
+      (1-t)*(1-t)*from[1]+2*(1-t)*t*ctrl[1]+t*t*to[1]
+    ]);
+  }
+  return pts;
+}
+
+/* ── Construir passos com entrada alternada e manobras reais ── */
 function buildSteps(tiros){
-  var s=[],T=25,F=70;
+  var steps=[],F=70,ARC=22;
+  var prevExit=null;
+  var side=true; // alterna a direção da curva
+
   for(var i=0;i<tiros.length;i++){
     var t=tiros[i];
-    var from=s.length?s[s.length-1].pos:t.entry;
-    lerp(from,t.entry,T).slice(1).forEach(function(p){s.push({pos:p,ti:i,in:false});});
-    lerp(t.entry,t.exit,F).slice(1).forEach(function(p){s.push({pos:p,ti:i,in:true});});
+    var entry,exitPt;
+
+    if(prevExit===null){
+      entry=t.entry; exitPt=t.exit;
+    } else {
+      // Escolhe direção: entra pelo lado mais próximo do exit anterior
+      var dEntry=_dist(prevExit,t.entry);
+      var dExit =_dist(prevExit,t.exit);
+      if(dEntry<=dExit){ entry=t.entry; exitPt=t.exit; }
+      else             { entry=t.exit;  exitPt=t.entry; }
+    }
+
+    // Arco de manobra (virada)
+    if(prevExit!==null){
+      var arc=_bezierArc(prevExit,entry,ARC,side);
+      arc.forEach(function(p){steps.push({pos:p,ti:i,in:false});});
+      side=!side;
+    }
+
+    // Passagem do tiro (entrada → saída)
+    var seg=[];
+    for(var k=0;k<=F;k++){var r=k/F;seg.push([entry[0]+(exitPt[0]-entry[0])*r,entry[1]+(exitPt[1]-entry[1])*r]);}
+    seg.forEach(function(p,j){if(j>0)steps.push({pos:p,ti:i,in:true});});
+
+    prevExit=exitPt;
   }
-  return s;
+  return steps;
+}
+
+/* ── Trajetória completa para o polyline (inclui manobras) ── */
+function buildSprayPolyline(tiros){
+  var path=[],ARC=22,side=true,prevExit=null;
+  for(var i=0;i<tiros.length;i++){
+    var t=tiros[i],entry,exitPt;
+    if(prevExit===null){entry=t.entry;exitPt=t.exit;}
+    else{
+      var dEntry=_dist(prevExit,t.entry),dExit=_dist(prevExit,t.exit);
+      if(dEntry<=dExit){entry=t.entry;exitPt=t.exit;}else{entry=t.exit;exitPt=t.entry;}
+    }
+    if(prevExit!==null){
+      _bezierArc(prevExit,entry,ARC,side).forEach(function(p){path.push([p[0],p[1]]);});
+      side=!side;
+    }
+    path.push([entry[0],entry[1]]);
+    path.push([exitPt[0],exitPt[1]]);
+    prevExit=exitPt;
+  }
+  return path;
 }
 
 /* ── Ir para posição específica (scrub) ── */
@@ -1136,16 +1330,11 @@ function setupAnim(tiros, track, summary){
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória da pulverização: construída a partir da sequência de tiros
-  // (entry→exit de cada tiro conectados em ordem = caminho real da aplicação)
-  var sprayPath=[];
-  tiros.forEach(function(t){
-    sprayPath.push([t.entry[0],t.entry[1]]);
-    sprayPath.push([t.exit[0], t.exit[1]]);
-  });
+  // Trajetória completa com manobras (arcos de Bézier entre tiros)
+  var sprayPath=buildSprayPolyline(tiros);
   if(sprayPath.length>1){
     _trackLine=L.polyline(sprayPath,{
-      color:'rgba(255,255,255,0.50)',weight:1.5,dashArray:'5,4',opacity:0.75
+      color:'rgba(255,255,255,0.60)',weight:1.5,dashArray:'5,4',opacity:0.85
     }).addTo(_map);
   }
 
@@ -1381,18 +1570,86 @@ function planeIcon(h){
   });
 }
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
-function lerp(a,b,n){var p=[];for(var i=0;i<=n;i++){var t=i/n;p.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]);}return p;}
+/* ── Distância euclidiana aproximada em graus ── */
+function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Construir passos de animação ── */
+/* ── Arco de Bézier quadrático entre dois pontos ──
+   Cria a curva de manobra (virada) entre os tiros  */
+function _bezierArc(from,to,n,side){
+  // Vetor from→to
+  var dy=to[0]-from[0], dx=to[1]-from[1];
+  var len=Math.sqrt(dy*dy+dx*dx)||1;
+  // Ponto de controle perpendicular ao meio
+  var mid=[(from[0]+to[0])/2,(from[1]+to[1])/2];
+  var scale=Math.max(0.6,len)*1.3*(side?1:-1);
+  var ctrl=[mid[0]+(-dx/len)*scale, mid[1]+(dy/len)*scale];
+  var pts=[];
+  for(var i=0;i<=n;i++){
+    var t=i/n;
+    pts.push([
+      (1-t)*(1-t)*from[0]+2*(1-t)*t*ctrl[0]+t*t*to[0],
+      (1-t)*(1-t)*from[1]+2*(1-t)*t*ctrl[1]+t*t*to[1]
+    ]);
+  }
+  return pts;
+}
+
+/* ── Construir passos com entrada alternada e manobras reais ── */
 function buildSteps(tiros){
-  var s=[],T=25,F=70;
+  var steps=[],F=70,ARC=22;
+  var prevExit=null;
+  var side=true; // alterna a direção da curva
+
   for(var i=0;i<tiros.length;i++){
     var t=tiros[i];
-    var from=s.length?s[s.length-1].pos:t.entry;
-    lerp(from,t.entry,T).slice(1).forEach(function(p){s.push({pos:p,ti:i,in:false});});
-    lerp(t.entry,t.exit,F).slice(1).forEach(function(p){s.push({pos:p,ti:i,in:true});});
+    var entry,exitPt;
+
+    if(prevExit===null){
+      entry=t.entry; exitPt=t.exit;
+    } else {
+      // Escolhe direção: entra pelo lado mais próximo do exit anterior
+      var dEntry=_dist(prevExit,t.entry);
+      var dExit =_dist(prevExit,t.exit);
+      if(dEntry<=dExit){ entry=t.entry; exitPt=t.exit; }
+      else             { entry=t.exit;  exitPt=t.entry; }
+    }
+
+    // Arco de manobra (virada)
+    if(prevExit!==null){
+      var arc=_bezierArc(prevExit,entry,ARC,side);
+      arc.forEach(function(p){steps.push({pos:p,ti:i,in:false});});
+      side=!side;
+    }
+
+    // Passagem do tiro (entrada → saída)
+    var seg=[];
+    for(var k=0;k<=F;k++){var r=k/F;seg.push([entry[0]+(exitPt[0]-entry[0])*r,entry[1]+(exitPt[1]-entry[1])*r]);}
+    seg.forEach(function(p,j){if(j>0)steps.push({pos:p,ti:i,in:true});});
+
+    prevExit=exitPt;
   }
-  return s;
+  return steps;
+}
+
+/* ── Trajetória completa para o polyline (inclui manobras) ── */
+function buildSprayPolyline(tiros){
+  var path=[],ARC=22,side=true,prevExit=null;
+  for(var i=0;i<tiros.length;i++){
+    var t=tiros[i],entry,exitPt;
+    if(prevExit===null){entry=t.entry;exitPt=t.exit;}
+    else{
+      var dEntry=_dist(prevExit,t.entry),dExit=_dist(prevExit,t.exit);
+      if(dEntry<=dExit){entry=t.entry;exitPt=t.exit;}else{entry=t.exit;exitPt=t.entry;}
+    }
+    if(prevExit!==null){
+      _bezierArc(prevExit,entry,ARC,side).forEach(function(p){path.push([p[0],p[1]]);});
+      side=!side;
+    }
+    path.push([entry[0],entry[1]]);
+    path.push([exitPt[0],exitPt[1]]);
+    prevExit=exitPt;
+  }
+  return path;
 }
 
 /* ── Ir para posição específica (scrub) ── */
@@ -1539,16 +1796,11 @@ function setupAnim(tiros, track, summary){
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória da pulverização: construída a partir da sequência de tiros
-  // (entry→exit de cada tiro conectados em ordem = caminho real da aplicação)
-  var sprayPath=[];
-  tiros.forEach(function(t){
-    sprayPath.push([t.entry[0],t.entry[1]]);
-    sprayPath.push([t.exit[0], t.exit[1]]);
-  });
+  // Trajetória completa com manobras (arcos de Bézier entre tiros)
+  var sprayPath=buildSprayPolyline(tiros);
   if(sprayPath.length>1){
     _trackLine=L.polyline(sprayPath,{
-      color:'rgba(255,255,255,0.50)',weight:1.5,dashArray:'5,4',opacity:0.75
+      color:'rgba(255,255,255,0.60)',weight:1.5,dashArray:'5,4',opacity:0.85
     }).addTo(_map);
   }
 
