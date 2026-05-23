@@ -91,18 +91,17 @@ function planeIcon(h){
 }
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
 /* ── Distância euclidiana aproximada em graus ── */
+/* ── Distância aproximada em graus ── */
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
 /* ── Arco de Bézier quadrático entre dois pontos ──
-   Cria a curva de manobra (virada) entre os tiros  */
-function _bezierArc(from,to,n,side){
-  // Vetor from→to
+   radius: em graus — proporcional ao comprimento dos tiros ── */
+function _bezierArc(from,to,n,side,radius){
   var dy=to[0]-from[0], dx=to[1]-from[1];
-  var len=Math.sqrt(dy*dy+dx*dx)||1;
-  // Ponto de controle perpendicular ao meio
+  var len=Math.sqrt(dy*dy+dx*dx)||0.0001;
   var mid=[(from[0]+to[0])/2,(from[1]+to[1])/2];
-  var scale=Math.max(0.6,len)*1.3*(side?1:-1);
-  var ctrl=[mid[0]+(-dx/len)*scale, mid[1]+(dy/len)*scale];
+  var r=(radius||len*0.8)*(side?1:-1);
+  var ctrl=[mid[0]+(-dx/len)*r, mid[1]+(dy/len)*r];
   var pts=[];
   for(var i=0;i<=n;i++){
     var t=i/n;
@@ -114,55 +113,57 @@ function _bezierArc(from,to,n,side){
   return pts;
 }
 
-/* ── Construir passos com entrada alternada e manobras reais ── */
+/* ── Construir passos com entrada alternada e manobras ── */
 function buildSteps(tiros){
-  var steps=[],F=70,ARC=22;
-  var prevExit=null;
-  var side=true; // alterna a direção da curva
+  var steps=[],F=70,ARC=22,side=true,prevExit=null;
+  // Raio de curva = ~25% do comprimento médio dos tiros
+  var avgLen=0;
+  tiros.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
+  avgLen=tiros.length>0?avgLen/tiros.length:0.01;
+  var turnR=avgLen*0.25;
 
   for(var i=0;i<tiros.length;i++){
-    var t=tiros[i];
-    var entry,exitPt;
-
-    if(prevExit===null){
-      entry=t.entry; exitPt=t.exit;
-    } else {
-      // Escolhe direção: entra pelo lado mais próximo do exit anterior
-      var dEntry=_dist(prevExit,t.entry);
-      var dExit =_dist(prevExit,t.exit);
-      if(dEntry<=dExit){ entry=t.entry; exitPt=t.exit; }
-      else             { entry=t.exit;  exitPt=t.entry; }
+    var t=tiros[i],entry,exitPt;
+    if(prevExit===null){entry=t.entry;exitPt=t.exit;}
+    else{
+      var dE=_dist(prevExit,t.entry),dX=_dist(prevExit,t.exit);
+      if(dE<=dX){entry=t.entry;exitPt=t.exit;}
+      else      {entry=t.exit; exitPt=t.entry;}
     }
-
-    // Arco de manobra (virada)
     if(prevExit!==null){
-      var arc=_bezierArc(prevExit,entry,ARC,side);
-      arc.forEach(function(p){steps.push({pos:p,ti:i,in:false});});
+      _bezierArc(prevExit,entry,ARC,side,turnR).forEach(function(p){
+        steps.push({pos:p,ti:i,in:false});
+      });
       side=!side;
     }
-
-    // Passagem do tiro (entrada → saída)
-    var seg=[];
-    for(var k=0;k<=F;k++){var r=k/F;seg.push([entry[0]+(exitPt[0]-entry[0])*r,entry[1]+(exitPt[1]-entry[1])*r]);}
-    seg.forEach(function(p,j){if(j>0)steps.push({pos:p,ti:i,in:true});});
-
+    for(var k=0;k<=F;k++){
+      var r=k/F;
+      if(k>0)steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                               entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
+    }
     prevExit=exitPt;
   }
   return steps;
 }
 
-/* ── Trajetória completa para o polyline (inclui manobras) ── */
+/* ── Polyline completo com manobras (para exibição) ── */
 function buildSprayPolyline(tiros){
   var path=[],ARC=22,side=true,prevExit=null;
+  var avgLen=0;
+  tiros.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
+  avgLen=tiros.length>0?avgLen/tiros.length:0.01;
+  var turnR=avgLen*0.25;
+
   for(var i=0;i<tiros.length;i++){
     var t=tiros[i],entry,exitPt;
     if(prevExit===null){entry=t.entry;exitPt=t.exit;}
     else{
-      var dEntry=_dist(prevExit,t.entry),dExit=_dist(prevExit,t.exit);
-      if(dEntry<=dExit){entry=t.entry;exitPt=t.exit;}else{entry=t.exit;exitPt=t.entry;}
+      var dE=_dist(prevExit,t.entry),dX=_dist(prevExit,t.exit);
+      if(dE<=dX){entry=t.entry;exitPt=t.exit;}
+      else      {entry=t.exit; exitPt=t.entry;}
     }
     if(prevExit!==null){
-      _bezierArc(prevExit,entry,ARC,side).forEach(function(p){path.push([p[0],p[1]]);});
+      _bezierArc(prevExit,entry,ARC,side,turnR).forEach(function(p){path.push([p[0],p[1]]);});
       side=!side;
     }
     path.push([entry[0],entry[1]]);
@@ -514,18 +515,17 @@ function planeIcon(h){
 }
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
 /* ── Distância euclidiana aproximada em graus ── */
+/* ── Distância aproximada em graus ── */
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
 /* ── Arco de Bézier quadrático entre dois pontos ──
-   Cria a curva de manobra (virada) entre os tiros  */
-function _bezierArc(from,to,n,side){
-  // Vetor from→to
+   radius: em graus — proporcional ao comprimento dos tiros ── */
+function _bezierArc(from,to,n,side,radius){
   var dy=to[0]-from[0], dx=to[1]-from[1];
-  var len=Math.sqrt(dy*dy+dx*dx)||1;
-  // Ponto de controle perpendicular ao meio
+  var len=Math.sqrt(dy*dy+dx*dx)||0.0001;
   var mid=[(from[0]+to[0])/2,(from[1]+to[1])/2];
-  var scale=Math.max(0.6,len)*1.3*(side?1:-1);
-  var ctrl=[mid[0]+(-dx/len)*scale, mid[1]+(dy/len)*scale];
+  var r=(radius||len*0.8)*(side?1:-1);
+  var ctrl=[mid[0]+(-dx/len)*r, mid[1]+(dy/len)*r];
   var pts=[];
   for(var i=0;i<=n;i++){
     var t=i/n;
@@ -537,55 +537,57 @@ function _bezierArc(from,to,n,side){
   return pts;
 }
 
-/* ── Construir passos com entrada alternada e manobras reais ── */
+/* ── Construir passos com entrada alternada e manobras ── */
 function buildSteps(tiros){
-  var steps=[],F=70,ARC=22;
-  var prevExit=null;
-  var side=true; // alterna a direção da curva
+  var steps=[],F=70,ARC=22,side=true,prevExit=null;
+  // Raio de curva = ~25% do comprimento médio dos tiros
+  var avgLen=0;
+  tiros.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
+  avgLen=tiros.length>0?avgLen/tiros.length:0.01;
+  var turnR=avgLen*0.25;
 
   for(var i=0;i<tiros.length;i++){
-    var t=tiros[i];
-    var entry,exitPt;
-
-    if(prevExit===null){
-      entry=t.entry; exitPt=t.exit;
-    } else {
-      // Escolhe direção: entra pelo lado mais próximo do exit anterior
-      var dEntry=_dist(prevExit,t.entry);
-      var dExit =_dist(prevExit,t.exit);
-      if(dEntry<=dExit){ entry=t.entry; exitPt=t.exit; }
-      else             { entry=t.exit;  exitPt=t.entry; }
+    var t=tiros[i],entry,exitPt;
+    if(prevExit===null){entry=t.entry;exitPt=t.exit;}
+    else{
+      var dE=_dist(prevExit,t.entry),dX=_dist(prevExit,t.exit);
+      if(dE<=dX){entry=t.entry;exitPt=t.exit;}
+      else      {entry=t.exit; exitPt=t.entry;}
     }
-
-    // Arco de manobra (virada)
     if(prevExit!==null){
-      var arc=_bezierArc(prevExit,entry,ARC,side);
-      arc.forEach(function(p){steps.push({pos:p,ti:i,in:false});});
+      _bezierArc(prevExit,entry,ARC,side,turnR).forEach(function(p){
+        steps.push({pos:p,ti:i,in:false});
+      });
       side=!side;
     }
-
-    // Passagem do tiro (entrada → saída)
-    var seg=[];
-    for(var k=0;k<=F;k++){var r=k/F;seg.push([entry[0]+(exitPt[0]-entry[0])*r,entry[1]+(exitPt[1]-entry[1])*r]);}
-    seg.forEach(function(p,j){if(j>0)steps.push({pos:p,ti:i,in:true});});
-
+    for(var k=0;k<=F;k++){
+      var r=k/F;
+      if(k>0)steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                               entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
+    }
     prevExit=exitPt;
   }
   return steps;
 }
 
-/* ── Trajetória completa para o polyline (inclui manobras) ── */
+/* ── Polyline completo com manobras (para exibição) ── */
 function buildSprayPolyline(tiros){
   var path=[],ARC=22,side=true,prevExit=null;
+  var avgLen=0;
+  tiros.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
+  avgLen=tiros.length>0?avgLen/tiros.length:0.01;
+  var turnR=avgLen*0.25;
+
   for(var i=0;i<tiros.length;i++){
     var t=tiros[i],entry,exitPt;
     if(prevExit===null){entry=t.entry;exitPt=t.exit;}
     else{
-      var dEntry=_dist(prevExit,t.entry),dExit=_dist(prevExit,t.exit);
-      if(dEntry<=dExit){entry=t.entry;exitPt=t.exit;}else{entry=t.exit;exitPt=t.entry;}
+      var dE=_dist(prevExit,t.entry),dX=_dist(prevExit,t.exit);
+      if(dE<=dX){entry=t.entry;exitPt=t.exit;}
+      else      {entry=t.exit; exitPt=t.entry;}
     }
     if(prevExit!==null){
-      _bezierArc(prevExit,entry,ARC,side).forEach(function(p){path.push([p[0],p[1]]);});
+      _bezierArc(prevExit,entry,ARC,side,turnR).forEach(function(p){path.push([p[0],p[1]]);});
       side=!side;
     }
     path.push([entry[0],entry[1]]);
@@ -1105,18 +1107,17 @@ function planeIcon(h){
 }
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
 /* ── Distância euclidiana aproximada em graus ── */
+/* ── Distância aproximada em graus ── */
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
 /* ── Arco de Bézier quadrático entre dois pontos ──
-   Cria a curva de manobra (virada) entre os tiros  */
-function _bezierArc(from,to,n,side){
-  // Vetor from→to
+   radius: em graus — proporcional ao comprimento dos tiros ── */
+function _bezierArc(from,to,n,side,radius){
   var dy=to[0]-from[0], dx=to[1]-from[1];
-  var len=Math.sqrt(dy*dy+dx*dx)||1;
-  // Ponto de controle perpendicular ao meio
+  var len=Math.sqrt(dy*dy+dx*dx)||0.0001;
   var mid=[(from[0]+to[0])/2,(from[1]+to[1])/2];
-  var scale=Math.max(0.6,len)*1.3*(side?1:-1);
-  var ctrl=[mid[0]+(-dx/len)*scale, mid[1]+(dy/len)*scale];
+  var r=(radius||len*0.8)*(side?1:-1);
+  var ctrl=[mid[0]+(-dx/len)*r, mid[1]+(dy/len)*r];
   var pts=[];
   for(var i=0;i<=n;i++){
     var t=i/n;
@@ -1128,55 +1129,57 @@ function _bezierArc(from,to,n,side){
   return pts;
 }
 
-/* ── Construir passos com entrada alternada e manobras reais ── */
+/* ── Construir passos com entrada alternada e manobras ── */
 function buildSteps(tiros){
-  var steps=[],F=70,ARC=22;
-  var prevExit=null;
-  var side=true; // alterna a direção da curva
+  var steps=[],F=70,ARC=22,side=true,prevExit=null;
+  // Raio de curva = ~25% do comprimento médio dos tiros
+  var avgLen=0;
+  tiros.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
+  avgLen=tiros.length>0?avgLen/tiros.length:0.01;
+  var turnR=avgLen*0.25;
 
   for(var i=0;i<tiros.length;i++){
-    var t=tiros[i];
-    var entry,exitPt;
-
-    if(prevExit===null){
-      entry=t.entry; exitPt=t.exit;
-    } else {
-      // Escolhe direção: entra pelo lado mais próximo do exit anterior
-      var dEntry=_dist(prevExit,t.entry);
-      var dExit =_dist(prevExit,t.exit);
-      if(dEntry<=dExit){ entry=t.entry; exitPt=t.exit; }
-      else             { entry=t.exit;  exitPt=t.entry; }
+    var t=tiros[i],entry,exitPt;
+    if(prevExit===null){entry=t.entry;exitPt=t.exit;}
+    else{
+      var dE=_dist(prevExit,t.entry),dX=_dist(prevExit,t.exit);
+      if(dE<=dX){entry=t.entry;exitPt=t.exit;}
+      else      {entry=t.exit; exitPt=t.entry;}
     }
-
-    // Arco de manobra (virada)
     if(prevExit!==null){
-      var arc=_bezierArc(prevExit,entry,ARC,side);
-      arc.forEach(function(p){steps.push({pos:p,ti:i,in:false});});
+      _bezierArc(prevExit,entry,ARC,side,turnR).forEach(function(p){
+        steps.push({pos:p,ti:i,in:false});
+      });
       side=!side;
     }
-
-    // Passagem do tiro (entrada → saída)
-    var seg=[];
-    for(var k=0;k<=F;k++){var r=k/F;seg.push([entry[0]+(exitPt[0]-entry[0])*r,entry[1]+(exitPt[1]-entry[1])*r]);}
-    seg.forEach(function(p,j){if(j>0)steps.push({pos:p,ti:i,in:true});});
-
+    for(var k=0;k<=F;k++){
+      var r=k/F;
+      if(k>0)steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                               entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
+    }
     prevExit=exitPt;
   }
   return steps;
 }
 
-/* ── Trajetória completa para o polyline (inclui manobras) ── */
+/* ── Polyline completo com manobras (para exibição) ── */
 function buildSprayPolyline(tiros){
   var path=[],ARC=22,side=true,prevExit=null;
+  var avgLen=0;
+  tiros.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
+  avgLen=tiros.length>0?avgLen/tiros.length:0.01;
+  var turnR=avgLen*0.25;
+
   for(var i=0;i<tiros.length;i++){
     var t=tiros[i],entry,exitPt;
     if(prevExit===null){entry=t.entry;exitPt=t.exit;}
     else{
-      var dEntry=_dist(prevExit,t.entry),dExit=_dist(prevExit,t.exit);
-      if(dEntry<=dExit){entry=t.entry;exitPt=t.exit;}else{entry=t.exit;exitPt=t.entry;}
+      var dE=_dist(prevExit,t.entry),dX=_dist(prevExit,t.exit);
+      if(dE<=dX){entry=t.entry;exitPt=t.exit;}
+      else      {entry=t.exit; exitPt=t.entry;}
     }
     if(prevExit!==null){
-      _bezierArc(prevExit,entry,ARC,side).forEach(function(p){path.push([p[0],p[1]]);});
+      _bezierArc(prevExit,entry,ARC,side,turnR).forEach(function(p){path.push([p[0],p[1]]);});
       side=!side;
     }
     path.push([entry[0],entry[1]]);
@@ -1571,18 +1574,17 @@ function planeIcon(h){
 }
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
 /* ── Distância euclidiana aproximada em graus ── */
+/* ── Distância aproximada em graus ── */
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
 /* ── Arco de Bézier quadrático entre dois pontos ──
-   Cria a curva de manobra (virada) entre os tiros  */
-function _bezierArc(from,to,n,side){
-  // Vetor from→to
+   radius: em graus — proporcional ao comprimento dos tiros ── */
+function _bezierArc(from,to,n,side,radius){
   var dy=to[0]-from[0], dx=to[1]-from[1];
-  var len=Math.sqrt(dy*dy+dx*dx)||1;
-  // Ponto de controle perpendicular ao meio
+  var len=Math.sqrt(dy*dy+dx*dx)||0.0001;
   var mid=[(from[0]+to[0])/2,(from[1]+to[1])/2];
-  var scale=Math.max(0.6,len)*1.3*(side?1:-1);
-  var ctrl=[mid[0]+(-dx/len)*scale, mid[1]+(dy/len)*scale];
+  var r=(radius||len*0.8)*(side?1:-1);
+  var ctrl=[mid[0]+(-dx/len)*r, mid[1]+(dy/len)*r];
   var pts=[];
   for(var i=0;i<=n;i++){
     var t=i/n;
@@ -1594,55 +1596,57 @@ function _bezierArc(from,to,n,side){
   return pts;
 }
 
-/* ── Construir passos com entrada alternada e manobras reais ── */
+/* ── Construir passos com entrada alternada e manobras ── */
 function buildSteps(tiros){
-  var steps=[],F=70,ARC=22;
-  var prevExit=null;
-  var side=true; // alterna a direção da curva
+  var steps=[],F=70,ARC=22,side=true,prevExit=null;
+  // Raio de curva = ~25% do comprimento médio dos tiros
+  var avgLen=0;
+  tiros.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
+  avgLen=tiros.length>0?avgLen/tiros.length:0.01;
+  var turnR=avgLen*0.25;
 
   for(var i=0;i<tiros.length;i++){
-    var t=tiros[i];
-    var entry,exitPt;
-
-    if(prevExit===null){
-      entry=t.entry; exitPt=t.exit;
-    } else {
-      // Escolhe direção: entra pelo lado mais próximo do exit anterior
-      var dEntry=_dist(prevExit,t.entry);
-      var dExit =_dist(prevExit,t.exit);
-      if(dEntry<=dExit){ entry=t.entry; exitPt=t.exit; }
-      else             { entry=t.exit;  exitPt=t.entry; }
+    var t=tiros[i],entry,exitPt;
+    if(prevExit===null){entry=t.entry;exitPt=t.exit;}
+    else{
+      var dE=_dist(prevExit,t.entry),dX=_dist(prevExit,t.exit);
+      if(dE<=dX){entry=t.entry;exitPt=t.exit;}
+      else      {entry=t.exit; exitPt=t.entry;}
     }
-
-    // Arco de manobra (virada)
     if(prevExit!==null){
-      var arc=_bezierArc(prevExit,entry,ARC,side);
-      arc.forEach(function(p){steps.push({pos:p,ti:i,in:false});});
+      _bezierArc(prevExit,entry,ARC,side,turnR).forEach(function(p){
+        steps.push({pos:p,ti:i,in:false});
+      });
       side=!side;
     }
-
-    // Passagem do tiro (entrada → saída)
-    var seg=[];
-    for(var k=0;k<=F;k++){var r=k/F;seg.push([entry[0]+(exitPt[0]-entry[0])*r,entry[1]+(exitPt[1]-entry[1])*r]);}
-    seg.forEach(function(p,j){if(j>0)steps.push({pos:p,ti:i,in:true});});
-
+    for(var k=0;k<=F;k++){
+      var r=k/F;
+      if(k>0)steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                               entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
+    }
     prevExit=exitPt;
   }
   return steps;
 }
 
-/* ── Trajetória completa para o polyline (inclui manobras) ── */
+/* ── Polyline completo com manobras (para exibição) ── */
 function buildSprayPolyline(tiros){
   var path=[],ARC=22,side=true,prevExit=null;
+  var avgLen=0;
+  tiros.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
+  avgLen=tiros.length>0?avgLen/tiros.length:0.01;
+  var turnR=avgLen*0.25;
+
   for(var i=0;i<tiros.length;i++){
     var t=tiros[i],entry,exitPt;
     if(prevExit===null){entry=t.entry;exitPt=t.exit;}
     else{
-      var dEntry=_dist(prevExit,t.entry),dExit=_dist(prevExit,t.exit);
-      if(dEntry<=dExit){entry=t.entry;exitPt=t.exit;}else{entry=t.exit;exitPt=t.entry;}
+      var dE=_dist(prevExit,t.entry),dX=_dist(prevExit,t.exit);
+      if(dE<=dX){entry=t.entry;exitPt=t.exit;}
+      else      {entry=t.exit; exitPt=t.entry;}
     }
     if(prevExit!==null){
-      _bezierArc(prevExit,entry,ARC,side).forEach(function(p){path.push([p[0],p[1]]);});
+      _bezierArc(prevExit,entry,ARC,side,turnR).forEach(function(p){path.push([p[0],p[1]]);});
       side=!side;
     }
     path.push([entry[0],entry[1]]);
