@@ -72,7 +72,7 @@
 'use strict';
 var _map=null,_tiros=[],_polys=[],_overPolys=[],_plane=null,_timer=null;
 var _playing=false,_step=0,_steps=[],_total=0;
-var _tiroInCount=[]; // total de steps "in" por tiro
+var _tiroInCount=[],_tiroDoneCount=[]; // total de steps "in" por tiro
 
 function planeIcon(h){return L.divIcon({html:'<div style="transform:rotate('+h+'deg);font-size:26px;line-height:1;filter:drop-shadow(0 0 5px #22c55e)">✈️</div>',iconSize:[32,32],iconAnchor:[16,16],className:''});}
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
@@ -137,14 +137,11 @@ function jumpToStep(target){
   // Resetar estilos
   _polys.forEach(function(p){p.setStyle({color:'#22c55e',weight:1.5,fillColor:'#22c55e',fillOpacity:0.08,opacity:0.5});});
   // Recalcular estado dos polígonos até target
-  var doneCount={};
-  for(var i=0;i<target;i++){
-    var s=_steps[i];
-    if(s.in){doneCount[s.ti]=(doneCount[s.ti]||0)+1;}
-  }
-  for(var ti in doneCount){
-    if(_polys[ti]&&_tiroInCount[ti]>0){
-      var pct=doneCount[ti]/_tiroInCount[ti];
+  _tiroDoneCount=new Array(_tiros.length).fill(0);
+  for(var i=0;i<target;i++){var s=_steps[i];if(s.in)_tiroDoneCount[s.ti]++;}
+  for(var ti=0;ti<_tiros.length;ti++){
+    if(_polys[ti]&&_tiroInCount[ti]>0&&_tiroDoneCount[ti]>0){
+      var pct=_tiroDoneCount[ti]/_tiroInCount[ti];
       _polys[ti].setStyle({fillOpacity:0.10+pct*0.45,opacity:1,color:'#22c55e',weight:2});
     }
   }
@@ -231,6 +228,7 @@ function setupAnim(tiros){
   _steps=buildSteps(tiros);_total=_steps.length;
   // Pré-computar contagens "in" por tiro
   _tiroInCount=new Array(tiros.length).fill(0);
+  _tiroDoneCount=new Array(tiros.length).fill(0);
   _steps.forEach(function(s){if(s.in)_tiroInCount[s.ti]++;});
   var fp=_steps[0].pos;
   _plane=L.marker([fp[0],fp[1]],{icon:planeIcon(0),zIndexOffset:1000}).addTo(_map);
@@ -259,10 +257,8 @@ function tick(){
   for(var k=0;k<stepsPerTick&&_step<_total;k++){
     var s=_steps[_step];
     if(s.in&&_polys[s.ti]&&_tiroInCount[s.ti]>0){
-      // Contar passos concluídos neste tiro até agora (rápido: só incrementar)
-      // Usamos uma contagem direta no estilo do polígono
-      var done=(s._done=(s._done||0)+1);
-      var pct=done/_tiroInCount[s.ti];
+      _tiroDoneCount[s.ti]++;
+      var pct=_tiroDoneCount[s.ti]/_tiroInCount[s.ti];
       _polys[s.ti].setStyle({fillOpacity:0.10+pct*0.45,opacity:1,color:'#22c55e',weight:2});
     }
     lastS=s;_step++;
@@ -282,7 +278,7 @@ function tick(){
 }
 
 window.togglePlay=function(){if(_step>=_total){resetAnalise();return;}_playing=!_playing;document.getElementById('btn-analise-play').textContent=_playing?'⏸ Pausar':'▶ Play';if(_playing)tick();};
-window.resetAnalise=function(){_playing=false;clearTimeout(_timer);jumpToStep(0);document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+_tiros.length;};
+window.resetAnalise=function(){_playing=false;clearTimeout(_timer);_tiroDoneCount=new Array(_tiros.length).fill(0);jumpToStep(0);document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+_tiros.length;};
 window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.getElementById('analise-modal').classList.remove('open');};
 })();
 </script>
@@ -833,7 +829,7 @@ window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.get
 'use strict';
 var _map=null,_tiros=[],_polys=[],_overPolys=[],_plane=null,_timer=null;
 var _playing=false,_step=0,_steps=[],_total=0;
-var _tiroInCount=[]; // total de steps "in" por tiro
+var _tiroInCount=[],_tiroDoneCount=[]; // total de steps "in" por tiro
 
 function planeIcon(h){return L.divIcon({html:'<div style="transform:rotate('+h+'deg);font-size:26px;line-height:1;filter:drop-shadow(0 0 5px #22c55e)">✈️</div>',iconSize:[32,32],iconAnchor:[16,16],className:''});}
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
@@ -898,14 +894,11 @@ function jumpToStep(target){
   // Resetar estilos
   _polys.forEach(function(p){p.setStyle({color:'#22c55e',weight:1.5,fillColor:'#22c55e',fillOpacity:0.08,opacity:0.5});});
   // Recalcular estado dos polígonos até target
-  var doneCount={};
-  for(var i=0;i<target;i++){
-    var s=_steps[i];
-    if(s.in){doneCount[s.ti]=(doneCount[s.ti]||0)+1;}
-  }
-  for(var ti in doneCount){
-    if(_polys[ti]&&_tiroInCount[ti]>0){
-      var pct=doneCount[ti]/_tiroInCount[ti];
+  _tiroDoneCount=new Array(_tiros.length).fill(0);
+  for(var i=0;i<target;i++){var s=_steps[i];if(s.in)_tiroDoneCount[s.ti]++;}
+  for(var ti=0;ti<_tiros.length;ti++){
+    if(_polys[ti]&&_tiroInCount[ti]>0&&_tiroDoneCount[ti]>0){
+      var pct=_tiroDoneCount[ti]/_tiroInCount[ti];
       _polys[ti].setStyle({fillOpacity:0.10+pct*0.45,opacity:1,color:'#22c55e',weight:2});
     }
   }
@@ -992,6 +985,7 @@ function setupAnim(tiros){
   _steps=buildSteps(tiros);_total=_steps.length;
   // Pré-computar contagens "in" por tiro
   _tiroInCount=new Array(tiros.length).fill(0);
+  _tiroDoneCount=new Array(tiros.length).fill(0);
   _steps.forEach(function(s){if(s.in)_tiroInCount[s.ti]++;});
   var fp=_steps[0].pos;
   _plane=L.marker([fp[0],fp[1]],{icon:planeIcon(0),zIndexOffset:1000}).addTo(_map);
@@ -1020,10 +1014,8 @@ function tick(){
   for(var k=0;k<stepsPerTick&&_step<_total;k++){
     var s=_steps[_step];
     if(s.in&&_polys[s.ti]&&_tiroInCount[s.ti]>0){
-      // Contar passos concluídos neste tiro até agora (rápido: só incrementar)
-      // Usamos uma contagem direta no estilo do polígono
-      var done=(s._done=(s._done||0)+1);
-      var pct=done/_tiroInCount[s.ti];
+      _tiroDoneCount[s.ti]++;
+      var pct=_tiroDoneCount[s.ti]/_tiroInCount[s.ti];
       _polys[s.ti].setStyle({fillOpacity:0.10+pct*0.45,opacity:1,color:'#22c55e',weight:2});
     }
     lastS=s;_step++;
@@ -1043,7 +1035,7 @@ function tick(){
 }
 
 window.togglePlay=function(){if(_step>=_total){resetAnalise();return;}_playing=!_playing;document.getElementById('btn-analise-play').textContent=_playing?'⏸ Pausar':'▶ Play';if(_playing)tick();};
-window.resetAnalise=function(){_playing=false;clearTimeout(_timer);jumpToStep(0);document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+_tiros.length;};
+window.resetAnalise=function(){_playing=false;clearTimeout(_timer);_tiroDoneCount=new Array(_tiros.length).fill(0);jumpToStep(0);document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+_tiros.length;};
 window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.getElementById('analise-modal').classList.remove('open');};
 })();
 </script>
