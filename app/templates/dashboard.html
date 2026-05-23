@@ -104,110 +104,34 @@ function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;ret
 /* ── Distância aproximada em graus ── */
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Arco de Bézier: virada FORA do campo ──
-   O controle vai na direção do voo (não perpendicular), criando as "orelhas" corretas */
-function _turnArc(from,to,n,turnR){
-  // Detectar se virada no topo (lat maior = mais norte) ou base (lat menor = mais sul)
-  var midLat=(from[0]+to[0])/2;
-  var fieldMidLat=_turnArc._fieldMidLat||midLat;
-  var goingNorth=(midLat>fieldMidLat);// vira no topo → sai para norte
-  var ctrlLat=goingNorth?(Math.max(from[0],to[0])+turnR):(Math.min(from[0],to[0])-turnR);
-  var ctrlLon=(from[1]+to[1])/2;
-  var pts=[];
-  for(var i=0;i<=n;i++){
-    var t=i/n;
-    pts.push([
-      (1-t)*(1-t)*from[0]+2*(1-t)*t*ctrlLat+t*t*to[0],
-      (1-t)*(1-t)*from[1]+2*(1-t)*t*ctrlLon+t*t*to[1]
-    ]);
-  }
-  return pts;
-}
-
-/* ── Ordenar tiros espacialmente e calcular entry/exit consistente ── */
-function _prepareTiros(tiros){
-  if(!tiros||!tiros.length)return tiros;
-  // Calcular min/max lat de todos os tiros
-  var allLats=[];
-  tiros.forEach(function(t){t.polygon.forEach(function(p){allLats.push(p[0]);});});
-  var minLat=Math.min.apply(null,allLats);
-  var maxLat=Math.max.apply(null,allLats);
-  _turnArc._fieldMidLat=(minLat+maxLat)/2;
-
-  // Detectar orientação predominante (N-S ou E-W)
-  var allNS=tiros.reduce(function(s,t){
-    var lats=t.polygon.map(function(p){return p[0];});
-    var lons=t.polygon.map(function(p){return p[1];});
-    return s+Math.abs(Math.max.apply(null,lats)-Math.min.apply(null,lats))-
-             Math.abs(Math.max.apply(null,lons)-Math.min.apply(null,lons));
-  },0);
-  var isNS=(allNS>0); // verdadeiro se passes N-S
-
-  // Ordenar por posição (lon para N-S, lat para E-W)
-  var sorted=tiros.slice().sort(function(a,b){
-    return isNS?(a.centroid[1]-b.centroid[1]):(a.centroid[0]-b.centroid[0]);
-  });
-
-  // Atribuir entry/exit com direção alternada
-  return sorted.map(function(t,i){
-    var lats=t.polygon.map(function(p){return p[0];});
-    var lons=t.polygon.map(function(p){return p[1];});
-    var goingNorth=(i%2===0);
-    var entry,exit;
-    if(isNS){
-      entry=goingNorth?[Math.min.apply(null,lats),t.centroid[1]]:[Math.max.apply(null,lats),t.centroid[1]];
-      exit =goingNorth?[Math.max.apply(null,lats),t.centroid[1]]:[Math.min.apply(null,lats),t.centroid[1]];
-    } else {
-      entry=goingNorth?[t.centroid[0],Math.min.apply(null,lons)]:[t.centroid[0],Math.max.apply(null,lons)];
-      exit =goingNorth?[t.centroid[0],Math.max.apply(null,lons)]:[t.centroid[0],Math.min.apply(null,lons)];
-    }
-    return Object.assign({},t,{entry:entry,exit:exit,_sortIdx:i});
-  });
-}
-
-/* ── Construir passos de animação ── */
+/* ── Construir passos de animação usando entry/exit do backend ── */
 function buildSteps(tiros){
-  var prepared=_prepareTiros(tiros);
-  var steps=[],F=70,ARC=20,prevExit=null;
-  var avgLen=0;
-  prepared.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
-  avgLen=prepared.length?avgLen/prepared.length:0.01;
-  var turnR=avgLen*0.30;
-
-  prepared.forEach(function(t,i){
+  if(!tiros||!tiros.length)return[];
+  var steps=[],F=60,prevExit=null;
+  tiros.forEach(function(t,i){
+    if(!t||!t.entry||!t.exit)return;
+    // Escolher entrada pelo lado mais próximo do exit anterior
+    var entry=t.entry, exitPt=t.exit;
+    if(prevExit&&_dist(prevExit,t.exit)<_dist(prevExit,t.entry)){
+      entry=t.exit; exitPt=t.entry;
+    }
+    // Interpolação direta (sem arcos — o contorno dos polígonos já é a trajetória)
     if(prevExit){
-      _turnArc(prevExit,t.entry,ARC,turnR).forEach(function(p){
-        steps.push({pos:p,ti:i,in:false});
-      });
+      var T=15;
+      for(var k=1;k<=T;k++){
+        var r=k/T;
+        steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
+                         prevExit[1]+(entry[1]-prevExit[1])*r],ti:i,in:false});
+      }
     }
     for(var k=1;k<=F;k++){
       var r=k/F;
-      steps.push({pos:[t.entry[0]+(t.exit[0]-t.entry[0])*r,
-                       t.entry[1]+(t.exit[1]-t.entry[1])*r],ti:i,in:true});
+      steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                       entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
     }
-    prevExit=t.exit;
+    prevExit=exitPt;
   });
   return steps;
-}
-
-/* ── Polyline completo com manobras ── */
-function buildSprayPolyline(tiros){
-  var prepared=_prepareTiros(tiros);
-  var path=[],ARC=20,prevExit=null;
-  var avgLen=0;
-  prepared.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
-  avgLen=prepared.length?avgLen/prepared.length:0.01;
-  var turnR=avgLen*0.30;
-
-  prepared.forEach(function(t){
-    if(prevExit){
-      _turnArc(prevExit,t.entry,ARC,turnR).forEach(function(p){path.push([p[0],p[1]]);});
-    }
-    path.push([t.entry[0],t.entry[1]]);
-    path.push([t.exit[0],t.exit[1]]);
-    prevExit=t.exit;
-  });
-  return path;
 }
 
 /* ── Ir para posição específica (scrub) ── */
@@ -372,7 +296,7 @@ function setupAnim(tiros, track, summary){
     _polys.push(poly);
     ll.forEach(function(p){bounds.extend(p);});
   });
-  if(_trackLine) bounds.extend(_trackLine.getBounds());
+  if(_trackLine){try{bounds.extend(_trackLine.getBounds());}catch(e){}}
   _map.fitBounds(bounds,{padding:[24,24]});
   setTimeout(function(){_map.invalidateSize();},200);
 
@@ -567,110 +491,34 @@ function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;ret
 /* ── Distância aproximada em graus ── */
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Arco de Bézier: virada FORA do campo ──
-   O controle vai na direção do voo (não perpendicular), criando as "orelhas" corretas */
-function _turnArc(from,to,n,turnR){
-  // Detectar se virada no topo (lat maior = mais norte) ou base (lat menor = mais sul)
-  var midLat=(from[0]+to[0])/2;
-  var fieldMidLat=_turnArc._fieldMidLat||midLat;
-  var goingNorth=(midLat>fieldMidLat);// vira no topo → sai para norte
-  var ctrlLat=goingNorth?(Math.max(from[0],to[0])+turnR):(Math.min(from[0],to[0])-turnR);
-  var ctrlLon=(from[1]+to[1])/2;
-  var pts=[];
-  for(var i=0;i<=n;i++){
-    var t=i/n;
-    pts.push([
-      (1-t)*(1-t)*from[0]+2*(1-t)*t*ctrlLat+t*t*to[0],
-      (1-t)*(1-t)*from[1]+2*(1-t)*t*ctrlLon+t*t*to[1]
-    ]);
-  }
-  return pts;
-}
-
-/* ── Ordenar tiros espacialmente e calcular entry/exit consistente ── */
-function _prepareTiros(tiros){
-  if(!tiros||!tiros.length)return tiros;
-  // Calcular min/max lat de todos os tiros
-  var allLats=[];
-  tiros.forEach(function(t){t.polygon.forEach(function(p){allLats.push(p[0]);});});
-  var minLat=Math.min.apply(null,allLats);
-  var maxLat=Math.max.apply(null,allLats);
-  _turnArc._fieldMidLat=(minLat+maxLat)/2;
-
-  // Detectar orientação predominante (N-S ou E-W)
-  var allNS=tiros.reduce(function(s,t){
-    var lats=t.polygon.map(function(p){return p[0];});
-    var lons=t.polygon.map(function(p){return p[1];});
-    return s+Math.abs(Math.max.apply(null,lats)-Math.min.apply(null,lats))-
-             Math.abs(Math.max.apply(null,lons)-Math.min.apply(null,lons));
-  },0);
-  var isNS=(allNS>0); // verdadeiro se passes N-S
-
-  // Ordenar por posição (lon para N-S, lat para E-W)
-  var sorted=tiros.slice().sort(function(a,b){
-    return isNS?(a.centroid[1]-b.centroid[1]):(a.centroid[0]-b.centroid[0]);
-  });
-
-  // Atribuir entry/exit com direção alternada
-  return sorted.map(function(t,i){
-    var lats=t.polygon.map(function(p){return p[0];});
-    var lons=t.polygon.map(function(p){return p[1];});
-    var goingNorth=(i%2===0);
-    var entry,exit;
-    if(isNS){
-      entry=goingNorth?[Math.min.apply(null,lats),t.centroid[1]]:[Math.max.apply(null,lats),t.centroid[1]];
-      exit =goingNorth?[Math.max.apply(null,lats),t.centroid[1]]:[Math.min.apply(null,lats),t.centroid[1]];
-    } else {
-      entry=goingNorth?[t.centroid[0],Math.min.apply(null,lons)]:[t.centroid[0],Math.max.apply(null,lons)];
-      exit =goingNorth?[t.centroid[0],Math.max.apply(null,lons)]:[t.centroid[0],Math.min.apply(null,lons)];
-    }
-    return Object.assign({},t,{entry:entry,exit:exit,_sortIdx:i});
-  });
-}
-
-/* ── Construir passos de animação ── */
+/* ── Construir passos de animação usando entry/exit do backend ── */
 function buildSteps(tiros){
-  var prepared=_prepareTiros(tiros);
-  var steps=[],F=70,ARC=20,prevExit=null;
-  var avgLen=0;
-  prepared.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
-  avgLen=prepared.length?avgLen/prepared.length:0.01;
-  var turnR=avgLen*0.30;
-
-  prepared.forEach(function(t,i){
+  if(!tiros||!tiros.length)return[];
+  var steps=[],F=60,prevExit=null;
+  tiros.forEach(function(t,i){
+    if(!t||!t.entry||!t.exit)return;
+    // Escolher entrada pelo lado mais próximo do exit anterior
+    var entry=t.entry, exitPt=t.exit;
+    if(prevExit&&_dist(prevExit,t.exit)<_dist(prevExit,t.entry)){
+      entry=t.exit; exitPt=t.entry;
+    }
+    // Interpolação direta (sem arcos — o contorno dos polígonos já é a trajetória)
     if(prevExit){
-      _turnArc(prevExit,t.entry,ARC,turnR).forEach(function(p){
-        steps.push({pos:p,ti:i,in:false});
-      });
+      var T=15;
+      for(var k=1;k<=T;k++){
+        var r=k/T;
+        steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
+                         prevExit[1]+(entry[1]-prevExit[1])*r],ti:i,in:false});
+      }
     }
     for(var k=1;k<=F;k++){
       var r=k/F;
-      steps.push({pos:[t.entry[0]+(t.exit[0]-t.entry[0])*r,
-                       t.entry[1]+(t.exit[1]-t.entry[1])*r],ti:i,in:true});
+      steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                       entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
     }
-    prevExit=t.exit;
+    prevExit=exitPt;
   });
   return steps;
-}
-
-/* ── Polyline completo com manobras ── */
-function buildSprayPolyline(tiros){
-  var prepared=_prepareTiros(tiros);
-  var path=[],ARC=20,prevExit=null;
-  var avgLen=0;
-  prepared.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
-  avgLen=prepared.length?avgLen/prepared.length:0.01;
-  var turnR=avgLen*0.30;
-
-  prepared.forEach(function(t){
-    if(prevExit){
-      _turnArc(prevExit,t.entry,ARC,turnR).forEach(function(p){path.push([p[0],p[1]]);});
-    }
-    path.push([t.entry[0],t.entry[1]]);
-    path.push([t.exit[0],t.exit[1]]);
-    prevExit=t.exit;
-  });
-  return path;
 }
 
 /* ── Ir para posição específica (scrub) ── */
@@ -835,7 +683,7 @@ function setupAnim(tiros, track, summary){
     _polys.push(poly);
     ll.forEach(function(p){bounds.extend(p);});
   });
-  if(_trackLine) bounds.extend(_trackLine.getBounds());
+  if(_trackLine){try{bounds.extend(_trackLine.getBounds());}catch(e){}}
   _map.fitBounds(bounds,{padding:[24,24]});
   setTimeout(function(){_map.invalidateSize();},200);
 
@@ -1198,110 +1046,34 @@ function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;ret
 /* ── Distância aproximada em graus ── */
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Arco de Bézier: virada FORA do campo ──
-   O controle vai na direção do voo (não perpendicular), criando as "orelhas" corretas */
-function _turnArc(from,to,n,turnR){
-  // Detectar se virada no topo (lat maior = mais norte) ou base (lat menor = mais sul)
-  var midLat=(from[0]+to[0])/2;
-  var fieldMidLat=_turnArc._fieldMidLat||midLat;
-  var goingNorth=(midLat>fieldMidLat);// vira no topo → sai para norte
-  var ctrlLat=goingNorth?(Math.max(from[0],to[0])+turnR):(Math.min(from[0],to[0])-turnR);
-  var ctrlLon=(from[1]+to[1])/2;
-  var pts=[];
-  for(var i=0;i<=n;i++){
-    var t=i/n;
-    pts.push([
-      (1-t)*(1-t)*from[0]+2*(1-t)*t*ctrlLat+t*t*to[0],
-      (1-t)*(1-t)*from[1]+2*(1-t)*t*ctrlLon+t*t*to[1]
-    ]);
-  }
-  return pts;
-}
-
-/* ── Ordenar tiros espacialmente e calcular entry/exit consistente ── */
-function _prepareTiros(tiros){
-  if(!tiros||!tiros.length)return tiros;
-  // Calcular min/max lat de todos os tiros
-  var allLats=[];
-  tiros.forEach(function(t){t.polygon.forEach(function(p){allLats.push(p[0]);});});
-  var minLat=Math.min.apply(null,allLats);
-  var maxLat=Math.max.apply(null,allLats);
-  _turnArc._fieldMidLat=(minLat+maxLat)/2;
-
-  // Detectar orientação predominante (N-S ou E-W)
-  var allNS=tiros.reduce(function(s,t){
-    var lats=t.polygon.map(function(p){return p[0];});
-    var lons=t.polygon.map(function(p){return p[1];});
-    return s+Math.abs(Math.max.apply(null,lats)-Math.min.apply(null,lats))-
-             Math.abs(Math.max.apply(null,lons)-Math.min.apply(null,lons));
-  },0);
-  var isNS=(allNS>0); // verdadeiro se passes N-S
-
-  // Ordenar por posição (lon para N-S, lat para E-W)
-  var sorted=tiros.slice().sort(function(a,b){
-    return isNS?(a.centroid[1]-b.centroid[1]):(a.centroid[0]-b.centroid[0]);
-  });
-
-  // Atribuir entry/exit com direção alternada
-  return sorted.map(function(t,i){
-    var lats=t.polygon.map(function(p){return p[0];});
-    var lons=t.polygon.map(function(p){return p[1];});
-    var goingNorth=(i%2===0);
-    var entry,exit;
-    if(isNS){
-      entry=goingNorth?[Math.min.apply(null,lats),t.centroid[1]]:[Math.max.apply(null,lats),t.centroid[1]];
-      exit =goingNorth?[Math.max.apply(null,lats),t.centroid[1]]:[Math.min.apply(null,lats),t.centroid[1]];
-    } else {
-      entry=goingNorth?[t.centroid[0],Math.min.apply(null,lons)]:[t.centroid[0],Math.max.apply(null,lons)];
-      exit =goingNorth?[t.centroid[0],Math.max.apply(null,lons)]:[t.centroid[0],Math.min.apply(null,lons)];
-    }
-    return Object.assign({},t,{entry:entry,exit:exit,_sortIdx:i});
-  });
-}
-
-/* ── Construir passos de animação ── */
+/* ── Construir passos de animação usando entry/exit do backend ── */
 function buildSteps(tiros){
-  var prepared=_prepareTiros(tiros);
-  var steps=[],F=70,ARC=20,prevExit=null;
-  var avgLen=0;
-  prepared.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
-  avgLen=prepared.length?avgLen/prepared.length:0.01;
-  var turnR=avgLen*0.30;
-
-  prepared.forEach(function(t,i){
+  if(!tiros||!tiros.length)return[];
+  var steps=[],F=60,prevExit=null;
+  tiros.forEach(function(t,i){
+    if(!t||!t.entry||!t.exit)return;
+    // Escolher entrada pelo lado mais próximo do exit anterior
+    var entry=t.entry, exitPt=t.exit;
+    if(prevExit&&_dist(prevExit,t.exit)<_dist(prevExit,t.entry)){
+      entry=t.exit; exitPt=t.entry;
+    }
+    // Interpolação direta (sem arcos — o contorno dos polígonos já é a trajetória)
     if(prevExit){
-      _turnArc(prevExit,t.entry,ARC,turnR).forEach(function(p){
-        steps.push({pos:p,ti:i,in:false});
-      });
+      var T=15;
+      for(var k=1;k<=T;k++){
+        var r=k/T;
+        steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
+                         prevExit[1]+(entry[1]-prevExit[1])*r],ti:i,in:false});
+      }
     }
     for(var k=1;k<=F;k++){
       var r=k/F;
-      steps.push({pos:[t.entry[0]+(t.exit[0]-t.entry[0])*r,
-                       t.entry[1]+(t.exit[1]-t.entry[1])*r],ti:i,in:true});
+      steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                       entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
     }
-    prevExit=t.exit;
+    prevExit=exitPt;
   });
   return steps;
-}
-
-/* ── Polyline completo com manobras ── */
-function buildSprayPolyline(tiros){
-  var prepared=_prepareTiros(tiros);
-  var path=[],ARC=20,prevExit=null;
-  var avgLen=0;
-  prepared.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
-  avgLen=prepared.length?avgLen/prepared.length:0.01;
-  var turnR=avgLen*0.30;
-
-  prepared.forEach(function(t){
-    if(prevExit){
-      _turnArc(prevExit,t.entry,ARC,turnR).forEach(function(p){path.push([p[0],p[1]]);});
-    }
-    path.push([t.entry[0],t.entry[1]]);
-    path.push([t.exit[0],t.exit[1]]);
-    prevExit=t.exit;
-  });
-  return path;
 }
 
 /* ── Ir para posição específica (scrub) ── */
@@ -1466,7 +1238,7 @@ function setupAnim(tiros, track, summary){
     _polys.push(poly);
     ll.forEach(function(p){bounds.extend(p);});
   });
-  if(_trackLine) bounds.extend(_trackLine.getBounds());
+  if(_trackLine){try{bounds.extend(_trackLine.getBounds());}catch(e){}}
   _map.fitBounds(bounds,{padding:[24,24]});
   setTimeout(function(){_map.invalidateSize();},200);
 
@@ -1704,110 +1476,34 @@ function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;ret
 /* ── Distância aproximada em graus ── */
 function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Arco de Bézier: virada FORA do campo ──
-   O controle vai na direção do voo (não perpendicular), criando as "orelhas" corretas */
-function _turnArc(from,to,n,turnR){
-  // Detectar se virada no topo (lat maior = mais norte) ou base (lat menor = mais sul)
-  var midLat=(from[0]+to[0])/2;
-  var fieldMidLat=_turnArc._fieldMidLat||midLat;
-  var goingNorth=(midLat>fieldMidLat);// vira no topo → sai para norte
-  var ctrlLat=goingNorth?(Math.max(from[0],to[0])+turnR):(Math.min(from[0],to[0])-turnR);
-  var ctrlLon=(from[1]+to[1])/2;
-  var pts=[];
-  for(var i=0;i<=n;i++){
-    var t=i/n;
-    pts.push([
-      (1-t)*(1-t)*from[0]+2*(1-t)*t*ctrlLat+t*t*to[0],
-      (1-t)*(1-t)*from[1]+2*(1-t)*t*ctrlLon+t*t*to[1]
-    ]);
-  }
-  return pts;
-}
-
-/* ── Ordenar tiros espacialmente e calcular entry/exit consistente ── */
-function _prepareTiros(tiros){
-  if(!tiros||!tiros.length)return tiros;
-  // Calcular min/max lat de todos os tiros
-  var allLats=[];
-  tiros.forEach(function(t){t.polygon.forEach(function(p){allLats.push(p[0]);});});
-  var minLat=Math.min.apply(null,allLats);
-  var maxLat=Math.max.apply(null,allLats);
-  _turnArc._fieldMidLat=(minLat+maxLat)/2;
-
-  // Detectar orientação predominante (N-S ou E-W)
-  var allNS=tiros.reduce(function(s,t){
-    var lats=t.polygon.map(function(p){return p[0];});
-    var lons=t.polygon.map(function(p){return p[1];});
-    return s+Math.abs(Math.max.apply(null,lats)-Math.min.apply(null,lats))-
-             Math.abs(Math.max.apply(null,lons)-Math.min.apply(null,lons));
-  },0);
-  var isNS=(allNS>0); // verdadeiro se passes N-S
-
-  // Ordenar por posição (lon para N-S, lat para E-W)
-  var sorted=tiros.slice().sort(function(a,b){
-    return isNS?(a.centroid[1]-b.centroid[1]):(a.centroid[0]-b.centroid[0]);
-  });
-
-  // Atribuir entry/exit com direção alternada
-  return sorted.map(function(t,i){
-    var lats=t.polygon.map(function(p){return p[0];});
-    var lons=t.polygon.map(function(p){return p[1];});
-    var goingNorth=(i%2===0);
-    var entry,exit;
-    if(isNS){
-      entry=goingNorth?[Math.min.apply(null,lats),t.centroid[1]]:[Math.max.apply(null,lats),t.centroid[1]];
-      exit =goingNorth?[Math.max.apply(null,lats),t.centroid[1]]:[Math.min.apply(null,lats),t.centroid[1]];
-    } else {
-      entry=goingNorth?[t.centroid[0],Math.min.apply(null,lons)]:[t.centroid[0],Math.max.apply(null,lons)];
-      exit =goingNorth?[t.centroid[0],Math.max.apply(null,lons)]:[t.centroid[0],Math.min.apply(null,lons)];
-    }
-    return Object.assign({},t,{entry:entry,exit:exit,_sortIdx:i});
-  });
-}
-
-/* ── Construir passos de animação ── */
+/* ── Construir passos de animação usando entry/exit do backend ── */
 function buildSteps(tiros){
-  var prepared=_prepareTiros(tiros);
-  var steps=[],F=70,ARC=20,prevExit=null;
-  var avgLen=0;
-  prepared.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
-  avgLen=prepared.length?avgLen/prepared.length:0.01;
-  var turnR=avgLen*0.30;
-
-  prepared.forEach(function(t,i){
+  if(!tiros||!tiros.length)return[];
+  var steps=[],F=60,prevExit=null;
+  tiros.forEach(function(t,i){
+    if(!t||!t.entry||!t.exit)return;
+    // Escolher entrada pelo lado mais próximo do exit anterior
+    var entry=t.entry, exitPt=t.exit;
+    if(prevExit&&_dist(prevExit,t.exit)<_dist(prevExit,t.entry)){
+      entry=t.exit; exitPt=t.entry;
+    }
+    // Interpolação direta (sem arcos — o contorno dos polígonos já é a trajetória)
     if(prevExit){
-      _turnArc(prevExit,t.entry,ARC,turnR).forEach(function(p){
-        steps.push({pos:p,ti:i,in:false});
-      });
+      var T=15;
+      for(var k=1;k<=T;k++){
+        var r=k/T;
+        steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
+                         prevExit[1]+(entry[1]-prevExit[1])*r],ti:i,in:false});
+      }
     }
     for(var k=1;k<=F;k++){
       var r=k/F;
-      steps.push({pos:[t.entry[0]+(t.exit[0]-t.entry[0])*r,
-                       t.entry[1]+(t.exit[1]-t.entry[1])*r],ti:i,in:true});
+      steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                       entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
     }
-    prevExit=t.exit;
+    prevExit=exitPt;
   });
   return steps;
-}
-
-/* ── Polyline completo com manobras ── */
-function buildSprayPolyline(tiros){
-  var prepared=_prepareTiros(tiros);
-  var path=[],ARC=20,prevExit=null;
-  var avgLen=0;
-  prepared.forEach(function(t){avgLen+=_dist(t.entry,t.exit);});
-  avgLen=prepared.length?avgLen/prepared.length:0.01;
-  var turnR=avgLen*0.30;
-
-  prepared.forEach(function(t){
-    if(prevExit){
-      _turnArc(prevExit,t.entry,ARC,turnR).forEach(function(p){path.push([p[0],p[1]]);});
-    }
-    path.push([t.entry[0],t.entry[1]]);
-    path.push([t.exit[0],t.exit[1]]);
-    prevExit=t.exit;
-  });
-  return path;
 }
 
 /* ── Ir para posição específica (scrub) ── */
@@ -1972,7 +1668,7 @@ function setupAnim(tiros, track, summary){
     _polys.push(poly);
     ll.forEach(function(p){bounds.extend(p);});
   });
-  if(_trackLine) bounds.extend(_trackLine.getBounds());
+  if(_trackLine){try{bounds.extend(_trackLine.getBounds());}catch(e){}}
   _map.fitBounds(bounds,{padding:[24,24]});
   setTimeout(function(){_map.invalidateSize();},200);
 
