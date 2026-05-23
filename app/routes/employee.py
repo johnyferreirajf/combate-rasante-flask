@@ -978,12 +978,17 @@ def _parse_kml_full(raw):
         if len(pts) < 3: continue
         lats=[p[0] for p in pts]; lons=[p[1] for p in pts]
         lat_c=sum(lats)/len(lats); lon_c=sum(lons)/len(lons)
-        lat_m=(max(lats)-min(lats))*111000
-        lon_m=(max(lons)-min(lons))*111000*abs(math.cos(math.radians(lat_c)))
+        # Detectar eixo real: dois pontos mais distantes (sampling para performance)
+        step=max(1,len(pts)//60)
+        sample=pts[::step]
+        best_d,p1,p2=0,sample[0],sample[-1]
+        for _i in range(len(sample)):
+            for _j in range(_i+1,len(sample)):
+                _d=(sample[_i][0]-sample[_j][0])**2+(sample[_i][1]-sample[_j][1])**2
+                if _d>best_d: best_d=_d; p1=sample[_i]; p2=sample[_j]
         tiros.append({
             "num": int(m.group(1)), "polygon": pts, "centroid": [lat_c, lon_c],
-            "entry": [lat_c, min(lons)] if lon_m > lat_m else [min(lats), lon_c],
-            "exit":  [lat_c, max(lons)] if lon_m > lat_m else [max(lats), lon_c],
+            "entry": p1, "exit": p2,
         })
 
     tiros.sort(key=lambda x: x["num"])
