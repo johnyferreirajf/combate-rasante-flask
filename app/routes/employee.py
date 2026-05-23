@@ -934,6 +934,7 @@ def analise_aplicacao(file_id: int):
 
 
 def _parse_kml_full(raw):
+    """Parseia KML/KMZ retornando tiros (polígonos), track (linha GPS) e summary (planilha)."""
     import re, math
     import xml.etree.ElementTree as ET
     try: root = ET.fromstring(raw)
@@ -944,27 +945,47 @@ def _parse_kml_full(raw):
     def fa(el, p): return el.findall(".//{%s}%s"%(ns_uri,p)) if ns_uri else el.findall(".//"+p)
     def fo(el, p): return el.find(".//{%s}%s"%(ns_uri,p)) if ns_uri else el.find(".//"+p)
 
-    tiros, track_all, summary = [], [], {}
+    tiros, track_raw, summary = [], [], {}
 
     for pm in fa(root, "Placemark"):
         ne = fo(pm, "name"); name = (ne.text or "").strip() if ne is not None else ""
 
+        # ── Planilha (NoGeometry) ──────────────────────────────────────────────
         if name == "Resumo do trabalho":
             de = fo(pm, "description")
-            summary["resumo"] = (de.text or "").strip() if de is not None else ""
+            txt = (de.text or "").strip() if de is not None else ""
+            summary["resumo"] = txt
+            # Extrair campos estruturados
+            m_data  = re.search(r"Data inicial\s+([\d.]+),?\s*(\d+:\d+)", txt)
+            m_fim   = re.search(r"[Úú]ltima aplica[cç][aã]o\s+[\d.]+,?\s*(\d+:\d+)", txt)
+            m_area  = re.search(r"[Áá]rea coberta\s+([\d,.]+)", txt)
+            if m_data:
+                summary["data"]        = m_data.group(1)
+                summary["hora_inicio"] = m_data.group(2)
+            if m_fim:
+                summary["hora_fim"]    = m_fim.group(1)
+            if m_area:
+                try: summary["area_ha"] = float(m_area.group(1).replace(",", "."))
+                except: pass
+
         elif name == "Propriedades do sistema":
             de = fo(pm, "description")
-            summary["sistema"] = (de.text or "").strip() if de is not None else ""
+            txt = (de.text or "").strip() if de is not None else ""
+            summary["sistema"] = txt
+            linhas = [l.strip() for l in txt.split("\n") if l.strip()]
+            if linhas: summary["gps_sistema"] = linhas[0]
 
+        # ── Linha — trajetória do voo (ferry + aproximação) ───────────────────
         ls = fo(pm, "LineString")
-        if ls is not None and ("rajet" in name.lower() or "voo" in name.lower() or "vôo" in name.lower()):
+        if ls is not None:
             ce = fo(ls, "coordinates")
             for tok in (ce.text or "").strip().split():
                 p = tok.split(",")
                 if len(p) >= 2:
-                    try: track_all.append([float(p[1]), float(p[0])])
+                    try: track_raw.append([float(p[1]), float(p[0])])
                     except ValueError: pass
 
+        # ── Polígonos — tiros de aplicação ────────────────────────────────────
         m = re.match(r"Tiro\s+(\d+)", name, re.IGNORECASE)
         if not m: continue
         poly = fo(pm, "Polygon"); ce = fo(poly, "coordinates") if poly is not None else None
@@ -978,30 +999,23 @@ def _parse_kml_full(raw):
         if len(pts) < 3: continue
         lats=[p[0] for p in pts]; lons=[p[1] for p in pts]
         lat_c=sum(lats)/len(lats); lon_c=sum(lons)/len(lons)
-        # Detectar eixo real: dois pontos mais distantes (sampling para performance)
-        step=max(1,len(pts)//60)
-        sample=pts[::step]
-        best_d,p1,p2=0,sample[0],sample[-1]
+        step = max(1, len(pts)//60)
+        sample = pts[::step]
+        best_d, p1, p2 = 0, sample[0], sample[-1]
         for _i in range(len(sample)):
-            for _j in range(_i+1,len(sample)):
+            for _j in range(_i+1, len(sample)):
                 _d=(sample[_i][0]-sample[_j][0])**2+(sample[_i][1]-sample[_j][1])**2
-                if _d>best_d: best_d=_d; p1=sample[_i]; p2=sample[_j]
+                if _d > best_d: best_d=_d; p1=sample[_i]; p2=sample[_j]
         tiros.append({
-            "num": int(m.group(1)), "polygon": pts, "centroid": [lat_c, lon_c],
-            "entry": p1, "exit": p2,
+            "num": int(m.group(1)), "polygon": pts,
+            "centroid": [lat_c, lon_c], "entry": p1, "exit": p2,
         })
 
     tiros.sort(key=lambda x: x["num"])
 
-    if tiros:
-        all_lats=[p[0] for t in tiros for p in t["polygon"]]
-        all_lons=[p[1] for t in tiros for p in t["polygon"]]
-        mg=0.010
-        track = [p for p in track_all
-                 if min(all_lats)-mg<=p[0]<=max(all_lats)+mg
-                 and min(all_lons)-mg<=p[1]<=max(all_lons)+mg]
-    else:
-        track = track_all
+    # Amostrar o track completo (máx 1500 pts) para não sobrecarregar a resposta
+    step = max(1, len(track_raw)//1500)
+    track = track_raw[::step]
 
     return {"tiros": tiros, "track": track, "summary": summary}, None
 
