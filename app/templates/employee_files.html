@@ -355,7 +355,7 @@ function setupAnim(tiros, track, summary){
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
   // Trajetória REAL = contornos dos polígonos de tiro (as bordas GPS traçadas pelo avião)
-  var _trackGroup = L.layerGroup().addTo(_map);
+  var _trackGroup = L.featureGroup().addTo(_map);
   tiros.forEach(function(t){
     var ll=t.polygon.map(function(p){return[p[0],p[1]];});
     L.polyline(ll,{
@@ -1287,7 +1287,7 @@ function setupAnim(tiros, track, summary){
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
   // Trajetória REAL = contornos dos polígonos de tiro (as bordas GPS traçadas pelo avião)
-  var _trackGroup = L.layerGroup().addTo(_map);
+  var _trackGroup = L.featureGroup().addTo(_map);
   tiros.forEach(function(t){
     var ll=t.polygon.map(function(p){return[p[0],p[1]];});
     L.polyline(ll,{
