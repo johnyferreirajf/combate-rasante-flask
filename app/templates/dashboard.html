@@ -248,11 +248,16 @@ function setupAnim(tiros, track, summary){
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória GPS real (linha branca tracejada)
-  if(track&&track.length>1){
-    var trackLL=track.map(function(p){return[p[0],p[1]];});
-    _trackLine=L.polyline(trackLL,{
-      color:'rgba(255,255,255,0.55)',weight:2,dashArray:'6,5',opacity:0.8
+  // Trajetória da pulverização: construída a partir da sequência de tiros
+  // (entry→exit de cada tiro conectados em ordem = caminho real da aplicação)
+  var sprayPath=[];
+  tiros.forEach(function(t){
+    sprayPath.push([t.entry[0],t.entry[1]]);
+    sprayPath.push([t.exit[0], t.exit[1]]);
+  });
+  if(sprayPath.length>1){
+    _trackLine=L.polyline(sprayPath,{
+      color:'rgba(255,255,255,0.50)',weight:1.5,dashArray:'5,4',opacity:0.75
     }).addTo(_map);
   }
 
@@ -603,11 +608,16 @@ function setupAnim(tiros, track, summary){
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória GPS real (linha branca tracejada)
-  if(track&&track.length>1){
-    var trackLL=track.map(function(p){return[p[0],p[1]];});
-    _trackLine=L.polyline(trackLL,{
-      color:'rgba(255,255,255,0.55)',weight:2,dashArray:'6,5',opacity:0.8
+  // Trajetória da pulverização: construída a partir da sequência de tiros
+  // (entry→exit de cada tiro conectados em ordem = caminho real da aplicação)
+  var sprayPath=[];
+  tiros.forEach(function(t){
+    sprayPath.push([t.entry[0],t.entry[1]]);
+    sprayPath.push([t.exit[0], t.exit[1]]);
+  });
+  if(sprayPath.length>1){
+    _trackLine=L.polyline(sprayPath,{
+      color:'rgba(255,255,255,0.50)',weight:1.5,dashArray:'5,4',opacity:0.75
     }).addTo(_map);
   }
 
@@ -1126,11 +1136,16 @@ function setupAnim(tiros, track, summary){
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória GPS real (linha branca tracejada)
-  if(track&&track.length>1){
-    var trackLL=track.map(function(p){return[p[0],p[1]];});
-    _trackLine=L.polyline(trackLL,{
-      color:'rgba(255,255,255,0.55)',weight:2,dashArray:'6,5',opacity:0.8
+  // Trajetória da pulverização: construída a partir da sequência de tiros
+  // (entry→exit de cada tiro conectados em ordem = caminho real da aplicação)
+  var sprayPath=[];
+  tiros.forEach(function(t){
+    sprayPath.push([t.entry[0],t.entry[1]]);
+    sprayPath.push([t.exit[0], t.exit[1]]);
+  });
+  if(sprayPath.length>1){
+    _trackLine=L.polyline(sprayPath,{
+      color:'rgba(255,255,255,0.50)',weight:1.5,dashArray:'5,4',opacity:0.75
     }).addTo(_map);
   }
 
@@ -1524,11 +1539,16 @@ function setupAnim(tiros, track, summary){
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
 
-  // Trajetória GPS real (linha branca tracejada)
-  if(track&&track.length>1){
-    var trackLL=track.map(function(p){return[p[0],p[1]];});
-    _trackLine=L.polyline(trackLL,{
-      color:'rgba(255,255,255,0.55)',weight:2,dashArray:'6,5',opacity:0.8
+  // Trajetória da pulverização: construída a partir da sequência de tiros
+  // (entry→exit de cada tiro conectados em ordem = caminho real da aplicação)
+  var sprayPath=[];
+  tiros.forEach(function(t){
+    sprayPath.push([t.entry[0],t.entry[1]]);
+    sprayPath.push([t.exit[0], t.exit[1]]);
+  });
+  if(sprayPath.length>1){
+    _trackLine=L.polyline(sprayPath,{
+      color:'rgba(255,255,255,0.50)',weight:1.5,dashArray:'5,4',opacity:0.75
     }).addTo(_map);
   }
 
