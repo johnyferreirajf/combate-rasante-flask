@@ -290,7 +290,7 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+
 <script>
 (function(){
 'use strict';
@@ -499,13 +499,19 @@ window.abrirAnalise=function(fileId,nome,rota){
     .then(function(r){return r.json();})
     .then(function(d){
       if(d.erro){document.getElementById('analise-loading').style.display='none';alert('Erro: '+d.erro);fecharAnalise();return;}
-      setupAnim(d.tiros, d.track||[], d.summary||{});
+      try{setupAnim(d.tiros||[], d.track||[], d.summary||{});}
+      catch(e){document.getElementById('analise-loading').style.display='none';console.error('setupAnim error:',e);fecharAnalise();}
     })
-    .catch(function(e){document.getElementById('analise-loading').style.display='none';alert('Erro: '+e);fecharAnalise();});
+    .catch(function(e){document.getElementById('analise-loading').style.display='none';console.error('fetch error:',e);fecharAnalise();});
 };
 
 /* ── Setup da animação ── */
 function setupAnim(tiros, track, summary){
+  if(!tiros||!tiros.length){
+    document.getElementById('analise-loading').style.display='none';
+    document.getElementById('analise-stats').textContent='Nenhum tiro encontrado no arquivo.';
+    return;
+  }
   _tiros=tiros;_playing=false;_step=0;clearTimeout(_timer);
   document.getElementById('btn-analise-play').textContent='▶ Play';
   document.getElementById('analise-progress-bar').style.width='0%';
@@ -513,62 +519,86 @@ function setupAnim(tiros, track, summary){
   document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+tiros.length;
 
   // HUD com dados reais do KMZ
-  if(summary.resumo){
-    var linhas=summary.resumo.split('\n');
-    var dataLine=linhas.find(function(l){return l.includes('Data inicial');});
-    var areaLine=linhas.find(function(l){return l.includes('Área coberta')||l.includes('Area coberta');});
-    if(dataLine)document.getElementById('hud-data').textContent=dataLine.replace('Data inicial','').trim().split(',')[0].trim();
-    if(areaLine)document.getElementById('hud-area').textContent=areaLine.replace(/Área coberta|Area coberta/i,'').trim();
-  }
+  try{
+    if(summary&&summary.resumo){
+      var linhas=summary.resumo.split('\n');
+      var dataLine=linhas.find(function(l){return l.includes('Data inicial');});
+      var areaLine=linhas.find(function(l){return l.includes('Área coberta')||l.includes('Area coberta');});
+      if(dataLine)document.getElementById('hud-data').textContent=dataLine.replace('Data inicial','').trim().split(',')[0].trim();
+      if(areaLine)document.getElementById('hud-area').textContent=areaLine.replace(/Área coberta|Area coberta/i,'').trim();
+    }
+  }catch(e){}
 
-  // Limpar camadas
+  // Limpar camadas anteriores
   if(_plane){try{_map.removeLayer(_plane);}catch(e){}_plane=null;}
   if(_trackLine){try{if(_trackLine.clearLayers)_trackLine.clearLayers();_map.removeLayer(_trackLine);}catch(e){}_trackLine=null;}
   _polys.forEach(function(p){try{_map.removeLayer(p);}catch(e){}});_polys=[];
   _overPolys.forEach(function(p){try{_map.removeLayer(p);}catch(e){}});_overPolys=[];
 
-  // Trajetória REAL = contornos dos polígonos de tiro (as bordas GPS traçadas pelo avião)
-  var _trackGroup = L.featureGroup().addTo(_map);
+  // Coletar TODOS os pontos para calcular bounds de forma segura
+  var allPts=[];
   tiros.forEach(function(t){
-    var ll=t.polygon.map(function(p){return[p[0],p[1]];});
-    L.polyline(ll,{
-      color:'rgba(255,255,255,0.65)',weight:1.2,opacity:0.8
-    }).addTo(_trackGroup);
+    if(t&&t.polygon){t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});}
   });
-  _trackLine = _trackGroup;
+  if(!allPts.length){
+    document.getElementById('analise-loading').style.display='none';
+    return;
+  }
 
-  // Tiros (polígonos verdes semi-transparentes)
-  var bounds=L.latLngBounds();
+  // Criar bounds a partir dos pontos (EVITA L.latLngBounds() sem args)
+  var bounds=L.latLngBounds(allPts);
+
+  // Trajetória = contornos dos polígonos
+  try{
+    var _trackGroup=L.featureGroup().addTo(_map);
+    tiros.forEach(function(t){
+      if(!t||!t.polygon||!t.polygon.length)return;
+      var ll=t.polygon.map(function(p){return[p[0],p[1]];});
+      if(ll.length>1)L.polyline(ll,{color:'rgba(255,255,255,0.65)',weight:1.2,opacity:0.8}).addTo(_trackGroup);
+    });
+    _trackLine=_trackGroup;
+  }catch(e){_trackLine=null;}
+
+  // Polígonos de tiro (verdes)
   tiros.forEach(function(t){
-    var ll=t.polygon.map(function(p){return[p[0],p[1]];});
-    var poly=L.polygon(ll,{color:'#22c55e',weight:1.2,fillColor:'#22c55e',fillOpacity:0.06,opacity:0.45}).addTo(_map);
-    _polys.push(poly);
-    ll.forEach(function(p){bounds.extend(p);});
+    if(!t||!t.polygon||!t.polygon.length)return;
+    try{
+      var ll=t.polygon.map(function(p){return[p[0],p[1]];});
+      var poly=L.polygon(ll,{color:'#22c55e',weight:1.2,fillColor:'#22c55e',fillOpacity:0.06,opacity:0.45}).addTo(_map);
+      _polys.push(poly);
+    }catch(e){_polys.push(null);}
   });
-  if(_trackLine){try{bounds.extend(_trackLine.getBounds());}catch(e){}}
-  _map.fitBounds(bounds,{padding:[24,24]});
-  setTimeout(function(){_map.invalidateSize();},200);
 
-  // Pré-computar contagens
+  try{_map.fitBounds(bounds,{padding:[20,20]});}catch(e){}
+  setTimeout(function(){try{_map.invalidateSize();}catch(e){}},200);
+
+  // Passos de animação
   _steps=buildSteps(tiros);_total=_steps.length;
   _tiroInCount=new Array(tiros.length).fill(0);
   _tiroDoneCount=new Array(tiros.length).fill(0);
-  _steps.forEach(function(s){if(s.in)_tiroInCount[s.ti]++;});
+  _steps.forEach(function(s){if(s&&s.in)_tiroInCount[s.ti]++;});
 
-  var fp=_steps[0].pos;
-  _plane=L.marker([fp[0],fp[1]],{icon:planeIcon(0),zIndexOffset:2000}).addTo(_map);
+  // Avião inicial (só se há passos)
+  if(_steps.length>0&&_steps[0]&&_steps[0].pos){
+    try{
+      var fp=_steps[0].pos;
+      _plane=L.marker([fp[0],fp[1]],{icon:planeIcon(0),zIndexOffset:2000}).addTo(_map);
+    }catch(e){_plane=null;}
+  }
 
   // Calcular sobreposição em background
   computeOverlap(tiros,function(stats){
-    stats.interFeats.forEach(function(feat){
-      drawGeom(feat,{color:'#ef4444',weight:0.5,fillColor:'#ef4444',fillOpacity:0.65,opacity:0.85}).forEach(function(l){_overPolys.push(l);});
-    });
-    var efetPct=(100-stats.overlapPct).toFixed(1);
-    document.getElementById('analise-stats').innerHTML=
-      '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+stats.effectiveHa.toFixed(2)+' ha ('+efetPct+'%)</span>'+
-      '<span style="color:#f87171;font-weight:700;">🔴 Sobreposição: '+stats.overlapHa.toFixed(2)+' ha ('+stats.overlapPct.toFixed(1)+'%)</span>'+
-      '<span style="color:#94a3b8;">📊 Total: '+stats.totalHa.toFixed(2)+' ha</span>'+
-      (summary.sistema?'<span style="color:#4a7c59;font-size:10px;">📡 '+summary.sistema.split('\n')[0]+'</span>':'');
+    try{
+      stats.interFeats.forEach(function(feat){
+        drawGeom(feat,{color:'#ef4444',weight:0.5,fillColor:'#ef4444',fillOpacity:0.65,opacity:0.85}).forEach(function(l){_overPolys.push(l);});
+      });
+      var efetPct=(100-stats.overlapPct).toFixed(1);
+      document.getElementById('analise-stats').innerHTML=
+        '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+stats.effectiveHa.toFixed(2)+' ha ('+efetPct+'%)</span>'+
+        '<span style="color:#f87171;font-weight:700;">🔴 Sobreposição: '+stats.overlapHa.toFixed(2)+' ha ('+stats.overlapPct.toFixed(1)+'%)</span>'+
+        '<span style="color:#94a3b8;">📊 Total: '+stats.totalHa.toFixed(2)+' ha</span>'+
+        (summary&&summary.sistema?'<span style="color:#4a7c59;font-size:10px;">📡 '+summary.sistema.split('\n')[0]+'</span>':'');
+    }catch(e){}
   });
 }
 
