@@ -894,39 +894,32 @@ def preview(file_id: int):
     abort(404)
 
 
-# ── Análise de Aplicação: parse KMZ/KML → retorna tiros como JSON ──────────
+# ── Análise de Aplicação: parse KMZ/KML → retorna tiros + track como JSON ──
 
 @employee_bp.route("/analise_aplicacao/<int:file_id>")
 @employee_login_required
 def analise_aplicacao(file_id: int):
-    """Baixa KMZ/KML e retorna os tiros como GeoJSON para a animação."""
-    import urllib.request as _ur
-    import zipfile, io, re, json as _json
+    import urllib.request as _ur, zipfile, io, re, json as _json, math
     import xml.etree.ElementTree as ET
 
     item = EmployeeFile.query.get_or_404(file_id)
     fname = (item.original_filename or "").lower()
     is_kmz = fname.endswith(".kmz")
     is_kml = fname.endswith(".kml")
-
     if not (is_kmz or is_kml):
         return _json.dumps({"erro": "Arquivo não é KML/KMZ"}), 400, {"Content-Type": "application/json"}
 
-    # Download do arquivo
     cloud_url = getattr(item, "cloudinary_url", None)
     try:
         if cloud_url:
             req = _ur.Request(cloud_url, headers={"User-Agent": "Mozilla/5.0"})
-            with _ur.urlopen(req, timeout=30) as resp:
-                raw = resp.read()
+            with _ur.urlopen(req, timeout=30) as resp: raw = resp.read()
         else:
             abs_path = _safe_abs_path(item.stored_filename)
-            with open(abs_path, "rb") as f:
-                raw = f.read()
+            with open(abs_path, "rb") as f: raw = f.read()
     except Exception as e:
         return _json.dumps({"erro": str(e)}), 500, {"Content-Type": "application/json"}
 
-    # Extrair KML de KMZ
     if is_kmz:
         try:
             with zipfile.ZipFile(io.BytesIO(raw)) as z:
@@ -935,77 +928,75 @@ def analise_aplicacao(file_id: int):
         except Exception as e:
             return _json.dumps({"erro": "Erro ao extrair KMZ: " + str(e)}), 500, {"Content-Type": "application/json"}
 
-    # Parsear KML
-    try:
-        root = ET.fromstring(raw)
-    except Exception as e:
-        return _json.dumps({"erro": "Erro ao parsear KML: " + str(e)}), 500, {"Content-Type": "application/json"}
+    result, err = _parse_kml_full(raw)
+    if err: return _json.dumps({"erro": err}), 500, {"Content-Type": "application/json"}
+    return _json.dumps(result), 200, {"Content-Type": "application/json"}
 
-    ns_map = {"kml": "http://www.opengis.net/kml/2.2"}
-    # Detectar namespace automaticamente
+
+def _parse_kml_full(raw):
+    import re, math
+    import xml.etree.ElementTree as ET
+    try: root = ET.fromstring(raw)
+    except Exception as e: return None, str(e)
+
     tag = root.tag
     ns_uri = tag[1:tag.index("}")] if tag.startswith("{") else ""
-    ns = {"k": ns_uri} if ns_uri else {}
-    def find_all(el, path):
-        if ns:
-            return el.findall(".//{%s}%s" % (ns_uri, path))
-        return el.findall(".//" + path)
-    def find_one(el, path):
-        if ns:
-            return el.find(".//{%s}%s" % (ns_uri, path))
-        return el.find(".//" + path)
+    def fa(el, p): return el.findall(".//{%s}%s"%(ns_uri,p)) if ns_uri else el.findall(".//"+p)
+    def fo(el, p): return el.find(".//{%s}%s"%(ns_uri,p)) if ns_uri else el.find(".//"+p)
 
-    tiros = []
-    placemarks = find_all(root, "Placemark")
-    for pm in placemarks:
-        name_el = find_one(pm, "name")
-        name = (name_el.text or "").strip() if name_el is not None else ""
+    tiros, track_all, summary = [], [], {}
+
+    for pm in fa(root, "Placemark"):
+        ne = fo(pm, "name"); name = (ne.text or "").strip() if ne is not None else ""
+
+        if name == "Resumo do trabalho":
+            de = fo(pm, "description")
+            summary["resumo"] = (de.text or "").strip() if de is not None else ""
+        elif name == "Propriedades do sistema":
+            de = fo(pm, "description")
+            summary["sistema"] = (de.text or "").strip() if de is not None else ""
+
+        ls = fo(pm, "LineString")
+        if ls is not None and ("rajet" in name.lower() or "voo" in name.lower() or "vôo" in name.lower()):
+            ce = fo(ls, "coordinates")
+            for tok in (ce.text or "").strip().split():
+                p = tok.split(",")
+                if len(p) >= 2:
+                    try: track_all.append([float(p[1]), float(p[0])])
+                    except ValueError: pass
+
         m = re.match(r"Tiro\s+(\d+)", name, re.IGNORECASE)
-        if not m:
-            continue
-        num = int(m.group(1))
-        poly = find_one(pm, "Polygon")
-        if poly is None:
-            continue
-        coords_el = find_one(poly, "coordinates")
-        if coords_el is None:
-            continue
+        if not m: continue
+        poly = fo(pm, "Polygon"); ce = fo(poly, "coordinates") if poly is not None else None
+        if ce is None: continue
         pts = []
-        for token in (coords_el.text or "").strip().split():
-            parts = token.split(",")
-            if len(parts) >= 2:
-                try:
-                    pts.append([float(parts[1]), float(parts[0])])  # [lat, lon]
-                except ValueError:
-                    pass
-        if len(pts) < 3:
-            continue
-        # Centróide
-        lat_c = sum(p[0] for p in pts) / len(pts)
-        lon_c = sum(p[1] for p in pts) / len(pts)
-        # Eixo principal: dois pontos mais distantes (bounding box short/long axis)
-        lats = [p[0] for p in pts]
-        lons = [p[1] for p in pts]
-        lat_range = max(lats) - min(lats)
-        lon_range = max(lons) - min(lons)
-        lat_m = lat_range * 111000
-        lon_m = lon_range * 111000 * abs(__import__("math").cos(__import__("math").radians(lat_c)))
-        if lon_m > lat_m:
-            entry = [lat_c, min(lons)]
-            exit_pt = [lat_c, max(lons)]
-        else:
-            entry = [min(lats), lon_c]
-            exit_pt = [max(lats), lon_c]
-
+        for tok in (ce.text or "").strip().split():
+            p = tok.split(",")
+            if len(p) >= 2:
+                try: pts.append([float(p[1]), float(p[0])])
+                except ValueError: pass
+        if len(pts) < 3: continue
+        lats=[p[0] for p in pts]; lons=[p[1] for p in pts]
+        lat_c=sum(lats)/len(lats); lon_c=sum(lons)/len(lons)
+        lat_m=(max(lats)-min(lats))*111000
+        lon_m=(max(lons)-min(lons))*111000*abs(math.cos(math.radians(lat_c)))
         tiros.append({
-            "num": num,
-            "name": name,
-            "polygon": pts,
-            "centroid": [lat_c, lon_c],
-            "entry": entry,
-            "exit": exit_pt,
+            "num": int(m.group(1)), "polygon": pts, "centroid": [lat_c, lon_c],
+            "entry": [lat_c, min(lons)] if lon_m > lat_m else [min(lats), lon_c],
+            "exit":  [lat_c, max(lons)] if lon_m > lat_m else [max(lats), lon_c],
         })
 
     tiros.sort(key=lambda x: x["num"])
-    result = _json.dumps({"tiros": tiros})
-    return result, 200, {"Content-Type": "application/json"}
+
+    if tiros:
+        all_lats=[p[0] for t in tiros for p in t["polygon"]]
+        all_lons=[p[1] for t in tiros for p in t["polygon"]]
+        mg=0.010
+        track = [p for p in track_all
+                 if min(all_lats)-mg<=p[0]<=max(all_lats)+mg
+                 and min(all_lons)-mg<=p[1]<=max(all_lons)+mg]
+    else:
+        track = track_all
+
+    return {"tiros": tiros, "track": track, "summary": summary}, None
+

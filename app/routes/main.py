@@ -402,35 +402,29 @@ Máximo de 3 parágrafos por resposta."""
 
 
 
-# ── Análise de Aplicação (cliente) ──────────────────────────────────────────
+# ── Análise de Aplicação (cliente) ─────────────────────────────────────────
 
 @main_bp.route("/painel/analise_aplicacao/<int:file_id>")
 @login_required
 def painel_analise_aplicacao(file_id):
-    """Baixa KMZ/KML do cliente e retorna tiros como JSON para a animação."""
-    import urllib.request as _ur
-    import zipfile, io, re, json as _json, math
+    import urllib.request as _ur, zipfile, io, re, json as _json, math
     import xml.etree.ElementTree as ET
     from app.models.client_file import ClientFile
 
     user = get_current_user()
     cf = ClientFile.query.get_or_404(file_id)
-    if cf.user_id != user.id:
-        abort(403)
+    if cf.user_id != user.id: abort(403)
 
     ext = (cf.file_ext or "").lower().lstrip(".")
     if ext not in ("kml", "kmz"):
         return _json.dumps({"erro": "Arquivo não é KML/KMZ"}), 400, {"Content-Type": "application/json"}
 
-    # Download
     try:
         req = _ur.Request(cf.url, headers={"User-Agent": "Mozilla/5.0"})
-        with _ur.urlopen(req, timeout=60) as resp:
-            raw = resp.read()
+        with _ur.urlopen(req, timeout=60) as resp: raw = resp.read()
     except Exception as e:
         return _json.dumps({"erro": str(e)}), 500, {"Content-Type": "application/json"}
 
-    # KMZ → KML
     if ext == "kmz":
         try:
             with zipfile.ZipFile(io.BytesIO(raw)) as z:
@@ -439,54 +433,8 @@ def painel_analise_aplicacao(file_id):
         except Exception as e:
             return _json.dumps({"erro": "Erro ao extrair KMZ: " + str(e)}), 500, {"Content-Type": "application/json"}
 
-    # Parse KML
-    try:
-        root = ET.fromstring(raw)
-    except Exception as e:
-        return _json.dumps({"erro": "KML inválido: " + str(e)}), 500, {"Content-Type": "application/json"}
+    from app.routes.employee import _parse_kml_full
+    result, err = _parse_kml_full(raw)
+    if err: return _json.dumps({"erro": err}), 500, {"Content-Type": "application/json"}
+    return _json.dumps(result), 200, {"Content-Type": "application/json"}
 
-    tag = root.tag
-    ns_uri = tag[1:tag.index("}")] if tag.startswith("{") else ""
-    def findall(el, path):
-        return el.findall(".//{%s}%s" % (ns_uri, path)) if ns_uri else el.findall(".//" + path)
-    def findone(el, path):
-        return el.find(".//{%s}%s" % (ns_uri, path)) if ns_uri else el.find(".//" + path)
-
-    tiros = []
-    for pm in findall(root, "Placemark"):
-        ne = findone(pm, "name")
-        name = (ne.text or "").strip() if ne is not None else ""
-        m = re.match(r"Tiro\s+(\d+)", name, re.IGNORECASE)
-        if not m:
-            continue
-        poly = findone(pm, "Polygon")
-        if poly is None:
-            continue
-        ce = findone(poly, "coordinates")
-        if ce is None:
-            continue
-        pts = []
-        for tok in (ce.text or "").strip().split():
-            parts = tok.split(",")
-            if len(parts) >= 2:
-                try:
-                    pts.append([float(parts[1]), float(parts[0])])
-                except ValueError:
-                    pass
-        if len(pts) < 3:
-            continue
-        lats = [p[0] for p in pts]
-        lons = [p[1] for p in pts]
-        lat_c = sum(lats) / len(lats)
-        lon_c = sum(lons) / len(lons)
-        lat_m = (max(lats) - min(lats)) * 111000
-        lon_m = (max(lons) - min(lons)) * 111000 * abs(math.cos(math.radians(lat_c)))
-        if lon_m > lat_m:
-            entry, exit_pt = [lat_c, min(lons)], [lat_c, max(lons)]
-        else:
-            entry, exit_pt = [min(lats), lon_c], [max(lats), lon_c]
-        tiros.append({"num": int(m.group(1)), "name": name, "polygon": pts,
-                      "centroid": [lat_c, lon_c], "entry": entry, "exit": exit_pt})
-
-    tiros.sort(key=lambda x: x["num"])
-    return _json.dumps({"tiros": tiros}), 200, {"Content-Type": "application/json"}
