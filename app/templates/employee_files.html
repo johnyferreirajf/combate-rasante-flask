@@ -3,6 +3,8 @@
 
 
 
+
+
 <!-- ═══════════════ ANÁLISE DE APLICAÇÃO ═══════════════ -->
 <style>
 .sp-badge-analise{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 8px;border-radius:20px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;font-size:10px;font-weight:700;cursor:pointer;transition:background .2s;}
@@ -14,18 +16,30 @@
 #analise-map{flex:1;min-height:0;width:100%;}
 #analise-stats{width:100%;padding:7px 16px;background:#0a1f10;border-top:1px solid #1a3a1f;display:flex;align-items:center;flex-wrap:wrap;gap:14px;font-size:12px;flex-shrink:0;}
 #analise-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 16px;background:#071a0d;border-top:1px solid #1a3a1f;flex-shrink:0;}
-#analise-progress-wrap{flex:1;min-width:100px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;}
-#analise-progress-bar{height:100%;background:#22c55e;border-radius:3px;width:0%;transition:width .2s;}
+/* Barra de progresso arrastável */
+#analise-progress-wrap{
+  flex:1;min-width:120px;height:14px;background:rgba(255,255,255,.1);
+  border-radius:7px;overflow:hidden;cursor:pointer;position:relative;
+  border:1px solid rgba(255,255,255,.08);
+}
+#analise-progress-wrap:hover{background:rgba(255,255,255,.15);}
+#analise-progress-bar{height:100%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:7px;width:0%;pointer-events:none;transition:none;}
+#analise-progress-thumb{
+  position:absolute;top:50%;right:0;width:14px;height:14px;
+  background:#4ade80;border-radius:50%;transform:translate(50%,-50%);
+  pointer-events:none;box-shadow:0 0 6px rgba(74,222,128,.7);display:none;
+}
+#analise-progress-wrap:hover #analise-progress-thumb{display:block;}
 .analise-btn{padding:5px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;}
 .analise-btn-green{background:#22c55e;color:#000;}
 .analise-btn-gray{background:rgba(255,255,255,.12);color:#ccc;}
 .analise-btn-red{background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.4);}
 #analise-tiro-label{color:#86efac;font-size:12px;font-weight:700;white-space:nowrap;}
 #analise-speed-wrap{display:flex;align-items:center;gap:6px;color:#aaa;font-size:12px;}
-#analise-speed{width:80px;accent-color:#22c55e;}
+#analise-speed{width:80px;accent-color:#22c55e;cursor:pointer;}
 #analise-loading{position:absolute;inset:0;background:rgba(0,0,0,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#86efac;font-size:15px;font-weight:700;z-index:10;gap:8px;}
-.analise-spinner{width:32px;height:32px;border:3px solid rgba(34,197,94,.2);border-top-color:#22c55e;border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
+.analise-spinner{width:32px;height:32px;border:3px solid rgba(34,197,94,.2);border-top-color:#22c55e;border-radius:50%;animation:aspin .8s linear infinite;}
+@keyframes aspin{to{transform:rotate(360deg)}}
 </style>
 
 <div id="analise-modal">
@@ -38,14 +52,15 @@
     <div id="analise-map"></div>
     <div id="analise-loading" style="display:none;"><div class="analise-spinner"></div><span id="analise-loading-msg">Carregando tiros...</span></div>
   </div>
-  <div id="analise-stats">
-    <span style="color:#64748b;font-style:italic;">Aguardando cálculo de sobreposição...</span>
-  </div>
+  <div id="analise-stats"><span style="color:#64748b;font-style:italic;">Aguardando cálculo...</span></div>
   <div id="analise-controls">
     <button id="btn-analise-play" class="analise-btn analise-btn-green" onclick="togglePlay()">▶ Play</button>
     <button class="analise-btn analise-btn-gray" onclick="resetAnalise()">↺ Reiniciar</button>
-    <div id="analise-progress-wrap"><div id="analise-progress-bar"></div></div>
-    <div id="analise-speed-wrap">🐢 <input type="range" id="analise-speed" min="1" max="10" value="4"> 🚀</div>
+    <div id="analise-progress-wrap">
+      <div id="analise-progress-bar"></div>
+      <div id="analise-progress-thumb"></div>
+    </div>
+    <div id="analise-speed-wrap">🐢 <input type="range" id="analise-speed" min="1" max="15" value="5"> 🚀</div>
   </div>
 </div>
 
@@ -57,6 +72,7 @@
 'use strict';
 var _map=null,_tiros=[],_polys=[],_overPolys=[],_plane=null,_timer=null;
 var _playing=false,_step=0,_steps=[],_total=0;
+var _tiroInCount=[]; // total de steps "in" por tiro
 
 function planeIcon(h){return L.divIcon({html:'<div style="transform:rotate('+h+'deg);font-size:26px;line-height:1;filter:drop-shadow(0 0 5px #22c55e)">✈️</div>',iconSize:[32,32],iconAnchor:[16,16],className:''});}
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
@@ -78,45 +94,30 @@ function toTurfPoly(pts){
   if(coords[0][0]!==coords[coords.length-1][0]||coords[0][1]!==coords[coords.length-1][1])coords.push(coords[0].slice());
   try{return turf.polygon([coords]);}catch(e){return null;}
 }
-function drawTurfGeom(geom,style){
-  var layers=[];
-  if(!geom)return layers;
-  var type=geom.type||'';
-  var coords=(geom.geometry||geom).coordinates;
-  var gtype=(geom.geometry||geom).type;
-  function addRing(ring){
-    var ll=ring.map(function(c){return[c[1],c[0]];});
-    var l=L.polygon(ll,style).addTo(_map);
-    layers.push(l);
-  }
-  if(gtype==='Polygon'){addRing(coords[0]);}
-  else if(gtype==='MultiPolygon'){coords.forEach(function(poly){addRing(poly[0]);});}
-  return layers;
+function drawTurfGeom(feat,style){
+  var g=(feat.geometry||feat);
+  if(g.type==='Polygon'){return[L.polygon(g.coordinates[0].map(function(c){return[c[1],c[0]];}),style).addTo(_map)];}
+  if(g.type==='MultiPolygon'){return g.coordinates.map(function(poly){return L.polygon(poly[0].map(function(c){return[c[1],c[0]];}),style).addTo(_map);});}
+  return[];
 }
 
 /* ── Calcular sobreposição ── */
-function computeOverlap(tiros, cb){
+function computeOverlap(tiros,cb){
   document.getElementById('analise-loading-msg').textContent='Calculando sobreposições...';
   document.getElementById('analise-loading').style.display='flex';
   setTimeout(function(){
     var tpolys=tiros.map(function(t){return toTurfPoly(t.polygon);});
     var totalM2=0;
     tpolys.forEach(function(p){if(p)try{totalM2+=turf.area(p);}catch(e){}});
-
-    /* Union progressiva para área efetiva */
     var unionAll=null;
     tpolys.forEach(function(p){
       if(!p)return;
       if(!unionAll){unionAll=p;return;}
       try{unionAll=turf.union(unionAll,p)||unionAll;}catch(e){}
     });
-    var effectiveM2=unionAll?0:totalM2;
-    try{if(unionAll)effectiveM2=turf.area(unionAll);}catch(e){effectiveM2=totalM2;}
-
+    var effectiveM2=totalM2;
+    try{if(unionAll)effectiveM2=turf.area(unionAll);}catch(e){}
     var overlapM2=Math.max(0,totalM2-effectiveM2);
-    var overlapPct=totalM2>0?(overlapM2/totalM2*100):0;
-
-    /* Interseções par-a-par para visualização */
     var interFeats=[];
     for(var i=0;i<tpolys.length;i++){
       if(!tpolys[i])continue;
@@ -125,16 +126,65 @@ function computeOverlap(tiros, cb){
         try{var inter=turf.intersect(tpolys[i],tpolys[j]);if(inter)interFeats.push(inter);}catch(e){}
       }
     }
-
     document.getElementById('analise-loading').style.display='none';
-    cb({
-      totalHa:totalM2/10000,
-      effectiveHa:effectiveM2/10000,
-      overlapHa:overlapM2/10000,
-      overlapPct:overlapPct,
-      interFeats:interFeats
-    });
+    cb({totalHa:totalM2/10000,effectiveHa:effectiveM2/10000,overlapHa:overlapM2/10000,overlapPct:totalM2>0?(overlapM2/totalM2*100):0,interFeats:interFeats});
   },80);
+}
+
+/* ── Ir para um passo específico (scrub) ── */
+function jumpToStep(target){
+  target=Math.max(0,Math.min(target,_total));
+  // Resetar estilos
+  _polys.forEach(function(p){p.setStyle({color:'#22c55e',weight:1.5,fillColor:'#22c55e',fillOpacity:0.08,opacity:0.5});});
+  // Recalcular estado dos polígonos até target
+  var doneCount={};
+  for(var i=0;i<target;i++){
+    var s=_steps[i];
+    if(s.in){doneCount[s.ti]=(doneCount[s.ti]||0)+1;}
+  }
+  for(var ti in doneCount){
+    if(_polys[ti]&&_tiroInCount[ti]>0){
+      var pct=doneCount[ti]/_tiroInCount[ti];
+      _polys[ti].setStyle({fillOpacity:0.10+pct*0.45,opacity:1,color:'#22c55e',weight:2});
+    }
+  }
+  // Mover avião
+  var idx=Math.min(target,_total-1);
+  if(_plane&&_steps[idx]){
+    var s=_steps[idx];var nxt=idx+1<_total?_steps[idx+1]:null;
+    _plane.setLatLng([s.pos[0],s.pos[1]]);
+    if(nxt)_plane.setIcon(planeIcon(bearing(s.pos,nxt.pos)));
+    document.getElementById('analise-tiro-label').textContent='Tiro '+(s.ti+1)+' / '+_tiros.length+(s.in?' 🌾':'');
+  }
+  _step=target;
+  var pct=_total>0?Math.round(target/_total*100):0;
+  document.getElementById('analise-progress-bar').style.width=pct+'%';
+  document.getElementById('analise-progress-thumb').style.left=pct+'%';
+}
+
+/* ── Barra de progresso arrastável ── */
+function _initScrub(){
+  var wrap=document.getElementById('analise-progress-wrap');
+  function seekFromX(clientX){
+    var rect=wrap.getBoundingClientRect();
+    var pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
+    var wasPlaying=_playing;
+    _playing=false;clearTimeout(_timer);
+    jumpToStep(Math.floor(pct*_total));
+    if(wasPlaying&&_step<_total){_playing=true;tick();}
+  }
+  wrap.addEventListener('mousedown',function(e){
+    e.preventDefault();seekFromX(e.clientX);
+    function mm(e){seekFromX(e.clientX);}
+    function mu(){document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);}
+    document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  });
+  wrap.addEventListener('touchstart',function(e){
+    if(e.touches[0])seekFromX(e.touches[0].clientX);
+    function tm(e){if(e.touches[0])seekFromX(e.touches[0].clientX);}
+    function tu(){document.removeEventListener('touchmove',tm);document.removeEventListener('touchend',tu);}
+    document.addEventListener('touchmove',tm,{passive:true});document.addEventListener('touchend',tu);
+  },{passive:true});
 }
 
 /* ── Abrir modal ── */
@@ -146,10 +196,10 @@ window.abrirAnalise=function(fileId,nome,rota){
   document.getElementById('analise-title').textContent='✈️ '+nome;
   document.getElementById('analise-tiro-label').textContent='—';
   document.getElementById('analise-stats').innerHTML='<span style="color:#64748b;font-style:italic;">Calculando sobreposição...</span>';
-
   if(!_map){
     _map=L.map('analise-map',{zoomControl:true,attributionControl:false});
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20}).addTo(_map);
+    _initScrub();
   }
   fetch(rota+fileId)
     .then(function(r){return r.json();})
@@ -164,12 +214,11 @@ function setupAnim(tiros){
   _tiros=tiros;_playing=false;_step=0;clearTimeout(_timer);
   document.getElementById('btn-analise-play').textContent='▶ Play';
   document.getElementById('analise-progress-bar').style.width='0%';
+  document.getElementById('analise-progress-thumb').style.left='0%';
   document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+tiros.length;
-
   if(_plane){_map.removeLayer(_plane);_plane=null;}
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
-
   var bounds=L.latLngBounds();
   tiros.forEach(function(t){
     var ll=t.polygon.map(function(p){return[p[0],p[1]];});
@@ -179,49 +228,61 @@ function setupAnim(tiros){
   });
   _map.fitBounds(bounds,{padding:[30,30]});
   setTimeout(function(){_map.invalidateSize();},200);
-
-  /* Calcular overlap (async) */
-  computeOverlap(tiros,function(stats){
-    /* Desenhar áreas de sobreposição em vermelho */
-    stats.interFeats.forEach(function(feat){
-      var ls=drawTurfGeom(feat,{color:'#ef4444',weight:1,fillColor:'#ef4444',fillOpacity:0.6,opacity:0.9});
-      ls.forEach(function(l){_overPolys.push(l);});
-    });
-
-    /* Atualizar painel de estatísticas */
-    var efetPct=(100-stats.overlapPct).toFixed(1);
-    document.getElementById('analise-stats').innerHTML=
-      '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+stats.effectiveHa.toFixed(2)+' ha ('+efetPct+'%)</span>'+
-      '<span style="color:#f87171;font-weight:700;">🔴 Sobreposição: '+stats.overlapHa.toFixed(2)+' ha ('+stats.overlapPct.toFixed(1)+'%)</span>'+
-      '<span style="color:#94a3b8;">📊 Total aplicado: '+stats.totalHa.toFixed(2)+' ha</span>';
-  });
-
   _steps=buildSteps(tiros);_total=_steps.length;
+  // Pré-computar contagens "in" por tiro
+  _tiroInCount=new Array(tiros.length).fill(0);
+  _steps.forEach(function(s){if(s.in)_tiroInCount[s.ti]++;});
   var fp=_steps[0].pos;
   _plane=L.marker([fp[0],fp[1]],{icon:planeIcon(0),zIndexOffset:1000}).addTo(_map);
+  // Calcular overlap em background
+  computeOverlap(tiros,function(stats){
+    stats.interFeats.forEach(function(feat){
+      drawTurfGeom(feat,{color:'#ef4444',weight:1,fillColor:'#ef4444',fillOpacity:0.60,opacity:0.9}).forEach(function(l){_overPolys.push(l);});
+    });
+    document.getElementById('analise-stats').innerHTML=
+      '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+stats.effectiveHa.toFixed(2)+' ha ('+(100-stats.overlapPct).toFixed(1)+'%)</span>'+
+      '<span style="color:#f87171;font-weight:700;">🔴 Sobreposição: '+stats.overlapHa.toFixed(2)+' ha ('+stats.overlapPct.toFixed(1)+'%)</span>'+
+      '<span style="color:#94a3b8;">📊 Total: '+stats.totalHa.toFixed(2)+' ha</span>';
+  });
 }
 
+/* ── Tick de animação: múltiplos passos por tick em altas velocidades ── */
 function tick(){
   if(!_playing||_step>=_total){
     if(_step>=_total){_playing=false;document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-tiro-label').textContent='✅ Aplicação concluída!';}
     return;
   }
-  var s=_steps[_step];var nxt=_step+1<_total?_steps[_step+1]:null;
-  if(_plane){_plane.setLatLng([s.pos[0],s.pos[1]]);if(nxt)_plane.setIcon(planeIcon(bearing(s.pos,nxt.pos)));}
-  if(s.in&&_polys[s.ti]){
-    var tot=_steps.filter(function(x){return x.ti===s.ti&&x.in;}).length;
-    var done=_steps.slice(0,_step+1).filter(function(x){return x.ti===s.ti&&x.in;}).length;
-    _polys[s.ti].setStyle({fillOpacity:0.10+(done/tot)*0.45,opacity:1,color:'#22c55e',weight:2});
+  var spd=parseInt(document.getElementById('analise-speed').value)||5;
+  // Passos por tick: 1 na velocidade 1, até ~50 na velocidade 15
+  var stepsPerTick=Math.max(1,Math.floor(Math.pow(spd,1.8)/4));
+  var lastS=null;
+  for(var k=0;k<stepsPerTick&&_step<_total;k++){
+    var s=_steps[_step];
+    if(s.in&&_polys[s.ti]&&_tiroInCount[s.ti]>0){
+      // Contar passos concluídos neste tiro até agora (rápido: só incrementar)
+      // Usamos uma contagem direta no estilo do polígono
+      var done=(s._done=(s._done||0)+1);
+      var pct=done/_tiroInCount[s.ti];
+      _polys[s.ti].setStyle({fillOpacity:0.10+pct*0.45,opacity:1,color:'#22c55e',weight:2});
+    }
+    lastS=s;_step++;
   }
-  document.getElementById('analise-tiro-label').textContent='Tiro '+(s.ti+1)+' / '+_tiros.length+(s.in?' 🌾':'');
-  document.getElementById('analise-progress-bar').style.width=Math.round(_step/_total*100)+'%';
-  _step++;
-  var spd=parseInt(document.getElementById('analise-speed').value)||4;
-  _timer=setTimeout(tick,Math.max(6,82-spd*8));
+  // Atualizar avião só uma vez por tick (último passo do batch)
+  if(lastS&&_plane){
+    _plane.setLatLng([lastS.pos[0],lastS.pos[1]]);
+    var nxt=_step<_total?_steps[_step]:null;
+    if(nxt)_plane.setIcon(planeIcon(bearing(lastS.pos,nxt.pos)));
+    document.getElementById('analise-tiro-label').textContent='Tiro '+(lastS.ti+1)+' / '+_tiros.length+(lastS.in?' 🌾':'');
+  }
+  var pct=Math.round(_step/_total*100);
+  document.getElementById('analise-progress-bar').style.width=pct+'%';
+  document.getElementById('analise-progress-thumb').style.left=pct+'%';
+  var delay=Math.max(8,55-spd*3);
+  _timer=setTimeout(tick,delay);
 }
 
 window.togglePlay=function(){if(_step>=_total){resetAnalise();return;}_playing=!_playing;document.getElementById('btn-analise-play').textContent=_playing?'⏸ Pausar':'▶ Play';if(_playing)tick();};
-window.resetAnalise=function(){_playing=false;clearTimeout(_timer);_step=0;document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-progress-bar').style.width='0%';document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+_tiros.length;_polys.forEach(function(p){p.setStyle({color:'#22c55e',weight:1.5,fillColor:'#22c55e',fillOpacity:0.08,opacity:0.5});});if(_steps.length&&_plane)_plane.setLatLng([_steps[0].pos[0],_steps[0].pos[1]]);};
+window.resetAnalise=function(){_playing=false;clearTimeout(_timer);jumpToStep(0);document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+_tiros.length;};
 window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.getElementById('analise-modal').classList.remove('open');};
 })();
 </script>
@@ -703,6 +764,8 @@ window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.get
 
 
 
+
+
 <!-- ═══════════════ ANÁLISE DE APLICAÇÃO ═══════════════ -->
 <style>
 .sp-badge-analise{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:2px 8px;border-radius:20px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#86efac;font-size:10px;font-weight:700;cursor:pointer;transition:background .2s;}
@@ -714,18 +777,30 @@ window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.get
 #analise-map{flex:1;min-height:0;width:100%;}
 #analise-stats{width:100%;padding:7px 16px;background:#0a1f10;border-top:1px solid #1a3a1f;display:flex;align-items:center;flex-wrap:wrap;gap:14px;font-size:12px;flex-shrink:0;}
 #analise-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 16px;background:#071a0d;border-top:1px solid #1a3a1f;flex-shrink:0;}
-#analise-progress-wrap{flex:1;min-width:100px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;}
-#analise-progress-bar{height:100%;background:#22c55e;border-radius:3px;width:0%;transition:width .2s;}
+/* Barra de progresso arrastável */
+#analise-progress-wrap{
+  flex:1;min-width:120px;height:14px;background:rgba(255,255,255,.1);
+  border-radius:7px;overflow:hidden;cursor:pointer;position:relative;
+  border:1px solid rgba(255,255,255,.08);
+}
+#analise-progress-wrap:hover{background:rgba(255,255,255,.15);}
+#analise-progress-bar{height:100%;background:linear-gradient(90deg,#16a34a,#22c55e);border-radius:7px;width:0%;pointer-events:none;transition:none;}
+#analise-progress-thumb{
+  position:absolute;top:50%;right:0;width:14px;height:14px;
+  background:#4ade80;border-radius:50%;transform:translate(50%,-50%);
+  pointer-events:none;box-shadow:0 0 6px rgba(74,222,128,.7);display:none;
+}
+#analise-progress-wrap:hover #analise-progress-thumb{display:block;}
 .analise-btn{padding:5px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700;}
 .analise-btn-green{background:#22c55e;color:#000;}
 .analise-btn-gray{background:rgba(255,255,255,.12);color:#ccc;}
 .analise-btn-red{background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.4);}
 #analise-tiro-label{color:#86efac;font-size:12px;font-weight:700;white-space:nowrap;}
 #analise-speed-wrap{display:flex;align-items:center;gap:6px;color:#aaa;font-size:12px;}
-#analise-speed{width:80px;accent-color:#22c55e;}
+#analise-speed{width:80px;accent-color:#22c55e;cursor:pointer;}
 #analise-loading{position:absolute;inset:0;background:rgba(0,0,0,.78);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#86efac;font-size:15px;font-weight:700;z-index:10;gap:8px;}
-.analise-spinner{width:32px;height:32px;border:3px solid rgba(34,197,94,.2);border-top-color:#22c55e;border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
+.analise-spinner{width:32px;height:32px;border:3px solid rgba(34,197,94,.2);border-top-color:#22c55e;border-radius:50%;animation:aspin .8s linear infinite;}
+@keyframes aspin{to{transform:rotate(360deg)}}
 </style>
 
 <div id="analise-modal">
@@ -738,14 +813,15 @@ window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.get
     <div id="analise-map"></div>
     <div id="analise-loading" style="display:none;"><div class="analise-spinner"></div><span id="analise-loading-msg">Carregando tiros...</span></div>
   </div>
-  <div id="analise-stats">
-    <span style="color:#64748b;font-style:italic;">Aguardando cálculo de sobreposição...</span>
-  </div>
+  <div id="analise-stats"><span style="color:#64748b;font-style:italic;">Aguardando cálculo...</span></div>
   <div id="analise-controls">
     <button id="btn-analise-play" class="analise-btn analise-btn-green" onclick="togglePlay()">▶ Play</button>
     <button class="analise-btn analise-btn-gray" onclick="resetAnalise()">↺ Reiniciar</button>
-    <div id="analise-progress-wrap"><div id="analise-progress-bar"></div></div>
-    <div id="analise-speed-wrap">🐢 <input type="range" id="analise-speed" min="1" max="10" value="4"> 🚀</div>
+    <div id="analise-progress-wrap">
+      <div id="analise-progress-bar"></div>
+      <div id="analise-progress-thumb"></div>
+    </div>
+    <div id="analise-speed-wrap">🐢 <input type="range" id="analise-speed" min="1" max="15" value="5"> 🚀</div>
   </div>
 </div>
 
@@ -757,6 +833,7 @@ window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.get
 'use strict';
 var _map=null,_tiros=[],_polys=[],_overPolys=[],_plane=null,_timer=null;
 var _playing=false,_step=0,_steps=[],_total=0;
+var _tiroInCount=[]; // total de steps "in" por tiro
 
 function planeIcon(h){return L.divIcon({html:'<div style="transform:rotate('+h+'deg);font-size:26px;line-height:1;filter:drop-shadow(0 0 5px #22c55e)">✈️</div>',iconSize:[32,32],iconAnchor:[16,16],className:''});}
 function bearing(a,b){var r=Math.PI/180,la=a[0]*r,lb=b[0]*r,dl=(b[1]-a[1])*r;return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)-Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;}
@@ -778,45 +855,30 @@ function toTurfPoly(pts){
   if(coords[0][0]!==coords[coords.length-1][0]||coords[0][1]!==coords[coords.length-1][1])coords.push(coords[0].slice());
   try{return turf.polygon([coords]);}catch(e){return null;}
 }
-function drawTurfGeom(geom,style){
-  var layers=[];
-  if(!geom)return layers;
-  var type=geom.type||'';
-  var coords=(geom.geometry||geom).coordinates;
-  var gtype=(geom.geometry||geom).type;
-  function addRing(ring){
-    var ll=ring.map(function(c){return[c[1],c[0]];});
-    var l=L.polygon(ll,style).addTo(_map);
-    layers.push(l);
-  }
-  if(gtype==='Polygon'){addRing(coords[0]);}
-  else if(gtype==='MultiPolygon'){coords.forEach(function(poly){addRing(poly[0]);});}
-  return layers;
+function drawTurfGeom(feat,style){
+  var g=(feat.geometry||feat);
+  if(g.type==='Polygon'){return[L.polygon(g.coordinates[0].map(function(c){return[c[1],c[0]];}),style).addTo(_map)];}
+  if(g.type==='MultiPolygon'){return g.coordinates.map(function(poly){return L.polygon(poly[0].map(function(c){return[c[1],c[0]];}),style).addTo(_map);});}
+  return[];
 }
 
 /* ── Calcular sobreposição ── */
-function computeOverlap(tiros, cb){
+function computeOverlap(tiros,cb){
   document.getElementById('analise-loading-msg').textContent='Calculando sobreposições...';
   document.getElementById('analise-loading').style.display='flex';
   setTimeout(function(){
     var tpolys=tiros.map(function(t){return toTurfPoly(t.polygon);});
     var totalM2=0;
     tpolys.forEach(function(p){if(p)try{totalM2+=turf.area(p);}catch(e){}});
-
-    /* Union progressiva para área efetiva */
     var unionAll=null;
     tpolys.forEach(function(p){
       if(!p)return;
       if(!unionAll){unionAll=p;return;}
       try{unionAll=turf.union(unionAll,p)||unionAll;}catch(e){}
     });
-    var effectiveM2=unionAll?0:totalM2;
-    try{if(unionAll)effectiveM2=turf.area(unionAll);}catch(e){effectiveM2=totalM2;}
-
+    var effectiveM2=totalM2;
+    try{if(unionAll)effectiveM2=turf.area(unionAll);}catch(e){}
     var overlapM2=Math.max(0,totalM2-effectiveM2);
-    var overlapPct=totalM2>0?(overlapM2/totalM2*100):0;
-
-    /* Interseções par-a-par para visualização */
     var interFeats=[];
     for(var i=0;i<tpolys.length;i++){
       if(!tpolys[i])continue;
@@ -825,16 +887,65 @@ function computeOverlap(tiros, cb){
         try{var inter=turf.intersect(tpolys[i],tpolys[j]);if(inter)interFeats.push(inter);}catch(e){}
       }
     }
-
     document.getElementById('analise-loading').style.display='none';
-    cb({
-      totalHa:totalM2/10000,
-      effectiveHa:effectiveM2/10000,
-      overlapHa:overlapM2/10000,
-      overlapPct:overlapPct,
-      interFeats:interFeats
-    });
+    cb({totalHa:totalM2/10000,effectiveHa:effectiveM2/10000,overlapHa:overlapM2/10000,overlapPct:totalM2>0?(overlapM2/totalM2*100):0,interFeats:interFeats});
   },80);
+}
+
+/* ── Ir para um passo específico (scrub) ── */
+function jumpToStep(target){
+  target=Math.max(0,Math.min(target,_total));
+  // Resetar estilos
+  _polys.forEach(function(p){p.setStyle({color:'#22c55e',weight:1.5,fillColor:'#22c55e',fillOpacity:0.08,opacity:0.5});});
+  // Recalcular estado dos polígonos até target
+  var doneCount={};
+  for(var i=0;i<target;i++){
+    var s=_steps[i];
+    if(s.in){doneCount[s.ti]=(doneCount[s.ti]||0)+1;}
+  }
+  for(var ti in doneCount){
+    if(_polys[ti]&&_tiroInCount[ti]>0){
+      var pct=doneCount[ti]/_tiroInCount[ti];
+      _polys[ti].setStyle({fillOpacity:0.10+pct*0.45,opacity:1,color:'#22c55e',weight:2});
+    }
+  }
+  // Mover avião
+  var idx=Math.min(target,_total-1);
+  if(_plane&&_steps[idx]){
+    var s=_steps[idx];var nxt=idx+1<_total?_steps[idx+1]:null;
+    _plane.setLatLng([s.pos[0],s.pos[1]]);
+    if(nxt)_plane.setIcon(planeIcon(bearing(s.pos,nxt.pos)));
+    document.getElementById('analise-tiro-label').textContent='Tiro '+(s.ti+1)+' / '+_tiros.length+(s.in?' 🌾':'');
+  }
+  _step=target;
+  var pct=_total>0?Math.round(target/_total*100):0;
+  document.getElementById('analise-progress-bar').style.width=pct+'%';
+  document.getElementById('analise-progress-thumb').style.left=pct+'%';
+}
+
+/* ── Barra de progresso arrastável ── */
+function _initScrub(){
+  var wrap=document.getElementById('analise-progress-wrap');
+  function seekFromX(clientX){
+    var rect=wrap.getBoundingClientRect();
+    var pct=Math.max(0,Math.min(1,(clientX-rect.left)/rect.width));
+    var wasPlaying=_playing;
+    _playing=false;clearTimeout(_timer);
+    jumpToStep(Math.floor(pct*_total));
+    if(wasPlaying&&_step<_total){_playing=true;tick();}
+  }
+  wrap.addEventListener('mousedown',function(e){
+    e.preventDefault();seekFromX(e.clientX);
+    function mm(e){seekFromX(e.clientX);}
+    function mu(){document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);}
+    document.addEventListener('mousemove',mm);document.addEventListener('mouseup',mu);
+  });
+  wrap.addEventListener('touchstart',function(e){
+    if(e.touches[0])seekFromX(e.touches[0].clientX);
+    function tm(e){if(e.touches[0])seekFromX(e.touches[0].clientX);}
+    function tu(){document.removeEventListener('touchmove',tm);document.removeEventListener('touchend',tu);}
+    document.addEventListener('touchmove',tm,{passive:true});document.addEventListener('touchend',tu);
+  },{passive:true});
 }
 
 /* ── Abrir modal ── */
@@ -846,10 +957,10 @@ window.abrirAnalise=function(fileId,nome,rota){
   document.getElementById('analise-title').textContent='✈️ '+nome;
   document.getElementById('analise-tiro-label').textContent='—';
   document.getElementById('analise-stats').innerHTML='<span style="color:#64748b;font-style:italic;">Calculando sobreposição...</span>';
-
   if(!_map){
     _map=L.map('analise-map',{zoomControl:true,attributionControl:false});
     L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20}).addTo(_map);
+    _initScrub();
   }
   fetch(rota+fileId)
     .then(function(r){return r.json();})
@@ -864,12 +975,11 @@ function setupAnim(tiros){
   _tiros=tiros;_playing=false;_step=0;clearTimeout(_timer);
   document.getElementById('btn-analise-play').textContent='▶ Play';
   document.getElementById('analise-progress-bar').style.width='0%';
+  document.getElementById('analise-progress-thumb').style.left='0%';
   document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+tiros.length;
-
   if(_plane){_map.removeLayer(_plane);_plane=null;}
   _polys.forEach(function(p){_map.removeLayer(p);});_polys=[];
   _overPolys.forEach(function(p){_map.removeLayer(p);});_overPolys=[];
-
   var bounds=L.latLngBounds();
   tiros.forEach(function(t){
     var ll=t.polygon.map(function(p){return[p[0],p[1]];});
@@ -879,49 +989,61 @@ function setupAnim(tiros){
   });
   _map.fitBounds(bounds,{padding:[30,30]});
   setTimeout(function(){_map.invalidateSize();},200);
-
-  /* Calcular overlap (async) */
-  computeOverlap(tiros,function(stats){
-    /* Desenhar áreas de sobreposição em vermelho */
-    stats.interFeats.forEach(function(feat){
-      var ls=drawTurfGeom(feat,{color:'#ef4444',weight:1,fillColor:'#ef4444',fillOpacity:0.6,opacity:0.9});
-      ls.forEach(function(l){_overPolys.push(l);});
-    });
-
-    /* Atualizar painel de estatísticas */
-    var efetPct=(100-stats.overlapPct).toFixed(1);
-    document.getElementById('analise-stats').innerHTML=
-      '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+stats.effectiveHa.toFixed(2)+' ha ('+efetPct+'%)</span>'+
-      '<span style="color:#f87171;font-weight:700;">🔴 Sobreposição: '+stats.overlapHa.toFixed(2)+' ha ('+stats.overlapPct.toFixed(1)+'%)</span>'+
-      '<span style="color:#94a3b8;">📊 Total aplicado: '+stats.totalHa.toFixed(2)+' ha</span>';
-  });
-
   _steps=buildSteps(tiros);_total=_steps.length;
+  // Pré-computar contagens "in" por tiro
+  _tiroInCount=new Array(tiros.length).fill(0);
+  _steps.forEach(function(s){if(s.in)_tiroInCount[s.ti]++;});
   var fp=_steps[0].pos;
   _plane=L.marker([fp[0],fp[1]],{icon:planeIcon(0),zIndexOffset:1000}).addTo(_map);
+  // Calcular overlap em background
+  computeOverlap(tiros,function(stats){
+    stats.interFeats.forEach(function(feat){
+      drawTurfGeom(feat,{color:'#ef4444',weight:1,fillColor:'#ef4444',fillOpacity:0.60,opacity:0.9}).forEach(function(l){_overPolys.push(l);});
+    });
+    document.getElementById('analise-stats').innerHTML=
+      '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+stats.effectiveHa.toFixed(2)+' ha ('+(100-stats.overlapPct).toFixed(1)+'%)</span>'+
+      '<span style="color:#f87171;font-weight:700;">🔴 Sobreposição: '+stats.overlapHa.toFixed(2)+' ha ('+stats.overlapPct.toFixed(1)+'%)</span>'+
+      '<span style="color:#94a3b8;">📊 Total: '+stats.totalHa.toFixed(2)+' ha</span>';
+  });
 }
 
+/* ── Tick de animação: múltiplos passos por tick em altas velocidades ── */
 function tick(){
   if(!_playing||_step>=_total){
     if(_step>=_total){_playing=false;document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-tiro-label').textContent='✅ Aplicação concluída!';}
     return;
   }
-  var s=_steps[_step];var nxt=_step+1<_total?_steps[_step+1]:null;
-  if(_plane){_plane.setLatLng([s.pos[0],s.pos[1]]);if(nxt)_plane.setIcon(planeIcon(bearing(s.pos,nxt.pos)));}
-  if(s.in&&_polys[s.ti]){
-    var tot=_steps.filter(function(x){return x.ti===s.ti&&x.in;}).length;
-    var done=_steps.slice(0,_step+1).filter(function(x){return x.ti===s.ti&&x.in;}).length;
-    _polys[s.ti].setStyle({fillOpacity:0.10+(done/tot)*0.45,opacity:1,color:'#22c55e',weight:2});
+  var spd=parseInt(document.getElementById('analise-speed').value)||5;
+  // Passos por tick: 1 na velocidade 1, até ~50 na velocidade 15
+  var stepsPerTick=Math.max(1,Math.floor(Math.pow(spd,1.8)/4));
+  var lastS=null;
+  for(var k=0;k<stepsPerTick&&_step<_total;k++){
+    var s=_steps[_step];
+    if(s.in&&_polys[s.ti]&&_tiroInCount[s.ti]>0){
+      // Contar passos concluídos neste tiro até agora (rápido: só incrementar)
+      // Usamos uma contagem direta no estilo do polígono
+      var done=(s._done=(s._done||0)+1);
+      var pct=done/_tiroInCount[s.ti];
+      _polys[s.ti].setStyle({fillOpacity:0.10+pct*0.45,opacity:1,color:'#22c55e',weight:2});
+    }
+    lastS=s;_step++;
   }
-  document.getElementById('analise-tiro-label').textContent='Tiro '+(s.ti+1)+' / '+_tiros.length+(s.in?' 🌾':'');
-  document.getElementById('analise-progress-bar').style.width=Math.round(_step/_total*100)+'%';
-  _step++;
-  var spd=parseInt(document.getElementById('analise-speed').value)||4;
-  _timer=setTimeout(tick,Math.max(6,82-spd*8));
+  // Atualizar avião só uma vez por tick (último passo do batch)
+  if(lastS&&_plane){
+    _plane.setLatLng([lastS.pos[0],lastS.pos[1]]);
+    var nxt=_step<_total?_steps[_step]:null;
+    if(nxt)_plane.setIcon(planeIcon(bearing(lastS.pos,nxt.pos)));
+    document.getElementById('analise-tiro-label').textContent='Tiro '+(lastS.ti+1)+' / '+_tiros.length+(lastS.in?' 🌾':'');
+  }
+  var pct=Math.round(_step/_total*100);
+  document.getElementById('analise-progress-bar').style.width=pct+'%';
+  document.getElementById('analise-progress-thumb').style.left=pct+'%';
+  var delay=Math.max(8,55-spd*3);
+  _timer=setTimeout(tick,delay);
 }
 
 window.togglePlay=function(){if(_step>=_total){resetAnalise();return;}_playing=!_playing;document.getElementById('btn-analise-play').textContent=_playing?'⏸ Pausar':'▶ Play';if(_playing)tick();};
-window.resetAnalise=function(){_playing=false;clearTimeout(_timer);_step=0;document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-progress-bar').style.width='0%';document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+_tiros.length;_polys.forEach(function(p){p.setStyle({color:'#22c55e',weight:1.5,fillColor:'#22c55e',fillOpacity:0.08,opacity:0.5});});if(_steps.length&&_plane)_plane.setLatLng([_steps[0].pos[0],_steps[0].pos[1]]);};
+window.resetAnalise=function(){_playing=false;clearTimeout(_timer);jumpToStep(0);document.getElementById('btn-analise-play').textContent='▶ Play';document.getElementById('analise-tiro-label').textContent='Tiro 0 / '+_tiros.length;};
 window.fecharAnalise=function(){_playing=false;clearTimeout(_timer);document.getElementById('analise-modal').classList.remove('open');};
 })();
 </script>
