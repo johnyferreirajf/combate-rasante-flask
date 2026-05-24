@@ -422,7 +422,7 @@ function buildSteps(tiros, approach){
 function amGoTo(target){
   target=Math.max(0,Math.min(target,_total));
   _polys.forEach(function(p){
-    if(p)p.setStyle({color:'#22c55e',weight:1.8,fillColor:'#22c55e',fillOpacity:0.25,opacity:0.9});
+    if(p)p.setStyle({color:'#22c55e',weight:0.5,fillColor:'#22c55e',fillOpacity:0.05,opacity:0.4});
   });
   _doneCnt=new Array(_tiros.length).fill(0);
   for(var i=0;i<target;i++){var s=_steps[i];if(s&&s.in)_doneCnt[s.ti]++;}
@@ -439,12 +439,10 @@ function amGoTo(target){
     if(nxt)_plane.setIcon(amIcon(bearing(s.pos,nxt.pos)));
     if(s.in&&s.ti>=0) _lastTiro=s.ti;
     var dispLbl,dispHv;
-    if(s.in&&s.ti>=0){
-      dispLbl='Tiro '+(s.ti+1)+' / '+_tiros.length+' 🌾';
-      dispHv=(s.ti+1)+' / '+_tiros.length;
-    } else if(_lastTiro>=0){
-      dispLbl='Tiro '+(_lastTiro+1)+' / '+_tiros.length;
-      dispHv=(_lastTiro+1)+' / '+_tiros.length;
+    if(_lastTiro>=0&&_tiros[_lastTiro]){
+      var numR=_tiros[_lastTiro].num;
+      dispLbl='Tiro '+numR+' / '+_tiros.length+(s.in?' 🌾':'');
+      dispHv=numR+' / '+_tiros.length;
     } else {
       dispLbl='Tiro — / '+_tiros.length;
       dispHv='—';
@@ -542,7 +540,7 @@ function setup(d){
     try{
       t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});
       var poly=L.polygon(t.polygon.map(function(p){return[p[0],p[1]];}),{
-        color:'#22c55e',weight:1.8,fillColor:'#22c55e',fillOpacity:0.25,opacity:0.9
+        color:'#22c55e',weight:0.5,fillColor:'#22c55e',fillOpacity:0.05,opacity:0.5
       }).addTo(_map);
       _polys.push(poly);
     }catch(e){_polys.push(null);}
@@ -597,7 +595,7 @@ function setup(d){
           var inter = turf.intersect(turfPolys[i], turfPolys[j]);
           if(inter) {
             var overLyr = L.geoJSON(inter, {
-              style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.65, weight: 1.5, zIndex: 400}
+              style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.65, weight: 0.5, zIndex: 400}
             }).addTo(_map);
             _overPolys.push(overLyr);
             overAreaSqm += turf.area(inter);
@@ -643,8 +641,10 @@ function tick(){
     var s=_steps[_step];
     if(s&&s.in&&_polys[s.ti]&&_inCnt[s.ti]>0){
       _doneCnt[s.ti]++;
-      var pct=_doneCnt[s.ti]/_inCnt[s.ti];
-      _polys[s.ti].setStyle({fillOpacity:0.25+pct*0.75,opacity:1,color:'#22c55e',weight:2});
+      _polys[s.ti].setStyle({
+        fillColor:'#22c55e',fillOpacity:1,
+        color:'#22c55e',weight:1,opacity:1
+      });
     }
     lastS=s; _step++;
   }
@@ -654,12 +654,10 @@ function tick(){
     if(nxt)_plane.setIcon(amIcon(bearing(lastS.pos,nxt.pos)));
     if(lastS.in&&lastS.ti>=0) _lastTiro=lastS.ti;
     var tLbl,tHv;
-    if(lastS.in&&lastS.ti>=0){
-      tLbl='Tiro '+(lastS.ti+1)+' / '+_tiros.length+' 🌾';
-      tHv=(lastS.ti+1)+' / '+_tiros.length;
-    } else if(_lastTiro>=0){
-      tLbl='Tiro '+(_lastTiro+1)+' / '+_tiros.length;
-      tHv=(_lastTiro+1)+' / '+_tiros.length;
+    if(_lastTiro>=0&&_tiros[_lastTiro]){
+      var numReal=_tiros[_lastTiro].num;
+      tLbl='Tiro '+numReal+' / '+_tiros.length+(lastS.in?' 🌾':'');
+      tHv=numReal+' / '+_tiros.length;
     } else {
       tLbl='Tiro — / '+_tiros.length;
       tHv='—';
