@@ -393,23 +393,40 @@ function buildSteps(tiros, approach){
 
 function amGoTo(target){
   target=Math.max(0,Math.min(target,_total));
+
+  /* Resetar todos os polígonos para invisível */
   _polys.forEach(function(p){
-    if(p)p.setStyle({color:'#22c55e',weight:0,fillColor:'#22c55e',fillOpacity:0.08,opacity:0});
+    if(p)p.setStyle({color:'#22c55e',weight:0,fillColor:'#22c55e',fillOpacity:0,opacity:0});
   });
   _doneCnt=new Array(_tiros.length).fill(0);
-  for(var i=0;i<target;i++){var s=_steps[i];if(s&&s.in)_doneCnt[s.ti]++;}
-  for(var ti=0;ti<_tiros.length;ti++){
-    if(_polys[ti]&&_inCnt[ti]>0&&_doneCnt[ti]>0){
-      var pct=_doneCnt[ti]/_inCnt[ti];
-      _polys[ti].setStyle({fillOpacity:0.25+pct*0.75,opacity:1,color:'#22c55e',weight:2});
+  _lastTiro=-1;
+
+  /* Simular e acumular preenchimento de 0 até target */
+  for(var i=0;i<target;i++){
+    var s=_steps[i];
+    if(s&&s.in&&s.ti>=0){
+      _doneCnt[s.ti]++;
+      if(s.ti>=0) _lastTiro=s.ti;
     }
   }
-  var idx=Math.min(target,_total-1);
+
+  /* Aplicar estilo correto a cada polígono com base no acumulado */
+  _tiros.forEach(function(t,ti){
+    if(_polys[ti]&&_inCnt[ti]>0&&_doneCnt[ti]>0){
+      _polys[ti].setStyle({
+        fillColor:'#22c55e',fillOpacity:1,
+        color:'#22c55e',weight:0,opacity:0
+      });
+    }
+  });
+
+  /* Posicionar avião */
+  var idx=Math.max(0,Math.min(target,_total-1));
   if(_plane&&_steps[idx]){
     var s=_steps[idx],nxt=idx+1<_total?_steps[idx+1]:null;
     _plane.setLatLng([s.pos[0],s.pos[1]]);
     if(nxt)_plane.setIcon(amIcon(bearing(s.pos,nxt.pos)));
-    if(s.in&&s.ti>=0) _lastTiro=s.ti;
+    if(s.in&&s.ti>=0)_lastTiro=s.ti;
     var dispLbl,dispHv;
     if(_lastTiro>=0&&_tiros[_lastTiro]){
       var numR=_tiros[_lastTiro].num;
@@ -427,6 +444,7 @@ function amGoTo(target){
   document.getElementById('am-bar').style.width=pct+'%';
   document.getElementById('am-thumb').style.left=pct+'%';
 }
+
 
 function initScrub(){
   var wrap=document.getElementById('am-bar-wrap');
