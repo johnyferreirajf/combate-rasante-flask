@@ -1022,18 +1022,23 @@ def _parse_kml_full(raw):
 
     tiros.sort(key=lambda x: x["num"])
 
-    # ── Linha GPS (trajetória de voo completa varrendo todo o KML) ─────
-    for elem in root.iter():
-        if 'LineString' in elem.tag or 'Track' in elem.tag:
-            for child in elem.iter():
-                if 'coordinates' in child.tag or 'coord' in child.tag:
-                    if child.text:
-                        for tok in child.text.strip().split():
-                            p = tok.split(',')
-                            if len(p) >= 2:
-                                try:
-                                    track_all.append([float(p[1]), float(p[0])])
-                                except ValueError:
-                                    pass
+    # ── Linha GPS (trajetória completa, ignorando linhas duplicadas dos Tiros) ─────
+    for pm in fa(root, "Placemark"):
+        ne = fo(pm, "name")
+        name = (ne.text or "").strip() if ne is not None else ""
+        # Ignorar placemarks de Tiro para o avião não voar duas vezes
+        if re.match(r"Tiro\s+\d+", name, re.IGNORECASE):
+            continue
+        for ls in fa(pm, "LineString"):
+            ce = fo(ls, "coordinates")
+            if ce is not None and ce.text:
+                for tok in ce.text.strip().split():
+                    p = tok.split(',')
+                    if len(p) >= 2:
+                        try:
+                            track_all.append([float(p[1]), float(p[0])])
+                        except ValueError:
+                            pass
 
-    return {"tiros": tiros, "track": track_all, "approach": track_all, "summary": summary}, None
+    approach = track_all[-800:] if len(track_all) >= 800 else track_all
+    return {"tiros": tiros, "track": track_all, "approach": approach, "summary": summary}, None
