@@ -935,12 +935,6 @@ def analise_aplicacao(file_id: int):
 
 
 def _parse_kml_full(raw):
-    """
-    Parseia KML/KMZ retornando:
-      - tiros: lista de polígonos de aplicação
-      - approach: pontos do GPS track dentro de 1000m do primeiro tiro (para animação)
-      - summary: data/hora início-fim, área, sistema GPS
-    """
     import re, math, xml.etree.ElementTree as ET
 
     try:
@@ -953,7 +947,88 @@ def _parse_kml_full(raw):
     def fa(el, p): return el.findall(".//{%s}%s" % (ns, p)) if ns else el.findall(".//" + p)
     def fo(el, p): return el.find(".//{%s}%s" % (ns, p)) if ns else el.find(".//" + p)
 
-    tiros, track_all, summary = [], [], {}
+    tiros, summary = [], {}
+    track_all = []
+
+    for pm in fa(root, "Placemark"):
+        ne = fo(pm, "name")
+        name = (ne.text or "").strip() if ne is not None else ""
+
+        # ── Planilha (NoGeometry) ──────────────────────────────────────────
+        if name == "Resumo do trabalho":
+            de = fo(pm, "description")
+            txt = (de.text or "").strip() if de is not None else ""
+            m = re.search(r"Data inicial\s+([\d.]+),?\s*(\d+:\d+)", txt)
+            if m:
+                summary["data_inicio"]  = m.group(1)
+                summary["hora_inicio"]  = m.group(2)
+            m = re.search(r"[Uu]ltima|[Úú]ltima", txt)
+            if m:
+                m2 = re.search(r"aplica[cç][aã]o\s+[\d.]+,?\s*(\d+:\d+)", txt)
+                if m2: summary["hora_fim"] = m2.group(1)
+            m = re.search(r"[Áá]rea coberta\s+([\d,.]+)", txt)
+            if m:
+                try: summary["area_ha"] = float(m.group(1).replace(",", "."))
+                except: pass
+
+        elif name == "Propriedades do sistema":
+            de = fo(pm, "description")
+            txt = (de.text or "").strip() if de is not None else ""
+            linhas = [l.strip() for l in txt.splitlines() if l.strip()]
+            if linhas: summary["gps"] = linhas[0]
+
+        # ── Polígonos de tiro ─────────────────────────────────────────────
+        m = re.match(r"Tiro\s+(\d+)", name, re.IGNORECASE)
+        if not m: continue
+        poly = fo(pm, "Polygon")
+        ce   = fo(poly, "coordinates") if poly is not None else None
+        if ce is None: continue
+        pts = []
+        for tok in (ce.text or "").strip().split():
+            p = tok.split(",")
+            if len(p) >= 2:
+                try: pts.append([float(p[1]), float(p[0])])
+                except ValueError: pass
+        if len(pts) < 3: continue
+
+        lats = [p[0] for p in pts]
+        lons = [p[1] for p in pts]
+        lat_c = sum(lats) / len(lats)
+        lon_c = sum(lons) / len(lons)
+
+        step   = max(1, len(pts) // 60)
+        sample = pts[::step]
+        best, p1, p2 = 0, sample[0], sample[-1]
+        for i in range(len(sample)):
+            for j in range(i + 1, len(sample)):
+                d = (sample[i][0]-sample[j][0])**2 + (sample[i][1]-sample[j][1])**2
+                if d > best: best, p1, p2 = d, sample[i], sample[j]
+
+        tiros.append({
+            "num":      int(m.group(1)),
+            "polygon":  pts,
+            "centroid": [lat_c, lon_c],
+            "entry":    p1,
+            "exit":     p2,
+        })
+
+    tiros.sort(key=lambda x: x["num"])
+
+    # ── Linha GPS (trajetória de voo completa varrendo todo o KML) ─────
+    for elem in root.iter():
+        if 'LineString' in elem.tag or 'Track' in elem.tag:
+            for child in elem.iter():
+                if 'coordinates' in child.tag or 'coord' in child.tag:
+                    if child.text:
+                        for tok in child.text.strip().split():
+                            p = tok.split(',')
+                            if len(p) >= 2:
+                                try:
+                                    track_all.append([float(p[1]), float(p[0])])
+                                except ValueError:
+                                    pass
+
+    return {"tiros": tiros, "track": track_all, "approach": track_all, "summary": summary}, None
 
  # ── SUBSTITUA A EXTRAÇÃO DO RASTRO (TRACK) POR ESTE BLOCO ──
         track_all = []
