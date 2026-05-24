@@ -386,28 +386,7 @@ function calcStats(tiros, summaryAreaHa){
   var effectiveHa=(summaryAreaHa&&summaryAreaHa>0)?summaryAreaHa:totalHa;
   var overHa=Math.max(0,totalHa-effectiveHa);
 
-  /* Sobreposição visual: ordenar tiros por lon e comparar apenas pares adjacentes */
-  var interFeats=[];
-  var boxes=tiros.map(function(t){return bbox(t.polygon);});
-
-  /* Ordenar por centroide lon (oeste → leste) */
-  var sorted=tiros.map(function(t,i){return{i:i,lon:t.centroid?t.centroid[1]:0,bb:boxes[i]};})
-    .filter(function(x){return x.bb;})
-    .sort(function(a,b){return a.lon-b.lon;});
-
-  /* Comparar só pares CONSECUTIVOS na ordem espacial */
-  for(var k=0;k<sorted.length-1;k++){
-    var a=sorted[k].bb, b=sorted[k+1].bb;
-    /* Dois faixas adjacentes: overlap na dimensão lon */
-    var oLo1=Math.max(a.lo1,b.lo1), oLo2=Math.min(a.lo2,b.lo2);
-    if(oLo2-oLo1<=0) continue; // sem sobreposição
-    /* Overlap na dimensão lat = interseção das alturas das duas faixas */
-    var oLa1=Math.max(a.la1,b.la1), oLa2=Math.min(a.la2,b.la2);
-    if(oLa2-oLa1<=0) continue;
-    if(interFeats.length<100)
-      interFeats.push([oLa1,oLo1,oLa2,oLo2]);
-  }
-  return{total:totalHa,effective:effectiveHa,over:overHa,inters:interFeats};
+  return{total:totalHa,effective:effectiveHa,over:overHa,inters:[]};
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -501,7 +480,7 @@ function buildSteps(tiros, approach){
 function amGoTo(target){
   target=Math.max(0,Math.min(target,_total));
   _polys.forEach(function(p){
-    if(p)p.setStyle({color:'#22c55e',weight:1.5,fillColor:'#22c55e',fillOpacity:0.18,opacity:0.8});
+    if(p)p.setStyle({color:'#22c55e',weight:1.8,fillColor:'#22c55e',fillOpacity:0.25,opacity:0.9});
   });
   _doneCnt=new Array(_tiros.length).fill(0);
   for(var i=0;i<target;i++){var s=_steps[i];if(s&&s.in)_doneCnt[s.ti]++;}
@@ -657,7 +636,7 @@ function setup(d){
     try{
       var ll=t.polygon.map(function(p){return[p[0],p[1]];});
       var poly=L.polygon(ll,{
-        color:'#22c55e',weight:1.5,fillColor:'#22c55e',fillOpacity:0.18,opacity:0.8
+        color:'#22c55e',weight:1.8,fillColor:'#22c55e',fillOpacity:0.25,opacity:0.9
       }).addTo(_map);
       _polys.push(poly);
     }catch(e){_polys.push(null);}
@@ -691,14 +670,7 @@ function setup(d){
   setTimeout(function(){
     try{
       var stats=calcStats(tiros, summary&&summary.area_ha);
-      /* Sobreposição visual entre faixas adjacentes */
-      stats.inters.forEach(function(r){
-        try{
-          L.rectangle([[r[0],r[1]],[r[2],r[3]]],{
-            color:'#ef4444',weight:0,fillColor:'#ef4444',fillOpacity:0.65
-          }).addTo(_map);
-        }catch(e){}
-      });
+      /* Sobreposição: mostrada apenas nos stats (bbox abrange o campo todo, não visual) */
       var efetPct=stats.total>0?(stats.effective/stats.total*100):0;
       var overPct=stats.total>0?(stats.over/stats.total*100):0;
       document.getElementById('am-stats').innerHTML=
