@@ -623,7 +623,8 @@ function buildSteps(tiros, approach){
   var turfPolys = tiros.map(function(t){return toTurfPoly(t.polygon);});
   var lastTi=-1;
 
-  /* FASE 1: GPS real — avião segue o rastro, tiros detectados pelo Turf */
+  /* Apenas o GPS real — o avião segue o rastro do KMZ e o Turf
+     detecta automaticamente os tiros conforme o avião os sobrevoa */
   if(approach && approach.length > 1){
     approach.forEach(function(p){
       var pt=turf.point([p[1],p[0]]), inTi=-1;
@@ -640,35 +641,6 @@ function buildSteps(tiros, approach){
       steps.push({pos:[p[0],p[1]], ti:inTi, in:(inTi>=0)});
     });
   }
-
-  /* FASE 2: Todos os 50 tiros em sequência (completa o que o GPS não cobriu) */
-  var F=50;
-  function dist2(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return dy*dy+dx*dx;}
-  var prevExit=steps.length>0?steps[steps.length-1].pos:null;
-  tiros.forEach(function(t,i){
-    if(!t||!t.entry||!t.exit)return;
-    var entry=t.entry, exitPt=t.exit;
-    if(prevExit && dist2(prevExit,t.exit)<dist2(prevExit,t.entry)){
-      entry=t.exit; exitPt=t.entry;
-    }
-    /* Trânsito entre tiros (sem spray) */
-    if(prevExit){
-      for(var k=1;k<=8;k++){
-        var r=k/8;
-        steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
-                         prevExit[1]+(entry[1]-prevExit[1])*r],
-                    ti:i, in:false});
-      }
-    }
-    /* Spray pass — o avião percorre do entry ao exit */
-    for(var k=1;k<=F;k++){
-      var r=k/F;
-      steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
-                       entry[1]+(exitPt[1]-entry[1])*r],
-                  ti:i, in:true});
-    }
-    prevExit=exitPt;
-  });
   return steps;
 }
 
