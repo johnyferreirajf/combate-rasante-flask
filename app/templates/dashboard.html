@@ -675,7 +675,26 @@ function setup(d){
   setTimeout(function(){
     try{
       var stats=calcStats(tiros, summary&&summary.area_ha);
-      /* Sobreposição: mostrada apenas nos stats (bbox abrange o campo todo, não visual) */
+      /* Sobreposição visual: linhas vermelhas finas entre faixas adjacentes */
+      try{
+        var boxes2=tiros.map(function(t){return bbox(t.polygon);});
+        var sorted2=tiros.map(function(t,i){
+          return{i:i,lon:t.centroid?t.centroid[1]:0,bb:boxes2[i]};
+        }).filter(function(x){return x.bb;})
+          .sort(function(a,b){return a.lon-b.lon;});
+        for(var k=0;k<sorted2.length-1;k++){
+          var aa=sorted2[k].bb, bb2=sorted2[k+1].bb;
+          var oLo1=Math.max(aa.lo1,bb2.lo1), oLo2=Math.min(aa.lo2,bb2.lo2);
+          if(oLo2-oLo1<=0) continue;
+          var oLa1=Math.max(aa.la1,bb2.la1), oLa2=Math.min(aa.la2,bb2.la2);
+          if(oLa2-oLa1<=0) continue;
+          /* Linha vermelha fina vertical no meio da sobreposição */
+          var midLo=(oLo1+oLo2)/2;
+          L.polyline([[oLa1,midLo],[oLa2,midLo]],{
+            color:'#ef4444',weight:2.5,opacity:0.85
+          }).addTo(_map);
+        }
+      }catch(e){}
       var efetPct=stats.total>0?(stats.effective/stats.total*100):0;
       var overPct=stats.total>0?(stats.over/stats.total*100):0;
       document.getElementById('am-stats').innerHTML=
