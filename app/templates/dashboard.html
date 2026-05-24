@@ -422,7 +422,7 @@ function buildSteps(tiros, approach){
 function amGoTo(target){
   target=Math.max(0,Math.min(target,_total));
   _polys.forEach(function(p){
-    if(p)p.setStyle({color:'#22c55e',weight:0.5,fillColor:'#22c55e',fillOpacity:0.05,opacity:0.4});
+    if(p)p.setStyle({color:'#22c55e',weight:0,fillColor:'#22c55e',fillOpacity:0.08,opacity:0});
   });
   _doneCnt=new Array(_tiros.length).fill(0);
   for(var i=0;i<target;i++){var s=_steps[i];if(s&&s.in)_doneCnt[s.ti]++;}
@@ -643,7 +643,7 @@ function tick(){
       _doneCnt[s.ti]++;
       _polys[s.ti].setStyle({
         fillColor:'#22c55e',fillOpacity:1,
-        color:'#22c55e',weight:1,opacity:1
+        color:'#22c55e',weight:0,opacity:0
       });
     }
     lastS=s; _step++;

@@ -1004,51 +1004,20 @@ def _parse_kml_full(raw):
                 d = (sample[i][0]-sample[j][0])**2 + (sample[i][1]-sample[j][1])**2
                 if d > best: best, p1, p2 = d, sample[i], sample[j]
 
-        # Ler atributos de área e largura do KML
+        # Ler atributo de área do KML (29m × comprimento real)
         area_ha_attr = None
-        width_m_attr = 29.0  # default
         ed = pm.find('.//{%s}Data[@name="area"]/{%s}value' % (ns, ns))
         if ed is not None:
             try: area_ha_attr = float((ed.text or '0').split()[0].replace(',','.'))
             except: pass
-        wd = pm.find('.//{%s}Data[@name="width"]/{%s}value' % (ns, ns))
-        if wd is not None:
-            try: width_m_attr = float((wd.text or '29').split()[0].replace(',','.'))
-            except: pass
-
-        # Aplicar buffer negativo para que a largura visual = largura nominal
-        # Buffer = diferença entre largura GPS e nominal, shrinkando em direção ao eixo
-        import math as _math
-        m_per_deg_lon = 111000 * _math.cos(_math.radians(lat_c))
-        # Largura real: medir na porção reta (60% central da faixa em lat)
-        lat_min_p = min(p[0] for p in pts); lat_max_p = max(p[0] for p in pts)
-        lat_range = lat_max_p - lat_min_p
-        mid_pts = [p for p in pts if abs(p[0]-(lat_min_p+lat_max_p)/2) < lat_range*0.30]
-        if not mid_pts: mid_pts = pts
-        mid_lons = [p[1] for p in mid_pts]
-        actual_w_m = (max(mid_lons) - min(mid_lons)) * m_per_deg_lon
-        buf_m = max(0, (actual_w_m - width_m_attr) / 2)
-        buf_deg = buf_m / m_per_deg_lon
-        lon_axis = (max(mid_lons) + min(mid_lons)) / 2  # eixo central
-
-        buffered_pts = []
-        for p in pts:
-            dev = p[1] - lon_axis
-            if dev > buf_deg:
-                buffered_pts.append([p[0], p[1] - buf_deg])
-            elif dev < -buf_deg:
-                buffered_pts.append([p[0], p[1] + buf_deg])
-            else:
-                buffered_pts.append(p)
 
         tiros.append({
             "num":      int(m.group(1)),
-            "polygon":  buffered_pts,
-            "centroid": [lat_c, lon_axis],
+            "polygon":  pts,          # GPS original sem buffer (preserva largura uniforme)
+            "centroid": [lat_c, lon_c],
             "entry":    p1,
             "exit":     p2,
-            "area_ha":  area_ha_attr,   # área do atributo KMZ (usa 29m real)
-            "width_m":  width_m_attr,
+            "area_ha":  area_ha_attr, # área real do atributo KMZ
         })
 
     tiros.sort(key=lambda x: x["num"])
