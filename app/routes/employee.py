@@ -1004,20 +1004,66 @@ def _parse_kml_full(raw):
                 d = (sample[i][0]-sample[j][0])**2 + (sample[i][1]-sample[j][1])**2
                 if d > best: best, p1, p2 = d, sample[i], sample[j]
 
-        # Ler atributo de área do KML (29m × comprimento real)
+        # Ler atributos do KML
         area_ha_attr = None
-        ed = pm.find('.//{%s}Data[@name="area"]/{%s}value' % (ns, ns))
+        nominal_m    = 29.0
+        ed = pm.find('.//{%s}Data[@name="area"]/{%s}value'   % (ns, ns))
+        wd = pm.find('.//{%s}Data[@name="width"]/{%s}value'  % (ns, ns))
         if ed is not None:
             try: area_ha_attr = float((ed.text or '0').split()[0].replace(',','.'))
             except: pass
+        if wd is not None:
+            try: nominal_m = float((wd.text or '29').split()[0].replace(',','.'))
+            except: pass
+
+        # ── Buffer negativo em EPSG:32722 (UTM Zone 22S) ──────────────────
+        # Projeta para UTM, mede largura real na seção transversal central,
+        # calcula buffer = (largura_real - largura_nominal) / 2 e aplica.
+        try:
+            import pyproj as _pp
+            _to_utm = _pp.Transformer.from_crs("EPSG:4326","EPSG:32722",always_xy=True)
+            _to_wgs = _pp.Transformer.from_crs("EPSG:32722","EPSG:4326",always_xy=True)
+
+            utm = [_to_utm.transform(p[1], p[0]) for p in pts]  # (lon,lat)→(E,N)
+
+            ns_arr   = [u[1] for u in utm]
+            n_min_u, n_max_u = min(ns_arr), max(ns_arr)
+            n_mid    = (n_min_u + n_max_u) / 2
+
+            # Cross-section: encontrar os 2 cruzamentos da linha horizontal n_mid
+            crossings = []
+            for _i in range(len(utm) - 1):
+                n1, n2 = utm[_i][1], utm[_i+1][1]
+                if (n1 - n_mid) * (n2 - n_mid) < 0:
+                    t = (n_mid - n1) / (n2 - n1)
+                    crossings.append(utm[_i][0] + t * (utm[_i+1][0] - utm[_i][0]))
+
+            if len(crossings) >= 2:
+                crossings.sort()
+                e_left  = crossings[0]
+                e_right = crossings[-1]
+                actual_m  = e_right - e_left
+                center_e  = (e_left + e_right) / 2
+                scale     = nominal_m / actual_m if actual_m > 0 else 1.0
+
+                # Aplicar escala em torno do eixo central → largura = nominal_m
+                buffered_pts = []
+                for u in utm:
+                    new_e = center_e + (u[0] - center_e) * scale
+                    lon_b, lat_b = _to_wgs.transform(new_e, u[1])
+                    buffered_pts.append([lat_b, lon_b])
+            else:
+                buffered_pts = pts  # fallback
+        except Exception:
+            buffered_pts = pts  # fallback se pyproj não disponível
 
         tiros.append({
             "num":      int(m.group(1)),
-            "polygon":  pts,          # GPS original sem buffer (preserva largura uniforme)
+            "polygon":  buffered_pts,
             "centroid": [lat_c, lon_c],
             "entry":    p1,
             "exit":     p2,
-            "area_ha":  area_ha_attr, # área real do atributo KMZ
+            "area_ha":  area_ha_attr,
         })
 
     tiros.sort(key=lambda x: x["num"])
