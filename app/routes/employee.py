@@ -1030,9 +1030,8 @@ def _parse_kml_full(raw):
 
     tiros.sort(key=lambda x: x["num"])
 
-    # ── Track COMPLETO — todos os pontos da linha do KMZ sem filtro ────────
-    track_full = track_all          # todos os 8405 pts (sem amostragem)
-    # Para animação: últimos 800 pts (chegada ao campo, inclui os balões)
+    # ── Track de aproximação (últimos 800 pts = 5km antes do campo) ─────────
+    # Não retornar o voo completo de 50km — apenas a chegada ao campo
     approach = track_all[-800:] if len(track_all) >= 800 else track_all
 
-    return {"tiros": tiros, "track": track_full, "approach": approach, "summary": summary}, None
+    return {"tiros": tiros, "track": approach, "approach": approach, "summary": summary}, None
