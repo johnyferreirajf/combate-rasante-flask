@@ -606,26 +606,7 @@ function setup(d){
   _overPolys.forEach(function(p){try{_map.removeLayer(p);}catch(e){}});_overPolys=[];
   try{if(window._amTrackLayer)_map.removeLayer(window._amTrackLayer);}catch(e){}
 
-  /* Linha GPS completa (todo o trajeto do avião do KMZ) — tracejada branca */
-  var trackFull=d&&d.track||track||[];
-  if(trackFull.length>1){
-    var tFL=trackFull.map(function(p){return[p[0],p[1]];});
-    window._amTrackLayer=L.polyline(tFL,{
-      color:'rgba(255,255,255,.80)',weight:2,opacity:.9
-    }).addTo(_map);
-  }
-
-  /* Contornos dos tiros — linha branca sólida, inclui os balões de viragem */
-  tiros.forEach(function(t){
-    if(!t||!t.polygon||t.polygon.length<2)return;
-    try{
-      L.polyline(t.polygon.map(function(p){return[p[0],p[1]];}),{
-        color:'#ffffff',weight:1.5,opacity:1.0
-      }).addTo(_map);
-    }catch(e){}
-  });
-
-  /* Polígonos verdes semi-transparentes */
+  /* ── Polígonos verdes ────────────────────────────────────────────────── */
   var allPts=[];
   tiros.forEach(function(t){
     if(!t||!t.polygon)return;
@@ -644,13 +625,43 @@ function setup(d){
     }catch(e){_polys.push(null);}
   });
 
-  /* Bounds: inclui polígonos + track de aproximação */
+  /* ── Contornos dos tiros (GPS das bordas — inclui curvas de viragem) ─── */
+  tiros.forEach(function(t){
+    if(!t||!t.polygon||t.polygon.length<2)return;
+    try{
+      L.polyline(t.polygon.map(function(p){return[p[0],p[1]];}),{
+        color:'rgba(255,255,255,0.9)',weight:1.5,opacity:1
+      }).addTo(_map);
+    }catch(e){}
+  });
+
+  /* ── Linha GPS de aproximação (APÓS os polígonos = fica por cima) ───── */
+  var trkPts=approach&&approach.length>1?approach:(track||[]);
+  if(trkPts.length>1){
+    try{
+      window._amTrackLayer=L.polyline(
+        trkPts.map(function(p){return[p[0],p[1]];}),
+        {color:'#ffffff',weight:3,opacity:1}
+      ).addTo(_map);
+    }catch(e){}
+  }
+
+  /* ── Bounds: coloca o campo + 4km de aproximação visíveis ───────────── */
   try{
-    var boundsLL=L.latLngBounds(allPts);
-    /* Incluir o track (abordagem + balões) nos bounds para ser visível */
-    var trkPts=(d&&d.track)||track||[];
-    trkPts.forEach(function(p){try{boundsLL.extend([p[0],p[1]]);}catch(e){};});
-    _map.fitBounds(boundsLL,{padding:[40,40]});
+    /* Calcular bbox manualmente (mais confiável que L.latLngBounds()) */
+    var minLa=99,maxLa=-99,minLo=99,maxLo=-99;
+    allPts.forEach(function(p){
+      if(p[0]<minLa)minLa=p[0]; if(p[0]>maxLa)maxLa=p[0];
+      if(p[1]<minLo)minLo=p[1]; if(p[1]>maxLo)maxLo=p[1];
+    });
+    /* Estender bounds para incluir a abordagem GPS ao sul */
+    if(trkPts.length>0){
+      trkPts.forEach(function(p){
+        if(p[0]<minLa)minLa=p[0]; if(p[0]>maxLa)maxLa=p[0];
+        if(p[1]<minLo)minLo=p[1]; if(p[1]>maxLo)maxLo=p[1];
+      });
+    }
+    _map.fitBounds([[minLa,minLo],[maxLa,maxLo]],{padding:[40,40]});
   }catch(e){}
   setTimeout(function(){try{_map.invalidateSize();}catch(e){}},200);
 
