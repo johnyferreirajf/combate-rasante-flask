@@ -1041,4 +1041,4 @@ def _parse_kml_full(raw):
                             pass
 
     approach = track_all[-800:] if len(track_all) >= 800 else track_all
-    return {"tiros": tiros, "track": track_all, "approach": approach, "summary": summary}, None
+    return {"tiros": tiros, "track": approach, "approach": approach, "summary": summary}, None
