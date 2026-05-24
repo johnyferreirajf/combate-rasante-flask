@@ -615,12 +615,12 @@ function setup(d){
     }).addTo(_map);
   }
 
-  /* Contornos dos tiros (trajetória de pulverização) — branca fina */
+  /* Contornos dos tiros — linha branca sólida, inclui os balões de viragem */
   tiros.forEach(function(t){
     if(!t||!t.polygon||t.polygon.length<2)return;
     try{
       L.polyline(t.polygon.map(function(p){return[p[0],p[1]];}),{
-        color:'rgba(255,255,255,.60)',weight:1.5,opacity:.85
+        color:'#ffffff',weight:1.5,opacity:1.0
       }).addTo(_map);
     }catch(e){}
   });
@@ -644,14 +644,14 @@ function setup(d){
     }catch(e){_polys.push(null);}
   });
 
-  /* Bounds: foca nos tiros + últimos 600 pts do track (balões perto do campo) */
+  /* Bounds: tiros + approach (balões perto do campo), sem o voo ferry de 50km */
   try{
     var boundsLL=L.latLngBounds(allPts);
-    /* Incluir apenas a parte próxima do track (approach) nos bounds */
     if(approach&&approach.length>0){
       approach.forEach(function(p){try{boundsLL.extend([p[0],p[1]]);}catch(e){};});
     }
-    _map.fitBounds(boundsLL,{padding:[30,30]});
+    /* Limitar o sul para não incluir o voo de 50km (base longe) */
+    _map.fitBounds(boundsLL,{padding:[40,40]});
   }catch(e){}
   setTimeout(function(){try{_map.invalidateSize();}catch(e){}},200);
 

@@ -1030,14 +1030,9 @@ def _parse_kml_full(raw):
 
     tiros.sort(key=lambda x: x["num"])
 
-    # ── Track COMPLETO para exibição — sem filtro, toda a linha do KMZ ──
-    # Máx 2000 pts amostrados do track inteiro (linha visível no mapa)
-    step_full = max(1, len(track_all) // 2000)
-    track_full = track_all[::step_full]
-
-    # ── Aproximação para animação — últimos N pontos do track ─────────────
-    # Usa os últimos pontos do track (que chegam até o campo)
-    # Sem filtro de lat/lon para preservar os BALÕES de viragem
-    approach = track_all[-600:] if len(track_all) >= 600 else track_all
+    # ── Track COMPLETO — todos os pontos da linha do KMZ sem filtro ────────
+    track_full = track_all          # todos os 8405 pts (sem amostragem)
+    # Para animação: últimos 800 pts (chegada ao campo, inclui os balões)
+    approach = track_all[-800:] if len(track_all) >= 800 else track_all
 
     return {"tiros": tiros, "track": track_full, "approach": approach, "summary": summary}, None
