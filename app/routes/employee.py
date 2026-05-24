@@ -1030,19 +1030,27 @@ def _parse_kml_full(raw):
 
     tiros.sort(key=lambda x: x["num"])
 
-    # ── Extrair apenas o trecho de aproximação (1000m antes do 1° tiro) ──
-    # 1000m ≈ 0.009° de latitude
+    # ── Trecho de aproximação: últimos 5km antes do campo + área de aplicação ──
+    # Retorna o trecho do track GPS que vai desde 5km antes do campo até o fim
+    # O avião seguirá este trecho REAL antes/durante os tiros
     approach = []
     if tiros and track_all:
         min_tiro_lat = min(p[0] for t in tiros for p in t["polygon"])
-        min_tiro_lon_center = tiros[0]["centroid"][1]
-        lat_threshold = min_tiro_lat - 0.009   # 1000m south
-        # Filtrar track dentro da janela de 1km antes do campo
+        max_tiro_lat = max(p[0] for t in tiros for p in t["polygon"])
+        min_tiro_lon = min(p[1] for t in tiros for p in t["polygon"])
+        max_tiro_lon = max(p[1] for t in tiros for p in t["polygon"])
+        # 5km antes do campo (≈0.045°) até além do campo
+        lat_start = min_tiro_lat - 0.045
+        lon_margin = 0.08  # ±8km em lon para capturar manobras
+        lon_center = (min_tiro_lon + max_tiro_lon) / 2
         approach = [
             p for p in track_all
-            if p[0] >= lat_threshold
-            # e dentro de raio razoável em lon (±0.05°≈5km para cobrir manobras)
-            and abs(p[1] - min_tiro_lon_center) <= 0.05
+            if p[0] >= lat_start
+            and abs(p[1] - lon_center) <= lon_margin
         ]
+        # Amostrar se muito denso (máx 300 pts)
+        if len(approach) > 300:
+            step = max(1, len(approach) // 300)
+            approach = approach[::step]
 
     return {"tiros": tiros, "approach": approach, "summary": summary}, None
