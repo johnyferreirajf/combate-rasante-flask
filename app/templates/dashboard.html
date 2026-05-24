@@ -298,9 +298,7 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANÁLISE DE APLICAÇÃO AÉREA - CORRIGIDO
-   - Linha GPS: Trajeto exato do avião em todo o voo.
-   - Polígonos: Verdes (Efetivos) e Vermelhos (Cálculo real de sobreposição).
+   ANÁLISE DE APLICAÇÃO AÉREA - TRAJETO COMPLETO CORRIGIDO
 ═══════════════════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
@@ -342,9 +340,7 @@ function bearing(a,b){
         -Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;
 }
 
-function dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
-
-/* ── Helper Turf.js para formatar Polígonos (lat/lon -> lon/lat fechado) ── */
+/* Helper Turf.js para formatar Polígonos (lat/lon -> lon/lat fechado) */
 function toTurfPoly(pts){
   if(!pts || pts.length < 3) return null;
   var ring = pts.map(function(p){ return [p[1], p[0]]; }); 
@@ -368,7 +364,7 @@ function areaHa(pts){
   return Math.abs(a)/2/10000;
 }
 
-/* ── Construir passos de animação precisos acompanhando a linha do GPS real ── */
+/* Constrói os passos de animação precisos acompanhando a linha do GPS real completa */
 function buildSteps(tiros, approach){
   var steps=[];
   var turfPolys = tiros.map(function(t) { return toTurfPoly(t.polygon); });
@@ -379,7 +375,7 @@ function buildSteps(tiros, approach){
       var pt = turf.point([p[1], p[0]]);
       var inTi = -1;
       
-      // Otimização: Se já estava no tiro passado, checar ele primeiro
+      // Otimização: Evita recalcular dezenas de polígonos se o avião já estiver no mesmo tiro
       if(lastTi >= 0 && turfPolys[lastTi] && turf.booleanPointInPolygon(pt, turfPolys[lastTi])){
          inTi = lastTi;
       } else {
@@ -391,18 +387,6 @@ function buildSteps(tiros, approach){
       }
       lastTi = inTi;
       steps.push({pos:[p[0], p[1]], ti:Math.max(0,inTi), in:(inTi>=0)});
-    });
-  } else {
-    // Fallback se não existir rastreio longo o suficiente
-    var F=50, prevExit=null;
-    tiros.forEach(function(t,i){
-      if(!t||!t.entry||!t.exit)return;
-      var entry=t.entry, exitPt=t.exit;
-      if(prevExit){
-        for(var k=1;k<=10;k++) steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*(k/10), prevExit[1]+(entry[1]-prevExit[1])*(k/10)],ti:i,in:false});
-      }
-      for(var k=1;k<=F;k++) steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*(k/F), entry[1]+(exitPt[1]-entry[1])*(k/F)],ti:i,in:true});
-      prevExit=exitPt;
     });
   }
   return steps;
@@ -526,11 +510,12 @@ function setup(d){
     }catch(e){_polys.push(null);}
   });
 
+  // Linha de Trajeto Completo renderizada em Amarelo Destaque
   if(approach.length>1){
     try{
       window._amTrackLayer=L.polyline(
         approach.map(function(p){return[p[0],p[1]];}),
-        {color:'#ffffff',weight:2,opacity:0.8} // Linha levemente transparente para o Rastro
+        {color:'#facc15',weight:2.5,opacity:0.9, dashArray:'5, 5'} // Tracejado visual para rota de GPS
       ).addTo(_map);
     }catch(e){}
   }
@@ -541,6 +526,13 @@ function setup(d){
       if(p[0]<minLa)minLa=p[0]; if(p[0]>maxLa)maxLa=p[0];
       if(p[1]<minLo)minLo=p[1]; if(p[1]>maxLo)maxLo=p[1];
     });
+    // Adicionado pontos do rastro também no zoom do mapa
+    if(approach.length>1) {
+       approach.forEach(function(p){
+         if(p[0]<minLa)minLa=p[0]; if(p[0]>maxLa)maxLa=p[0];
+         if(p[1]<minLo)minLo=p[1]; if(p[1]>maxLo)maxLo=p[1];
+       });
+    }
     _map.fitBounds([[minLa,minLo],[maxLa,maxLo]],{padding:[40,40]});
   }catch(e){}
   
@@ -554,13 +546,11 @@ function setup(d){
     try{ _plane=L.marker([_steps[0].pos[0],_steps[0].pos[1]],{icon:amIcon(0),zIndexOffset:2000}).addTo(_map); }catch(e){}
   }
 
-  // Interseções e Sobreposição Visual Exata com Turf
   document.getElementById('am-loading-msg').textContent='Calculando sobreposição real...';
   setTimeout(function(){
     var turfPolys = tiros.map(function(t){ return toTurfPoly(t.polygon); });
     var overAreaSqm = 0;
     
-    // Calcula cruzamentos de polígonos
     for(var i=0; i<turfPolys.length; i++){
       if(!turfPolys[i]) continue;
       for(var j=i+1; j<turfPolys.length; j++){
@@ -568,7 +558,6 @@ function setup(d){
         try {
           var inter = turf.intersect(turfPolys[i], turfPolys[j]);
           if(inter) {
-            // Renderiza área sobreposta em vermelho
             var overLyr = L.geoJSON(inter, {
               style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.65, weight: 1.5, zIndex: 400}
             }).addTo(_map);

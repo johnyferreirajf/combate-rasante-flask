@@ -955,10 +955,28 @@ def _parse_kml_full(raw):
 
     tiros, track_all, summary = [], [], {}
 
-    for pm in fa(root, "Placemark"):
-        ne = fo(pm, "name")
-        name = (ne.text or "").strip() if ne is not None else ""
+ # ── SUBSTITUA A EXTRAÇÃO DO RASTRO (TRACK) POR ESTE BLOCO ──
+        track_all = []
+        
+        # O iter() busca em todo o KML, unindo todos os segmentos cortados da linha de voo
+        for elem in root.iter():
+            # Sistemas padrão usam LineString; GPS mais modernos podem usar gx:Track
+            if 'LineString' in elem.tag or 'Track' in elem.tag:
+                for child in elem.iter():
+                    if 'coordinates' in child.tag or 'coord' in child.tag:
+                        if child.text:
+                            for tok in child.text.strip().split():
+                                p = tok.split(',')
+                                if len(p) >= 2:
+                                    try:
+                                        # KML salva como (Longitude, Latitude). Invertemos aqui.
+                                        track_all.append([float(p[1]), float(p[0])])
+                                    except ValueError:
+                                        pass
 
+        # Garanta que o final da sua função retorne o approach preenchido com a linha completa
+        return {"tiros": tiros, "track": track_all, "approach": track_all, "summary": summary}, None
+        # ───────────────────────────────────────────────────────────
         # ── Planilha (NoGeometry) ──────────────────────────────────────────
         if name == "Resumo do trabalho":
             de = fo(pm, "description")
