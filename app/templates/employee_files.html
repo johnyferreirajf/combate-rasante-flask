@@ -826,9 +826,10 @@ window.abrirAnalise=function(fileId,nome,rota){
 
 /* ── Setup da animação ── */
 function setup(d){
-  var tiros  =d.tiros||[];
-  var approach=d.approach||[];
-  var summary=d.summary||{};
+  var tiros   = d.tiros||[];
+  var approach = d.approach||[];
+  var track    = d.track||[];   /* track completo para a linha visível */
+  var summary  = d.summary||{};
 
   if(!tiros.length){
     document.getElementById('am-loading').style.display='none';
@@ -858,11 +859,12 @@ function setup(d){
   _overPolys.forEach(function(p){try{_map.removeLayer(p);}catch(e){}});_overPolys=[];
   try{if(window._amTrackLayer)_map.removeLayer(window._amTrackLayer);}catch(e){}
 
-  /* Linha GPS real (abordagem ao campo) — tracejada branca */
-  if(approach.length>1){
-    var aLL=approach.map(function(p){return[p[0],p[1]];});
-    window._amTrackLayer=L.polyline(aLL,{
-      color:'rgba(255,255,255,.7)',weight:2,dashArray:'6,5',opacity:.9
+  /* Linha GPS completa (todo o trajeto do avião do KMZ) — tracejada branca */
+  var trackFull=d&&d.track||track||[];
+  if(trackFull.length>1){
+    var tFL=trackFull.map(function(p){return[p[0],p[1]];});
+    window._amTrackLayer=L.polyline(tFL,{
+      color:'rgba(255,255,255,.75)',weight:2,dashArray:'5,4',opacity:.9
     }).addTo(_map);
   }
 
@@ -895,12 +897,17 @@ function setup(d){
     }catch(e){_polys.push(null);}
   });
 
-  /* Bounds a partir de TODOS os pontos (evita Leaflet bug com latLngBounds sem args) */
-  try{_map.fitBounds(L.latLngBounds(allPts),{padding:[20,20]});}catch(e){}
-  if(approach.length>1){
-    try{_map.fitBounds(L.latLngBounds(approach.map(function(p){return[p[0],p[1]];}))
-        .extend(L.latLngBounds(allPts)),{padding:[20,20]});}catch(e){}
-  }
+  /* Bounds inclui tiros + linha GPS completa */
+  try{
+    var boundsLL=L.latLngBounds(allPts);
+    /* Adicionar alguns pontos do track para ver a linha toda */
+    if(track&&track.length>0){
+      var samp=Math.max(1,Math.floor(track.length/50));
+      for(var bi=0;bi<track.length;bi+=samp)
+        try{boundsLL.extend([track[bi][0],track[bi][1]]);}catch(e){}
+    }
+    _map.fitBounds(boundsLL,{padding:[30,30]});
+  }catch(e){}
   setTimeout(function(){try{_map.invalidateSize();}catch(e){}},200);
 
   /* Passos de animação */
