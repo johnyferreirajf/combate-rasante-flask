@@ -1030,27 +1030,14 @@ def _parse_kml_full(raw):
 
     tiros.sort(key=lambda x: x["num"])
 
-    # ── Track completo para exibição (linha visível no mapa) ──────────────
-    # Amostra o track inteiro (máx 1500 pts) para mostrar TODA a linha do KMZ
-    step_full = max(1, len(track_all) // 1500)
+    # ── Track COMPLETO para exibição — sem filtro, toda a linha do KMZ ──
+    # Máx 2000 pts amostrados do track inteiro (linha visível no mapa)
+    step_full = max(1, len(track_all) // 2000)
     track_full = track_all[::step_full]
 
-    # ── Trecho de aproximação para ANIMAÇÃO DO AVIÃO ─────────────────────
-    # Apenas os pontos próximos ao campo (5km antes até o fim do track)
-    approach = []
-    if tiros and track_all:
-        min_tiro_lat = min(p[0] for t in tiros for p in t["polygon"])
-        min_tiro_lon = min(p[1] for t in tiros for p in t["polygon"])
-        max_tiro_lon = max(p[1] for t in tiros for p in t["polygon"])
-        lat_start = min_tiro_lat - 0.045  # ~5km antes
-        lon_center = (min_tiro_lon + max_tiro_lon) / 2
-        approach = [
-            p for p in track_all
-            if p[0] >= lat_start
-            and abs(p[1] - lon_center) <= 0.08
-        ]
-        if len(approach) > 400:
-            step = max(1, len(approach) // 400)
-            approach = approach[::step]
+    # ── Aproximação para animação — últimos N pontos do track ─────────────
+    # Usa os últimos pontos do track (que chegam até o campo)
+    # Sem filtro de lat/lon para preservar os BALÕES de viragem
+    approach = track_all[-600:] if len(track_all) >= 600 else track_all
 
     return {"tiros": tiros, "track": track_full, "approach": approach, "summary": summary}, None

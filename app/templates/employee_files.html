@@ -864,7 +864,7 @@ function setup(d){
   if(trackFull.length>1){
     var tFL=trackFull.map(function(p){return[p[0],p[1]];});
     window._amTrackLayer=L.polyline(tFL,{
-      color:'rgba(255,255,255,.75)',weight:2,dashArray:'5,4',opacity:.9
+      color:'rgba(255,255,255,.80)',weight:2,opacity:.9
     }).addTo(_map);
   }
 
@@ -897,14 +897,12 @@ function setup(d){
     }catch(e){_polys.push(null);}
   });
 
-  /* Bounds inclui tiros + linha GPS completa */
+  /* Bounds: foca nos tiros + últimos 600 pts do track (balões perto do campo) */
   try{
     var boundsLL=L.latLngBounds(allPts);
-    /* Adicionar alguns pontos do track para ver a linha toda */
-    if(track&&track.length>0){
-      var samp=Math.max(1,Math.floor(track.length/50));
-      for(var bi=0;bi<track.length;bi+=samp)
-        try{boundsLL.extend([track[bi][0],track[bi][1]]);}catch(e){}
+    /* Incluir apenas a parte próxima do track (approach) nos bounds */
+    if(approach&&approach.length>0){
+      approach.forEach(function(p){try{boundsLL.extend([p[0],p[1]]);}catch(e){};});
     }
     _map.fitBounds(boundsLL,{padding:[30,30]});
   }catch(e){}
