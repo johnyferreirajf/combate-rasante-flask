@@ -1030,8 +1030,7 @@ def _parse_kml_full(raw):
 
     tiros.sort(key=lambda x: x["num"])
 
-    # ── Track de aproximação (últimos 800 pts = 5km antes do campo) ─────────
-    # Não retornar o voo completo de 50km — apenas a chegada ao campo
-    approach = track_all[-800:] if len(track_all) >= 800 else track_all
-
-    return {"tiros": tiros, "track": approach, "approach": approach, "summary": summary}, None
+    # ── Track completo ─────────
+    # Correção: Agora retornamos a rota completa do KML para garantir que 
+    # a animação passe exatamente no rastro do arquivo em toda a aplicação.
+    return {"tiros": tiros, "track": track_all, "approach": track_all, "summary": summary}, None

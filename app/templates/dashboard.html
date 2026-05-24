@@ -294,40 +294,31 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANÁLISE DE APLICAÇÃO AÉREA
-   - Linha GPS: trecho de 1000m antes do primeiro tiro
-   - Polígonos: tiros de aplicação (verde = efetivo, vermelho = sobreposição)
-   - Planilha: data/hora início-fim, área, sistema GPS
+   ANÁLISE DE APLICAÇÃO AÉREA - CORRIGIDO
+   - Linha GPS: Trajeto exato do avião em todo o voo.
+   - Polígonos: Verdes (Efetivos) e Vermelhos (Cálculo real de sobreposição).
 ═══════════════════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
 
-/* ── estado ── */
 var _map=null, _tiros=[], _polys=[], _overPolys=[], _plane=null, _timer=null;
 var _playing=false, _step=0, _steps=[], _total=0;
 var _doneCnt=[], _inCnt=[];
 
-/* ── ícone avião agrícola top-down (crop duster) ── */
 function amIcon(hdg){
-  /* Vista de cima: asas largas, fuselagem curta, boom de pulverização */
   var c='#22c55e', w='#ffffff', y='#fbbf24';
   var svg='<svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">'
-    /* Fuselagem principal */
     +'<ellipse cx="40" cy="52" rx="7" ry="32" fill="'+c+'" stroke="'+w+'" stroke-width="1.5"/>'
-    /* Motor/nariz frontal */
     +'<ellipse cx="40" cy="22" rx="6" ry="10" fill="'+y+'" stroke="#f59e0b" stroke-width="1"/>'
     +'<circle cx="40" cy="12" r="6" fill="'+y+'" stroke="#f59e0b" stroke-width="1"/>'
-    /* Disco da hélice */
     +'<ellipse cx="40" cy="8" rx="18" ry="4" fill="rgba(255,255,255,.35)" stroke="'+w+'" stroke-width="1"/>'
-    /* Asas principais (largas, retas - estilo agrícola) */
     +'<rect x="2" y="44" width="76" height="12" rx="4" fill="'+c+'" stroke="'+w+'" stroke-width="1.5"/>'
-    /* Tanque de calda (oval central abaixo das asas) */
     +'<ellipse cx="40" cy="58" rx="8" ry="12" fill="#86efac" stroke="'+c+'" stroke-width="1"/>'
-    /* Boom de pulverização (barra horizontal) */
     +'<rect x="0" y="62" width="80" height="4" rx="2" fill="#4ade80" opacity=".9"/>'
-    /* Bicos (7) */
     +'<rect x="5" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
     +'<rect x="15" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
     +'<rect x="25" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
@@ -335,9 +326,7 @@ function amIcon(hdg){
     +'<rect x="49" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
     +'<rect x="59" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
     +'<rect x="69" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
-    /* Empenagem horizontal */
     +'<ellipse cx="40" cy="80" rx="18" ry="5" fill="'+c+'" stroke="'+w+'" stroke-width="1.5"/>'
-    /* Empenagem vertical */
     +'<ellipse cx="40" cy="78" rx="4" ry="10" fill="#16a34a"/>'
     +'</svg>';
   return L.divIcon({
@@ -355,7 +344,17 @@ function bearing(a,b){
 
 function dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return Math.sqrt(dy*dy+dx*dx);}
 
-/* ── Área via Shoelace em coordenadas projetadas (ha) ── */
+/* ── Helper Turf.js para formatar Polígonos (lat/lon -> lon/lat fechado) ── */
+function toTurfPoly(pts){
+  if(!pts || pts.length < 3) return null;
+  var ring = pts.map(function(p){ return [p[1], p[0]]; }); 
+  if(ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1]) {
+    ring.push(ring[0]); 
+  }
+  if(ring.length < 4) return null;
+  return turf.polygon([ring]);
+}
+
 function areaHa(pts){
   if(!pts||pts.length<3)return 0;
   var R=6371000,D=Math.PI/180,n=pts.length,latC=0;
@@ -369,114 +368,46 @@ function areaHa(pts){
   return Math.abs(a)/2/10000;
 }
 
-/* ── Bbox de um polígono ── */
-function bbox(pts){
-  var la=[],lo=[];
-  for(var i=0;i<pts.length;i++){if(pts[i]&&pts[i].length>=2){la.push(pts[i][0]);lo.push(pts[i][1]);}}
-  if(!la.length)return null;
-  return{la1:Math.min.apply(null,la),la2:Math.max.apply(null,la),
-         lo1:Math.min.apply(null,lo),lo2:Math.max.apply(null,lo)};
-}
-
-/* ── Área e sobreposição ── */
-function calcStats(tiros, summaryAreaHa){
-  var totalHa=0;
-  tiros.forEach(function(t){totalHa+=areaHa(t.polygon);});
-
-  var effectiveHa=(summaryAreaHa&&summaryAreaHa>0)?summaryAreaHa:totalHa;
-  var overHa=Math.max(0,totalHa-effectiveHa);
-
-  return{total:totalHa,effective:effectiveHa,over:overHa,inters:[]};
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   ANIMAÇÃO: usa a LINHA GPS real (approach) para o trajeto do avião.
-   Os POLÍGONOS são detectados por bbox: quando o avião passa sobre um tiro,
-   ele é preenchido verde. Usa os dois arquivos do KMZ como pedido.
-═══════════════════════════════════════════════════════════════════════ */
-
-/* Pré-computar bboxes dos tiros para detecção de posição */
-function buildTiroBboxes(tiros){
-  return tiros.map(function(t){
-    if(!t||!t.polygon)return null;
-    var la=[],lo=[];
-    t.polygon.forEach(function(p){if(p&&p.length>=2){la.push(p[0]);lo.push(p[1]);}});
-    if(!la.length)return null;
-    return{la1:Math.min.apply(null,la),la2:Math.max.apply(null,la),
-           lo1:Math.min.apply(null,lo),lo2:Math.max.apply(null,lo)};
-  });
-}
-
-/* Detectar qual tiro contém o ponto (lat, lon) */
-function detectTiro(lat, lon, boxes){
-  for(var i=0;i<boxes.length;i++){
-    var b=boxes[i];
-    if(b&&lat>=b.la1&&lat<=b.la2&&lon>=b.lo1&&lon<=b.lo2) return i;
-  }
-  return -1;
-}
-
-/* ── Construir passos de animação usando a LINHA GPS real ── */
+/* ── Construir passos de animação precisos acompanhando a linha do GPS real ── */
 function buildSteps(tiros, approach){
-  var steps=[], prevExit=null;
-  var boxes=buildTiroBboxes(tiros);
-
-  /* FASE 1: Linha GPS real (approach) — avião segue o rastro real do KMZ
-     Cada ponto do GPS track → um passo de animação.
-     Detecta automaticamente qual tiro o avião está sobrevoando. */
-  if(approach&&approach.length>1){
-    approach.forEach(function(p,idx){
-      var ti=detectTiro(p[0],p[1],boxes);
-      var inField=(ti>=0);
-      steps.push({pos:[p[0],p[1]], ti:Math.max(0,ti), in:inField});
-    });
-    prevExit=steps[steps.length-1].pos;
-  }
-
-  /* FASE 2: Completar tiros que o GPS não cobriu (sequência de polígonos)
-     Para os tiros que o avião ainda não sobrevoou via GPS, anima pelo centroide. */
-  var coveredTiros={};
-  steps.forEach(function(s){if(s.in)coveredTiros[s.ti]=true;});
-
-  var F=50;
-  tiros.forEach(function(t,i){
-    if(coveredTiros[i])return; // já coberto pelo GPS
-    if(!t||!t.entry||!t.exit)return;
-    var entry=t.entry, exitPt=t.exit;
-    if(prevExit&&dist(prevExit,t.exit)<dist(prevExit,t.entry)){
-      entry=t.exit; exitPt=t.entry;
-    }
-    /* Trânsito até a entrada */
-    if(prevExit){
-      var T=10;
-      for(var k=1;k<=T;k++){
-        var r=k/T;
-        steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
-                         prevExit[1]+(entry[1]-prevExit[1])*r],ti:i,in:false});
+  var steps=[];
+  var turfPolys = tiros.map(function(t) { return toTurfPoly(t.polygon); });
+  
+  if(approach && approach.length > 1){
+    var lastTi = -1;
+    approach.forEach(function(p){
+      var pt = turf.point([p[1], p[0]]);
+      var inTi = -1;
+      
+      // Otimização: Se já estava no tiro passado, checar ele primeiro
+      if(lastTi >= 0 && turfPolys[lastTi] && turf.booleanPointInPolygon(pt, turfPolys[lastTi])){
+         inTi = lastTi;
+      } else {
+         for(var i=0; i<turfPolys.length; i++){
+            if(turfPolys[i] && turf.booleanPointInPolygon(pt, turfPolys[i])){
+              inTi = i; break;
+            }
+         }
       }
-    }
-    /* Spray pass (linha reta pelo centro do tiro) */
-    for(var k=1;k<=F;k++){
-      var r=k/F;
-      steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
-                       entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
-    }
-    prevExit=exitPt;
-  });
-
-  /* FASE 3: Saída ~300m além do último tiro */
-  if(prevExit){
-    var dep=[prevExit[0]+0.0027,prevExit[1]];
-    for(var k=1;k<=12;k++){
-      var r=k/12;
-      steps.push({pos:[prevExit[0]+(dep[0]-prevExit[0])*r,prevExit[1]],
-                  ti:tiros.length-1,in:false});
-    }
+      lastTi = inTi;
+      steps.push({pos:[p[0], p[1]], ti:Math.max(0,inTi), in:(inTi>=0)});
+    });
+  } else {
+    // Fallback se não existir rastreio longo o suficiente
+    var F=50, prevExit=null;
+    tiros.forEach(function(t,i){
+      if(!t||!t.entry||!t.exit)return;
+      var entry=t.entry, exitPt=t.exit;
+      if(prevExit){
+        for(var k=1;k<=10;k++) steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*(k/10), prevExit[1]+(entry[1]-prevExit[1])*(k/10)],ti:i,in:false});
+      }
+      for(var k=1;k<=F;k++) steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*(k/F), entry[1]+(exitPt[1]-entry[1])*(k/F)],ti:i,in:true});
+      prevExit=exitPt;
+    });
   }
   return steps;
 }
 
-/* ── Ir para passo específico (scrub) ── */
 function amGoTo(target){
   target=Math.max(0,Math.min(target,_total));
   _polys.forEach(function(p){
@@ -505,7 +436,6 @@ function amGoTo(target){
   document.getElementById('am-thumb').style.left=pct+'%';
 }
 
-/* ── Inicializar scrub na barra ── */
 function initScrub(){
   var wrap=document.getElementById('am-bar-wrap');
   function seek(cx){
@@ -530,7 +460,6 @@ function initScrub(){
   },{passive:true});
 }
 
-/* ── Abrir modal ── */
 window.abrirAnalise=function(fileId,nome,rota){
   var modal=document.getElementById('am');
   modal.classList.add('open');
@@ -538,17 +467,10 @@ window.abrirAnalise=function(fileId,nome,rota){
   document.getElementById('am-loading-msg').textContent='Baixando KMZ...';
   document.getElementById('am-title').textContent='✈️ '+nome;
   document.getElementById('am-stats').innerHTML='<span style="color:#2d6b3f;font-style:italic;">Calculando...</span>';
-  document.getElementById('hv-ini').textContent='—';
-  document.getElementById('hv-fim').textContent='—';
-  document.getElementById('hv-area').textContent='—';
-  document.getElementById('hv-tiro').textContent='—';
-
+  
   if(!_map){
     _map=L.map('am-leaflet',{zoomControl:true,attributionControl:false});
-    L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {maxZoom:20}
-    ).addTo(_map);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20}).addTo(_map);
     initScrub();
   }
 
@@ -564,18 +486,12 @@ window.abrirAnalise=function(fileId,nome,rota){
         document.getElementById('am-loading').style.display='none';
         console.error('Analise error:',e);
       }
-    })
-    .catch(function(e){
-      document.getElementById('am-loading').style.display='none';
-      console.error('Fetch error:',e);
     });
 };
 
-/* ── Setup da animação ── */
 function setup(d){
   var tiros   = d.tiros||[];
   var approach = d.approach||[];
-  var track    = d.track||[];   /* track completo para a linha visível */
   var summary  = d.summary||{};
 
   if(!tiros.length){
@@ -586,126 +502,101 @@ function setup(d){
 
   _tiros=tiros; _playing=false; _step=0; clearTimeout(_timer);
   document.getElementById('am-play').textContent='▶ Play';
-  document.getElementById('am-bar').style.width='0%';
-  document.getElementById('am-thumb').style.left='0%';
-  document.getElementById('am-lbl').textContent='Tiro 0 / '+tiros.length;
-
-  /* HUD — dados da planilha */
+  
   if(summary.data_inicio){
-    var ini=(summary.data_inicio||'')+(summary.hora_inicio?' '+summary.hora_inicio:'');
-    var fim=(summary.data_inicio||'')+(summary.hora_fim?' '+summary.hora_fim:'');
-    document.getElementById('hv-ini').textContent=ini;
-    document.getElementById('hv-fim').textContent=fim;
+    document.getElementById('hv-ini').textContent=(summary.data_inicio||'')+(summary.hora_inicio?' '+summary.hora_inicio:'');
+    document.getElementById('hv-fim').textContent=(summary.data_inicio||'')+(summary.hora_fim?' '+summary.hora_fim:'');
   }
-  if(summary.area_ha)
-    document.getElementById('hv-area').textContent=summary.area_ha.toFixed(2)+' ha';
+  if(summary.area_ha) document.getElementById('hv-area').textContent=summary.area_ha.toFixed(2)+' ha';
 
-  /* Limpar camadas */
   if(_plane){try{_map.removeLayer(_plane);}catch(e){}_plane=null;}
   _polys.forEach(function(p){try{if(p)_map.removeLayer(p);}catch(e){}});_polys=[];
   _overPolys.forEach(function(p){try{_map.removeLayer(p);}catch(e){}});_overPolys=[];
   try{if(window._amTrackLayer)_map.removeLayer(window._amTrackLayer);}catch(e){}
 
-  /* ── Polígonos verdes ────────────────────────────────────────────────── */
   var allPts=[];
-  tiros.forEach(function(t){
-    if(!t||!t.polygon)return;
-    t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});
-  });
-  if(!allPts.length){document.getElementById('am-loading').style.display='none';return;}
-
   tiros.forEach(function(t){
     if(!t||!t.polygon||t.polygon.length<3){_polys.push(null);return;}
     try{
-      var ll=t.polygon.map(function(p){return[p[0],p[1]];});
-      var poly=L.polygon(ll,{
+      t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});
+      var poly=L.polygon(t.polygon.map(function(p){return[p[0],p[1]];}),{
         color:'#22c55e',weight:1.8,fillColor:'#22c55e',fillOpacity:0.25,opacity:0.9
       }).addTo(_map);
       _polys.push(poly);
     }catch(e){_polys.push(null);}
   });
 
-  /* ── Contornos dos tiros (GPS das bordas — inclui curvas de viragem) ─── */
-  tiros.forEach(function(t){
-    if(!t||!t.polygon||t.polygon.length<2)return;
-    try{
-      L.polyline(t.polygon.map(function(p){return[p[0],p[1]];}),{
-        color:'rgba(255,255,255,0.9)',weight:1.5,opacity:1
-      }).addTo(_map);
-    }catch(e){}
-  });
-
-  /* ── Linha GPS de aproximação (APÓS os polígonos = fica por cima) ───── */
-  var trkPts=approach&&approach.length>1?approach:(track||[]);
-  if(trkPts.length>1){
+  if(approach.length>1){
     try{
       window._amTrackLayer=L.polyline(
-        trkPts.map(function(p){return[p[0],p[1]];}),
-        {color:'#ffffff',weight:3,opacity:1}
+        approach.map(function(p){return[p[0],p[1]];}),
+        {color:'#ffffff',weight:2,opacity:0.8} // Linha levemente transparente para o Rastro
       ).addTo(_map);
     }catch(e){}
   }
 
-  /* ── Bounds: coloca o campo + 4km de aproximação visíveis ───────────── */
   try{
-    /* Calcular bbox manualmente (mais confiável que L.latLngBounds()) */
     var minLa=99,maxLa=-99,minLo=99,maxLo=-99;
     allPts.forEach(function(p){
       if(p[0]<minLa)minLa=p[0]; if(p[0]>maxLa)maxLa=p[0];
       if(p[1]<minLo)minLo=p[1]; if(p[1]>maxLo)maxLo=p[1];
     });
-    /* Estender bounds para incluir a abordagem GPS ao sul */
-    if(trkPts.length>0){
-      trkPts.forEach(function(p){
-        if(p[0]<minLa)minLa=p[0]; if(p[0]>maxLa)maxLa=p[0];
-        if(p[1]<minLo)minLo=p[1]; if(p[1]>maxLo)maxLo=p[1];
-      });
-    }
     _map.fitBounds([[minLa,minLo],[maxLa,maxLo]],{padding:[40,40]});
   }catch(e){}
-  setTimeout(function(){try{_map.invalidateSize();}catch(e){}},200);
-
-  /* Passos de animação */
+  
   _steps=buildSteps(tiros,approach);
   _total=_steps.length;
   _inCnt=new Array(tiros.length).fill(0);
   _doneCnt=new Array(tiros.length).fill(0);
   _steps.forEach(function(s){if(s&&s.in)_inCnt[s.ti]++;});
 
-  /* Posição inicial do avião */
   if(_steps.length>0&&_steps[0]){
-    try{
-      var fp=_steps[0].pos;
-      _plane=L.marker([fp[0],fp[1]],{icon:amIcon(0),zIndexOffset:2000}).addTo(_map);
-    }catch(e){}
+    try{ _plane=L.marker([_steps[0].pos[0],_steps[0].pos[1]],{icon:amIcon(0),zIndexOffset:2000}).addTo(_map); }catch(e){}
   }
 
-  /* Calcular sobreposição (em background) */
-  document.getElementById('am-loading-msg').textContent='Calculando sobreposição...';
+  // Interseções e Sobreposição Visual Exata com Turf
+  document.getElementById('am-loading-msg').textContent='Calculando sobreposição real...';
   setTimeout(function(){
-    try{
-      var stats=calcStats(tiros, summary&&summary.area_ha);
-      /* Sobreposição: números nos stats (visualização por bbox é imprecisa para faixas N-S) */
-      var efetPct=stats.total>0?(stats.effective/stats.total*100):0;
-      var overPct=stats.total>0?(stats.over/stats.total*100):0;
-      document.getElementById('am-stats').innerHTML=
-        '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '
-          +stats.effective.toFixed(2)+' ha ('+efetPct.toFixed(1)+'%)</span>'
-        +'<span style="color:#f87171;font-weight:700;">🔴 Sobreposição: '
-          +stats.over.toFixed(2)+' ha ('+overPct.toFixed(1)+'%)</span>'
-        +'<span style="color:#94a3b8;">📊 Total: '+stats.total.toFixed(2)+' ha</span>'
-        +(summary.gps
-          ?'<span style="color:#2d6b3f;font-size:10px;">📡 '+summary.gps+'</span>':'');
-    }catch(e){
-      document.getElementById('am-stats').innerHTML=
-        '<span style="color:#94a3b8;">📊 Total: '+
-        (tiros.reduce(function(s,t){return s+areaHa(t.polygon);},0)).toFixed(2)+' ha</span>';
+    var turfPolys = tiros.map(function(t){ return toTurfPoly(t.polygon); });
+    var overAreaSqm = 0;
+    
+    // Calcula cruzamentos de polígonos
+    for(var i=0; i<turfPolys.length; i++){
+      if(!turfPolys[i]) continue;
+      for(var j=i+1; j<turfPolys.length; j++){
+        if(!turfPolys[j]) continue;
+        try {
+          var inter = turf.intersect(turfPolys[i], turfPolys[j]);
+          if(inter) {
+            // Renderiza área sobreposta em vermelho
+            var overLyr = L.geoJSON(inter, {
+              style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.65, weight: 1.5, zIndex: 400}
+            }).addTo(_map);
+            _overPolys.push(overLyr);
+            overAreaSqm += turf.area(inter);
+          }
+        } catch(e) {}
+      }
     }
+    
+    var totalHa = 0;
+    tiros.forEach(function(t){totalHa += areaHa(t.polygon);});
+    var effectiveHa = (summary.area_ha && summary.area_ha>0) ? summary.area_ha : totalHa;
+    var realOverHa = overAreaSqm / 10000;
+    
+    var efetPct = effectiveHa > 0 ? (effectiveHa / totalHa * 100) : 0;
+    var overPct = effectiveHa > 0 ? (realOverHa / effectiveHa * 100) : 0;
+
+    document.getElementById('am-stats').innerHTML=
+      '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+effectiveHa.toFixed(2)+' ha ('+efetPct.toFixed(1)+'%)</span>'
+      +'<span style="color:#f87171;font-weight:700;">🔴 Sobreposição Real: '+realOverHa.toFixed(2)+' ha ('+overPct.toFixed(1)+'%)</span>'
+      +'<span style="color:#94a3b8;">📊 Total: '+(effectiveHa + realOverHa).toFixed(2)+' ha</span>'
+      +(summary.gps?'<span style="color:#2d6b3f;font-size:10px;">📡 '+summary.gps+'</span>':'');
+      
     document.getElementById('am-loading').style.display='none';
   },80);
 }
 
-/* ── Tick de animação ── */
 function tick(){
   if(!_playing||_step>=_total){
     if(_step>=_total){
@@ -731,8 +622,7 @@ function tick(){
     _plane.setLatLng([lastS.pos[0],lastS.pos[1]]);
     var nxt=_step<_total?_steps[_step]:null;
     if(nxt)_plane.setIcon(amIcon(bearing(lastS.pos,nxt.pos)));
-    document.getElementById('am-lbl').textContent=
-      'Tiro '+(lastS.ti+1)+' / '+_tiros.length+(lastS.in?' 🌾':'');
+    document.getElementById('am-lbl').textContent='Tiro '+(lastS.ti+1)+' / '+_tiros.length+(lastS.in?' 🌾':'');
     document.getElementById('hv-tiro').textContent=(lastS.ti+1)+' / '+_tiros.length;
   }
   var pct=Math.round(_step/_total*100);
@@ -761,5 +651,4 @@ window.amFechar=function(){
 
 })();
 </script>
-
 {% endblock %}
