@@ -584,11 +584,8 @@ function setup(d){
         try {
           var inter = turf.intersect(turfPolys[i], turfPolys[j]);
           if(inter) {
-            var overLyr = L.geoJSON(inter, {
-              style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.65, weight: 0.5, zIndex: 400}
-            }).addTo(_map);
-            _overPolys.push(overLyr);
             overAreaSqm += turf.area(inter);
+            /* sobreposição calculada nos stats, não desenhada antes da animação */
           }
         } catch(e) {}
       }
@@ -620,6 +617,14 @@ function tick(){
     if(_step>=_total){
       _playing=false;
       document.getElementById('am-play').textContent='▶ Play';
+      /* Garantir que todos os tiros estejam verdes ao concluir */
+      _polys.forEach(function(p){
+        if(p)p.setStyle({fillColor:'#22c55e',fillOpacity:1,color:'#22c55e',weight:0,opacity:0});
+      });
+      if(_tiros.length>0){
+        var lastNum=_tiros[_tiros.length-1].num;
+        document.getElementById('hv-tiro').textContent=lastNum+' / '+_tiros.length;
+      }
       document.getElementById('am-lbl').textContent='✅ Concluído!';
     }
     return;
