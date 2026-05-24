@@ -1,3 +1,10 @@
+O problema foi exatamente o que imaginei: ao colar o código anterior, acabaram ficando "restos" de código duplicado e comentários perdidos no final do arquivo, fora do lugar (como ` # ── SUBSTITUA A EXTRAÇÃO DO RASTRO...`), o que destruiu a indentação do Python e gerou o crash (`IndentationError`).
+
+Não se preocupe! Eu limpei completamente o arquivo, removi os blocos duplicados e ajustei toda a indentação perfeitamente.
+
+Aqui está o **CÓDIGO COMPLETO** do arquivo `app/routes/employee.py`. Você só precisa **apagar tudo** que está no seu arquivo atual e colar este bloco abaixo inteiro:
+
+```python
 import os
 import zipfile
 import uuid
@@ -1028,102 +1035,4 @@ def _parse_kml_full(raw):
                                 except ValueError:
                                     pass
 
-    return {"tiros": tiros, "track": track_all, "approach": track_all, "summary": summary}, None
-
- # ── SUBSTITUA A EXTRAÇÃO DO RASTRO (TRACK) POR ESTE BLOCO ──
-        track_all = []
-        
-        # O iter() busca em todo o KML, unindo todos os segmentos cortados da linha de voo
-        for elem in root.iter():
-            # Sistemas padrão usam LineString; GPS mais modernos podem usar gx:Track
-            if 'LineString' in elem.tag or 'Track' in elem.tag:
-                for child in elem.iter():
-                    if 'coordinates' in child.tag or 'coord' in child.tag:
-                        if child.text:
-                            for tok in child.text.strip().split():
-                                p = tok.split(',')
-                                if len(p) >= 2:
-                                    try:
-                                        # KML salva como (Longitude, Latitude). Invertemos aqui.
-                                        track_all.append([float(p[1]), float(p[0])])
-                                    except ValueError:
-                                        pass
-
-        # Garanta que o final da sua função retorne o approach preenchido com a linha completa
-        return {"tiros": tiros, "track": track_all, "approach": track_all, "summary": summary}, None
-        # ───────────────────────────────────────────────────────────
-        # ── Planilha (NoGeometry) ──────────────────────────────────────────
-        if name == "Resumo do trabalho":
-            de = fo(pm, "description")
-            txt = (de.text or "").strip() if de is not None else ""
-            m = re.search(r"Data inicial\s+([\d.]+),?\s*(\d+:\d+)", txt)
-            if m:
-                summary["data_inicio"]  = m.group(1)
-                summary["hora_inicio"]  = m.group(2)
-            m = re.search(r"[Uu]ltima|[Úú]ltima", txt)
-            if m:
-                m2 = re.search(r"aplica[cç][aã]o\s+[\d.]+,?\s*(\d+:\d+)", txt)
-                if m2: summary["hora_fim"] = m2.group(1)
-            m = re.search(r"[Áá]rea coberta\s+([\d,.]+)", txt)
-            if m:
-                try: summary["area_ha"] = float(m.group(1).replace(",", "."))
-                except: pass
-
-        elif name == "Propriedades do sistema":
-            de = fo(pm, "description")
-            txt = (de.text or "").strip() if de is not None else ""
-            linhas = [l.strip() for l in txt.splitlines() if l.strip()]
-            if linhas: summary["gps"] = linhas[0]
-
-        # ── Linha GPS (trajetória de voo completa) ────────────────────────
-        ls = fo(pm, "LineString")
-        if ls is not None:
-            ce = fo(ls, "coordinates")
-            for tok in (ce.text or "").strip().split():
-                p = tok.split(",")
-                if len(p) >= 2:
-                    try: track_all.append([float(p[1]), float(p[0])])
-                    except ValueError: pass
-
-        # ── Polígonos de tiro ─────────────────────────────────────────────
-        m = re.match(r"Tiro\s+(\d+)", name, re.IGNORECASE)
-        if not m: continue
-        poly = fo(pm, "Polygon")
-        ce   = fo(poly, "coordinates") if poly is not None else None
-        if ce is None: continue
-        pts = []
-        for tok in (ce.text or "").strip().split():
-            p = tok.split(",")
-            if len(p) >= 2:
-                try: pts.append([float(p[1]), float(p[0])])
-                except ValueError: pass
-        if len(pts) < 3: continue
-
-        lats = [p[0] for p in pts]
-        lons = [p[1] for p in pts]
-        lat_c = sum(lats) / len(lats)
-        lon_c = sum(lons) / len(lons)
-
-        # Encontrar eixo (dois pontos mais distantes) para entry/exit real
-        step   = max(1, len(pts) // 60)
-        sample = pts[::step]
-        best, p1, p2 = 0, sample[0], sample[-1]
-        for i in range(len(sample)):
-            for j in range(i + 1, len(sample)):
-                d = (sample[i][0]-sample[j][0])**2 + (sample[i][1]-sample[j][1])**2
-                if d > best: best, p1, p2 = d, sample[i], sample[j]
-
-        tiros.append({
-            "num":      int(m.group(1)),
-            "polygon":  pts,
-            "centroid": [lat_c, lon_c],
-            "entry":    p1,
-            "exit":     p2,
-        })
-
-    tiros.sort(key=lambda x: x["num"])
-
-    # ── Track completo ─────────
-    # Correção: Agora retornamos a rota completa do KML para garantir que 
-    # a animação passe exatamente no rastro do arquivo em toda a aplicação.
     return {"tiros": tiros, "track": track_all, "approach": track_all, "summary": summary}, None
