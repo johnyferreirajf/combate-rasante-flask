@@ -368,48 +368,51 @@ function areaHa(pts){
 function buildSteps(tiros, approach){
   var steps=[];
   var turfPolys = tiros.map(function(t){return toTurfPoly(t.polygon);});
+  var lastTi=-1;
 
-  /* FASE 1: GPS real — avião segue o rastro, detecta tiros pelo Turf */
-  var coveredTiros={};
+  /* FASE 1: GPS real — avião segue o rastro, tiros detectados pelo Turf */
   if(approach && approach.length > 1){
-    var lastTi=-1;
     approach.forEach(function(p){
       var pt=turf.point([p[1],p[0]]), inTi=-1;
-      if(lastTi>=0 && turfPolys[lastTi] && turf.booleanPointInPolygon(pt,turfPolys[lastTi])){
-        inTi=lastTi;
-      } else {
-        for(var i=0;i<turfPolys.length;i++){
-          if(turfPolys[i] && turf.booleanPointInPolygon(pt,turfPolys[i])){inTi=i;break;}
+      try{
+        if(lastTi>=0 && turfPolys[lastTi] && turf.booleanPointInPolygon(pt,turfPolys[lastTi])){
+          inTi=lastTi;
+        } else {
+          for(var i=0;i<turfPolys.length;i++){
+            if(turfPolys[i] && turf.booleanPointInPolygon(pt,turfPolys[i])){inTi=i;break;}
+          }
         }
-      }
+      }catch(e){}
       lastTi=inTi;
-      if(inTi>=0) coveredTiros[inTi]=true;
-      /* ti:-1 quando fora de qualquer tiro (fase de aproximação) */
       steps.push({pos:[p[0],p[1]], ti:inTi, in:(inTi>=0)});
     });
   }
 
-  /* FASE 2: Completar os tiros não cobertos pelo GPS */
-  var F=50, prevExit=steps.length>0?steps[steps.length-1].pos:null;
+  /* FASE 2: Todos os 50 tiros em sequência (completa o que o GPS não cobriu) */
+  var F=50;
   function dist2(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return dy*dy+dx*dx;}
+  var prevExit=steps.length>0?steps[steps.length-1].pos:null;
   tiros.forEach(function(t,i){
-    if(coveredTiros[i])return;
     if(!t||!t.entry||!t.exit)return;
     var entry=t.entry, exitPt=t.exit;
     if(prevExit && dist2(prevExit,t.exit)<dist2(prevExit,t.entry)){
       entry=t.exit; exitPt=t.entry;
     }
+    /* Trânsito entre tiros (sem spray) */
     if(prevExit){
-      for(var k=1;k<=10;k++){
-        var r=k/10;
+      for(var k=1;k<=8;k++){
+        var r=k/8;
         steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
-                         prevExit[1]+(entry[1]-prevExit[1])*r],ti:i,in:false});
+                         prevExit[1]+(entry[1]-prevExit[1])*r],
+                    ti:i, in:false});
       }
     }
+    /* Spray pass — o avião percorre do entry ao exit */
     for(var k=1;k<=F;k++){
       var r=k/F;
       steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
-                       entry[1]+(exitPt[1]-entry[1])*r],ti:i,in:true});
+                       entry[1]+(exitPt[1]-entry[1])*r],
+                  ti:i, in:true});
     }
     prevExit=exitPt;
   });
@@ -519,7 +522,7 @@ function setup(d){
     return;
   }
 
-  _tiros=tiros; _playing=false; _step=0; _lastTiro=0; clearTimeout(_timer);
+  _tiros=tiros; _playing=false; _step=0; _lastTiro=-1; clearTimeout(_timer);
   document.getElementById('am-play').textContent='▶ Play';
   
   if(summary.data_inicio){
@@ -678,6 +681,7 @@ window.amTogglePlay=function(){
 };
 window.amReset=function(){
   _playing=false; clearTimeout(_timer);
+  _lastTiro=-1;
   _doneCnt=new Array(_tiros.length).fill(0);
   amGoTo(0);
   document.getElementById('am-play').textContent='▶ Play';
