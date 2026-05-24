@@ -358,33 +358,39 @@ function bbox(pts){
          lo1:Math.min.apply(null,lo),lo2:Math.max.apply(null,lo)};
 }
 
-/* ── Calcular sobreposição por bbox (sem Turf) ── */
-function calcStats(tiros){
-  var totalHa=0, overHa=0, interFeats=[];
-  var boxes=tiros.map(function(t){return bbox(t.polygon);});
-
+/* ── Calcular área e sobreposição ────────────────────────────────────────
+   Estratégia: usa a área do RESUMO DO KMZ (calculada pelo GPS Travicar)
+   como área efetiva real. O total Shoelace captura as passagens brutas
+   incluindo sobreposições. Evita bbox falso-positivo em tiros paralelos. */
+function calcStats(tiros, summaryAreaHa){
+  /* Área total: soma das áreas individuais (Shoelace) */
+  var totalHa=0;
   tiros.forEach(function(t){totalHa+=areaHa(t.polygon);});
 
-  for(var i=0;i<boxes.length;i++){
+  /* Área efetiva: do resumo KMZ (ground truth do GPS) ou ≈ total */
+  var effectiveHa = (summaryAreaHa&&summaryAreaHa>0) ? summaryAreaHa : totalHa;
+  var overHa      = Math.max(0, totalHa-effectiveHa);
+
+  /* Sobreposição visual: só entre tiros ADJACENTES (centroide lon < 1 faixa) */
+  var interFeats=[];
+  var boxes=tiros.map(function(t){return bbox(t.polygon);});
+  for(var i=0;i<tiros.length;i++){
     if(!boxes[i])continue;
-    for(var j=i+1;j<boxes.length;j++){
+    for(var j=i+1;j<tiros.length;j++){
       if(!boxes[j])continue;
+      /* Só comparar tiros cujos centroides estão a menos de 0.001° em lon (~100m) */
+      var dCentLon=Math.abs((tiros[i].centroid[1]||0)-(tiros[j].centroid[1]||0));
+      if(dCentLon>0.001)continue;
       var a=boxes[i],b=boxes[j];
-      var dLa=Math.min(a.la2,b.la2)-Math.max(a.la1,b.la1);
       var dLo=Math.min(a.lo2,b.lo2)-Math.max(a.lo1,b.lo1);
-      if(dLa>0&&dLo>0){
-        var midLa=((Math.max(a.la1,b.la1)+Math.min(a.la2,b.la2))/2)*Math.PI/180;
-        overHa+=dLa*dLo*Math.cos(midLa)*111000*111000/10000;
-        if(interFeats.length<200){
-          var oLa1=Math.max(a.la1,b.la1),oLa2=Math.min(a.la2,b.la2);
-          var oLo1=Math.max(a.lo1,b.lo1),oLo2=Math.min(a.lo2,b.lo2);
-          interFeats.push([oLa1,oLo1,oLa2,oLo2]);
-        }
+      var dLa=Math.min(a.la2,b.la2)-Math.max(a.la1,b.la1);
+      if(dLo>0&&dLa>0&&interFeats.length<200){
+        interFeats.push([Math.max(a.la1,b.la1),Math.max(a.lo1,b.lo1),
+                         Math.min(a.la2,b.la2),Math.min(a.lo2,b.lo2)]);
       }
     }
   }
-  overHa=Math.min(overHa,totalHa*0.5);
-  return{total:totalHa, over:overHa, effective:Math.max(0,totalHa-overHa), inters:interFeats};
+  return{total:totalHa,effective:effectiveHa,over:overHa,inters:interFeats};
 }
 
 /* ── Construir passos de animação ────────────────────────────────────────
@@ -631,7 +637,7 @@ function setup(d){
   document.getElementById('am-loading-msg').textContent='Calculando sobreposição...';
   setTimeout(function(){
     try{
-      var stats=calcStats(tiros);
+      var stats=calcStats(tiros, summary&&summary.area_ha);
       stats.inters.forEach(function(r){
         try{
           L.rectangle([[r[0],r[1]],[r[2],r[3]]],{
