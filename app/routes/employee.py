@@ -1,10 +1,3 @@
-O problema foi exatamente o que imaginei: ao colar o código anterior, acabaram ficando "restos" de código duplicado e comentários perdidos no final do arquivo, fora do lugar (como ` # ── SUBSTITUA A EXTRAÇÃO DO RASTRO...`), o que destruiu a indentação do Python e gerou o crash (`IndentationError`).
-
-Não se preocupe! Eu limpei completamente o arquivo, removi os blocos duplicados e ajustei toda a indentação perfeitamente.
-
-Aqui está o **CÓDIGO COMPLETO** do arquivo `app/routes/employee.py`. Você só precisa **apagar tudo** que está no seu arquivo atual e colar este bloco abaixo inteiro:
-
-```python
 import os
 import zipfile
 import uuid
