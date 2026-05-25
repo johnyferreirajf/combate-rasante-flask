@@ -838,22 +838,23 @@ function setup(d){
           var inter = turf.intersect(turfPolys[i], turfPolys[j]);
           if(inter) {
             overAreaSqm += turf.area(inter);
-            /* sobreposição calculada nos stats, não desenhada antes da animação */
+            /* Sobreposição em vermelho — desenhada sobre os polígonos */
+            var overLyr = L.geoJSON(inter, {
+              style: {color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.65,weight:0}
+            }).addTo(_map);
+            _overPolys.push(overLyr);
           }
         } catch(e) {}
       }
     }
     
+    /* Área total: Shoelace sobre os polígonos com buffer 29m */
     var totalHa = 0;
-    tiros.forEach(function(t){
-      /* Usar atributo area do KMZ (29m × comprimento real) se disponível */
-      totalHa += (t.area_ha && t.area_ha>0) ? t.area_ha : areaHa(t.polygon);
-    });
-    var effectiveHa = (summary.area_ha && summary.area_ha>0) ? summary.area_ha : totalHa;
-    var realOverHa = overAreaSqm / 10000;
-    
-    var efetPct = effectiveHa > 0 ? (effectiveHa / totalHa * 100) : 0;
-    var overPct = effectiveHa > 0 ? (realOverHa / effectiveHa * 100) : 0;
+    tiros.forEach(function(t){ totalHa += areaHa(t.polygon); });
+    var realOverHa  = overAreaSqm / 10000;
+    var effectiveHa = Math.max(0, totalHa - realOverHa);
+    var efetPct = totalHa > 0 ? (effectiveHa / totalHa * 100) : 0;
+    var overPct = totalHa > 0 ? (realOverHa  / totalHa * 100) : 0;
 
     document.getElementById('am-stats').innerHTML=
       '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+effectiveHa.toFixed(2)+' ha ('+efetPct.toFixed(1)+'%)</span>'
