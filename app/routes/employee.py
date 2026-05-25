@@ -1020,11 +1020,36 @@ def _parse_kml_full(raw):
         # Projeta para UTM, mede largura real na seção transversal central,
         # calcula buffer = (largura_real - largura_nominal) / 2 e aplica.
         try:
-            import pyproj as _pp
-            _to_utm = _pp.Transformer.from_crs("EPSG:4326","EPSG:32722",always_xy=True)
-            _to_wgs = _pp.Transformer.from_crs("EPSG:32722","EPSG:4326",always_xy=True)
+            import math as _m
+            # UTM Zone 22S (EPSG:32722) — projeção local precisa para GO/MT/MS
+            # Central meridian = -51°, False Northing = 10000000
+            _a=6378137.0; _f=1/298.257223563; _k0=0.9996
+            _E0=500000; _N0=10000000; _lon0=_m.radians(-51)
+            def _wgs_to_utm(lon_deg, lat_deg):
+                lat=_m.radians(lat_deg); lon=_m.radians(lon_deg)
+                _n=_f/(2-_f); _A=_a/(1+_n)*(1+_n**2/4+_n**4/64)
+                _al=[(_n/2-2*_n**2/3+5*_n**3/16),
+                     (13*_n**2/48-3*_n**3/5),(61*_n**3/240)]
+                t=_m.sinh(_m.atanh(_m.sin(lat))-2*_m.sqrt(_n)/(1+_n)*
+                   _m.atanh(2*_m.sqrt(_n)*_m.sin(lat)/(1+_n)))
+                xp=_m.atan2(t,_m.cos(lon-_lon0))
+                ep=_m.atanh(_m.sin(lon-_lon0)/_m.sqrt(1+t**2))
+                xi=xp+sum(_al[j]*_m.sin(2*(j+1)*xp)*_m.cosh(2*(j+1)*ep)for j in range(3))
+                et=ep+sum(_al[j]*_m.cos(2*(j+1)*xp)*_m.sinh(2*(j+1)*ep)for j in range(3))
+                return _E0+_k0*_A*et, _N0+_k0*_A*xi
+            def _utm_to_wgs(E, N):
+                _n=_f/(2-_f); _A=_a/(1+_n)*(1+_n**2/4+_n**4/64)
+                _be=[(_n/2-2*_n**2/3+37*_n**3/96),(1*_n**2/48+_n**3/15),(17*_n**3/480)]
+                xi=(N-_N0)/(_k0*_A); et=(E-_E0)/(_k0*_A)
+                xp=xi-sum(_be[j]*_m.sin(2*(j+1)*xi)*_m.cosh(2*(j+1)*et)for j in range(3))
+                ep=et-sum(_be[j]*_m.cos(2*(j+1)*xi)*_m.sinh(2*(j+1)*et)for j in range(3))
+                chi=_m.asin(_m.sin(xp)/_m.cosh(ep))
+                _de=[2*_n-2*_n**2/3-2*_n**3,(7*_n**2/3-8*_n**3/5),(4*_n**3/3)]
+                phi=chi+sum(_de[j]*_m.sin(2*(j+1)*chi)for j in range(3))
+                lam=_lon0+_m.atan2(_m.sinh(ep),_m.cos(xp))
+                return _m.degrees(phi), _m.degrees(lam)
 
-            utm = [_to_utm.transform(p[1], p[0]) for p in pts]  # (lon,lat)→(E,N)
+            utm = [_wgs_to_utm(p[1], p[0]) for p in pts]  # (lon,lat)→(E,N)
 
             ns_arr   = [u[1] for u in utm]
             n_min_u, n_max_u = min(ns_arr), max(ns_arr)
@@ -1050,7 +1075,7 @@ def _parse_kml_full(raw):
                 buffered_pts = []
                 for u in utm:
                     new_e = center_e + (u[0] - center_e) * scale
-                    lon_b, lat_b = _to_wgs.transform(new_e, u[1])
+                    lat_b, lon_b = _utm_to_wgs(new_e, u[1])
                     buffered_pts.append([lat_b, lon_b])
             else:
                 buffered_pts = pts  # fallback
