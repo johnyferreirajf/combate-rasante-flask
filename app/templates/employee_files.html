@@ -783,7 +783,7 @@ function setup(d){
     try{
       t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});
       var poly=L.polygon(t.polygon.map(function(p){return[p[0],p[1]];}),{
-        color:'#22c55e',weight:0.5,fillColor:'#22c55e',fillOpacity:0.05,opacity:0.5
+        color:'#22c55e',weight:0,fillColor:'#22c55e',fillOpacity:0,opacity:0
       }).addTo(_map);
       _polys.push(poly);
     }catch(e){_polys.push(null);}
@@ -794,7 +794,7 @@ function setup(d){
     try{
       window._amTrackLayer=L.polyline(
         approach.map(function(p){return[p[0],p[1]];}),
-        {color:'#ffffff',weight:1.5,opacity:0.9}
+        {color:'rgba(255,255,255,0.5)',weight:0.8,opacity:1}
       ).addTo(_map);
     }catch(e){}
   }
