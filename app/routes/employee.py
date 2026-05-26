@@ -1016,96 +1016,9 @@ def _parse_kml_full(raw):
             try: nominal_m = float((wd.text or '29').split()[0].replace(',','.'))
             except: pass
 
-        # ── Buffer negativo em EPSG:32722 — funciona para qualquer direção ──
-        # 1. Projeta para UTM, 2. Rotaciona para alinhar spray com Norte,
-        # 3. Mede largura na seção transversal central, 4. Aplica escala,
-        # 5. Rotaciona de volta e reprojecta para WGS84.
-        try:
-            import math as _m
-            _a=6378137.0; _f=1/298.257223563; _k0=0.9996
-            _E0=500000; _N0=10000000
-            # Auto-detectar fuso UTM a partir da longitude central do polígono
-            _lon_c = sum(p[1] for p in pts) / len(pts)
-            _zone = int((_lon_c + 180) / 6) + 1
-            _lon0 = _m.radians(_zone * 6 - 183)  # meridiano central do fuso
-            def _wgs_to_utm(lon_d, lat_d):
-                la=_m.radians(lat_d); lo=_m.radians(lon_d)
-                _n=_f/(2-_f); _A=_a/(1+_n)*(1+_n**2/4+_n**4/64)
-                _al=[_n/2-2*_n**2/3+5*_n**3/16,13*_n**2/48-3*_n**3/5,61*_n**3/240]
-                t=_m.sinh(_m.atanh(_m.sin(la))-2*_m.sqrt(_n)/(1+_n)*_m.atanh(2*_m.sqrt(_n)*_m.sin(la)/(1+_n)))
-                xp=_m.atan2(t,_m.cos(lo-_lon0)); ep=_m.atanh(_m.sin(lo-_lon0)/_m.sqrt(1+t**2))
-                xi=xp+sum(_al[j]*_m.sin(2*(j+1)*xp)*_m.cosh(2*(j+1)*ep)for j in range(3))
-                et=ep+sum(_al[j]*_m.cos(2*(j+1)*xp)*_m.sinh(2*(j+1)*ep)for j in range(3))
-                return _E0+_k0*_A*et, _N0+_k0*_A*xi
-            def _utm_to_wgs(E, N):
-                _n=_f/(2-_f); _A=_a/(1+_n)*(1+_n**2/4+_n**4/64)
-                _be=[_n/2-2*_n**2/3+37*_n**3/96,_n**2/48+_n**3/15,17*_n**3/480]
-                xi=(N-_N0)/(_k0*_A); et=(E-_E0)/(_k0*_A)
-                xp=xi-sum(_be[j]*_m.sin(2*(j+1)*xi)*_m.cosh(2*(j+1)*et)for j in range(3))
-                ep=et-sum(_be[j]*_m.cos(2*(j+1)*xi)*_m.sinh(2*(j+1)*et)for j in range(3))
-                chi=_m.asin(_m.sin(xp)/_m.cosh(ep))
-                _de=[2*_n-2*_n**2/3-2*_n**3,7*_n**2/3-8*_n**3/5,4*_n**3/3]
-                phi=chi+sum(_de[j]*_m.sin(2*(j+1)*chi)for j in range(3))
-                return _m.degrees(phi), _m.degrees(_lon0+_m.atan2(_m.sinh(ep),_m.cos(xp)))
-
-            utm = [_wgs_to_utm(p[1], p[0]) for p in pts]
-
-            # Determinar direção do spray (entry→exit em UTM)
-            _step_s = max(1, len(utm)//60)
-            _samp = utm[::_step_s]
-            _best, _q1, _q2 = 0, _samp[0], _samp[-1]
-            for _ii in range(len(_samp)):
-                for _jj in range(_ii+1, len(_samp)):
-                    _dd=(_samp[_ii][0]-_samp[_jj][0])**2+(_samp[_ii][1]-_samp[_jj][1])**2
-                    if _dd>_best: _best,_q1,_q2=_dd,_samp[_ii],_samp[_jj]
-            _dE=_q2[0]-_q1[0]; _dN=_q2[1]-_q1[1]
-            _L=_m.sqrt(_dE**2+_dN**2) or 1
-            # Ângulo de rotação para alinhar spray com Norte (θ = ângulo do spray a partir do Norte)
-            _cosT=_dN/_L; _sinT=_dE/_L  # cos(θ), sin(θ)
-
-            # Rotacionar UTM para alinhar spray com eixo Y (Norte)
-            # Rotação por -θ: E'= E*cosT + N*sinT,  N'= -E*sinT + N*cosT
-            def _rot(E,N): return (E*_cosT+N*_sinT, -E*_sinT+N*_cosT)
-            def _unrot(Er,Nr): return (Er*_cosT-Nr*_sinT, Er*_sinT+Nr*_cosT)
-
-            utm_r = [_rot(u[0],u[1]) for u in utm]  # (Er, Nr) — spray alinhado com N
-
-            # Cross-section no meio do eixo Nr (agora perpendicular ao spray)
-            nr_arr = [u[1] for u in utm_r]
-            nr_mid = (min(nr_arr)+max(nr_arr))/2
-            crossings = []
-            for _i in range(len(utm_r)-1):
-                n1,n2 = utm_r[_i][1],utm_r[_i+1][1]
-                if (n1-nr_mid)*(n2-nr_mid)<0:
-                    t=(nr_mid-n1)/(n2-n1)
-                    crossings.append(utm_r[_i][0]+t*(utm_r[_i+1][0]-utm_r[_i][0]))
-
-            if len(crossings)>=2:
-                crossings.sort()
-                # Usar o par de cruzamentos mais próximo da largura nominal
-                # (evita pegar os 'braços' das curvas de viragem como bordas)
-                best_pair = (crossings[0], crossings[-1])
-                best_diff = abs((crossings[-1]-crossings[0]) - nominal_m)
-                for _ci in range(len(crossings)-1):
-                    pair_w = crossings[_ci+1] - crossings[_ci]
-                    if abs(pair_w - nominal_m) < best_diff:
-                        best_diff = abs(pair_w - nominal_m)
-                        best_pair = (crossings[_ci], crossings[_ci+1])
-                er_l, er_r = best_pair
-                actual_m = er_r - er_l
-                center_er = (er_l+er_r)/2
-                scale = min(1.0, nominal_m/actual_m) if actual_m>0 else 1.0
-
-                buffered_pts = []
-                for u_r in utm_r:
-                    new_er = center_er + (u_r[0]-center_er)*scale
-                    E_utm, N_utm = _unrot(new_er, u_r[1])
-                    lat_b, lon_b = _utm_to_wgs(E_utm, N_utm)
-                    buffered_pts.append([lat_b, lon_b])
-            else:
-                buffered_pts = pts
-        except Exception:
-            buffered_pts = pts
+        # Polígono GPS original — sem transformação geométrica
+        # (área correta vem do atributo KMZ: 29m × comprimento)
+        buffered_pts = pts
 
         tiros.append({
             "num":      int(m.group(1)),
