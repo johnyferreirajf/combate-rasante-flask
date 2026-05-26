@@ -587,7 +587,7 @@ function setup(d){
             overAreaSqm += turf.area(inter);
             /* Sobreposição em vermelho — desenhada sobre os polígonos */
             var overLyr = L.geoJSON(inter, {
-              style: {color:'#ef4444',fillColor:'#ef4444',fillOpacity:0.65,weight:0}
+              style: {color:'#cc0000',fillColor:'#cc0000',fillOpacity:1.0,weight:0}
             }); _overPolys.push(overLyr);
             overLyr.addTo(_map); /* vermelho visível desde o início */
           }
