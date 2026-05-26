@@ -1023,7 +1023,11 @@ def _parse_kml_full(raw):
         try:
             import math as _m
             _a=6378137.0; _f=1/298.257223563; _k0=0.9996
-            _E0=500000; _N0=10000000; _lon0=_m.radians(-51)
+            _E0=500000; _N0=10000000
+            # Auto-detectar fuso UTM a partir da longitude central do polígono
+            _lon_c = sum(p[1] for p in pts) / len(pts)
+            _zone = int((_lon_c + 180) / 6) + 1
+            _lon0 = _m.radians(_zone * 6 - 183)  # meridiano central do fuso
             def _wgs_to_utm(lon_d, lat_d):
                 la=_m.radians(lat_d); lo=_m.radians(lon_d)
                 _n=_f/(2-_f); _A=_a/(1+_n)*(1+_n**2/4+_n**4/64)
@@ -1078,7 +1082,16 @@ def _parse_kml_full(raw):
 
             if len(crossings)>=2:
                 crossings.sort()
-                er_l, er_r = crossings[0], crossings[-1]
+                # Usar o par de cruzamentos mais próximo da largura nominal
+                # (evita pegar os 'braços' das curvas de viragem como bordas)
+                best_pair = (crossings[0], crossings[-1])
+                best_diff = abs((crossings[-1]-crossings[0]) - nominal_m)
+                for _ci in range(len(crossings)-1):
+                    pair_w = crossings[_ci+1] - crossings[_ci]
+                    if abs(pair_w - nominal_m) < best_diff:
+                        best_diff = abs(pair_w - nominal_m)
+                        best_pair = (crossings[_ci], crossings[_ci+1])
+                er_l, er_r = best_pair
                 actual_m = er_r - er_l
                 center_er = (er_l+er_r)/2
                 scale = min(1.0, nominal_m/actual_m) if actual_m>0 else 1.0
