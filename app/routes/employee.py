@@ -909,11 +909,30 @@ def analise_aplicacao(file_id: int):
     if not (is_kmz or is_kml):
         return _json.dumps({"erro": "Arquivo não é KML/KMZ"}), 400, {"Content-Type": "application/json"}
 
-    cloud_url = getattr(item, "cloudinary_url", None)
+    cloud_url = getattr(item, "cloudinary_url", None) or getattr(item, "url", None)
     try:
         if cloud_url:
-            req = _ur.Request(cloud_url, headers={"User-Agent": "Mozilla/5.0"})
-            with _ur.urlopen(req, timeout=30) as resp: raw = resp.read()
+            import requests as _rq
+            r = _rq.get(cloud_url, timeout=60, headers={"User-Agent": "CombateRasante/1.0"},
+                        allow_redirects=True)
+            if r.status_code in (401, 403):
+                # Arquivo privado — tentar URL assinada
+                try:
+                    from app.utils.storage import _init_cloudinary
+                    from cloudinary.utils import cloudinary_url as _cu
+                    _init_cloudinary()
+                    pid = getattr(item, "public_id", "") or ""
+                    if not pid and "/upload/" in cloud_url:
+                        import re as _re
+                        m = _re.search(r"/upload/(?:v\d+/)?(.+)$", cloud_url)
+                        if m: pid = _re.sub(r"\.[^.]+$", "", m.group(1))
+                    if pid:
+                        signed, _ = _cu(pid, resource_type="raw", sign_url=True)
+                        r = _rq.get(signed, timeout=60, headers={"User-Agent": "CombateRasante/1.0"})
+                except Exception as se:
+                    return _json.dumps({"erro": f"Cloudinary auth error: {se}"}), 500, {"Content-Type": "application/json"}
+            r.raise_for_status()
+            raw = r.content
         else:
             abs_path = _safe_abs_path(item.stored_filename)
             with open(abs_path, "rb") as f: raw = f.read()
