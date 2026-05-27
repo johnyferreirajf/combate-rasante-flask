@@ -20,7 +20,8 @@
         </p>
       {% else %}
         <p class="dashboard-welcome__body">
-          Seus arquivos estão organizados abaixo. Clique nas pastas para navegar.</p>
+          Seus arquivos estão organizados abaixo. Clique nas pastas para navegar.
+        </p>
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
           <a href="/painel/download-pasta?path="
              class="btn btn--ghost"
@@ -30,327 +31,687 @@
         </div>
       {% endif %}
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;">
-        <a href="{{ url_for('main.painel_logs_cliente') }}" class="btn btn--secondary" style="font-size:11px;padding:4px 10px;min-height:28px;">
-          📋 Ver Histórico de Atividades
+        <a href="{{ url_for('main.painel_trocar_senha') }}"
+           class="btn btn--ghost"
+           style="font-size:12px;min-height:32px;padding:0 14px;">
+          🔑 Trocar senha
+        </a>
+        {% if current_user and current_user.is_admin %}
+        <a href="{{ url_for('auth.admin') }}"
+           class="btn btn--ghost"
+           style="font-size:12px;min-height:32px;padding:0 14px;
+                  background:rgba(234,179,8,.18);border:1px solid rgba(234,179,8,.45);color:#fde68a;">
+          ⚙️ Admin
+        </a>
+        {% endif %}
+        {# Botão de talhões — visível para todos os clientes #}
+        <a href="{{ url_for('talhoes.mapa') }}"
+           class="btn btn--primary"
+           style="font-size:12px;min-height:32px;padding:0 14px;">
+          🗺️ Meus Talhões
         </a>
       </div>
     </div>
 
-    <div class="folder-tree-card">
-      <div class="folder-tree-header">
-        <h2 class="folder-tree-title">🗄️ Seus Arquivos de Geolocalização</h2>
-      </div>
-      
-      {% macro render_node(node, current_path="") %}
-        {% set full_node_path = (current_path + "/" + node.name) if current_path else node.name %}
-        {% if node.type == 'dir' %}
-          <div class="folder-node">
-            <div class="folder-toggle" onclick="toggleFolder(this)">
-              <span class="folder-icon">📁</span>
-              <span class="folder-name">{{ node.name }}</span>
-            </div>
-            <div class="folder-content" style="display: none;">
-              {% for child in node.children %}
-                {{ render_node(child, full_node_path) }}
+    {% if tree %}
+    <div class="dashboard-panel">
+
+      {# Macro recursiva com path acumulado para download por pasta #}
+      {% macro render_tree(node, depth=0, current_path='') %}
+        {% for key, value in node.items() %}
+          {% if key == "__files__" %}
+            <div class="dash-photo-grid" style="margin-top:{{ '8px' if depth > 0 else '0' }}">
+              {% for arq in value %}
+                <div class="dash-photo-card">
+                  {% set ext = arq.ext|lower %}
+                  {% if ext in ['jpg','jpeg','png','webp','gif'] %}
+                    <img class="dash-photo-card__img js-lightbox-trigger"
+                         src="{{ arq.url }}" alt="{{ arq.name }}"
+                         data-full="{{ arq.url }}"
+                         data-file-id="{{ arq.id }}"
+                         loading="lazy">
+                  {% else %}
+                    <a href="/painel/download/{{ arq.id }}"
+                       class="dash-photo-card__img"
+                       style="display:flex;align-items:center;justify-content:center;
+                              background:rgba(0,0,0,0.15);text-decoration:none;height:100px;">
+                      <span style="font-size:2rem;">
+                        {% if ext == 'pdf' %}📄
+                        {% elif ext in ['kml','kmz'] %}🗺️
+                        {% elif ext in ['xlsx','xls','csv'] %}📊
+                        {% elif ext in ['doc','docx'] %}📝
+                        {% elif ext == 'zip' %}📦
+                        {% else %}📎{% endif %}
+                      </span>
+                    </a>
+                  {% endif %}
+                  <div class="dash-photo-card__foot" style="display:flex;align-items:center;gap:6px;">
+                    <span style="color:inherit;flex:1;min-width:0;
+                                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+                                 font-size:12px;">
+                      {{ arq.name }}
+                    </span>
+                    {# Botão download — usa rota proxy para forçar download #}
+                    <a href="/painel/download/{{ arq.id }}"
+                       title="Baixar arquivo"
+                       style="flex-shrink:0;color:rgba(255,255,255,.65);font-size:13px;
+                              text-decoration:none;padding:2px 6px;border-radius:6px;
+                              background:rgba(255,255,255,.10);transition:.15s;"
+                       onmouseover="this.style.background='rgba(34,197,94,.25)';this.style.color='#22c55e'"
+                       onmouseout="this.style.background='rgba(255,255,255,.10)';this.style.color='rgba(255,255,255,.65)'">
+                      ⬇
+                    </a>
+                    {% if ext in ['kml','kmz'] %}
+                    <button onclick="abrirAnalise({{ arq.id }}, '{{ arq.name|e }}', '/painel/analise_aplicacao/')"
+                            title="Ver animação da aplicação aérea"
+                            style="flex-shrink:0;cursor:pointer;font-size:10px;font-weight:700;
+                                   padding:3px 7px;border-radius:12px;border:1px solid rgba(34,197,94,.45);
+                                   background:rgba(34,197,94,.18);color:#86efac;transition:.15s;"
+                            onmouseover="this.style.background='rgba(34,197,94,.35)'"
+                            onmouseout="this.style.background='rgba(34,197,94,.18)'">
+                      ✈️ Análise
+                    </button>
+                    {% endif %}
+                  </div>
+                </div>
               {% endfor %}
             </div>
-          </div>
-        {% else %}
-          <div class="file-node">
-            <span class="file-icon">📄</span>
-            <div class="file-info-block">
-              <span class="file-name">{{ node.name }}</span>
-              <span class="file-meta">({{ node.size }} • {{ node.date }})</span>
-            </div>
-            <div class="file-actions">
-              {% if node.name.lower().endswith('.kml') or node.name.lower().endswith('.kmz') %}
-                <a href="/painel?view_kml={{ node.id }}" class="btn-view" title="Visualizar Mapa Analítico">🗺️ Ver Mapa</a>
-              {% endif %}
-              <a href="/painel/download/{{ node.id }}" class="btn-download" title="Baixar Arquivo original">⬇ Baixar</a>
-            </div>
-          </div>
-        {% endif %}
+
+          {% else %}
+            {# Calcular path desta pasta para download #}
+            {% set pasta_path = (current_path + '/' + key).lstrip('/') if current_path else key %}
+            <details class="dash-group" {% if depth == 0 %}open{% endif %}>
+              <summary style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span>📁 {{ key }}</span>
+                  {% set file_count = value.get('__files__', [])|length %}
+                  {% if file_count %}
+                    <span class="dash-badge">{{ file_count }} arquivo(s)</span>
+                  {% endif %}
+                </div>
+                {# Botão download da pasta — evita propagar o click no summary #}
+                <a href="/painel/download-pasta?path={{ pasta_path | urlencode }}"
+                   title="Baixar pasta como ZIP"
+                   onclick="event.stopPropagation();"
+                   style="flex-shrink:0;color:rgba(255,255,255,.55);font-size:11px;
+                          text-decoration:none;padding:2px 8px;border-radius:6px;
+                          background:rgba(255,255,255,.08);white-space:nowrap;transition:.15s;"
+                   onmouseover="this.style.background='rgba(34,197,94,.20)';this.style.color='#22c55e'"
+                   onmouseout="this.style.background='rgba(255,255,255,.08)';this.style.color='rgba(255,255,255,.55)'">
+                  ⬇ zip
+                </a>
+              </summary>
+              <div class="dash-inner">
+                {{ render_tree(value, depth + 1, pasta_path) }}
+              </div>
+            </details>
+          {% endif %}
+        {% endfor %}
       {% endmacro %}
 
-      <div class="tree-root">
-        {% if tree %}
-          {% for child in tree %}
-            {{ render_node(child) }}
-          {% endfor %}
-        {% else %}
-          <p class="empty-text">Nenhum diretório ou arquivo carregado.</p>
-        {% endif %}
-      </div>
-    </div>
-
-    {% if steps and tiros %}
-    <div class="card animate-fade-in" style="margin-top:25px; padding:20px; background:#1e293b; border-radius:14px; border:1px solid #334155; box-shadow:0 10px 25px -5px rgba(0,0,0,0.3);">
-      <h3 style="color:#fff; margin-bottom:15px; display:flex; align-items:center; gap:10px; font-size:18px; font-weight:600;">
-        ✈️ Monitoramento e Replay da Aplicação Aérea
-      </h3>
-      
-      <div id="map" style="height:520px; border-radius:10px; background:#0f172a; margin-bottom:15px; border:1px solid #475569;"></div>
-
-      <div style="background:#0f172a; padding:15px; border-radius:10px; display:flex; flex-direction:column; gap:12px; border:1px solid #334155;">
-        <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-          <div id="am-lbl" style="color:#38bdf8; font-weight:700; font-size:15px; letter-spacing:0.5px;">Tiro — / {{ tiros|length }}</div>
-          <div style="color:#94a3b8; font-size:13px; font-weight:500;">Status do Tiro: <span id="hv-tiro" style="color:#fff; font-weight:700; background:#334155; padding:2px 8px; border-radius:4px;">—</span></div>
-        </div>
-
-        <div id="am-timeline" style="height:12px; background:#334155; border-radius:6px; position:relative; cursor:pointer; width:100%; transition:background 0.2s;">
-          <div id="am-bar" style="height:12px; width:0%; background:linear-gradient(90deg, #22c55e, #4ade80); border-radius:6px; position:absolute; left:0; top:0;"></div>
-          <div id="am-thumb" style="width:18px; height:18px; background:#ffffff; border-radius:50%; position:absolute; top:-3px; left:0%; margin-left:-9px; box-shadow:0 2px 6px rgba(0,0,0,0.6); border:2px solid #22c55e; transition:transform 0.1s; pointer-events:none;"></div>
-        </div>
-
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-top:5px; flex-wrap:wrap; gap:10px;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <button onclick="amTogglePlay()" id="am-play-btn" style="padding:6px 16px; font-size:13px; font-weight:600; background:#22c55e; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:4px; box-shadow:0 4px 12px rgba(34,197,94,0.2);">▶ Play</button>
-            <button onclick="amReset()" style="padding:6px 14px; font-size:13px; font-weight:600; background:#475569; color:#fff; border:none; border-radius:6px; cursor:pointer; transition:all 0.2s;">🔄 Reset</button>
-          </div>
-          <div style="display:flex; align-items:center; gap:8px; color:#94a3b8; font-size:13px; font-weight:500;">
-            <span>Velocidade de Reprodução:</span>
-            <select id="am-speed" style="background:#1e293b; color:#fff; border:1px solid #475569; border-radius:6px; padding:4px 10px; cursor:pointer; font-weight:600; outline:none;">
-              <option value="1">1x (Lento)</option>
-              <option value="2">2x</option>
-              <option value="5" selected>5x (Padrão)</option>
-              <option value="10">10x</option>
-              <option value="25">25x (Rápido)</option>
-            </select>
-          </div>
-        </div>
-      </div>
+      {{ render_tree(tree) }}
     </div>
     {% endif %}
 
   </div>
 </section>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true"
+     aria-label="Visualizar imagem" aria-hidden="true">
+  <div class="lightbox__backdrop"></div>
+  <button type="button" class="lightbox__close" aria-label="Fechar imagem">✕</button>
+  <div style="display:flex;gap:10px;position:absolute;bottom:20px;left:50%;
+              transform:translateX(-50%);z-index:10;">
+    <a id="lightboxDownload" href="#"
+       style="background:rgba(22,163,74,.85);color:#fff;text-decoration:none;
+              padding:8px 18px;border-radius:10px;font-size:13px;font-weight:800;">
+      ⬇ Baixar imagem
+    </a>
+    <button type="button" id="lightboxClose2"
+            style="background:rgba(255,255,255,.15);color:#fff;border:none;cursor:pointer;
+                   padding:8px 18px;border-radius:10px;font-size:13px;font-weight:800;">
+      ✕ Fechar
+    </button>
+  </div>
+  <img id="lightboxImg" class="lightbox__img" src="" alt="">
+</div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function toggleFolder(element) {
-  var content = element.nextElementSibling;
-  if (content.style.display === "none") {
-    content.style.display = "block";
-    element.classList.add("expanded");
-  } else {
-    content.style.display = "none";
-    element.classList.remove("expanded");
-  }
-}
+(function () {
+  var lightbox    = document.getElementById("lightbox");
+  var lbImg       = document.getElementById("lightboxImg");
+  var backdrop    = lightbox.querySelector(".lightbox__backdrop");
+  var closeBtn    = lightbox.querySelector(".lightbox__close");
+  var closeBtn2   = document.getElementById("lightboxClose2");
+  var dlBtn       = document.getElementById("lightboxDownload");
+  var currentFileId = null;
 
-document.addEventListener("DOMContentLoaded", function() {
-  var mapEl = document.getElementById('map');
-  if(!mapEl) return;
-
-  var rawSteps = {{ steps|tojson if steps else [] }};
-  var _tiros = {{ tiros|tojson if tiros else [] }};
-  var _inCnt = {{ in_cnt|tojson if in_cnt else [] }};
-  var _steps = [];
-
-  // CORREÇÃO: Filtra saltos bruscos eliminando trajetos fantasias pelos tiros no fim do arquivo
-  if (rawSteps.length > 0) {
-    _steps.push(rawSteps[0]);
-    for (var i = 1; i < rawSteps.length; i++) {
-      var p1 = rawSteps[i - 1].pos;
-      var p2 = rawSteps[i].pos;
-      var distSq = Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2);
-      if (distSq > 0.004) { 
-        break; // Interrompe o trajeto ao detectar salto artificial para os polígonos
-      }
-      _steps.push(rawSteps[i]);
+  function open(src, alt, fileId) {
+    lbImg.src = src;
+    lbImg.alt = alt || "";
+    currentFileId = fileId;
+    // Botão de download aponta para a rota proxy
+    if (fileId) {
+      dlBtn.href = "/painel/download/" + fileId;
+      dlBtn.style.display = "";
+    } else {
+      dlBtn.style.display = "none";
     }
+    lightbox.classList.add("lightbox--active");
+    lightbox.setAttribute("aria-hidden","false");
+    closeBtn.focus();
   }
 
-  var _total = _steps.length;
-  var _step = 0;
-  var _playing = false;
-  var _timer = null;
-  var _lastTiro = -1;
-  var _polys = [];
-  var _doneCnt = new Array(_tiros.length).fill(0);
+  function close() {
+    lightbox.classList.remove("lightbox--active");
+    lightbox.setAttribute("aria-hidden","true");
+    lbImg.src = "";
+    currentFileId = null;
+  }
 
-  if (_total === 0) return;
-
-  var map = L.map('map').setView([_steps[0].pos[0], _steps[0].pos[1]], 15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
-  }).addTo(map);
-
-  // CORREÇÃO: Polígonos iniciam invisíveis para a aplicação se revelar em tempo real
-  _tiros.forEach(function(t, idx) {
-    var poly = L.polygon(t.polygon, {
-      color: '#22c55e',
-      weight: 2,
-      fillColor: '#22c55e',
-      fillOpacity: 0,
-      opacity: 0
-    }).addTo(map);
-    _polys[idx] = poly;
+  document.addEventListener("click", function(e) {
+    var t = e.target.closest(".js-lightbox-trigger");
+    if (t) open(t.dataset.full || t.src, t.alt, t.dataset.fileId);
   });
 
-  function amIcon(deg) {
-    return L.divIcon({
-      html: '<div style="transform:rotate('+deg+'deg); font-size:26px; text-shadow: 0 1px 4px rgba(0,0,0,0.6); filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));">✈️</div>',
-      className: 'am-plane-ico',
-      iconSize: [26, 26],
-      iconAnchor: [13, 13]
+  closeBtn.addEventListener("click", close);
+  closeBtn2.addEventListener("click", close);
+  backdrop.addEventListener("click", close);
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape") close(); });
+})();
+</script>
+
+<!-- ═══════════════ ANÁLISE DE APLICAÇÃO ═══════════════ -->
+<style>
+#am{display:none;position:fixed;inset:0;z-index:9999;background:#050d0a;flex-direction:column;font-family:system-ui,sans-serif;}
+#am.open{display:flex;}
+#am-head{display:flex;align-items:center;gap:12px;padding:8px 16px;background:#071a0d;border-bottom:1px solid #14361c;flex-shrink:0;}
+#am-title{color:#86efac;font-weight:700;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#am-hud{display:flex;gap:18px;font-size:11px;}
+.hc{display:flex;flex-direction:column;align-items:center;}
+.hl{color:#2d6b3f;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.hv{color:#86efac;font-weight:700;}
+#am-map{flex:1;min-height:0;width:100%;position:relative;}
+#am-leaflet{height:100%;width:100%;}
+#am-loading{position:absolute;inset:0;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:20;}
+#am-loading-msg{color:#86efac;font-size:14px;font-weight:700;}
+.am-spin{width:36px;height:36px;border:3px solid rgba(34,197,94,.15);border-top-color:#22c55e;border-radius:50%;animation:amspin .7s linear infinite;}
+@keyframes amspin{to{transform:rotate(360deg)}}
+#am-leg{position:absolute;top:10px;right:10px;background:rgba(5,20,10,.82);border:1px solid #1a3a1f;border-radius:8px;padding:8px 12px;font-size:11px;z-index:10;}
+#am-leg div{display:flex;align-items:center;gap:6px;color:#aaa;margin-bottom:3px;}
+#am-leg div:last-child{margin-bottom:0;}
+.lb{width:16px;height:10px;border-radius:2px;flex-shrink:0;}
+#am-stats{padding:6px 16px;background:#071a0d;border-top:1px solid #14361c;font-size:11px;display:flex;align-items:center;flex-wrap:wrap;gap:14px;flex-shrink:0;min-height:28px;}
+#am-ctrl{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#0a1f0d;border-top:1px solid #14361c;flex-shrink:0;}
+#am-bar-wrap{flex:1;min-width:100px;height:14px;background:rgba(255,255,255,.07);border-radius:7px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(255,255,255,.05);}
+#am-bar-wrap:hover{background:rgba(255,255,255,.12);}
+#am-bar{height:100%;background:linear-gradient(90deg,#15803d,#22c55e);border-radius:7px;width:0%;pointer-events:none;}
+#am-thumb{position:absolute;top:50%;right:0;width:14px;height:14px;background:#4ade80;border-radius:50%;transform:translate(50%,-50%);pointer-events:none;display:none;box-shadow:0 0 6px #22c55e;}
+#am-bar-wrap:hover #am-thumb{display:block;}
+.ab{padding:5px 12px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:700;}
+.abg{background:#22c55e;color:#000;}
+.abr{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);}
+.abz{background:rgba(255,255,255,.09);color:#ccc;}
+#am-lbl{color:#86efac;font-size:11px;font-weight:700;white-space:nowrap;}
+#am-spd{display:flex;align-items:center;gap:5px;font-size:11px;color:#3a6b4a;}
+#am-spd input{width:70px;accent-color:#22c55e;cursor:pointer;}
+</style>
+
+<div id="am">
+  <div id="am-head">
+    <span id="am-title">✈️ Análise de Aplicação</span>
+    <div id="am-hud">
+      <div class="hc"><span class="hl">Tiro</span><span class="hv" id="hv-tiro">—</span></div>
+      <div class="hc"><span class="hl">Início</span><span class="hv" id="hv-ini">—</span></div>
+      <div class="hc"><span class="hl">Fim</span><span class="hv" id="hv-fim">—</span></div>
+      <div class="hc"><span class="hl">Área KMZ</span><span class="hv" id="hv-area">—</span></div>
+    </div>
+    <button class="ab abr" onclick="amFechar()">✕ Fechar</button>
+  </div>
+
+  <div id="am-map">
+    <div id="am-leaflet"></div>
+    <div id="am-loading"><div class="am-spin"></div><span id="am-loading-msg">Carregando...</span></div>
+    <div id="am-leg">
+      <div><span class="lb" style="background:#22c55e;"></span>Aplicação</div>
+      <div><span class="lb" style="background:#ef4444;"></span>Sobreposição</div>
+      <div><span class="lb" style="background:none;border:1.5px dashed rgba(255,255,255,.6);"></span>Trajeto GPS</div>
+    </div>
+  </div>
+
+  <div id="am-stats"><span style="color:#2d6b3f;font-style:italic;">Calculando...</span></div>
+
+  <div id="am-ctrl">
+    <button id="am-play" class="ab abg" onclick="amTogglePlay()">▶ Play</button>
+    <button class="ab abz" onclick="amReset()">↺</button>
+    <div id="am-bar-wrap"><div id="am-bar"></div><div id="am-thumb"></div></div>
+    <span id="am-lbl">Tiro 0 / —</span>
+    <div id="am-spd">🐢<input type="range" id="am-speed" min="1" max="15" value="5">🚀</div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANÁLISE DE APLICAÇÃO AÉREA - TRAJETO COMPLETO CORRIGIDO
+═══════════════════════════════════════════════════════════════════════════ */
+(function(){
+'use strict';
+
+var _map=null, _tiros=[], _polys=[], _overPolys=[], _plane=null, _timer=null;
+var _playing=false, _step=0, _steps=[], _total=0, _lastTiro=-1;
+var _doneCnt=[], _inCnt=[];
+
+function amIcon(hdg){
+  var c='#22c55e', w='#ffffff', y='#fbbf24';
+  var svg='<svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">'
+    +'<ellipse cx="40" cy="52" rx="7" ry="32" fill="'+c+'" stroke="'+w+'" stroke-width="1.5"/>'
+    +'<ellipse cx="40" cy="22" rx="6" ry="10" fill="'+y+'" stroke="#f59e0b" stroke-width="1"/>'
+    +'<circle cx="40" cy="12" r="6" fill="'+y+'" stroke="#f59e0b" stroke-width="1"/>'
+    +'<ellipse cx="40" cy="8" rx="18" ry="4" fill="rgba(255,255,255,.35)" stroke="'+w+'" stroke-width="1"/>'
+    +'<rect x="2" y="44" width="76" height="12" rx="4" fill="'+c+'" stroke="'+w+'" stroke-width="1.5"/>'
+    +'<ellipse cx="40" cy="58" rx="8" ry="12" fill="#86efac" stroke="'+c+'" stroke-width="1"/>'
+    +'<rect x="0" y="62" width="80" height="4" rx="2" fill="#4ade80" opacity=".9"/>'
+    +'<rect x="5" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
+    +'<rect x="15" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
+    +'<rect x="25" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
+    +'<rect x="37" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
+    +'<rect x="49" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
+    +'<rect x="59" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
+    +'<rect x="69" y="66" width="2.5" height="7" rx="1.2" fill="'+w+'"/>'
+    +'<ellipse cx="40" cy="80" rx="18" ry="5" fill="'+c+'" stroke="'+w+'" stroke-width="1.5"/>'
+    +'<ellipse cx="40" cy="78" rx="4" ry="10" fill="#16a34a"/>'
+    +'</svg>';
+  return L.divIcon({
+    html:'<div style="transform:rotate('+hdg+'deg);width:60px;height:60px;'
+        +'transform-origin:30px 40px;filter:drop-shadow(0 0 6px rgba(34,197,94,.8));">'+svg+'</div>',
+    iconSize:[60,60], iconAnchor:[30,40], className:''
+  });
+}
+
+function bearing(a,b){
+  var r=Math.PI/180, la=a[0]*r, lb=b[0]*r, dl=(b[1]-a[1])*r;
+  return((Math.atan2(Math.sin(dl)*Math.cos(lb),Math.cos(la)*Math.sin(lb)
+        -Math.sin(la)*Math.cos(lb)*Math.cos(dl))*180/Math.PI)+360)%360;
+}
+
+/* Helper Turf.js para formatar Polígonos (lat/lon -> lon/lat fechado) */
+function toTurfPoly(pts){
+  if(!pts || pts.length < 3) return null;
+  var ring = pts.map(function(p){ return [p[1], p[0]]; }); 
+  if(ring[0][0] !== ring[ring.length-1][0] || ring[0][1] !== ring[ring.length-1][1]) {
+    ring.push(ring[0]); 
+  }
+  if(ring.length < 4) return null;
+  return turf.polygon([ring]);
+}
+
+function areaHa(pts){
+  if(!pts||pts.length<3)return 0;
+  var R=6371000,D=Math.PI/180,n=pts.length,latC=0;
+  for(var k=0;k<n;k++) latC+=pts[k][0];
+  var cosC=Math.cos(latC/n*D), a=0;
+  for(var i=0,j=n-1;i<n;j=i++){
+    var xi=pts[i][1]*D*R*cosC, yi=pts[i][0]*D*R;
+    var xj=pts[j][1]*D*R*cosC, yj=pts[j][0]*D*R;
+    a+=xi*yj-xj*yi;
+  }
+  return Math.abs(a)/2/10000;
+}
+
+/* Constrói os passos de animação precisos acompanhando a linha do GPS real completa */
+function buildSteps(tiros, approach){
+  var steps = [];
+  var F = 50; /* passos por tiro */
+
+  /* ── FASE 1: GPS completo da base ao campo (todo o trajeto real) ── */
+  /* Amostrar se muito denso (máx 2000 pts para performance) */
+  var app = approach || [];
+  var samp = Math.max(1, Math.floor(app.length / 2000));
+  var appS = [];
+  for(var ai=0; ai<app.length; ai+=samp) appS.push(app[ai]);
+  if(app.length>0 && appS[appS.length-1]!==app[app.length-1])
+    appS.push(app[app.length-1]);  /* garantir último ponto */
+
+  appS.forEach(function(p){
+    steps.push({pos:[p[0],p[1]], ti:-1, in:false});
+  });
+
+  /* ── FASE 2: Sequência dos tiros pelo KMZ ── */
+  function _d(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return dy*dy+dx*dx;}
+  var prev = steps.length > 0 ? steps[steps.length-1].pos : null;
+
+  tiros.forEach(function(t, i){
+    if(!t||!t.entry||!t.exit) return;
+    var en=t.entry, ex=t.exit;
+    if(prev && _d(prev,t.exit) < _d(prev,t.entry)){
+      en=t.exit; ex=t.entry;
+    }
+    /* Trânsito até a entrada do tiro (sem aplicação) */
+    if(prev){
+      for(var k=1;k<=8;k++){
+        var r=k/8;
+        steps.push({pos:[prev[0]+(en[0]-prev[0])*r,
+                         prev[1]+(en[1]-prev[1])*r],
+                    ti:i, in:false});
+      }
+    }
+    /* Percurso do tiro: fica verde após 50% percorrido */
+    for(var k=1;k<=F;k++){
+      var r=k/F;
+      steps.push({pos:[en[0]+(ex[0]-en[0])*r,
+                       en[1]+(ex[1]-en[1])*r],
+                  ti:i, in:(r >= 0.5)});
+    }
+    prev = ex;
+  });
+  return steps;
+}
+
+function amGoTo(target){
+  target=Math.max(0,Math.min(target,_total));
+
+  /* Resetar todos os polígonos para invisível */
+  _polys.forEach(function(p){
+    if(p)p.setStyle({color:'#22c55e',weight:0,fillColor:'#22c55e',fillOpacity:0,opacity:0});
+  });
+  _doneCnt=new Array(_tiros.length).fill(0);
+  _lastTiro=-1;
+
+  /* Simular e acumular preenchimento de 0 até target */
+  for(var i=0;i<target;i++){
+    var s=_steps[i];
+    if(s&&s.in&&s.ti>=0){
+      _doneCnt[s.ti]++;
+      if(s.ti>=0) _lastTiro=s.ti;
+    }
+  }
+
+  /* Aplicar estilo correto a cada polígono com base no acumulado */
+  _tiros.forEach(function(t,ti){
+    if(_polys[ti]&&_inCnt[ti]>0&&_doneCnt[ti]>0){
+      _polys[ti].setStyle({
+        fillColor:'#22c55e',fillOpacity:1,
+        color:'#22c55e',weight:0,opacity:0
+      });
+    }
+  });
+
+  /* Posicionar avião */
+  var idx=Math.max(0,Math.min(target,_total-1));
+  if(_plane&&_steps[idx]){
+    var s=_steps[idx],nxt=idx+1<_total?_steps[idx+1]:null;
+    _plane.setLatLng([s.pos[0],s.pos[1]]);
+    if(nxt)_plane.setIcon(amIcon(bearing(s.pos,nxt.pos)));
+    if(s.in&&s.ti>=0)_lastTiro=s.ti;
+    var dispLbl,dispHv;
+    if(_lastTiro>=0&&_tiros[_lastTiro]){
+      var numR=_tiros[_lastTiro].num;
+      dispLbl='Tiro '+numR+' / '+_tiros.length+(s.in?' 🌾':'');
+      dispHv=numR+' / '+_tiros.length;
+    } else {
+      dispLbl='Tiro — / '+_tiros.length;
+      dispHv='—';
+    }
+    document.getElementById('am-lbl').textContent=dispLbl;
+    document.getElementById('hv-tiro').textContent=dispHv;
+  }
+  _step=target;
+  var pct=_total>0?Math.round(target/_total*100):0;
+  document.getElementById('am-bar').style.width=pct+'%';
+  document.getElementById('am-thumb').style.left=pct+'%';
+}
+
+
+function initScrub(){
+  var wrap=document.getElementById('am-bar-wrap');
+  function seek(cx){
+    var rect=wrap.getBoundingClientRect();
+    var pct=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
+    var was=_playing; _playing=false; clearTimeout(_timer);
+    amGoTo(Math.floor(pct*_total));
+    if(was&&_step<_total){_playing=true;tick();}
+  }
+  wrap.addEventListener('mousedown',function(e){
+    e.preventDefault(); seek(e.clientX);
+    function mm(e){seek(e.clientX);}
+    function mu(){document.removeEventListener('mousemove',mm);document.removeEventListener('mouseup',mu);}
+    document.addEventListener('mousemove',mm); document.addEventListener('mouseup',mu);
+  });
+  wrap.addEventListener('touchstart',function(e){
+    if(e.touches[0])seek(e.touches[0].clientX);
+    function tm(e){if(e.touches[0])seek(e.touches[0].clientX);}
+    function tu(){document.removeEventListener('touchmove',tm);document.removeEventListener('touchend',tu);}
+    document.addEventListener('touchmove',tm,{passive:true});
+    document.addEventListener('touchend',tu);
+  },{passive:true});
+}
+
+window.abrirAnalise=function(fileId,nome,rota){
+  var modal=document.getElementById('am');
+  modal.classList.add('open');
+  document.getElementById('am-loading').style.display='flex';
+  document.getElementById('am-loading-msg').textContent='Baixando KMZ...';
+  document.getElementById('am-title').textContent='✈️ '+nome;
+  document.getElementById('am-stats').innerHTML='<span style="color:#2d6b3f;font-style:italic;">Calculando...</span>';
+  
+  if(!_map){
+    _map=L.map('am-leaflet',{zoomControl:true,attributionControl:false});
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20}).addTo(_map);
+    initScrub();
+  }
+
+  fetch(rota+fileId)
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.erro){
+        document.getElementById('am-loading').style.display='none';
+        document.getElementById('am-stats').innerHTML='<span style="color:#f87171;">Erro: '+d.erro+'</span>';
+        return;
+      }
+      try{setup(d);}catch(e){
+        document.getElementById('am-loading').style.display='none';
+        console.error('Analise error:',e);
+      }
     });
+};
+
+function setup(d){
+  var tiros   = d.tiros||[];
+  var approach = d.approach||[];
+  var summary  = d.summary||{};
+
+  if(!tiros.length){
+    document.getElementById('am-loading').style.display='none';
+    document.getElementById('am-stats').innerHTML='<span style="color:#f87171;">Nenhum tiro encontrado.</span>';
+    return;
   }
 
-  var _plane = L.marker([_steps[0].pos[0], _steps[0].pos[1]], {
-    icon: amIcon(0)
-  }).addTo(map);
+  _tiros=tiros; _playing=false; _step=0; _lastTiro=-1; clearTimeout(_timer);
+  document.getElementById('am-play').textContent='▶ Play';
+  
+  if(summary.data_inicio){
+    document.getElementById('hv-ini').textContent=(summary.data_inicio||'')+(summary.hora_inicio?' '+summary.hora_inicio:'');
+    document.getElementById('hv-fim').textContent=(summary.data_inicio||'')+(summary.hora_fim?' '+summary.hora_fim:'');
+  }
+  if(summary.area_ha) document.getElementById('hv-area').textContent=summary.area_ha.toFixed(2)+' ha';
 
-  function bearing(p1, p2) {
-    var dLon = (p2[1] - p1[1]) * Math.PI / 180;
-    var lat1 = p1[0] * Math.PI / 180;
-    var lat2 = p2[0] * Math.PI / 180;
-    var y = Math.sin(dLon) * Math.cos(lat2);
-    var x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
-    return Math.atan2(y, x) * 180 / Math.PI;
+  if(_plane){try{_map.removeLayer(_plane);}catch(e){}_plane=null;}
+  _polys.forEach(function(p){try{if(p)_map.removeLayer(p);}catch(e){}});_polys=[];
+  _overPolys.forEach(function(p){try{_map.removeLayer(p);}catch(e){}});_overPolys=[];
+  try{if(window._amTrackLayer)_map.removeLayer(window._amTrackLayer);}catch(e){}
+
+  var allPts=[];
+  tiros.forEach(function(t){
+    if(!t||!t.polygon||t.polygon.length<3){_polys.push(null);return;}
+    try{
+      t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});
+      var poly=L.polygon(t.polygon.map(function(p){return[p[0],p[1]];}),{
+        color:'#22c55e',weight:0,fillColor:'#22c55e',fillOpacity:0,opacity:0
+      }).addTo(_map);
+      _polys.push(poly);
+    }catch(e){_polys.push(null);}
+  });
+
+  // Linha de Trajeto Completo renderizada em Amarelo Destaque
+  if(approach.length>1){
+    try{
+      window._amTrackLayer=L.polyline(
+        approach.map(function(p){return[p[0],p[1]];}),
+        {color:'rgba(255,255,255,0.5)',weight:0.8,opacity:1}
+      ).addTo(_map);
+    }catch(e){}
   }
 
-  // CORREÇÃO: Função centralizada de recálculo de estados para eliminar bugs na barra (Seek)
-  function syncMapState(targetStep) {
-    _step = Math.max(0, Math.min(targetStep, _total));
-    _doneCnt.fill(0);
-    _lastTiro = -1;
-
-    for (var i = 0; i < _step; i++) {
-      var s = _steps[i];
-      if (s && s.in && s.ti >= 0) {
-        _doneCnt[s.ti]++;
-        _lastTiro = s.ti;
-      }
-    }
-
-    _tiros.forEach(function(t, idx) {
-      if (_inCnt[idx] > 0 && _doneCnt[idx] > 0) {
-        var pct = _doneCnt[idx] / _inCnt[idx];
-        _polys[idx].setStyle({
-          fillOpacity: 0.18 + pct * 0.55,
-          opacity: 1,
-          color: '#22c55e',
-          fillColor: '#22c55e'
-        });
-      } else {
-        _polys[idx].setStyle({
-          fillOpacity: 0,
-          opacity: 0
-        });
-      }
+  try{
+    var minLa=99,maxLa=-99,minLo=99,maxLo=-99;
+    allPts.forEach(function(p){
+      if(p[0]<minLa)minLa=p[0]; if(p[0]>maxLa)maxLa=p[0];
+      if(p[1]<minLo)minLo=p[1]; if(p[1]>maxLo)maxLo=p[1];
     });
-
-    var idx = _step > 0 ? _step - 1 : 0;
-    var lastS = _steps[idx] || _steps[0];
-    if (lastS && _plane) {
-      _plane.setLatLng([lastS.pos[0], lastS.pos[1]]);
-      var nxt = _step < _total ? _steps[_step] : null;
-      if (nxt) _plane.setIcon(amIcon(bearing(lastS.pos, nxt.pos)));
-
-      var tLbl, tHv;
-      if (_lastTiro >= 0 && _tiros[_lastTiro]) {
-        var numReal = _tiros[_lastTiro].num;
-        tLbl = 'Tiro ' + numReal + ' / ' + _tiros.length + (lastS.in ? ' 🌾' : '');
-        tHv = numReal + ' / ' + _tiros.length;
-      } else {
-        tLbl = 'Tiro — / ' + _tiros.length;
-        tHv = '—';
-      }
-      document.getElementById('am-lbl').textContent = tLbl;
-      document.getElementById('hv-tiro').textContent = tHv;
+    // Adicionado pontos do rastro também no zoom do mapa
+    if(approach.length>1) {
+       approach.forEach(function(p){
+         if(p[0]<minLa)minLa=p[0]; if(p[0]>maxLa)maxLa=p[0];
+         if(p[1]<minLo)minLo=p[1]; if(p[1]>maxLo)maxLo=p[1];
+       });
     }
+    _map.fitBounds([[minLa,minLo],[maxLa,maxLo]],{padding:[40,40]});
+  }catch(e){}
+  
+  _steps=buildSteps(tiros,approach);
+  _total=_steps.length;
+  _inCnt=new Array(tiros.length).fill(0);
+  _doneCnt=new Array(tiros.length).fill(0);
+  _steps.forEach(function(s){if(s&&s.in)_inCnt[s.ti]++;});
 
-    var pctBar = Math.round((_step / _total) * 100) || 0;
-    document.getElementById('am-bar').style.width = pctBar + '%';
-    document.getElementById('am-thumb').style.left = pctBar + '%';
+  if(_steps.length>0&&_steps[0]){
+    try{ _plane=L.marker([_steps[0].pos[0],_steps[0].pos[1]],{icon:amIcon(0),zIndexOffset:2000}).addTo(_map); }catch(e){}
   }
 
-  window.tick = function() {
-    if (!_playing || _step >= _total) {
-      if (_step >= _total) {
-        _playing = false;
-        document.getElementById('am-play-btn').textContent = '▶ Play';
-      }
-      return;
-    }
-
-    var spd = parseInt(document.getElementById('am-speed').value) || 5;
-    var lastS = null;
-
-    for (var k = 0; k < spd && _step < _total; k++) {
-      var s = _steps[_step];
-      if (s && s.in && _polys[s.ti] && _inCnt[s.ti] > 0) {
-        _doneCnt[s.ti]++;
-        var pct = _doneCnt[s.ti] / _inCnt[s.ti];
-        
-        // Exibe o rastro gradualmente conforme passa por cima
-        _polys[s.ti].setStyle({
-          fillOpacity: 0.18 + pct * 0.55,
-          opacity: 1,
-          color: '#22c55e',
-          fillColor: '#22c55e',
-          weight: 2
-        });
-      }
-      if (s && s.in && s.ti >= 0) {
-        _lastTiro = s.ti;
-      }
-      lastS = s;
-      _step++;
-    }
-
-    if (lastS && _plane) {
-      _plane.setLatLng([lastS.pos[0], lastS.pos[1]]);
-      var nxt = _step < _total ? _steps[_step] : null;
-      if (nxt) _plane.setIcon(amIcon(bearing(lastS.pos, nxt.pos)));
-
-      var tLbl, tHv;
-      if (_lastTiro >= 0 && _tiros[_lastTiro]) {
-        var numReal = _tiros[_lastTiro].num;
-        tLbl = 'Tiro ' + numReal + ' / ' + _tiros.length + (lastS.in ? ' 🌾' : '');
-        tHv = numReal + ' / ' + _tiros.length;
-      } else {
-        tLbl = 'Tiro — / ' + _tiros.length;
-        tHv = '—';
-      }
-      document.getElementById('am-lbl').textContent = tLbl;
-      document.getElementById('hv-tiro').textContent = tHv;
-    }
-
-    var pctBar = Math.round((_step / _total) * 100);
-    document.getElementById('am-bar').style.width = pctBar + '%';
-    document.getElementById('am-thumb').style.left = pctBar + '%';
+  document.getElementById('am-loading-msg').textContent='Calculando sobreposição real...';
+  setTimeout(function(){
+    var turfPolys = tiros.map(function(t){ return toTurfPoly(t.polygon); });
+    var overAreaSqm = 0;
     
-    _timer = setTimeout(tick, Math.max(6, 60 - spd * 4));
-  };
-
-  window.amTogglePlay = function() {
-    if (_step >= _total) {
-      amReset();
-      return;
+    for(var i=0; i<turfPolys.length; i++){
+      if(!turfPolys[i]) continue;
+      for(var j=i+1; j<turfPolys.length; j++){
+        if(!turfPolys[j]) continue;
+        try {
+          var inter = turf.intersect(turfPolys[i], turfPolys[j]);
+          if(inter) {
+            overAreaSqm += turf.area(inter);
+            /* Sobreposição em vermelho — desenhada sobre os polígonos */
+            var overLyr = L.geoJSON(inter, {
+              style: {color:'#cc0000',fillColor:'#cc0000',fillOpacity:1.0,weight:0}
+            }); _overPolys.push(overLyr);
+            overLyr.addTo(_map); /* vermelho visível desde o início */
+          }
+        } catch(e) {}
+      }
     }
-    _playing = !_playing;
-    document.getElementById('am-play-btn').textContent = _playing ? '⏸ Pause' : '▶ Play';
-    if (_playing) tick();
-  };
+    
+    /* Área total: usa atributo 'area' do KMZ (29m × comprimento real)
+       que é calculado pelo GPS Travicar — mais preciso que Shoelace */
+    var totalHa = 0;
+    tiros.forEach(function(t){
+      totalHa += (t.area_ha && t.area_ha > 0) ? t.area_ha : areaHa(t.polygon);
+    });
+    var realOverHa  = overAreaSqm / 10000;
+    var effectiveHa = Math.max(0, totalHa - realOverHa);
+    var efetPct = totalHa > 0 ? (effectiveHa / totalHa * 100) : 0;
+    var overPct = totalHa > 0 ? (realOverHa  / totalHa * 100) : 0;
 
-  window.amReset = function() {
-    _playing = false;
-    document.getElementById('am-play-btn').textContent = '▶ Play';
-    if (_timer) clearTimeout(_timer);
-    syncMapState(0);
-  };
+    document.getElementById('am-stats').innerHTML=
+      '<span style="color:#4ade80;font-weight:700;">🟢 Efetiva: '+effectiveHa.toFixed(2)+' ha ('+efetPct.toFixed(1)+'%)</span>'
+      +'<span style="color:#f87171;font-weight:700;">🔴 Sobreposição Real: '+realOverHa.toFixed(2)+' ha ('+overPct.toFixed(1)+'%)</span>'
+      +'<span style="color:#94a3b8;">📊 Total: '+(effectiveHa + realOverHa).toFixed(2)+' ha</span>'
+      +(summary.gps?'<span style="color:#2d6b3f;font-size:10px;">📡 '+summary.gps+'</span>':'');
+      
+    document.getElementById('am-loading').style.display='none';
+  },80);
+}
 
-  document.getElementById('am-timeline').onclick = function(e) {
-    if (_total <= 0) return;
-    var rect = this.getBoundingClientRect();
-    var pct = (e.clientX - rect.left) / rect.width;
-    var target = Math.floor(pct * _total);
-    syncMapState(target);
-  };
-});
+function tick(){
+  if(!_playing||_step>=_total){
+    if(_step>=_total){
+      _playing=false;
+      document.getElementById('am-play').textContent='▶ Play';
+      /* Garantir que todos os tiros estejam verdes ao concluir */
+      _polys.forEach(function(p){
+        if(p)p.setStyle({fillColor:'#22c55e',fillOpacity:1,color:'#22c55e',weight:0,opacity:0});
+      });
+      /* Sobreposições já no mapa desde o início */
+      if(_tiros.length>0){
+        var lastNum=_tiros[_tiros.length-1].num;
+        document.getElementById('hv-tiro').textContent=lastNum+' / '+_tiros.length;
+      }
+      document.getElementById('am-lbl').textContent='✅ Concluído!';
+    }
+    return;
+  }
+  var spd=parseInt(document.getElementById('am-speed').value)||5;
+  var spt=Math.max(1,Math.floor(Math.pow(spd,1.9)/5));
+  var lastS=null;
+  for(var k=0;k<spt&&_step<_total;k++){
+    var s=_steps[_step];
+    if(s&&s.in&&_polys[s.ti]&&_inCnt[s.ti]>0){
+      _doneCnt[s.ti]++;
+      _polys[s.ti].setStyle({
+        fillColor:'#22c55e',fillOpacity:1,
+        color:'#22c55e',weight:0,opacity:0
+      });
+    }
+    lastS=s; _step++;
+  }
+  if(lastS&&_plane){
+    _plane.setLatLng([lastS.pos[0],lastS.pos[1]]);
+    var nxt=_step<_total?_steps[_step]:null;
+    if(nxt)_plane.setIcon(amIcon(bearing(lastS.pos,nxt.pos)));
+    if(lastS.in&&lastS.ti>=0) _lastTiro=lastS.ti;
+    var tLbl,tHv;
+    if(_lastTiro>=0&&_tiros[_lastTiro]){
+      var numReal=_tiros[_lastTiro].num;
+      tLbl='Tiro '+numReal+' / '+_tiros.length+(lastS.in?' 🌾':'');
+      tHv=numReal+' / '+_tiros.length;
+    } else {
+      tLbl='Tiro — / '+_tiros.length;
+      tHv='—';
+    }
+    document.getElementById('am-lbl').textContent=tLbl;
+    document.getElementById('hv-tiro').textContent=tHv;
+  }
+  var pct=Math.round(_step/_total*100);
+  document.getElementById('am-bar').style.width=pct+'%';
+  document.getElementById('am-thumb').style.left=pct+'%';
+  _timer=setTimeout(tick,Math.max(6,60-spd*4));
+}
+
+window.amTogglePlay=function(){
+  if(_step>=_total){amReset();return;}
+  _playing=!_playing;
+  document.getElementById('am-play').textContent=_playing?'⏸ Pausar':'▶ Play';
+  if(_playing)tick();
+};
+window.amReset=function(){
+  _playing=false; clearTimeout(_timer);
+  _lastTiro=-1;
+  _doneCnt=new Array(_tiros.length).fill(0);
+  amGoTo(0);
+  document.getElementById('am-play').textContent='▶ Play';
+  document.getElementById('am-lbl').textContent='Tiro 0 / '+_tiros.length;
+};
+window.amFechar=function(){
+  _playing=false; clearTimeout(_timer);
+  document.getElementById('am').classList.remove('open');
+};
+
+})();
 </script>
 {% endblock %}
