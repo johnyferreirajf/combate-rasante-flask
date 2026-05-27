@@ -338,6 +338,94 @@ def painel_download_pasta():
     return r
 
 
+
+@main_bp.route("/painel/analise_aplicacao/<int:file_id>")
+@login_required
+def painel_analise_aplicacao(file_id):
+    """Análise de aplicação KMZ — versão cliente.
+    Busca o arquivo KMZ via proxy assinado e retorna JSON com tiros/track/summary."""
+    import requests as _req, re, zipfile, io, json as _json
+
+    user = get_current_user()
+    from app.models.client_file import ClientFile
+    cf = ClientFile.query.get_or_404(file_id)
+    if cf.user_id != user.id:
+        abort(403)
+
+    fname = (cf.original_filename or "").lower()
+    is_kmz = fname.endswith(".kmz")
+    is_kml = fname.endswith(".kml")
+    if not (is_kmz or is_kml):
+        return _json.dumps({"erro": "Arquivo não é KML/KMZ"}), 400,                {"Content-Type": "application/json"}
+
+    url = cf.url or ""
+
+    def _fetch_raw(fetch_url):
+        """Baixa o KMZ/KML via requests."""
+        r = _req.get(fetch_url, timeout=60,
+                     headers={"User-Agent": "CombateRasante/1.0"},
+                     allow_redirects=True)
+        r.raise_for_status()
+        return r.content
+
+    def _get_signed_url():
+        """Gera URL assinada para arquivos privados no Cloudinary."""
+        try:
+            from app.utils.storage import _init_cloudinary
+            from cloudinary.utils import cloudinary_url as _cu
+            _init_cloudinary()
+            pid = cf.public_id or ""
+            if not pid and "/upload/" in url:
+                m = re.search(r"/upload/(?:v\d+/)?(.+)$", url)
+                if m:
+                    pid = re.sub(r"\.[^.]+$", "", m.group(1))
+            if not pid:
+                return None
+            signed, _ = _cu(pid, resource_type="raw", sign_url=True)
+            return signed
+        except Exception as e2:
+            current_app.logger.warning(f"painel_analise signed URL failed: {e2}")
+            return None
+
+    # ── 1. Tentar URL original ────────────────────────────────────────────────
+    raw = None
+    try:
+        raw = _fetch_raw(url)
+    except _req.exceptions.HTTPError as e:
+        status = e.response.status_code if e.response is not None else 0
+        current_app.logger.info(
+            f"painel_analise: original URL returned {status}, trying signed URL")
+        if status in (401, 403):
+            signed = _get_signed_url()
+            if signed:
+                try:
+                    raw = _fetch_raw(signed)
+                except Exception as e3:
+                    return _json.dumps({"erro": f"Erro ao baixar KMZ: {e3}"}), 500,                            {"Content-Type": "application/json"}
+    except Exception as e:
+        return _json.dumps({"erro": f"Erro ao baixar KMZ: {e}"}), 500,                {"Content-Type": "application/json"}
+
+    if raw is None:
+        return _json.dumps({"erro": "Não foi possível baixar o arquivo"}), 500,                {"Content-Type": "application/json"}
+
+    # ── 2. Extrair KML se for KMZ ─────────────────────────────────────────────
+    if is_kmz:
+        try:
+            with zipfile.ZipFile(io.BytesIO(raw)) as z:
+                kml_name = next((n for n in z.namelist() if n.endswith(".kml")), None)
+                raw = z.read(kml_name) if kml_name else b""
+        except Exception as e:
+            return _json.dumps({"erro": f"Erro ao extrair KMZ: {e}"}), 500,                    {"Content-Type": "application/json"}
+
+    # ── 3. Parsear KML ────────────────────────────────────────────────────────
+    from app.routes.employee import _parse_kml_full
+    result, err = _parse_kml_full(raw)
+    if err:
+        return _json.dumps({"erro": err}), 500, {"Content-Type": "application/json"}
+
+    return _json.dumps(result), 200, {"Content-Type": "application/json"}
+
+
 def _build_dashboard_tree():
     """Busca no banco os arquivos do cliente logado (ClientFile), organizados por pasta."""
     from app.models.client_file import ClientFile
