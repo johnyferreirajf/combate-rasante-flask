@@ -390,29 +390,18 @@ function buildSteps(tiros, approach){
 
 // SINCRONIZADOR DE ESTADO (Resolve o bug de ir pra frente/trás na barra)
 function amGoTo(targetStep){
-  _step = Math.max(0, Math.min(targetStep, _total));
-  _doneCnt.fill(0);
-  
-  // Recalcula progresso exato até o ponto clicado
-  for(var i=0; i<_step; i++){
-    var s = _steps[i];
-    if(s && s.in && s.ti !== undefined){
-      _doneCnt[s.ti]++;
-    }
-  }
-
-  // Atualiza cores de acordo com o recálculo
+  // Atualiza cores: Só mostra se tiver progresso real (> 0)
   _tiros.forEach(function(t, idx){
     if(_inCnt[idx] > 0 && _doneCnt[idx] > 0){
       var pct = _doneCnt[idx] / _inCnt[idx];
       _polys[idx].setStyle({
-        fillOpacity: 0.18 + pct * 0.82, 
-        opacity: 1, 
+        fillOpacity: 0.5 * pct, // Começa em quase 0 e vai até 0.5
+        opacity: 0.8,           // Borda visível apenas com progresso
         color: '#22c55e', 
         weight: 1
       });
     } else {
-      // Se não passou ainda, mantém invisível
+      // Mantém completamente invisível se não houver progresso
       if(_polys[idx]) _polys[idx].setStyle({fillOpacity: 0, opacity: 0});
     }
   });
@@ -593,20 +582,17 @@ function setup(d){
 }
 
 function tick(){
-  if(!_playing||_step>=_total){
-    if(_step>=_total){
-      _playing=false;
-      document.getElementById('am-play').textContent='▶ Play';
-      document.getElementById('am-lbl').textContent='✅ Concluído!';
-    }
-    return;
-  }
-  var spd=parseInt(document.getElementById('am-speed').value)||5;
-  var spt=Math.max(1,Math.floor(Math.pow(spd,1.9)/5));
-  var lastS=null;
-  
-  for(var k=0; k<spt && _step<_total; k++){
-    var s=_steps[_step];
+  // ANIMAÇÃO: Apenas renderiza se o avião estiver IN (s.in)
+    if(s && s.in && _polys[s.ti] && _inCnt[s.ti] > 0){
+      _doneCnt[s.ti]++;
+      var pct = _doneCnt[s.ti] / _inCnt[s.ti];
+      
+      _polys[s.ti].setStyle({
+        fillOpacity: 0.5 * pct, // O preenchimento cresce conforme o avião avança
+        opacity: 0.8,
+        color: '#22c55e',
+        weight: 1
+      });
     
     // ANIMAÇÃO DE PREENCHIMENTO: Só pinta se estiver em cima
     if(s && s.in && _polys[s.ti] && _inCnt[s.ti] > 0){
