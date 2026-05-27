@@ -618,65 +618,46 @@ function areaHa(pts){
 }
 
 /* Constrói os passos de animação precisos acompanhando a linha do GPS real completa */
-
-/* ── Polígonos de detecção: retângulos apertados em torno do eixo do spray ──
-   Usa entry/exit + largura nominal em vez da polygon GPS completa (que inclui
-   os balões de viragem, causando falsos positivos de detecção).              */
-function buildDetectionPolys(tiros){
-  var R2D = 180/Math.PI;
-  return tiros.map(function(t){
-    if(!t||!t.entry||!t.exit) return null;
-    var e=t.entry, x=t.exit;
-    /* Vetor do spray (lat, lon) normalizado */
-    var dLa=x[0]-e[0], dLo=x[1]-e[1];
-    var len=Math.sqrt(dLa*dLa+dLo*dLo)||1;
-    var uLa=dLa/len, uLo=dLo/len;
-    /* Perpendicular ao spray (direção da largura) */
-    var pLa=-uLo, pLo=uLa;
-    /* Metade da largura em graus (nominal + 20% margem para GPS imprecisão) */
-    var lat_c=(e[0]+x[0])/2;
-    var hw_la=((t.width_m||29)/2*1.2)/111000;
-    var hw_lo=((t.width_m||29)/2*1.2)/(111000*Math.cos(lat_c*Math.PI/180));
-    /* Margem de extensão além do entry/exit (10% do comprimento) */
-    var ext=len*0.10;
-    var eE=[e[0]-ext*uLa, e[1]-ext*uLo];  /* entry estendido */
-    var xE=[x[0]+ext*uLa, x[1]+ext*uLo];  /* exit estendido  */
-    /* 4 cantos do retângulo de detecção */
-    var pts=[
-      [eE[1]+hw_lo*pLo, eE[0]+hw_la*pLa],
-      [eE[1]-hw_lo*pLo, eE[0]-hw_la*pLa],
-      [xE[1]-hw_lo*pLo, xE[0]-hw_la*pLa],
-      [xE[1]+hw_lo*pLo, xE[0]+hw_la*pLa],
-    ];
-    pts.push(pts[0]);
-    try{ return turf.polygon([pts]); }catch(ex){ return null; }
-  });
-}
-
 function buildSteps(tiros, approach){
-  var steps=[];
-  /* Usar retângulos de detecção (não GPS polygon com balões) para evitar falsos positivos */
-  var turfPolys = buildDetectionPolys(tiros);
-  var lastTi=-1;
+  var steps = [];
 
-  /* Apenas o GPS real — o avião segue o rastro do KMZ e o Turf
-     detecta automaticamente os tiros conforme o avião os sobrevoa */
+  /* FASE 1: GPS de chegada — avião segue rastro real, SEM marcar tiros */
   if(approach && approach.length > 1){
     approach.forEach(function(p){
-      var pt=turf.point([p[1],p[0]]), inTi=-1;
-      try{
-        if(lastTi>=0 && turfPolys[lastTi] && turf.booleanPointInPolygon(pt,turfPolys[lastTi])){
-          inTi=lastTi;
-        } else {
-          for(var i=0;i<turfPolys.length;i++){
-            if(turfPolys[i] && turf.booleanPointInPolygon(pt,turfPolys[i])){inTi=i;break;}
-          }
-        }
-      }catch(e){}
-      lastTi=inTi;
-      steps.push({pos:[p[0],p[1]], ti:inTi, in:(inTi>=0)});
+      steps.push({pos:[p[0],p[1]], ti:-1, in:false});
     });
   }
+
+  /* FASE 2: Sequência dos tiros — marcação real pelo KMZ (sem GPS) */
+  var F=40;
+  function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return dy*dy+dx*dx;}
+  var prevExit=steps.length>0?steps[steps.length-1].pos:null;
+
+  tiros.forEach(function(t,i){
+    if(!t||!t.entry||!t.exit) return;
+    var entry=t.entry, exitPt=t.exit;
+    if(prevExit && _dist(prevExit,t.exit)<_dist(prevExit,t.entry)){
+      entry=t.exit; exitPt=t.entry;
+    }
+    /* Trânsito até a entrada (sem aplicação) */
+    if(prevExit){
+      var T=8;
+      for(var k=1;k<=T;k++){
+        var r=k/T;
+        steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
+                         prevExit[1]+(entry[1]-prevExit[1])*r],
+                    ti:i,in:false});
+      }
+    }
+    /* Passagem de pulverização (aplicação real) */
+    for(var k=1;k<=F;k++){
+      var r=k/F;
+      steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
+                       entry[1]+(exitPt[1]-entry[1])*r],
+                  ti:i,in:true});
+    }
+    prevExit=exitPt;
+  });
   return steps;
 }
 
