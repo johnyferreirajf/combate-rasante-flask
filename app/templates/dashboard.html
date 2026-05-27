@@ -400,9 +400,9 @@ function buildSteps(tiros, approach){
           // Mede a distância entre o ponto em que o avião entrou e saiu do tiro
           var dist = turf.distance(turf.point([p1[1], p1[0]]), turf.point([p2[1], p2[0]]), {units: 'meters'});
           
-          // Se andou menos de 45 metros, foi apenas um cruzamento transversal (manobra)
+          // Se andou menos de 100 metros, foi apenas um cruzamento transversal (manobra)
           // Portanto, anula esses pontos (não marca como aplicação)
-          if (dist < 45) {
+          if (dist < 100) {
             for (var j = segmentStart; j < i; j++) {
               steps[j].in = false;
             }
