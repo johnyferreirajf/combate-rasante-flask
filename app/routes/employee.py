@@ -778,10 +778,10 @@ def download(file_id: int):
             if not pid and "/upload/" in item.cloudinary_url:
                 m = _re.search(r"/upload/(?:v\d+/)?(.+)$", item.cloudinary_url)
                 if m:
-                    pid = _re.sub(r"\.[^.]+$", "", m.group(1))
+                    pid = m.group(1)          # manter extensão no public_id
             if pid:
-                fmt = os.path.splitext(filename)[1].lstrip(".").lower()
-                fetch_url = _pdu(pid, fmt, resource_type="raw",
+                # format="" porque a extensão já faz parte do public_id (raw)
+                fetch_url = _pdu(pid, "", resource_type="raw",
                                  expires_at=int(time.time()) + 300)
             else:
                 fetch_url = item.cloudinary_url
@@ -895,9 +895,10 @@ def preview(file_id: int):
             if not pid and "/upload/" in cloud_url:
                 m = _re.search(r"/upload/(?:v\d+/)?(.+)$", cloud_url)
                 if m:
-                    pid = _re.sub(r"\.[^.]+$", "", m.group(1))
-            fetch_url = (_pdu(pid, os.path.splitext(filename)[1].lstrip(".").lower(),
-                              resource_type="raw", expires_at=int(time.time()) + 300)
+                    pid = m.group(1)          # manter extensão no public_id
+            # format="" porque a extensão já faz parte do public_id (raw)
+            fetch_url = (_pdu(pid, "", resource_type="raw",
+                              expires_at=int(time.time()) + 300)
                          if pid else cloud_url)
         except Exception:
             fetch_url = cloud_url
@@ -953,10 +954,10 @@ def analise_aplicacao(file_id: int):
                 pid = getattr(item, "public_id", "") or ""
                 if not pid and "/upload/" in cloud_url:
                     m = _re.search(r"/upload/(?:v\d+/)?(.+)$", cloud_url)
-                    if m: pid = _re.sub(r"\.[^.]+$", "", m.group(1))
+                    if m: pid = m.group(1)    # manter extensão no public_id
                 if pid:
-                    fmt = "kmz" if is_kmz else "kml"
-                    fetch_url = _pdu(pid, fmt, resource_type="raw",
+                    # format="" porque a extensão já faz parte do public_id (raw)
+                    fetch_url = _pdu(pid, "", resource_type="raw",
                                      expires_at=int(_time.time()) + 300)
             except Exception:
                 pass

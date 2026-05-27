@@ -201,7 +201,9 @@ def painel_download(file_id):
 
     # ── Determinar URL para baixar (original ou assinada) ────────────────────
     def _get_signed_url(original_url):
-        """Gera URL autenticada via Cloudinary API (private_download_url)."""
+        """Gera URL autenticada via Cloudinary API (private_download_url).
+        Para raw resources o public_id já inclui a extensão — não remover,
+        e passar format='' para evitar extensão duplicada (404)."""
         try:
             import time
             from app.utils.storage import _init_cloudinary
@@ -211,11 +213,11 @@ def painel_download(file_id):
             if not pid and "/upload/" in original_url:
                 m = re.search(r"/upload/(?:v\d+/)?(.+)$", original_url)
                 if m:
-                    pid = re.sub(r"\.[^.]+$", "", m.group(1))
+                    pid = m.group(1)          # manter extensão no public_id
             if not pid:
                 return None
-            fmt = ext if ext else ""
-            signed = _pdu(pid, fmt, resource_type="raw",
+            # format="" porque a extensão já faz parte do public_id
+            signed = _pdu(pid, "", resource_type="raw",
                           expires_at=int(time.time()) + 300)
             return signed
         except Exception as e2:
@@ -372,7 +374,8 @@ def painel_analise_aplicacao(file_id):
         return r.content
 
     def _get_signed_url():
-        """Gera URL autenticada via Cloudinary API (private_download_url)."""
+        """Gera URL autenticada via Cloudinary API (private_download_url).
+        Para raw resources o public_id já inclui a extensão — não remover."""
         try:
             import time
             from app.utils.storage import _init_cloudinary
@@ -382,12 +385,11 @@ def painel_analise_aplicacao(file_id):
             if not pid and "/upload/" in url:
                 m = re.search(r"/upload/(?:v\d+/)?(.+)$", url)
                 if m:
-                    pid = re.sub(r"\.[^.]+$", "", m.group(1))
+                    pid = m.group(1)          # manter extensão
             if not pid:
                 return None
-            fname_lower = (cf.original_filename or "").lower()
-            fmt = "kmz" if fname_lower.endswith(".kmz") else "kml"
-            signed = _pdu(pid, fmt, resource_type="raw",
+            # format="" porque a extensão já faz parte do public_id
+            signed = _pdu(pid, "", resource_type="raw",
                           expires_at=int(time.time()) + 300)
             return signed
         except Exception as e2:
