@@ -201,10 +201,11 @@ def painel_download(file_id):
 
     # ── Determinar URL para baixar (original ou assinada) ────────────────────
     def _get_signed_url(original_url):
-        """Gera URL assinada via SDK Cloudinary (sem fl_attachment)."""
+        """Gera URL autenticada via Cloudinary API (private_download_url)."""
         try:
+            import time
             from app.utils.storage import _init_cloudinary
-            from cloudinary.utils import cloudinary_url as _cu
+            from cloudinary.utils import private_download_url as _pdu
             _init_cloudinary()
             pid = cf.public_id or ""
             if not pid and "/upload/" in original_url:
@@ -213,7 +214,9 @@ def painel_download(file_id):
                     pid = re.sub(r"\.[^.]+$", "", m.group(1))
             if not pid:
                 return None
-            signed, _ = _cu(pid, resource_type="raw", sign_url=True)
+            fmt = ext if ext else ""
+            signed = _pdu(pid, fmt, resource_type="raw",
+                          expires_at=int(time.time()) + 300)
             return signed
         except Exception as e2:
             current_app.logger.warning(f"signed URL generation failed: {e2}")
@@ -369,10 +372,11 @@ def painel_analise_aplicacao(file_id):
         return r.content
 
     def _get_signed_url():
-        """Gera URL assinada para arquivos privados no Cloudinary."""
+        """Gera URL autenticada via Cloudinary API (private_download_url)."""
         try:
+            import time
             from app.utils.storage import _init_cloudinary
-            from cloudinary.utils import cloudinary_url as _cu
+            from cloudinary.utils import private_download_url as _pdu
             _init_cloudinary()
             pid = cf.public_id or ""
             if not pid and "/upload/" in url:
@@ -381,7 +385,10 @@ def painel_analise_aplicacao(file_id):
                     pid = re.sub(r"\.[^.]+$", "", m.group(1))
             if not pid:
                 return None
-            signed, _ = _cu(pid, resource_type="raw", sign_url=True)
+            fname_lower = (cf.original_filename or "").lower()
+            fmt = "kmz" if fname_lower.endswith(".kmz") else "kml"
+            signed = _pdu(pid, fmt, resource_type="raw",
+                          expires_at=int(time.time()) + 300)
             return signed
         except Exception as e2:
             current_app.logger.warning(f"painel_analise signed URL failed: {e2}")

@@ -763,7 +763,7 @@ def delete_file(file_id: int):
 @employee_bp.route("/download/<int:file_id>")
 @employee_login_required
 def download(file_id: int):
-    import urllib.request
+    import time, re as _re
     item = EmployeeFile.query.get_or_404(file_id)
 
     # Se tiver URL do Cloudinary, baixar via proxy
@@ -771,23 +771,39 @@ def download(file_id: int):
         filename = item.original_filename or "arquivo"
         safe_name = filename.replace('"', '').replace("\n", "")
         try:
+            from app.utils.storage import _init_cloudinary
+            from cloudinary.utils import private_download_url as _pdu
+            _init_cloudinary()
+            pid = getattr(item, "public_id", "") or ""
+            if not pid and "/upload/" in item.cloudinary_url:
+                m = _re.search(r"/upload/(?:v\d+/)?(.+)$", item.cloudinary_url)
+                if m:
+                    pid = _re.sub(r"\.[^.]+$", "", m.group(1))
+            if pid:
+                fmt = os.path.splitext(filename)[1].lstrip(".").lower()
+                fetch_url = _pdu(pid, fmt, resource_type="raw",
+                                 expires_at=int(time.time()) + 300)
+            else:
+                fetch_url = item.cloudinary_url
+        except Exception:
+            fetch_url = item.cloudinary_url
+
+        try:
+            import urllib.request
             req = urllib.request.Request(
-                item.cloudinary_url,
-                headers={"User-Agent": "Mozilla/5.0"}
+                fetch_url,
+                headers={"User-Agent": "CombateRasante/1.0"}
             )
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 data = resp.read()
                 ctype = resp.headers.get("Content-Type", "application/octet-stream")
         except Exception:
-            # Fallback: redirecionar com fl_attachment
-            dl_url = item.cloudinary_url
-            if "cloudinary.com" in dl_url:
-                dl_url = dl_url.replace("/upload/", "/upload/fl_attachment/")
-            return redirect(dl_url)
+            # Fallback: redirecionar
+            return redirect(fetch_url)
 
         from flask import make_response
         r = make_response(data)
-        r.headers["Content-Disposition"] = "attachment; filename=\"" + safe_name + "\""
+        r.headers["Content-Disposition"] = 'attachment; filename="' + safe_name + '"'
         r.headers["Content-Type"] = ctype
         r.headers["Content-Length"] = str(len(data))
         return r
@@ -858,7 +874,7 @@ def download_folder():
 @employee_login_required
 def preview(file_id: int):
     """Pré-visualização inline — usa Cloudinary se disponível, disco como fallback."""
-    import urllib.request
+    import urllib.request, time, re as _re
     from flask import make_response
     mimetypes.add_type("application/vnd.google-earth.kml+xml", ".kml")
     mimetypes.add_type("application/vnd.google-earth.kmz", ".kmz")
@@ -872,8 +888,22 @@ def preview(file_id: int):
     cloud_url = getattr(item, "cloudinary_url", None)
     if cloud_url:
         try:
-            req = urllib.request.Request(cloud_url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=30) as resp:
+            from app.utils.storage import _init_cloudinary
+            from cloudinary.utils import private_download_url as _pdu
+            _init_cloudinary()
+            pid = getattr(item, "public_id", "") or ""
+            if not pid and "/upload/" in cloud_url:
+                m = _re.search(r"/upload/(?:v\d+/)?(.+)$", cloud_url)
+                if m:
+                    pid = _re.sub(r"\.[^.]+$", "", m.group(1))
+            fetch_url = (_pdu(pid, os.path.splitext(filename)[1].lstrip(".").lower(),
+                              resource_type="raw", expires_at=int(time.time()) + 300)
+                         if pid else cloud_url)
+        except Exception:
+            fetch_url = cloud_url
+        try:
+            req = urllib.request.Request(fetch_url, headers={"User-Agent": "CombateRasante/1.0"})
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 data = resp.read()
                 ctype = resp.headers.get("Content-Type", mimetype)
             r = make_response(data)
@@ -912,25 +942,26 @@ def analise_aplicacao(file_id: int):
     cloud_url = getattr(item, "cloudinary_url", None) or getattr(item, "url", None)
     try:
         if cloud_url:
-            import requests as _rq
-            r = _rq.get(cloud_url, timeout=60, headers={"User-Agent": "CombateRasante/1.0"},
+            import requests as _rq, time as _time
+            # Sempre usar private_download_url para evitar 401 no Cloudinary
+            fetch_url = cloud_url
+            try:
+                from app.utils.storage import _init_cloudinary
+                from cloudinary.utils import private_download_url as _pdu
+                import re as _re
+                _init_cloudinary()
+                pid = getattr(item, "public_id", "") or ""
+                if not pid and "/upload/" in cloud_url:
+                    m = _re.search(r"/upload/(?:v\d+/)?(.+)$", cloud_url)
+                    if m: pid = _re.sub(r"\.[^.]+$", "", m.group(1))
+                if pid:
+                    fmt = "kmz" if is_kmz else "kml"
+                    fetch_url = _pdu(pid, fmt, resource_type="raw",
+                                     expires_at=int(_time.time()) + 300)
+            except Exception:
+                pass
+            r = _rq.get(fetch_url, timeout=60, headers={"User-Agent": "CombateRasante/1.0"},
                         allow_redirects=True)
-            if r.status_code in (401, 403):
-                # Arquivo privado — tentar URL assinada
-                try:
-                    from app.utils.storage import _init_cloudinary
-                    from cloudinary.utils import cloudinary_url as _cu
-                    _init_cloudinary()
-                    pid = getattr(item, "public_id", "") or ""
-                    if not pid and "/upload/" in cloud_url:
-                        import re as _re
-                        m = _re.search(r"/upload/(?:v\d+/)?(.+)$", cloud_url)
-                        if m: pid = _re.sub(r"\.[^.]+$", "", m.group(1))
-                    if pid:
-                        signed, _ = _cu(pid, resource_type="raw", sign_url=True)
-                        r = _rq.get(signed, timeout=60, headers={"User-Agent": "CombateRasante/1.0"})
-                except Exception as se:
-                    return _json.dumps({"erro": f"Cloudinary auth error: {se}"}), 500, {"Content-Type": "application/json"}
             r.raise_for_status()
             raw = r.content
         else:
