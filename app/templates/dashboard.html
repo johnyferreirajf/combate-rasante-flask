@@ -298,7 +298,7 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANÁLISE DE APLICAÇÃO AÉREA - CORES SÓLIDAS E FORTES (SEM TRANSPARÊNCIA)
+   ANÁLISE DE APLICAÇÃO AÉREA - BUFFER NEGATIVO DINÂMICO E REMOÇÃO DE BORDAS
 ═══════════════════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
@@ -363,9 +363,8 @@ function areaHa(pts){
   return Math.abs(a)/2/10000;
 }
 
-function buildSteps(tiros, approach){
+function buildSteps(tiros, approach, turfPolys){
   var steps=[];
-  var turfPolys = tiros.map(function(t) { return toTurfPoly(t.polygon); });
   
   if(approach && approach.length > 1){
     var lastTi = -1;
@@ -425,14 +424,12 @@ function amGoTo(targetStep){
     if(_inCnt[idx] > 0 && _doneCnt[idx] > 0){
       var pct = _doneCnt[idx] / _inCnt[idx];
       _polys[idx].setStyle({
-        fillOpacity: (pct > 0.05) ? 1.0 : 0,  // TOTALMENTE SÓLIDO (1.0)
-        opacity: (pct > 0.05) ? 1.0 : 0,      // BORDA TOTALMENTE SÓLIDA
-        color: '#15803d',                     // VERDE FORTE ESCURO
-        fillColor: '#15803d',                 // VERDE FORTE ESCURO
-        weight: 1.5
+        fillOpacity: (pct > 0.05) ? 1.0 : 0,
+        stroke: false, // REMOVE A BORDA PARA GARANTIR PROPORÇÃO NO ZOOM OUT
+        fillColor: '#15803d'
       });
     } else {
-      if(_polys[idx]) _polys[idx].setStyle({fillOpacity: 0, opacity: 0, weight: 0});
+      if(_polys[idx]) _polys[idx].setStyle({fillOpacity: 0});
     }
   });
 
@@ -441,14 +438,12 @@ function amGoTo(targetStep){
      var applied2 = _inCnt[over.ti2] > 0 && (_doneCnt[over.ti2] / _inCnt[over.ti2]) > 0.05;
      if(applied1 && applied2){
         over.layer.setStyle({
-          fillOpacity: 1.0,         // VERMELHO TOTALMENTE SÓLIDO
-          opacity: 1.0,             // BORDA DO VERMELHO SÓLIDA
-          color: '#b91c1c',         // VERMELHO FORTE ESCURO
-          fillColor: '#b91c1c',     // VERMELHO FORTE ESCURO
-          weight: 1.5
+          fillOpacity: 1.0,
+          stroke: false, // REMOVE BORDAS BLOAT DA SOBREPOSIÇÃO
+          fillColor: '#b91c1c'
         });
      } else {
-        over.layer.setStyle({fillOpacity: 0, weight: 0, opacity: 0});
+        over.layer.setStyle({fillOpacity: 0});
      }
   });
 
@@ -542,15 +537,57 @@ function setup(d){
 
   var allPts=[];
   
-  tiros.forEach(function(t){
-    if(!t||!t.polygon||t.polygon.length<3){_polys.push(null);return;}
+  // 1. GERAÇÃO E CORREÇÃO DINÂMICA DA LARGURA VIA BUFFER NEGATIVO
+  var turfPolys = tiros.map(function(t) {
+    var poly = toTurfPoly(t.polygon);
+    if (!poly) return null;
+    
+    // Se temos a área real do atributo e os pontos de entrada/saída, recalculamos a largura ideal
+    if (t.area_ha && t.entry && t.exit) {
+      try {
+        var geomAreaSqm = turf.area(poly);
+        var targetAreaSqm = t.area_ha * 10000;
+        
+        var p1 = turf.point([t.entry[1], t.entry[0]]);
+        var p2 = turf.point([t.exit[1], t.exit[0]]);
+        var lengthMeters = turf.distance(p1, p2, {units: 'meters'});
+        
+        if (lengthMeters > 0) {
+          var geomWidth = geomAreaSqm / lengthMeters;
+          var targetWidth = targetAreaSqm / lengthMeters;
+          var diffWidth = geomWidth - targetWidth;
+          var bufferRadius = -(diffWidth / 2); // Divide por 2 pois o buffer expande/contrai para os dois lados
+          
+          // Aplica o encolhimento se a geometria original for de fato mais larga que a real
+          if (bufferRadius < 0 && bufferRadius > -15) { 
+            var buffered = turf.buffer(poly, bufferRadius, {units: 'meters'});
+            if (buffered && buffered.geometry) {
+              poly = buffered;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Erro no ajuste de buffer do tiro:", e);
+      }
+    }
+    return poly;
+  });
+
+  // 2. MONTAGEM DAS GEOMETRIAS CORRIGIDAS NO LEAFLET
+  tiros.forEach(function(t, idx){
+    var polyTurf = turfPolys[idx];
+    if(!polyTurf || !polyTurf.geometry || !polyTurf.geometry.coordinates){
+      _polys.push(null); return;
+    }
     try{
-      t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});
-      var poly=L.polygon(t.polygon.map(function(p){return[p[0],p[1]];}),{
-        color: '#15803d',
-        weight: 0,
+      var latLngs = polyTurf.geometry.coordinates[0].map(function(coord){
+        allPts.push([coord[1], coord[0]]);
+        return [coord[1], coord[0]];
+      });
+
+      var poly=L.polygon(latLngs,{
+        stroke: false, // SEM BORDAS
         fillColor: '#15803d',
-        opacity: 0,
         fillOpacity: 0
       }).addTo(_map);
       _polys.push(poly);
@@ -575,7 +612,7 @@ function setup(d){
     _map.fitBounds([[minLa,minLo],[maxLa,maxLo]],{padding:[40,40]});
   }catch(e){}
   
-  _steps=buildSteps(tiros,approach);
+  _steps=buildSteps(tiros, approach, turfPolys);
   _total=_steps.length;
   _inCnt=new Array(tiros.length).fill(0);
   _doneCnt=new Array(tiros.length).fill(0);
@@ -587,7 +624,6 @@ function setup(d){
 
   document.getElementById('am-loading-msg').textContent='Calculando sobreposição real...';
   setTimeout(function(){
-    var turfPolys = tiros.map(function(t){ return toTurfPoly(t.polygon); });
     var overAreaSqm = 0;
     
     for(var i=0; i<turfPolys.length; i++){
@@ -598,7 +634,12 @@ function setup(d){
           var inter = turf.intersect(turfPolys[i], turfPolys[j]);
           if(inter) {
             var overLyr = L.geoJSON(inter, {
-              style: {color: '#b91c1c', fillColor: '#b91c1c', fillOpacity: 0, weight: 0, opacity: 0, zIndex: 400}
+              style: {
+                stroke: false, // SEM LINHAS DE BORDA PARA CONTER O GRÁFICO NO ZOOM OUT
+                fillColor: '#b91c1c', 
+                fillOpacity: 0, 
+                zIndex: 400
+              }
             }).addTo(_map);
             _overPolys.push(overLyr);
             _overPolysData.push({ layer: overLyr, ti1: i, ti2: j });
@@ -609,7 +650,8 @@ function setup(d){
     }
     
     var totalHa = 0;
-    tiros.forEach(function(t){totalHa += areaHa(t.polygon);});
+    turfPolys.forEach(function(p){ if(p) totalHa += (turf.area(p) / 10000); });
+    
     var effectiveHa = (summary.area_ha && summary.area_ha>0) ? summary.area_ha : totalHa;
     var realOverHa = overAreaSqm / 10000;
     
@@ -646,11 +688,9 @@ function tick(){
       _doneCnt[s.ti]++;
       var pct = _doneCnt[s.ti] / _inCnt[s.ti];
       _polys[s.ti].setStyle({
-        fillOpacity: (pct > 0.05) ? 1.0 : 0,  // 100% SÓLIDO AO MARCAR
-        opacity: (pct > 0.05) ? 1.0 : 0,
-        color: '#15803d', 
-        fillColor: '#15803d',
-        weight: 1.5
+        fillOpacity: (pct > 0.05) ? 1.0 : 0,
+        stroke: false,
+        fillColor: '#15803d'
       });
     }
     
@@ -665,11 +705,9 @@ function tick(){
      var app2 = _inCnt[over.ti2] > 0 && (_doneCnt[over.ti2] / _inCnt[over.ti2]) > 0.05;
      if(app1 && app2) {
         over.layer.setStyle({
-          fillOpacity: 1.0,  // VERMELHO SÓLIDO NO TICK
-          opacity: 1.0, 
-          color: '#b91c1c',
-          fillColor: '#b91c1c',
-          weight: 1.5
+          fillOpacity: 1.0,
+          stroke: false,
+          fillColor: '#b91c1c'
         });
      }
   });
