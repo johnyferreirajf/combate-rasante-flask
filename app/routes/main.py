@@ -181,50 +181,53 @@ def painel_trocar_senha():
 @main_bp.route("/painel/download/<int:file_id>")
 @login_required
 def painel_download(file_id):
-    """Proxy de download — baixa via servidor e força Content-Disposition: attachment."""
-    import urllib.request
+    """Proxy de download com streaming e fallback fl_attachment."""
+    import requests as _req
     import re
-    from flask import make_response, stream_with_context, Response
+    from flask import Response, stream_with_context
     from app.models.client_file import ClientFile
 
     user = get_current_user()
     cf = ClientFile.query.get_or_404(file_id)
-
     if cf.user_id != user.id:
         abort(403)
 
-    # Montar nome do arquivo para download
     name = cf.original_filename or cf.title or "arquivo"
     ext  = (cf.file_ext or "").lower()
     if ext and not name.lower().endswith(f".{ext}"):
         name = f"{name}.{ext}"
-    # Remover caracteres problemáticos para headers HTTP
     safe_name = re.sub(r'[\x00-\x1f"\\]', "", name).strip() or "arquivo"
 
-    try:
-        req = urllib.request.Request(
-            cf.url,
-            headers={
-                "User-Agent": "Mozilla/5.0",
-                "Accept": "*/*",
-            }
-        )
-        with urllib.request.urlopen(req, timeout=90) as resp:
-            data = resp.read()
-            ctype = resp.headers.get("Content-Type", "application/octet-stream")
+    # Cloudinary: adicionar fl_attachment para forçar download
+    url = cf.url or ""
+    dl_url = url.replace("/raw/upload/", "/raw/upload/fl_attachment/") \
+             if "/raw/upload/" in url and "fl_attachment" not in url else url
 
-        r = make_response(data)
-        r.headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{urllib.request.quote(safe_name)}"
-        r.headers["Content-Type"] = ctype
-        r.headers["Content-Length"] = str(len(data))
+    try:
+        resp = _req.get(dl_url, stream=True, timeout=120,
+                        headers={"User-Agent": "Mozilla/5.0"})
+        resp.raise_for_status()
+        ctype = resp.headers.get("Content-Type", "application/octet-stream")
+        if ext == "pdf" and "pdf" not in ctype:
+            ctype = "application/pdf"
+
+        def _gen():
+            for chunk in resp.iter_content(chunk_size=32768):
+                if chunk: yield chunk
+
+        r = Response(stream_with_context(_gen()), content_type=ctype)
+        encoded = _req.utils.quote(safe_name)
+        r.headers["Content-Disposition"] = (
+            f'attachment; filename="{safe_name}"; filename*=UTF-8\'\'{encoded}'
+        )
         r.headers["Cache-Control"] = "no-store"
-        r.headers["X-Content-Type-Options"] = "nosniff"
+        if "Content-Length" in resp.headers:
+            r.headers["Content-Length"] = resp.headers["Content-Length"]
         return r
 
     except Exception as e:
         current_app.logger.error(f"painel_download error: {e}")
-        # Último recurso: redirecionar direto para a URL
-        return redirect(cf.url)
+        return redirect(dl_url)
 
 
 
@@ -399,42 +402,4 @@ Máximo de 3 parágrafos por resposta."""
         logging.error("Chatbot erro: %s", erro_msg)
         return jsonify({"resposta": "Desculpe, ocorreu um erro ao processar sua pergunta. Tente novamente em instantes.", "visitante": False})
 
-
-
-
-# ── Análise de Aplicação (cliente) ─────────────────────────────────────────
-
-@main_bp.route("/painel/analise_aplicacao/<int:file_id>")
-@login_required
-def painel_analise_aplicacao(file_id):
-    import urllib.request as _ur, zipfile, io, re, json as _json, math
-    import xml.etree.ElementTree as ET
-    from app.models.client_file import ClientFile
-
-    user = get_current_user()
-    cf = ClientFile.query.get_or_404(file_id)
-    if cf.user_id != user.id: abort(403)
-
-    ext = (cf.file_ext or "").lower().lstrip(".")
-    if ext not in ("kml", "kmz"):
-        return _json.dumps({"erro": "Arquivo não é KML/KMZ"}), 400, {"Content-Type": "application/json"}
-
-    try:
-        req = _ur.Request(cf.url, headers={"User-Agent": "Mozilla/5.0"})
-        with _ur.urlopen(req, timeout=60) as resp: raw = resp.read()
-    except Exception as e:
-        return _json.dumps({"erro": str(e)}), 500, {"Content-Type": "application/json"}
-
-    if ext == "kmz":
-        try:
-            with zipfile.ZipFile(io.BytesIO(raw)) as z:
-                kml_name = next((n for n in z.namelist() if n.endswith(".kml")), None)
-                raw = z.read(kml_name) if kml_name else b""
-        except Exception as e:
-            return _json.dumps({"erro": "Erro ao extrair KMZ: " + str(e)}), 500, {"Content-Type": "application/json"}
-
-    from app.routes.employee import _parse_kml_full
-    result, err = _parse_kml_full(raw)
-    if err: return _json.dumps({"erro": err}), 500, {"Content-Type": "application/json"}
-    return _json.dumps(result), 200, {"Content-Type": "application/json"}
 
