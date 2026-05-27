@@ -181,92 +181,99 @@ def painel_trocar_senha():
 @main_bp.route("/painel/download/<int:file_id>")
 @login_required
 def painel_download(file_id):
-    """Proxy de download — busca URL original e força attachment nos headers."""
-    import requests as _req
-    import re
+    """Proxy de download — sempre retorna o arquivo via servidor com attachment."""
+    import requests as _req, re, mimetypes
     from flask import Response, stream_with_context
     from app.models.client_file import ClientFile
 
     user = get_current_user()
-    cf = ClientFile.query.get_or_404(file_id)
+    cf   = ClientFile.query.get_or_404(file_id)
     if cf.user_id != user.id:
         abort(403)
 
+    # ── Nome seguro para o header ────────────────────────────────────────────
     name = cf.original_filename or cf.title or "arquivo"
     ext  = (cf.file_ext or "").lower()
     if ext and not name.lower().endswith(f".{ext}"):
         name = f"{name}.{ext}"
     safe_name = re.sub(r'[\x00-\x1f"\\]', "", name).strip() or "arquivo"
+    encoded   = _req.utils.quote(safe_name)
 
-    # URL original — sem modificar (fl_attachment não funciona em raw no Cloudinary)
-    url = cf.url or ""
+    # ── Determinar URL para baixar (original ou assinada) ────────────────────
+    def _get_signed_url(original_url):
+        """Gera URL assinada via SDK Cloudinary (sem fl_attachment)."""
+        try:
+            from app.utils.storage import _init_cloudinary
+            from cloudinary.utils import cloudinary_url as _cu
+            _init_cloudinary()
+            pid = cf.public_id or ""
+            if not pid and "/upload/" in original_url:
+                m = re.search(r"/upload/(?:v\d+/)?(.+)$", original_url)
+                if m:
+                    pid = re.sub(r"\.[^.]+$", "", m.group(1))
+            if not pid:
+                return None
+            signed, _ = _cu(pid, resource_type="raw", sign_url=True)
+            return signed
+        except Exception as e2:
+            current_app.logger.warning(f"signed URL generation failed: {e2}")
+            return None
 
-    try:
-        resp = _req.get(
-            url, stream=True, timeout=120,
+    def _proxy(fetch_url, ctype):
+        """Faz streaming do arquivo via servidor com headers de attachment."""
+        r = _req.get(
+            fetch_url, stream=True, timeout=120,
             headers={"User-Agent": "CombateRasante/1.0"},
             allow_redirects=True,
         )
-        resp.raise_for_status()
+        r.raise_for_status()
 
-        # MIME type correto
-        ctype = resp.headers.get("Content-Type", "application/octet-stream")
+        # Corrigir MIME type
+        ct = r.headers.get("Content-Type", "application/octet-stream")
         if ext == "pdf":
-            ctype = "application/pdf"
-        elif "octet-stream" in ctype and ext:
-            import mimetypes
+            ct = "application/pdf"
+        elif "octet-stream" in ct and ext:
             guessed, _ = mimetypes.guess_type(name)
             if guessed:
-                ctype = guessed
+                ct = guessed
 
         def _gen():
-            for chunk in resp.iter_content(chunk_size=65536):
+            for chunk in r.iter_content(chunk_size=65536):
                 if chunk:
                     yield chunk
 
-        r = Response(stream_with_context(_gen()), content_type=ctype)
-        encoded = _req.utils.quote(safe_name)
-        r.headers["Content-Disposition"] = (
+        resp = Response(stream_with_context(_gen()), content_type=ct)
+        resp.headers["Content-Disposition"] = (
             f'attachment; filename="{safe_name}"; filename*=UTF-8\'\'{encoded}'
         )
-        r.headers["Cache-Control"] = "no-store, no-cache"
-        r.headers["X-Content-Type-Options"] = "nosniff"
-        if "Content-Length" in resp.headers:
-            r.headers["Content-Length"] = resp.headers["Content-Length"]
-        return r
+        resp.headers["Cache-Control"]        = "no-store"
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        if "Content-Length" in r.headers:
+            resp.headers["Content-Length"] = r.headers["Content-Length"]
+        return resp
 
+    url = cf.url or ""
+
+    # ── Tentativa 1: URL original ─────────────────────────────────────────────
+    try:
+        return _proxy(url, ext)
     except _req.exceptions.HTTPError as e:
         status = e.response.status_code if e.response is not None else 0
-        current_app.logger.error(f"painel_download HTTP {status}: {e} url={url}")
-        if status in (401, 403):
-            # Arquivo privado — gerar URL assinada via SDK Cloudinary
-            try:
-                from app.utils.storage import _init_cloudinary
-                import cloudinary
-                _init_cloudinary()
-                from cloudinary.utils import cloudinary_url
-                # Extrair public_id a partir da URL
-                pid = cf.public_id or ""
-                if not pid and "/upload/" in url:
-                    # Extrair public_id da URL: tudo após /upload/v.../
-                    import re as _re
-                    m = _re.search(r"/upload/(?:v\d+/)?(.+)$", url)
-                    if m:
-                        pid = _re.sub(r"\.[^.]+$", "", m.group(1))
-                if pid:
-                    signed, _ = cloudinary_url(
-                        pid, resource_type="raw",
-                        sign_url=True, expires_at=3600,
-                        attachment=True,
-                    )
-                    return redirect(signed)
-            except Exception as e2:
-                current_app.logger.error(f"signed URL error: {e2}")
-        return redirect(url)
+        current_app.logger.info(f"painel_download: original URL returned {status}, trying signed URL")
     except Exception as e:
-        current_app.logger.error(f"painel_download error: {e} url={url}")
-        return redirect(url)
+        current_app.logger.warning(f"painel_download: original URL failed ({e}), trying signed URL")
 
+    # ── Tentativa 2: URL assinada (para arquivos privados no Cloudinary) ──────
+    signed = _get_signed_url(url)
+    if signed:
+        try:
+            return _proxy(signed, ext)
+        except Exception as e:
+            current_app.logger.error(f"painel_download: signed URL also failed: {e}")
+
+    # ── Último recurso: redirecionar (melhor que nada) ────────────────────────
+    current_app.logger.error(f"painel_download: all methods failed for file {file_id}")
+    return redirect(signed or url)
 
 
 @main_bp.route("/painel/download-pasta")
