@@ -493,32 +493,58 @@ function setup(d){
   }
   setTimeout(function(){try{_map.invalidateSize();}catch(e){}},200);
 
-  /* ── Construir steps: GPS (detecção por retângulo) + Phase 2 para tiros perdidos ── */
+  /* ── Construir steps ──────────────────────────────────────────────────────
+     Detecção por TRAVERSAL COMPLETO: tiro só marca quando GPS cobre
+     ≥80% do comprimento (entrada→saída). Evita marcar ao só passar perto. */
+
   _steps=[];
   var detectRects=tiros.map(_makeDetectRect);
-  var coveredTiros={};
-  var lastTi=-1;
 
-  /* FASE 1: GPS real com detecção por retângulo */
-  var samp2=Math.max(1,Math.floor(approach.length/2000));
+  /* Para cada tiro: rastrear progresso mín/máx ao longo do eixo spray */
+  var tiProg=tiros.map(function(t){
+    if(!t||!t.entry||!t.exit)return null;
+    var e=t.entry,x=t.exit,dLa=x[0]-e[0],dLo=x[1]-e[1];
+    var L=Math.sqrt(dLa*dLa+dLo*dLo)||1;
+    return{e:e,axLa:dLa/L,axLo:dLo/L,L:L,mn:99,mx:-99};
+  });
+
+  var samp=Math.max(1,Math.floor(approach.length/2000));
   var appS=[];
-  for(var ai2=0;ai2<approach.length;ai2+=samp2)appS.push(approach[ai2]);
+  for(var ai=0;ai<approach.length;ai+=samp)appS.push(approach[ai]);
   if(approach.length&&appS[appS.length-1]!==approach[approach.length-1])
     appS.push(approach[approach.length-1]);
 
+  /* Primeira varredura: calcular cobertura real de cada tiro */
+  appS.forEach(function(p){
+    var pt=turf.point([p[1],p[0]]);
+    tiros.forEach(function(t,i){
+      if(!detectRects[i]||!tiProg[i])return;
+      try{if(!turf.booleanPointInPolygon(pt,detectRects[i]))return;}catch(ex){return;}
+      var pr=tiProg[i],dLa=p[0]-pr.e[0],dLo=p[1]-pr.e[1];
+      var proj=(dLa*pr.axLa+dLo*pr.axLo)/pr.L;
+      if(proj<pr.mn)pr.mn=proj;
+      if(proj>pr.mx)pr.mx=proj;
+    });
+  });
+
+  /* Tiros com cobertura ≥80%: realmente foram percorridos */
+  var coveredTiros={};
+  tiProg.forEach(function(pr,i){
+    if(pr&&(pr.mx-pr.mn)>=0.80)coveredTiros[i]=true;
+  });
+
+  /* Segunda varredura: construir steps com detecção apenas para tiros cobertos */
+  var lastTi=-1;
   appS.forEach(function(p){
     var pt=turf.point([p[1],p[0]]),inTi=-1;
     try{
-      if(lastTi>=0&&detectRects[lastTi]&&turf.booleanPointInPolygon(pt,detectRects[lastTi])){
-        inTi=lastTi;
-      } else {
-        for(var i=0;i<detectRects.length;i++){
-          if(detectRects[i]&&turf.booleanPointInPolygon(pt,detectRects[i])){inTi=i;break;}
-        }
-      }
+      if(lastTi>=0&&coveredTiros[lastTi]&&detectRects[lastTi]&&
+         turf.booleanPointInPolygon(pt,detectRects[lastTi])){inTi=lastTi;}
+      else{for(var i=0;i<detectRects.length;i++){
+        if(coveredTiros[i]&&detectRects[i]&&turf.booleanPointInPolygon(pt,detectRects[i])){inTi=i;break;}
+      }}
     }catch(ex){}
     lastTi=inTi;
-    if(inTi>=0)coveredTiros[inTi]=true;
     _steps.push({pos:[p[0],p[1]],ti:inTi,in:(inTi>=0)});
   });
 
@@ -531,10 +557,8 @@ function setup(d){
     if(!t||!t.entry||!t.exit)return;
     var en=t.entry,ex=t.exit;
     if(prev&&_d(prev,t.exit)<_d(prev,t.entry)){en=t.exit;ex=t.entry;}
-    if(prev){
-      for(var k=1;k<=6;k++){var r=k/6;
-        _steps.push({pos:[prev[0]+(en[0]-prev[0])*r,prev[1]+(en[1]-prev[1])*r],ti:i,in:false});}
-    }
+    if(prev){for(var k=1;k<=6;k++){var r=k/6;
+      _steps.push({pos:[prev[0]+(en[0]-prev[0])*r,prev[1]+(en[1]-prev[1])*r],ti:i,in:false});}}
     for(var k=1;k<=F;k++){var r=k/F;
       _steps.push({pos:[en[0]+(ex[0]-en[0])*r,en[1]+(ex[1]-en[1])*r],ti:i,in:(r>=0.5)});}
     prev=ex;
@@ -544,7 +568,6 @@ function setup(d){
   _inCnt=new Array(tiros.length).fill(0);
   _doneCnt=new Array(tiros.length).fill(0);
   _steps.forEach(function(s){if(s&&s.in&&s.ti>=0)_inCnt[s.ti]++;});
-
   if(_steps.length>0){
     try{_plane=L.marker([_steps[0].pos[0],_steps[0].pos[1]],{icon:amIcon(0),zIndexOffset:2000}).addTo(_map);}catch(e){}
   }
