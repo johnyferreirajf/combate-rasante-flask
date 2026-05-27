@@ -298,7 +298,7 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANÁLISE DE APLICAÇÃO AÉREA - CORREÇÃO DE DISTÂNCIA E TRANSPARÊNCIA
+   ANÁLISE DE APLICAÇÃO AÉREA - CORES SÓLIDAS E FORTES (SEM TRANSPARÊNCIA)
 ═══════════════════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
@@ -308,7 +308,7 @@ var _playing=false, _step=0, _steps=[], _total=0;
 var _doneCnt=[], _inCnt=[];
 
 function amIcon(hdg){
-  var c='#22c55e', w='#ffffff', y='#fbbf24';
+  var c='#15803d', w='#ffffff', y='#fbbf24';
   var svg='<svg viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">'
     +'<ellipse cx="40" cy="52" rx="7" ry="32" fill="'+c+'" stroke="'+w+'" stroke-width="1.5"/>'
     +'<ellipse cx="40" cy="22" rx="6" ry="10" fill="'+y+'" stroke="#f59e0b" stroke-width="1"/>'
@@ -329,7 +329,7 @@ function amIcon(hdg){
     +'</svg>';
   return L.divIcon({
     html:'<div style="transform:rotate('+hdg+'deg);width:60px;height:60px;'
-        +'transform-origin:30px 40px;filter:drop-shadow(0 0 6px rgba(34,197,94,.8));">'+svg+'</div>',
+        +'transform-origin:30px 40px;filter:drop-shadow(0 0 6px rgba(21,128,61,.8));">'+svg+'</div>',
     iconSize:[60,60], iconAnchor:[30,40], className:''
   });
 }
@@ -385,7 +385,6 @@ function buildSteps(tiros, approach){
       steps.push({pos:[p[0], p[1]], ti:Math.max(0,inTi), in:(inTi>=0)});
     });
 
-    // --- LÓGICA DE FILTRAGEM POR DISTÂNCIA FÍSICA ---
     var currentTi = -1;
     var segmentStart = 0;
     for (var i = 0; i <= steps.length; i++) {
@@ -396,13 +395,8 @@ function buildSteps(tiros, approach){
         if (currentTi !== -1 && segmentStart < i) {
           var p1 = steps[segmentStart].pos;
           var p2 = steps[i - 1].pos;
-          
-          // Mede a distância entre o ponto em que o avião entrou e saiu do tiro
           var dist = turf.distance(turf.point([p1[1], p1[0]]), turf.point([p2[1], p2[0]]), {units: 'meters'});
-          
-          // Se andou menos de 100 metros, foi apenas um cruzamento transversal (manobra)
-          // Portanto, anula esses pontos (não marca como aplicação)
-          if (dist < 100) {
+          if (dist < 45) {
             for (var j = segmentStart; j < i; j++) {
               steps[j].in = false;
             }
@@ -431,10 +425,11 @@ function amGoTo(targetStep){
     if(_inCnt[idx] > 0 && _doneCnt[idx] > 0){
       var pct = _doneCnt[idx] / _inCnt[idx];
       _polys[idx].setStyle({
-        fillOpacity: 0.6 * pct,  // Inicia 100% invisível e cresce a cor
-        opacity: (pct > 0.05) ? 0.8 : 0, // A borda só aparece se ele já entrou no tiro de verdade
-        color: '#22c55e', 
-        weight: 1
+        fillOpacity: (pct > 0.05) ? 1.0 : 0,  // TOTALMENTE SÓLIDO (1.0)
+        opacity: (pct > 0.05) ? 1.0 : 0,      // BORDA TOTALMENTE SÓLIDA
+        color: '#15803d',                     // VERDE FORTE ESCURO
+        fillColor: '#15803d',                 // VERDE FORTE ESCURO
+        weight: 1.5
       });
     } else {
       if(_polys[idx]) _polys[idx].setStyle({fillOpacity: 0, opacity: 0, weight: 0});
@@ -445,7 +440,13 @@ function amGoTo(targetStep){
      var applied1 = _inCnt[over.ti1] > 0 && (_doneCnt[over.ti1] / _inCnt[over.ti1]) > 0.05;
      var applied2 = _inCnt[over.ti2] > 0 && (_doneCnt[over.ti2] / _inCnt[over.ti2]) > 0.05;
      if(applied1 && applied2){
-        over.layer.setStyle({fillOpacity: 0.8, weight: 0.5, opacity: 1});
+        over.layer.setStyle({
+          fillOpacity: 1.0,         // VERMELHO TOTALMENTE SÓLIDO
+          opacity: 1.0,             // BORDA DO VERMELHO SÓLIDA
+          color: '#b91c1c',         // VERMELHO FORTE ESCURO
+          fillColor: '#b91c1c',     // VERMELHO FORTE ESCURO
+          weight: 1.5
+        });
      } else {
         over.layer.setStyle({fillOpacity: 0, weight: 0, opacity: 0});
      }
@@ -546,9 +547,9 @@ function setup(d){
     try{
       t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});
       var poly=L.polygon(t.polygon.map(function(p){return[p[0],p[1]];}),{
-        color: '#22c55e',
+        color: '#15803d',
         weight: 0,
-        fillColor: '#22c55e',
+        fillColor: '#15803d',
         opacity: 0,
         fillOpacity: 0
       }).addTo(_map);
@@ -560,7 +561,7 @@ function setup(d){
     try{
       window._amTrackLayer=L.polyline(
         approach.map(function(p){return[p[0],p[1]];}),
-        {color:'#ffffff', weight:1, opacity:0.8}
+        {color:'#ffffff', weight:1.2, opacity:0.9}
       ).addTo(_map);
     }catch(e){}
   }
@@ -597,7 +598,7 @@ function setup(d){
           var inter = turf.intersect(turfPolys[i], turfPolys[j]);
           if(inter) {
             var overLyr = L.geoJSON(inter, {
-              style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0, weight: 0, opacity: 0, zIndex: 400}
+              style: {color: '#b91c1c', fillColor: '#b91c1c', fillOpacity: 0, weight: 0, opacity: 0, zIndex: 400}
             }).addTo(_map);
             _overPolys.push(overLyr);
             _overPolysData.push({ layer: overLyr, ti1: i, ti2: j });
@@ -641,15 +642,15 @@ function tick(){
   for(var k=0; k<spt && _step<_total; k++){
     var s=_steps[_step];
     
-    // ANIMAÇÃO DE PREENCHIMENTO ZERADA
     if(s && s.in && _polys[s.ti] && _inCnt[s.ti] > 0){
       _doneCnt[s.ti]++;
       var pct = _doneCnt[s.ti] / _inCnt[s.ti];
       _polys[s.ti].setStyle({
-        fillOpacity: 0.6 * pct, // Sem transparência inicial, vai direto de 0 a 0.6
-        opacity: (pct > 0.05) ? 0.8 : 0, 
-        color: '#22c55e', 
-        weight: 1
+        fillOpacity: (pct > 0.05) ? 1.0 : 0,  // 100% SÓLIDO AO MARCAR
+        opacity: (pct > 0.05) ? 1.0 : 0,
+        color: '#15803d', 
+        fillColor: '#15803d',
+        weight: 1.5
       });
     }
     
@@ -663,7 +664,13 @@ function tick(){
      var app1 = _inCnt[over.ti1] > 0 && (_doneCnt[over.ti1] / _inCnt[over.ti1]) > 0.05;
      var app2 = _inCnt[over.ti2] > 0 && (_doneCnt[over.ti2] / _inCnt[over.ti2]) > 0.05;
      if(app1 && app2) {
-        over.layer.setStyle({fillOpacity: 0.8, weight: 0.5, opacity: 1});
+        over.layer.setStyle({
+          fillOpacity: 1.0,  // VERMELHO SÓLIDO NO TICK
+          opacity: 1.0, 
+          color: '#b91c1c',
+          fillColor: '#b91c1c',
+          weight: 1.5
+        });
      }
   });
   
