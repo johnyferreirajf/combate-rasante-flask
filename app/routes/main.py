@@ -202,8 +202,8 @@ def painel_download(file_id):
     # ── Determinar URL para baixar (original ou assinada) ────────────────────
     def _get_signed_url(original_url):
         """Gera URL autenticada via Cloudinary API (private_download_url).
-        Para raw resources o public_id já inclui a extensão — não remover,
-        e passar format='' para evitar extensão duplicada (404)."""
+        Para raw resources, result['public_id'] inclui a extensão.
+        private_download_url exige pid SEM extensão + format COM extensão."""
         try:
             import time
             from app.utils.storage import _init_cloudinary
@@ -213,11 +213,14 @@ def painel_download(file_id):
             if not pid and "/upload/" in original_url:
                 m = re.search(r"/upload/(?:v\d+/)?(.+)$", original_url)
                 if m:
-                    pid = m.group(1)          # manter extensão no public_id
+                    pid = m.group(1)
             if not pid:
                 return None
-            # format="" porque a extensão já faz parte do public_id
-            signed = _pdu(pid, "", resource_type="raw",
+            # Separar public_id da extensão (private_download_url precisa assim)
+            m_ext = re.search(r"\.([^./]+)$", pid)
+            file_fmt = m_ext.group(1) if m_ext else (ext or "")
+            pid_clean = pid[:m_ext.start()] if m_ext else pid
+            signed = _pdu(pid_clean, file_fmt, resource_type="raw",
                           expires_at=int(time.time()) + 300)
             return signed
         except Exception as e2:
@@ -375,7 +378,7 @@ def painel_analise_aplicacao(file_id):
 
     def _get_signed_url():
         """Gera URL autenticada via Cloudinary API (private_download_url).
-        Para raw resources o public_id já inclui a extensão — não remover."""
+        public_id do banco inclui extensão; private_download_url precisa separado."""
         try:
             import time
             from app.utils.storage import _init_cloudinary
@@ -385,11 +388,14 @@ def painel_analise_aplicacao(file_id):
             if not pid and "/upload/" in url:
                 m = re.search(r"/upload/(?:v\d+/)?(.+)$", url)
                 if m:
-                    pid = m.group(1)          # manter extensão
+                    pid = m.group(1)
             if not pid:
                 return None
-            # format="" porque a extensão já faz parte do public_id
-            signed = _pdu(pid, "", resource_type="raw",
+            m_ext = re.search(r"\.([^./]+)$", pid)
+            fname_lower = (cf.original_filename or "").lower()
+            file_fmt = m_ext.group(1) if m_ext else ("kmz" if fname_lower.endswith(".kmz") else "kml")
+            pid_clean = pid[:m_ext.start()] if m_ext else pid
+            signed = _pdu(pid_clean, file_fmt, resource_type="raw",
                           expires_at=int(time.time()) + 300)
             return signed
         except Exception as e2:
