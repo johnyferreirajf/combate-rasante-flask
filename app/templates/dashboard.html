@@ -298,7 +298,7 @@
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANÁLISE DE APLICAÇÃO AÉREA - CORREÇÃO DEFINITIVA (MANOBRAS E SOBREPOSIÇÃO)
+   ANÁLISE DE APLICAÇÃO AÉREA - CORREÇÃO DE DISTÂNCIA E TRANSPARÊNCIA
 ═══════════════════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
@@ -385,8 +385,7 @@ function buildSteps(tiros, approach){
       steps.push({pos:[p[0], p[1]], ti:Math.max(0,inTi), in:(inTi>=0)});
     });
 
-    // --- LÓGICA DE FILTRAGEM DE MANOBRAS ---
-    // Elimina trajetos muito curtos (cruzamento do avião) por cima de um tiro
+    // --- LÓGICA DE FILTRAGEM POR DISTÂNCIA FÍSICA ---
     var currentTi = -1;
     var segmentStart = 0;
     for (var i = 0; i <= steps.length; i++) {
@@ -394,11 +393,19 @@ function buildSteps(tiros, approach){
       var ti = (s && s.in) ? s.ti : -1;
       
       if (ti !== currentTi) {
-        var segmentLength = i - segmentStart;
-        // Se ficou menos de 6 pontos (aprox. 5-6 seg) dentro do tiro, anula a aplicação
-        if (currentTi !== -1 && segmentLength < 6) {
-          for (var j = segmentStart; j < i; j++) {
-            steps[j].in = false;
+        if (currentTi !== -1 && segmentStart < i) {
+          var p1 = steps[segmentStart].pos;
+          var p2 = steps[i - 1].pos;
+          
+          // Mede a distância entre o ponto em que o avião entrou e saiu do tiro
+          var dist = turf.distance(turf.point([p1[1], p1[0]]), turf.point([p2[1], p2[0]]), {units: 'meters'});
+          
+          // Se andou menos de 45 metros, foi apenas um cruzamento transversal (manobra)
+          // Portanto, anula esses pontos (não marca como aplicação)
+          if (dist < 45) {
+            for (var j = segmentStart; j < i; j++) {
+              steps[j].in = false;
+            }
           }
         }
         currentTi = ti;
@@ -409,12 +416,10 @@ function buildSteps(tiros, approach){
   return steps;
 }
 
-// SINCRONIZADOR DE ESTADO (Resolve o bug de ir pra frente/trás na barra)
 function amGoTo(targetStep){
   _step = Math.max(0, Math.min(targetStep, _total));
   _doneCnt.fill(0);
   
-  // Recalcula progresso exato até o ponto clicado
   for(var i=0; i<_step; i++){
     var s = _steps[i];
     if(s && s.in && s.ti !== undefined){
@@ -422,25 +427,21 @@ function amGoTo(targetStep){
     }
   }
 
-  // Atualiza cores de acordo com o recálculo
   _tiros.forEach(function(t, idx){
     if(_inCnt[idx] > 0 && _doneCnt[idx] > 0){
       var pct = _doneCnt[idx] / _inCnt[idx];
       _polys[idx].setStyle({
-        fillOpacity: 0.18 + pct * 0.82, 
-        opacity: 1, 
+        fillOpacity: 0.6 * pct,  // Inicia 100% invisível e cresce a cor
+        opacity: (pct > 0.05) ? 0.8 : 0, // A borda só aparece se ele já entrou no tiro de verdade
         color: '#22c55e', 
         weight: 1
       });
     } else {
-      // Se não passou ainda, mantém invisível
       if(_polys[idx]) _polys[idx].setStyle({fillOpacity: 0, opacity: 0, weight: 0});
     }
   });
 
-  // --- REVELAR SOBREPOSIÇÕES DINAMICAMENTE NO SEEK ---
   _overPolysData.forEach(function(over){
-     // Verifica se ambas as faixas já começaram a ser aplicadas
      var applied1 = _inCnt[over.ti1] > 0 && (_doneCnt[over.ti1] / _inCnt[over.ti1]) > 0.05;
      var applied2 = _inCnt[over.ti2] > 0 && (_doneCnt[over.ti2] / _inCnt[over.ti2]) > 0.05;
      if(applied1 && applied2){
@@ -535,12 +536,11 @@ function setup(d){
   if(_plane){try{_map.removeLayer(_plane);}catch(e){}_plane=null;}
   _polys.forEach(function(p){try{if(p)_map.removeLayer(p);}catch(e){}});_polys=[];
   _overPolys.forEach(function(p){try{_map.removeLayer(p);}catch(e){}});_overPolys=[];
-  _overPolysData = []; // Zera os dados de interseção
+  _overPolysData = [];
   try{if(window._amTrackLayer)_map.removeLayer(window._amTrackLayer);}catch(e){}
 
   var allPts=[];
   
-  // INICIALIZAÇÃO INVISÍVEL
   tiros.forEach(function(t){
     if(!t||!t.polygon||t.polygon.length<3){_polys.push(null);return;}
     try{
@@ -549,14 +549,13 @@ function setup(d){
         color: '#22c55e',
         weight: 0,
         fillColor: '#22c55e',
-        opacity: 0,        // Começa invisível
-        fillOpacity: 0     // Começa invisível
+        opacity: 0,
+        fillOpacity: 0
       }).addTo(_map);
       _polys.push(poly);
     }catch(e){_polys.push(null);}
   });
 
-  // RASTRO BRANCO FINO
   if(approach.length>1){
     try{
       window._amTrackLayer=L.polyline(
@@ -597,7 +596,6 @@ function setup(d){
         try {
           var inter = turf.intersect(turfPolys[i], turfPolys[j]);
           if(inter) {
-            // --- MUDA AQUI: Overlay inicia totalmente invisível (opacity 0) ---
             var overLyr = L.geoJSON(inter, {
               style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0, weight: 0, opacity: 0, zIndex: 400}
             }).addTo(_map);
@@ -643,13 +641,13 @@ function tick(){
   for(var k=0; k<spt && _step<_total; k++){
     var s=_steps[_step];
     
-    // ANIMAÇÃO DE PREENCHIMENTO: Só pinta se estiver em cima E for trajeto válido
+    // ANIMAÇÃO DE PREENCHIMENTO ZERADA
     if(s && s.in && _polys[s.ti] && _inCnt[s.ti] > 0){
       _doneCnt[s.ti]++;
       var pct = _doneCnt[s.ti] / _inCnt[s.ti];
       _polys[s.ti].setStyle({
-        fillOpacity: 0.18 + pct * 0.82, 
-        opacity: 1, 
+        fillOpacity: 0.6 * pct, // Sem transparência inicial, vai direto de 0 a 0.6
+        opacity: (pct > 0.05) ? 0.8 : 0, 
         color: '#22c55e', 
         weight: 1
       });
@@ -661,7 +659,6 @@ function tick(){
     lastS=s; _step++;
   }
 
-  // --- ATIVAR SOBREPOSIÇÃO DURANTE O VOO NORMAL ---
   _overPolysData.forEach(function(over){
      var app1 = _inCnt[over.ti1] > 0 && (_doneCnt[over.ti1] / _inCnt[over.ti1]) > 0.05;
      var app2 = _inCnt[over.ti2] > 0 && (_doneCnt[over.ti2] / _inCnt[over.ti2]) > 0.05;
