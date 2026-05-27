@@ -369,11 +369,16 @@ function buildSteps(tiros, approach){
   var steps = [];
   var F = 50; /* passos por tiro */
 
-  /* ── FASE 1: GPS de chegada ── */
-  /* Usa apenas os últimos 300 pontos (aprox. 3km) para chegar ao campo */
-  var app = approach && approach.length > 1
-            ? approach.slice(-300) : [];
-  app.forEach(function(p){
+  /* ── FASE 1: GPS completo da base ao campo (todo o trajeto real) ── */
+  /* Amostrar se muito denso (máx 2000 pts para performance) */
+  var app = approach || [];
+  var samp = Math.max(1, Math.floor(app.length / 2000));
+  var appS = [];
+  for(var ai=0; ai<app.length; ai+=samp) appS.push(app[ai]);
+  if(app.length>0 && appS[appS.length-1]!==app[app.length-1])
+    appS.push(app[app.length-1]);  /* garantir último ponto */
+
+  appS.forEach(function(p){
     steps.push({pos:[p[0],p[1]], ti:-1, in:false});
   });
 
@@ -384,11 +389,10 @@ function buildSteps(tiros, approach){
   tiros.forEach(function(t, i){
     if(!t||!t.entry||!t.exit) return;
     var en=t.entry, ex=t.exit;
-    /* Escolher direção mais próxima */
     if(prev && _d(prev,t.exit) < _d(prev,t.entry)){
       en=t.exit; ex=t.entry;
     }
-    /* Trânsito até a entrada do tiro */
+    /* Trânsito até a entrada do tiro (sem aplicação) */
     if(prev){
       for(var k=1;k<=8;k++){
         var r=k/8;
@@ -397,15 +401,12 @@ function buildSteps(tiros, approach){
                     ti:i, in:false});
       }
     }
-    /* Percurso do tiro: in:true só após 50% do tiro percorrido
-       → o tiro fica verde quando o avião passa pela metade          */
+    /* Percurso do tiro: fica verde após 50% percorrido */
     for(var k=1;k<=F;k++){
       var r=k/F;
       steps.push({pos:[en[0]+(ex[0]-en[0])*r,
                        en[1]+(ex[1]-en[1])*r],
-                  ti:i,
-                  in:(r >= 0.5)   /* aplica ao passar 50% do tiro */
-                 });
+                  ti:i, in:(r >= 0.5)});
     }
     prev = ex;
   });
