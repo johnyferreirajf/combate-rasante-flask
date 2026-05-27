@@ -620,43 +620,47 @@ function areaHa(pts){
 /* Constrói os passos de animação precisos acompanhando a linha do GPS real completa */
 function buildSteps(tiros, approach){
   var steps = [];
+  var F = 50; /* passos por tiro */
 
-  /* FASE 1: GPS de chegada — avião segue rastro real, SEM marcar tiros */
-  if(approach && approach.length > 1){
-    approach.forEach(function(p){
-      steps.push({pos:[p[0],p[1]], ti:-1, in:false});
-    });
-  }
+  /* ── FASE 1: GPS de chegada ── */
+  /* Usa apenas os últimos 300 pontos (aprox. 3km) para chegar ao campo */
+  var app = approach && approach.length > 1
+            ? approach.slice(-300) : [];
+  app.forEach(function(p){
+    steps.push({pos:[p[0],p[1]], ti:-1, in:false});
+  });
 
-  /* FASE 2: Sequência dos tiros — marcação real pelo KMZ (sem GPS) */
-  var F=40;
-  function _dist(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return dy*dy+dx*dx;}
-  var prevExit=steps.length>0?steps[steps.length-1].pos:null;
+  /* ── FASE 2: Sequência dos tiros pelo KMZ ── */
+  function _d(a,b){var dy=a[0]-b[0],dx=a[1]-b[1];return dy*dy+dx*dx;}
+  var prev = steps.length > 0 ? steps[steps.length-1].pos : null;
 
-  tiros.forEach(function(t,i){
+  tiros.forEach(function(t, i){
     if(!t||!t.entry||!t.exit) return;
-    var entry=t.entry, exitPt=t.exit;
-    if(prevExit && _dist(prevExit,t.exit)<_dist(prevExit,t.entry)){
-      entry=t.exit; exitPt=t.entry;
+    var en=t.entry, ex=t.exit;
+    /* Escolher direção mais próxima */
+    if(prev && _d(prev,t.exit) < _d(prev,t.entry)){
+      en=t.exit; ex=t.entry;
     }
-    /* Trânsito até a entrada (sem aplicação) */
-    if(prevExit){
-      var T=8;
-      for(var k=1;k<=T;k++){
-        var r=k/T;
-        steps.push({pos:[prevExit[0]+(entry[0]-prevExit[0])*r,
-                         prevExit[1]+(entry[1]-prevExit[1])*r],
-                    ti:i,in:false});
+    /* Trânsito até a entrada do tiro */
+    if(prev){
+      for(var k=1;k<=8;k++){
+        var r=k/8;
+        steps.push({pos:[prev[0]+(en[0]-prev[0])*r,
+                         prev[1]+(en[1]-prev[1])*r],
+                    ti:i, in:false});
       }
     }
-    /* Passagem de pulverização (aplicação real) */
+    /* Percurso do tiro: in:true só após 50% do tiro percorrido
+       → o tiro fica verde quando o avião passa pela metade          */
     for(var k=1;k<=F;k++){
       var r=k/F;
-      steps.push({pos:[entry[0]+(exitPt[0]-entry[0])*r,
-                       entry[1]+(exitPt[1]-entry[1])*r],
-                  ti:i,in:true});
+      steps.push({pos:[en[0]+(ex[0]-en[0])*r,
+                       en[1]+(ex[1]-en[1])*r],
+                  ti:i,
+                  in:(r >= 0.5)   /* aplica ao passar 50% do tiro */
+                 });
     }
-    prevExit=exitPt;
+    prev = ex;
   });
   return steps;
 }
