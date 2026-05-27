@@ -296,18 +296,14 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
-
 <script>
 /* ═══════════════════════════════════════════════════════════════════════════
-   ANÁLISE DE APLICAÇÃO AÉREA - CORREÇÃO DEFINITIVA
+   ANÁLISE DE APLICAÇÃO AÉREA - CORREÇÃO DEFINITIVA (MANOBRAS E SOBREPOSIÇÃO)
 ═══════════════════════════════════════════════════════════════════════════ */
 (function(){
 'use strict';
 
-var _map=null, _tiros=[], _polys=[], _overPolys=[], _plane=null, _timer=null;
+var _map=null, _tiros=[], _polys=[], _overPolys=[], _overPolysData=[], _plane=null, _timer=null;
 var _playing=false, _step=0, _steps=[], _total=0;
 var _doneCnt=[], _inCnt=[];
 
@@ -388,6 +384,27 @@ function buildSteps(tiros, approach){
       lastTi = inTi;
       steps.push({pos:[p[0], p[1]], ti:Math.max(0,inTi), in:(inTi>=0)});
     });
+
+    // --- LÓGICA DE FILTRAGEM DE MANOBRAS ---
+    // Elimina trajetos muito curtos (cruzamento do avião) por cima de um tiro
+    var currentTi = -1;
+    var segmentStart = 0;
+    for (var i = 0; i <= steps.length; i++) {
+      var s = steps[i];
+      var ti = (s && s.in) ? s.ti : -1;
+      
+      if (ti !== currentTi) {
+        var segmentLength = i - segmentStart;
+        // Se ficou menos de 6 pontos (aprox. 5-6 seg) dentro do tiro, anula a aplicação
+        if (currentTi !== -1 && segmentLength < 6) {
+          for (var j = segmentStart; j < i; j++) {
+            steps[j].in = false;
+          }
+        }
+        currentTi = ti;
+        segmentStart = i;
+      }
+    }
   }
   return steps;
 }
@@ -417,8 +434,20 @@ function amGoTo(targetStep){
       });
     } else {
       // Se não passou ainda, mantém invisível
-      if(_polys[idx]) _polys[idx].setStyle({fillOpacity: 0, opacity: 0});
+      if(_polys[idx]) _polys[idx].setStyle({fillOpacity: 0, opacity: 0, weight: 0});
     }
+  });
+
+  // --- REVELAR SOBREPOSIÇÕES DINAMICAMENTE NO SEEK ---
+  _overPolysData.forEach(function(over){
+     // Verifica se ambas as faixas já começaram a ser aplicadas
+     var applied1 = _inCnt[over.ti1] > 0 && (_doneCnt[over.ti1] / _inCnt[over.ti1]) > 0.05;
+     var applied2 = _inCnt[over.ti2] > 0 && (_doneCnt[over.ti2] / _inCnt[over.ti2]) > 0.05;
+     if(applied1 && applied2){
+        over.layer.setStyle({fillOpacity: 0.8, weight: 0.5, opacity: 1});
+     } else {
+        over.layer.setStyle({fillOpacity: 0, weight: 0, opacity: 0});
+     }
   });
 
   var idx = Math.min(_step, _total - 1);
@@ -506,6 +535,7 @@ function setup(d){
   if(_plane){try{_map.removeLayer(_plane);}catch(e){}_plane=null;}
   _polys.forEach(function(p){try{if(p)_map.removeLayer(p);}catch(e){}});_polys=[];
   _overPolys.forEach(function(p){try{_map.removeLayer(p);}catch(e){}});_overPolys=[];
+  _overPolysData = []; // Zera os dados de interseção
   try{if(window._amTrackLayer)_map.removeLayer(window._amTrackLayer);}catch(e){}
 
   var allPts=[];
@@ -517,7 +547,7 @@ function setup(d){
       t.polygon.forEach(function(p){if(p&&p.length>=2)allPts.push([p[0],p[1]]);});
       var poly=L.polygon(t.polygon.map(function(p){return[p[0],p[1]];}),{
         color: '#22c55e',
-        weight: 1,
+        weight: 0,
         fillColor: '#22c55e',
         opacity: 0,        // Começa invisível
         fillOpacity: 0     // Começa invisível
@@ -567,11 +597,12 @@ function setup(d){
         try {
           var inter = turf.intersect(turfPolys[i], turfPolys[j]);
           if(inter) {
-            // Overlay vermelho real e sutil
+            // --- MUDA AQUI: Overlay inicia totalmente invisível (opacity 0) ---
             var overLyr = L.geoJSON(inter, {
-              style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0.8, weight: 0.5, zIndex: 400}
+              style: {color: '#ef4444', fillColor: '#ef4444', fillOpacity: 0, weight: 0, opacity: 0, zIndex: 400}
             }).addTo(_map);
             _overPolys.push(overLyr);
+            _overPolysData.push({ layer: overLyr, ti1: i, ti2: j });
             overAreaSqm += turf.area(inter);
           }
         } catch(e) {}
@@ -612,7 +643,7 @@ function tick(){
   for(var k=0; k<spt && _step<_total; k++){
     var s=_steps[_step];
     
-    // ANIMAÇÃO DE PREENCHIMENTO: Só pinta se estiver em cima
+    // ANIMAÇÃO DE PREENCHIMENTO: Só pinta se estiver em cima E for trajeto válido
     if(s && s.in && _polys[s.ti] && _inCnt[s.ti] > 0){
       _doneCnt[s.ti]++;
       var pct = _doneCnt[s.ti] / _inCnt[s.ti];
@@ -629,6 +660,15 @@ function tick(){
     }
     lastS=s; _step++;
   }
+
+  // --- ATIVAR SOBREPOSIÇÃO DURANTE O VOO NORMAL ---
+  _overPolysData.forEach(function(over){
+     var app1 = _inCnt[over.ti1] > 0 && (_doneCnt[over.ti1] / _inCnt[over.ti1]) > 0.05;
+     var app2 = _inCnt[over.ti2] > 0 && (_doneCnt[over.ti2] / _inCnt[over.ti2]) > 0.05;
+     if(app1 && app2) {
+        over.layer.setStyle({fillOpacity: 0.8, weight: 0.5, opacity: 1});
+     }
+  });
   
   if(lastS&&_plane){
     _plane.setLatLng([lastS.pos[0],lastS.pos[1]]);
