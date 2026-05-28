@@ -59,7 +59,8 @@ textarea.rf-input{resize:vertical;min-height:72px;}
                border-radius:20px;background:rgba(22,163,74,.20);border:1px solid var(--bh);
                color:#86efac;font-size:12px;font-weight:800;}
 
-/* ── Painel de produtos ── */
+/* ── Painel de produtos CORRIGIDO PARA REALATIVA ── */
+.prod-search-row-container { position:relative; display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
 .prod-search-wrap{position:relative;}
 .prod-search{width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:1px solid rgba(255,255,255,.22);
              background:rgba(0,0,0,.28);color:#fff;font-size:14px;
@@ -87,13 +88,15 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 .cust-sel-item.cust-sel-placeholder{color:rgba(255,255,255,.45);font-style:italic;}
 .prod-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);
                   font-size:16px;pointer-events:none;}
-.prod-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;
-               background:#0d3b2e;border:1px solid var(--bh);border-radius:10px;
-               max-height:280px;overflow-y:auto;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+
+/* Dropdown reposicionado perfeitamente abaixo dos campos */
+.prod-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;
+               background:#0d3b2e;border:2px solid var(--bh);border-radius:10px;
+               max-height:280px;overflow-y:auto;display:none;box-shadow:0 12px 38px rgba(0,0,0,.65);}
 .prod-dropdown.open{display:block;}
-.prod-item{padding:10px 14px;cursor:pointer;transition:.1s;border-bottom:1px solid rgba(255,255,255,.06);}
+.prod-item{padding:11px 14px;cursor:pointer;transition:.1s;border-bottom:1px solid rgba(255,255,255,.06);}
 .prod-item:last-child{border-bottom:none;}
-.prod-item:hover{background:rgba(34,197,94,.12);}
+.prod-item:hover{background:rgba(34,197,94,.16);}
 .prod-item-name{font-size:13px;font-weight:700;color:#fff;}
 .prod-item-ia{font-size:11px;color:var(--m);}
 .prod-item-classe{font-size:10px;font-weight:800;text-transform:uppercase;
@@ -199,7 +202,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
     {% endfor %}
   {% endwith %}
 
-  {# Status geral de validação (dinâmico) #}
+  {# Status geral de validação #}
   <div class="status-geral sg-vazio" id="statusGeral">
     <span class="sg-icon">🌾</span>
     <span id="statusGeralText">Adicione produtos para ver a validação agronômica.</span>
@@ -350,7 +353,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Diagnóstico / Problema Identificado *</label>
         <textarea class="rf-input" name="diagnostico"
-                  placeholder="Descreva a praga, doença ou planta daninha identificada e o nível de infestação/severidade…">{{ rec.diagnostico if rec else '' }}</textarea>
+                  placeholder="Descreva a praga, doença ou planta daninha identificada e o nível de infestation…">{{ rec.diagnostico if rec else '' }}</textarea>
       </div>
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Praga / Doença / Planta Daninha Alvo</label>
@@ -367,8 +370,8 @@ textarea.rf-input{resize:vertical;min-height:72px;}
     </div>
   </div>
 
-  {# ── SEÇÃO 4 — PRODUTOS (principal) ── #}
-  <div class="rf-sec">
+  {# ── SEÇÃO 4 — PRODUTOS (principal) CONTÊINER PAI RELATIVO APLICADO ── #}
+  <div class="rf-sec" style="position:relative;">
     <div class="rf-sec-title">🧪 Produtos Recomendados</div>
 
     <div id="culturaSelecionada" style="margin-bottom:14px;display:none;">
@@ -378,7 +381,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
       </span>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+    <div class="prod-search-row-container">
       <div class="prod-search-wrap">
         <div class="prod-mini-label" style="margin-bottom:5px;font-size:11px;color:#c9f0d8;text-shadow:var(--ts);">
           🧴 NOME COMERCIAL
@@ -405,9 +408,10 @@ textarea.rf-input{resize:vertical;min-height:72px;}
                  autocomplete="off">
         </div>
       </div>
+      {# Dropdown realocado perfeitamente alinhado abaixo da row #}
+      <div class="prod-dropdown" id="prodDropdown"></div>
     </div>
     
-    <div class="prod-dropdown" id="prodDropdown" style="margin-top:-4px;"></div>
     <div style="font-size:12px;color:#9de0bc;margin-top:8px;text-shadow:var(--ts);">
       💡 Selecione a cultura primeiro. Busque pelo nome comercial <em>ou</em> pelo princípio ativo — a validação é automática.
     </div>
@@ -629,7 +633,7 @@ function atualizarBadgeCultura(nome) {
   document.getElementById('culturaLabel').textContent = '🌱 ' + nome;
 }
 
-// ── Busca de produtos ─────────────────────────────────────────────────────
+// ── Busca de produtos (Otimizada e com correção de mapeamento) ──────────────
 function buscarProdutos(campo, q) {
   clearTimeout(searchTimer);
   
@@ -701,7 +705,7 @@ function escReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
 function hideDropdown() { document.getElementById('prodDropdown').classList.remove('open'); }
 document.addEventListener('click', e => {
-  if (!e.target.closest('.prod-search-wrap') && !e.target.closest('#prodDropdown')) hideDropdown();
+  if (!e.target.closest('.prod-search-row-container') && !e.target.closest('#prodDropdown')) hideDropdown();
 });
 
 // ── Adicionar produto ──────────────────────────────────────────────────────
@@ -743,12 +747,12 @@ function adicionarProduto(id, nome, ia, classe, dMin, dMax, un, epi) {
 function renderProdutoCard(p) {
   const lista = document.getElementById('prodLista');
   const comp   = p.validacao;
-  const compClass = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NAO' ? 'nao' : 'talvez';
-  const badgeClass = comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NAO' ? 'vb-nao' : 'vb-talvez';
-  const badgeText  = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
+  const compClass = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NÃO' || comp === 'NAO' ? 'nao' : 'talvez';
+  const badgeClass = comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NÃO' || comp === 'NAO' ? 'vb-nao' : 'vb-talvez';
+  const badgeText  = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NÃO' || comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
   const cls = getClasseCSS(p.classe);
 
-  const motivoHtml = p.motivo ? `<div class="prod-card-motivo ${comp === 'NAO' ? 'motivo-nao' : 'motivo-talvez'}">⚠ ${escH(p.motivo)}</div>` : '';
+  const motivoHtml = p.motivo ? `<div class="prod-card-motivo ${compClass === 'nao' ? 'motivo-nao' : 'motivo-talvez'}">⚠ ${escH(p.motivo)}</div>` : '';
   const doseRecHtml = p.dose_rec ? `<div class="dose-rec">📌 Recomendado: ${escH(p.dose_rec)}</div>` : '';
 
   const html = `
@@ -812,17 +816,17 @@ function revalidarTodos() {
         const card = document.getElementById('pc-' + id);
         if (!card) return;
         const comp  = data.compatibilidade;
-        const cls   = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NAO' ? 'nao' : 'talvez';
+        const cls   = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NÃO' || comp === 'NAO' ? 'nao' : 'talvez';
         card.className = `prod-card ${cls}`;
         const badge = card.querySelector('.validacao-badge');
         if (badge) {
-          badge.className = `validacao-badge ${comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NAO' ? 'vb-nao' : 'vb-talvez'}`;
-          badge.textContent = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
+          badge.className = `validacao-badge ${comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NÃO' || comp === 'NAO' ? 'vb-nao' : 'vb-talvez'}`;
+          badge.textContent = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NÃO' || comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
         }
         let mEl = card.querySelector('.prod-card-motivo');
         if (data.motivo) {
           if (!mEl) { const info = card.querySelector('.prod-card-info'); mEl = document.createElement('div'); info.appendChild(mEl); }
-          mEl.className = `prod-card-motivo ${comp === 'NAO' ? 'motivo-nao' : 'motivo-talvez'}`;
+          mEl.className = `prod-card-motivo ${cls === 'nao' ? 'motivo-nao' : 'motivo-talvez'}`;
           mEl.textContent = '⚠ ' + data.motivo;
         } else if (mEl) mEl.remove();
         atualizarStatusGeral();
@@ -840,7 +844,7 @@ function atualizarStatusGeral() {
     txt.textContent = 'Adicione produtos para ver a validação agronômica.';
     return;
   }
-  const temNao    = vals.some(v => v === 'NAO');
+  const temNao    = vals.some(v => v === 'NAO' || v === 'NÃO');
   const temTalvez = vals.some(v => v === 'TALVEZ');
   if (temNao) {
     sg.className = 'status-geral sg-nao';
@@ -860,7 +864,7 @@ function atualizarContador() {
 
 function confirmarEmissao() {
   const vals = Object.values(produtosAdicionados).map(p => p.validacao);
-  if (vals.some(v => v === 'NAO')) {
+  if (vals.some(v => v === 'NAO' || v === 'NÃO')) {
     showToast('Não é possível emitir: há produto(s) não autorizado(s)!', 'error');
     return false;
   }
