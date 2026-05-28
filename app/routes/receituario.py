@@ -233,101 +233,134 @@ def func_ver(rid):
 
 @receituario_bp.route("/api/receituario/produtos")
 def api_produtos():
-    q = request.args.get("q", "").strip()
+    """Busca produtos: LOCAL DB primeiro (sempre funciona), depois tenta AGROFIT."""
+    from app.models.receituario import ProdutoAgricola
+    q     = request.args.get("q", "").strip()
     campo = request.args.get("campo", "nome")
-    limit = request.args.get("limit", 20, type=int)
+    limit = min(request.args.get("limit", 30, type=int), 100)
 
-    if not q or len(q) < 2:
-        return jsonify([])
+    # ── Busca local (banco de dados próprio) ──────────────────────────────
+    db_query = ProdutoAgricola.query.filter_by(ativo=True)
+    if q and len(q) >= 2:
+        if campo == "ia":
+            db_query = db_query.filter(
+                ProdutoAgricola.ingrediente_ativo.ilike(f"%{q}%")
+            )
+        else:
+            db_query = db_query.filter(
+                ProdutoAgricola.nome_comercial.ilike(f"%{q}%") |
+                ProdutoAgricola.ingrediente_ativo.ilike(f"%{q}%")
+            )
+    elif not q:
+        pass  # sem filtro — retorna todos
 
-    token = _get_agroapi_token()
-    if not token:
-        return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO NAS CHAVES', 'ingrediente_ativo': 'Autenticação com MAPA falhou'}])
+    locais = db_query.order_by(ProdutoAgricola.nome_comercial).limit(limit).all()
+    resultado = [p.to_dict() for p in locais]
 
-    headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
-    url = "https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados"
-    
-    # Endpoint e chaves corretas garantidas pelo Agrofit V1 original
-    params = {'marcaComercial': q} if campo == 'nome' else {'ingredienteAtivo': q}
+    # ── Tenta enriquecer com AGROFIT se query tem >= 3 chars ──────────────
+    if q and len(q) >= 3:
+        try:
+            token = _get_agroapi_token()
+            if token:
+                headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+                api_url  = "https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados"
+                params   = {"marcaComercial": q} if campo == "nome" else {"ingredienteAtivo": q}
+                resp = requests.get(api_url, headers=headers, params=params, timeout=8)
+                if resp.ok:
+                    itens = resp.json()
+                    if isinstance(itens, dict):
+                        itens = itens.get("data", itens.get("content", []))
+                    nomes_locais = {r["nome_comercial"].lower() for r in resultado}
+                    for p in (itens or []):
+                        if not isinstance(p, dict):
+                            continue
+                        nome = (p.get("marcaComercial") or p.get("nomeComercial") or "").strip()
+                        if not nome or nome.lower() in nomes_locais:
+                            continue
+                        ia_raw = p.get("ingredienteAtivo") or p.get("ingredientesAtivos") or ""
+                        if isinstance(ia_raw, list):
+                            ia = ", ".join(str(x.get("nome", x)) if isinstance(x, dict) else str(x) for x in ia_raw)
+                        elif isinstance(ia_raw, dict):
+                            ia = ia_raw.get("nome", str(ia_raw))
+                        else:
+                            ia = str(ia_raw)
+                        pid = p.get("numeroRegistro") or p.get("id") or ""
+                        resultado.append({
+                            "id": f"api_{pid}",
+                            "nome_comercial":    nome,
+                            "ingrediente_ativo": ia,
+                            "classe_agronomica": p.get("classificacaoAgronomica") or "Outros",
+                            "fabricante":        p.get("titularRegistro") or "",
+                            "dose_min":          p.get("doseMinima", 0),
+                            "dose_max":          p.get("doseMaxima", 0),
+                            "unidade":           p.get("unidadeMedida", "L/ha"),
+                            "epi_obrigatorio":   "Verificar bula",
+                            "aplicacao_aerea":   "VERIFICAR",
+                            "motivo_aerea":      "Verifique a bula no MAPA/AGROFIT.",
+                        })
+                        if len(resultado) >= limit:
+                            break
+        except Exception:
+            pass  # API indisponível — só local
 
-    try:
-        response = requests.get(url, headers=headers, params=params, timeout=12)
-        if response.status_code in (401, 403):
-            return jsonify([{'id': 'erro', 'nome_comercial': f'⚠️ ACESSO NEGADO ({response.status_code})', 'ingrediente_ativo': 'API não assinada no AgroAPI'}])
-            
-        response.raise_for_status()
-        dados_embrapa = response.json()
-        
-        # Puxa o array de itens
-        itens = dados_embrapa if isinstance(dados_embrapa, list) else dados_embrapa.get('data', dados_embrapa.get('content', []))
-        
-        resultado = []
-        for p in itens:
-            if not isinstance(p, dict):
-                continue
-                
-            # Captura a ID
-            prod_id = p.get('numeroRegistro') or p.get('id') or p.get('codigoRegistro') or p.get('registro')
-            if not prod_id: continue
-            
-            # Captura o Nome Comercial 
-            nome = p.get('marcaComercial') or p.get('nomeComercial') or p.get('produto')
-            if not nome: 
-                nome = f"Produto MAPA #{prod_id}"
-                
-            # Captura o Princípio Ativo (às vezes a Embrapa manda um objeto dentro de uma lista)
-            ia_bruto = p.get('ingredienteAtivo') or p.get('ingredientesAtivos')
-            if isinstance(ia_bruto, list):
-                ia_list = []
-                for x in ia_bruto:
-                    if isinstance(x, dict):
-                        ia_list.append(x.get('nome') or x.get('ingredienteAtivo') or str(x))
-                    else:
-                        ia_list.append(str(x))
-                ia = ", ".join(ia_list)
-            elif isinstance(ia_bruto, dict):
-                ia = ia_bruto.get('nome') or ia_bruto.get('ingredienteAtivo') or "Desconhecido"
-            else:
-                ia = str(ia_bruto) if ia_bruto else "Não informado"
-                
-            classe = p.get('classificacaoAgronomica') or p.get('classeAgronomica') or 'Outros'
-            fabricante = p.get('titularRegistro') or p.get('fabricante') or ''
-            
-            resultado.append({
-                'id': str(prod_id), 
-                'nome_comercial': str(nome),
-                'ingrediente_ativo': str(ia),
-                'classe_agronomica': str(classe),
-                'fabricante': str(fabricante),
-                'dose_min': p.get('doseMinima', 0),
-                'dose_max': p.get('doseMaxima', 0),
-                'unidade': p.get('unidadeMedida', 'L/ha'),
-                'epi_obrigatorio': p.get('epi', 'Verificar bula')
-            })
-            
-            if len(resultado) >= limit:
-                break
-                
-        if not resultado:
-            return jsonify([{'id': 'vazio', 'nome_comercial': f'🔎 Nenhum produto registrado para "{q}"', 'ingrediente_ativo': 'Verifique a digitação', 'classe_agronomica': 'Outros'}])
-            
-        return jsonify(resultado)
+    if not resultado and q:
+        return jsonify([{
+            "id": "vazio",
+            "nome_comercial": f"🔎 Nenhum produto encontrado para: {q}",
+            "ingrediente_ativo": "Verifique a digitação ou use o princípio ativo",
+            "classe_agronomica": "Outros",
+        }])
 
-    except Exception as e:
-        print(f"Erro MAPA/Agrofit: {e}")
-        return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO DE CONEXÃO', 'ingrediente_ativo': 'Servidor da Embrapa demorou a responder.', 'classe_agronomica': 'Outros'}])
+    return jsonify(resultado)
 
 @receituario_bp.route("/api/receituario/produto/<pid>/validar")
 def api_validar(pid):
-    # Impede que cliques em produtos de erro ou vazios causem erro no servidor
+    from app.models.receituario import Cultura, ProdutoAgricola, ProdutoCultura
     if pid in ('erro', 'vazio', 'null', 'undefined', 'None') or not pid:
         return jsonify({"compatibilidade": "TALVEZ", "motivo": "Revisão agronômica manual necessária."})
 
-    from app.models.receituario import Cultura
     cultura_id = request.args.get("cultura_id", type=int)
-
     if not cultura_id:
         return jsonify({"compatibilidade": "NAO_INFORMADO", "motivo": "Selecione a cultura."})
+
+    # ── Verificar banco local primeiro ────────────────────────────────────
+    if pid.isdigit():
+        prod = ProdutoAgricola.query.get(int(pid))
+        if prod:
+            pc = ProdutoCultura.query.filter_by(produto_id=prod.id, cultura_id=cultura_id).first()
+            cultura = Cultura.query.get(cultura_id)
+            cult_nome = cultura.nome if cultura else "esta cultura"
+
+            # Validação de aplicação aérea
+            if prod.aplicacao_aerea == "NAO":
+                return jsonify({
+                    "compatibilidade": "NAO",
+                    "motivo": f"✈ APLICAÇÃO AÉREA NÃO AUTORIZADA: {prod.motivo_aerea or 'Produto não possui registro para aplicação aérea no MAPA.'}",
+                    "aplicacao_aerea": "NAO",
+                    "produto": prod.to_dict(),
+                })
+
+            if not pc:
+                return jsonify({
+                    "compatibilidade": "NAO",
+                    "motivo": f"Produto '{prod.nome_comercial}' não possui registro para {cult_nome}. Verifique o rótulo no MAPA/AGROFIT.",
+                    "aplicacao_aerea": prod.aplicacao_aerea,
+                    "produto": prod.to_dict(),
+                })
+
+            resp = {
+                "compatibilidade":  pc.compatibilidade,
+                "motivo":           pc.motivo or "",
+                "dose_recomendada": pc.dose_recomendada or "",
+                "observacoes":      pc.observacoes or "",
+                "aplicacao_aerea":  prod.aplicacao_aerea,
+                "motivo_aerea":     prod.motivo_aerea or "",
+                "produto":          prod.to_dict(),
+            }
+            if prod.aplicacao_aerea == "TALVEZ" and pc.compatibilidade == "SIM":
+                resp["compatibilidade"] = "TALVEZ"
+                resp["motivo"] = (pc.motivo or "") + f" | ✈ {prod.motivo_aerea or 'Restrição para aplicação aérea — verificar bula.'}"
+            return jsonify(resp)
 
     cultura = Cultura.query.get(cultura_id)
     if not cultura:

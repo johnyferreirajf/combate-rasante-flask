@@ -44,6 +44,8 @@ def create_app():
                 _migrations = [
                     # ── Receituário Agronômico ──────────────────────────────
                     "ALTER TABLE employees ADD COLUMN IF NOT EXISTS pode_receituario BOOLEAN NOT NULL DEFAULT FALSE",
+                    "ALTER TABLE produtos_agricolas ADD COLUMN IF NOT EXISTS aplicacao_aerea VARCHAR(12) DEFAULT 'VERIFICAR'",
+                    "ALTER TABLE produtos_agricolas ADD COLUMN IF NOT EXISTS motivo_aerea TEXT",
                     """CREATE TABLE IF NOT EXISTS culturas (
                         id SERIAL PRIMARY KEY,
                         nome VARCHAR(100) NOT NULL UNIQUE,
@@ -264,10 +266,11 @@ def create_app():
             db.session.add(admin_employee)
             db.session.commit()
 
-        # Seed Receituário Agronômico (culturas + produtos)
+        # Seed Receituário Agronômico (culturas + produtos locais)
         try:
-            from app.models.receituario import seed_receituario
+            from app.models.receituario import seed_receituario, seed_produtos
             seed_receituario()
+            seed_produtos()
         except Exception as _se:
             pass
 
