@@ -83,7 +83,21 @@
           </span>
         </div>
       </div>
-      <a href="{{ url_for('receituario.func_ver', rid=r.id) }}" class="fl-view">👁 Ver</a>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <a href="{{ url_for('receituario.func_ver', rid=r.id) }}" class="fl-view">👁 Ver</a>
+        <a href="{{ url_for('receituario.func_editar', rid=r.id) }}" class="fl-view"
+           style="background:rgba(234,88,12,.18);border-color:rgba(234,88,12,.35);"
+           title="{% if r.status == 'emitido' %}Editar (voltará para rascunho){% else %}Editar rascunho{% endif %}">
+          ✏ Editar
+        </a>
+        <form method="POST" action="{{ url_for('receituario.func_excluir', rid=r.id) }}"
+              onsubmit="return confirm('Excluir o receituário {{ r.numero }}? Esta ação não pode ser desfeita.')"
+              style="margin:0;">
+          <button type="submit" style="display:inline-flex;align-items:center;gap:4px;padding:8px 12px;
+                  border-radius:9px;background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.30);
+                  color:#fca5a5;font-size:12px;font-weight:800;cursor:pointer;">🗑</button>
+        </form>
+      </div>
     </div>
     {% endfor %}
   {% else %}

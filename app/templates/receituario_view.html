@@ -523,8 +523,8 @@
       <a href="{{ url_for('receituario.admin_editar', rid=rec.id) }}" class="rv-btn rv-btn-edit">✏ Editar</a>
       {% endif %}
 
-      {# FUNCIONÁRIO: editar rascunho próprio #}
-      {% if modo == 'func' and rec.status == 'rascunho' %}
+      {# FUNCIONÁRIO: editar qualquer RA próprio (emitido volta para rascunho) #}
+      {% if modo == 'func' %}
       <a href="{{ url_for('receituario.func_editar', rid=rec.id) }}" class="rv-btn rv-btn-edit">✏ Editar</a>
       {% endif %}
     </div>
@@ -551,11 +551,11 @@
       </form>
       {% endif %}
 
-      {# FUNCIONÁRIO: excluir rascunho próprio #}
-      {% if modo == 'func' and rec.status == 'rascunho' %}
+      {# FUNCIONÁRIO: excluir qualquer RA próprio #}
+      {% if modo == 'func' %}
       <form method="POST" action="{{ url_for('receituario.func_excluir', rid=rec.id) }}"
             style="display:inline;"
-            onsubmit="return confirm('Excluir o receituário {{ rec.numero }}?')">
+            onsubmit="return confirm('Excluir o receituário {{ rec.numero }}? Esta ação não pode ser desfeita.')">
         <button type="submit" class="rv-btn rv-btn-delete">🗑 Excluir</button>
       </form>
       {% endif %}
