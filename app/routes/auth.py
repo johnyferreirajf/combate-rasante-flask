@@ -558,6 +558,7 @@ def admin_arquivo_upload():
                 arquivo.stream,
                 folder=folder,
                 resource_type=rtype,
+                access_mode="public",
                 use_filename=True,
                 unique_filename=True,
             )
@@ -622,9 +623,10 @@ def admin_pasta_upload():
         secure=True,
     )
 
-    enviados  = 0
-    ignorados = 0
-    erros_msg = []
+    enviados     = 0
+    ignorados    = 0
+    erros_msg    = []
+    pastas_usadas = set()   # rastreia pasta_dest de cada arquivo enviado
 
     for i, arquivo in enumerate(arquivos):
         if not arquivo or not arquivo.filename:
@@ -644,10 +646,9 @@ def admin_pasta_upload():
             ignorados += 1
             continue
 
+        # Preserva a pasta raiz do upload — inclui o nome da pasta selecionada
         if subpasta_rel:
-            segs         = subpasta_rel.split("/")
-            sub_sem_raiz = "/".join(segs[1:]) if len(segs) > 1 else ""
-            pasta_dest   = "/".join(x for x in [pasta_atual, sub_sem_raiz] if x)
+            pasta_dest = "/".join(x for x in [pasta_atual, subpasta_rel] if x)
         else:
             pasta_dest = pasta_atual
 
@@ -672,9 +673,9 @@ def admin_pasta_upload():
                     io.BytesIO(conteudo),
                     folder=folder,
                     resource_type=rtype,
+                    access_mode="public",
                     use_filename=True,
                     unique_filename=True,
-                    filename_override=nome_seguro,
                 )
                 url_final = result["secure_url"]
                 pub_id    = result["public_id"]
@@ -691,10 +692,37 @@ def admin_pasta_upload():
                 file_size=file_size,
             )
             db.session.add(cf)
+            if pasta_dest:
+                pastas_usadas.add(pasta_dest)
             enviados += 1
 
         except Exception as e:
             erros_msg.append("{}: {}".format(nome_seguro, str(e)[:120]))
+
+    # ── Criar entradas de pasta para cada nível de subpasta usada ─────────
+    if enviados and pastas_usadas:
+        for pasta_dest in sorted(pastas_usadas):
+            partes = [p for p in pasta_dest.split("/") if p]
+            for i, nome_pasta in enumerate(partes):
+                parent = "/".join(partes[:i])
+                ja_existe = ClientFile.query.filter_by(
+                    user_id=cliente_id,
+                    original_filename=nome_pasta,
+                    folder_path=parent,
+                    url="__folder__",
+                ).first()
+                if not ja_existe:
+                    db.session.add(ClientFile(
+                        user_id=cliente_id,
+                        original_filename=nome_pasta,
+                        title=nome_pasta,
+                        folder_path=parent,
+                        url="__folder__",
+                        public_id="",
+                        source="local",
+                        file_ext="",
+                        file_size=0,
+                    ))
 
     if enviados:
         db.session.commit()

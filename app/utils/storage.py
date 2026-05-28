@@ -100,6 +100,7 @@ def _cloudinary_save(file_stream, filename: str, folder: str) -> dict:
         folder=folder,
         public_id=os.path.splitext(filename)[0],
         resource_type=resource_type,
+        access_mode="public",
         use_filename=True,
         unique_filename=True,
         overwrite=False,
