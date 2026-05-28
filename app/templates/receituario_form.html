@@ -5,36 +5,42 @@
 <style>
 :root{
   --g:#064e3b;--g2:rgba(6,78,59,.90);--ac:#16a34a;--or:#ea580c;
-  --bd:rgba(255,255,255,.12);--bh:rgba(34,197,94,.50);
-  --t:#e2f5e9;--m:rgba(255,255,255,.55);
-  --ok-bg:rgba(34,197,94,.14);--ok-c:#86efac;
-  --nao-bg:rgba(239,68,68,.16);--nao-c:#fca5a5;
-  --tal-bg:rgba(251,191,36,.16);--tal-c:#fde68a;
+  --bd:rgba(255,255,255,.15);--bh:rgba(34,197,94,.55);
+  --t:#e2f5e9;--m:rgba(255,255,255,.70);
+  --ok-bg:rgba(34,197,94,.18);--ok-c:#86efac;
+  --nao-bg:rgba(239,68,68,.18);--nao-c:#fca5a5;
+  --tal-bg:rgba(251,191,36,.18);--tal-c:#fde68a;
   --r:13px;
+  --ts:0 1px 4px rgba(0,0,0,.85), 0 2px 8px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box;}
 .rf-wrap{max-width:1100px;margin:0 auto;padding:16px 14px 80px;}
 .rf-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
         gap:10px;margin-bottom:20px;}
-.rf-title{font-size:20px;font-weight:900;color:#fff;}
+.rf-title{font-size:22px;font-weight:900;color:#fff;text-shadow:var(--ts);}
 .rf-title span{font-size:13px;font-weight:400;color:var(--m);display:block;margin-top:2px;}
 
 /* ── Section card ── */
-.rf-sec{background:rgba(3,58,36,.80);border:1px solid var(--bd);border-radius:var(--r);
-        padding:20px 22px;margin-bottom:14px;}
-.rf-sec-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;
-              color:var(--ac);margin-bottom:16px;display:flex;align-items:center;gap:7px;}
+.rf-sec{background:rgba(3,46,27,.93);border:1px solid var(--bd);border-radius:var(--r);
+        padding:20px 22px;margin-bottom:14px;box-shadow:0 4px 24px rgba(0,0,0,.35);}
+.rf-sec-title{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;
+              color:#6ee7b7;margin-bottom:16px;display:flex;align-items:center;gap:7px;
+              text-shadow:var(--ts);}
 .rf-sec-title::before{content:'';display:block;width:3px;height:14px;
                       background:var(--or);border-radius:2px;flex-shrink:0;}
 .rf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
 .rf-grid-3{grid-template-columns:repeat(3,1fr);}
 .rf-field{display:flex;flex-direction:column;gap:4px;}
-.rf-label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--m);}
-.rf-input{padding:9px 12px;border-radius:9px;border:1px solid var(--bd);
-          background:rgba(255,255,255,.07);color:#fff;font-size:13px;
+.rf-label{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#c9f0d8;
+             text-shadow:var(--ts);}
+.rf-input{padding:9px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.20);
+          background:rgba(0,0,0,.25);color:#fff;font-size:14px;
           font-family:inherit;outline:none;transition:border-color .15s;width:100%;}
-.rf-input:focus{border-color:var(--bh);}
+.rf-input:focus{border-color:var(--bh);background:rgba(0,0,0,.35);}
+.rf-input::placeholder{color:rgba(255,255,255,.40);}
 .rf-select{appearance:none;-webkit-appearance:none;cursor:pointer;}
+.rf-select option{background:#0a2e1e;color:#e2f5e9;font-size:14px;}
+.rf-select option:hover,.rf-select option:checked{background:#16a34a;color:#fff;}
 textarea.rf-input{resize:vertical;min-height:72px;}
 
 /* ── Botões ── */
@@ -55,10 +61,30 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 
 /* ── Painel de produtos ── */
 .prod-search-wrap{position:relative;}
-.prod-search{width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:1px solid var(--bd);
-             background:rgba(255,255,255,.07);color:#fff;font-size:13px;
+.prod-search{width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:1px solid rgba(255,255,255,.22);
+             background:rgba(0,0,0,.28);color:#fff;font-size:14px;
              font-family:inherit;outline:none;transition:border-color .15s;}
-.prod-search:focus{border-color:var(--bh);}
+.prod-search:focus{border-color:var(--bh);background:rgba(0,0,0,.38);}
+.prod-search::placeholder{color:rgba(255,255,255,.38);}
+
+/* ── Custom select cultura ── */
+.cust-sel{display:flex;align-items:center;justify-content:space-between;
+          padding:10px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.22);
+          background:rgba(0,0,0,.28);color:#fff;font-size:14px;cursor:pointer;
+          transition:border-color .15s;user-select:none;min-height:42px;}
+.cust-sel:hover,.cust-sel:focus{border-color:var(--bh);background:rgba(0,0,0,.38);outline:none;}
+.cust-sel-placeholder{color:rgba(255,255,255,.40);}
+.cust-sel-list{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:200;
+               background:#0a2e1e;border:1.5px solid var(--bh);border-radius:11px;
+               max-height:260px;overflow-y:auto;display:none;
+               box-shadow:0 8px 32px rgba(0,0,0,.5);}
+.cust-sel-list.open{display:block;}
+.cust-sel-item{padding:11px 16px;cursor:pointer;font-size:14px;color:#d1fae5;
+               border-bottom:1px solid rgba(255,255,255,.06);transition:.12s;}
+.cust-sel-item:last-child{border-bottom:none;}
+.cust-sel-item:hover{background:rgba(34,197,94,.20);color:#fff;}
+.cust-sel-item.selected{background:rgba(34,197,94,.18);color:#86efac;font-weight:800;}
+.cust-sel-item.cust-sel-placeholder{color:rgba(255,255,255,.45);font-style:italic;}
 .prod-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);
                   font-size:16px;pointer-events:none;}
 .prod-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;
@@ -117,7 +143,8 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 
 /* ── Status geral ── */
 .status-geral{padding:14px 18px;border-radius:11px;margin-bottom:14px;
-              display:flex;align-items:center;gap:12px;font-size:13px;font-weight:700;}
+              display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;
+              text-shadow:0 1px 3px rgba(0,0,0,.5);}
 .sg-ok{background:rgba(34,197,94,.14);border:1.5px solid rgba(34,197,94,.40);color:#86efac;}
 .sg-nao{background:rgba(239,68,68,.14);border:1.5px solid rgba(239,68,68,.40);color:#fca5a5;}
 .sg-talvez{background:rgba(251,191,36,.12);border:1.5px solid rgba(251,191,36,.35);color:#fde68a;}
@@ -130,7 +157,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
            border-top:1px solid var(--bd);padding:12px 20px;
            display:flex;align-items:center;justify-content:space-between;
            gap:12px;z-index:100;}
-.rf-footer-left{font-size:12px;color:var(--m);}
+.rf-footer-left{font-size:13px;color:#c9f0d8;text-shadow:var(--ts);}
 .rf-footer-right{display:flex;gap:10px;}
 
 /* ── Loading spinner ── */
@@ -294,18 +321,28 @@ textarea.rf-input{resize:vertical;min-height:72px;}
   <div class="rf-sec">
     <div class="rf-sec-title">🌱 Dados Agronômicos</div>
     <div class="rf-grid">
-      <div class="rf-field">
+      <div class="rf-field" style="position:relative;">
         <label class="rf-label">Cultura *</label>
-        <select name="cultura_id" id="culturaSelect" class="rf-input rf-select"
-                onchange="atualizarCultura(this)" required>
-          <option value="">— Selecione a cultura —</option>
+        {# Campo hidden para enviar o valor ao form #}
+        <input type="hidden" name="cultura_id" id="culturaId"
+               value="{{ rec.cultura_id if rec and rec.cultura_id else '' }}" required>
+        {# Trigger visível do custom select #}
+        <div class="cust-sel" id="culturaDisplay" onclick="toggleCulturaDropdown()"
+             tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')toggleCulturaDropdown()">
+          <span id="culturaDisplayText">{% if rec and rec.cultura %}{{ rec.cultura.nome }}{% else %}— Selecione a cultura —{% endif %}</span>
+          <span id="culturaArrow" style="font-size:12px;transition:.2s;">▼</span>
+        </div>
+        {# Dropdown list #}
+        <div class="cust-sel-list" id="culturaList">
+          <div class="cust-sel-item cust-sel-placeholder" data-val="" onclick="selecionarCultura('','')">
+            — Selecione a cultura —
+          </div>
           {% for c in culturas %}
-          <option value="{{ c.id }}"
-                  {% if rec and rec.cultura_id==c.id %}selected{% endif %}>
-            {{ c.nome }}
-          </option>
+          <div class="cust-sel-item" data-val="{{ c.id }}" onclick="selecionarCultura('{{ c.id }}','{{ c.nome }}')">
+            🌱 {{ c.nome }}
+          </div>
           {% endfor %}
-        </select>
+        </div>
       </div>
       <div class="rf-field">
         <label class="rf-label">Estágio Fenológico</label>
@@ -344,18 +381,39 @@ textarea.rf-input{resize:vertical;min-height:72px;}
       </span>
     </div>
 
-    {# Busca de produtos #}
-    <div class="prod-search-wrap">
-      <span class="prod-search-icon">🔍</span>
-      <input class="prod-search" type="text" id="prodSearch"
-             placeholder="Buscar produto pelo nome comercial ou ingrediente ativo…"
-             oninput="buscarProdutos(this.value)"
-             onfocus="if(this.value.length>=2) showDropdown()"
-             autocomplete="off">
-      <div class="prod-dropdown" id="prodDropdown"></div>
+    {# Busca dual de produtos — Nome comercial + Princípio Ativo #}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
+      <div class="prod-search-wrap">
+        <div class="prod-mini-label" style="margin-bottom:5px;font-size:11px;color:#c9f0d8;text-shadow:var(--ts);">
+          🧴 NOME COMERCIAL
+        </div>
+        <div style="position:relative;">
+          <span class="prod-search-icon">🔍</span>
+          <input class="prod-search" type="text" id="prodSearchNome"
+                 placeholder="Ex.: Roundup, Nativo, Belt…"
+                 oninput="buscarProdutos('nome', this.value)"
+                 onfocus="if(this.value.length>=1) buscarProdutos('nome', this.value)"
+                 autocomplete="off">
+        </div>
+      </div>
+      <div class="prod-search-wrap">
+        <div class="prod-mini-label" style="margin-bottom:5px;font-size:11px;color:#c9f0d8;text-shadow:var(--ts);">
+          🧬 PRINCÍPIO ATIVO (IA)
+        </div>
+        <div style="position:relative;">
+          <span class="prod-search-icon">🔬</span>
+          <input class="prod-search" type="text" id="prodSearchIA"
+                 placeholder="Ex.: Glifosato, Tebuconazol…"
+                 oninput="buscarProdutos('ia', this.value)"
+                 onfocus="if(this.value.length>=1) buscarProdutos('ia', this.value)"
+                 autocomplete="off">
+        </div>
+      </div>
     </div>
-    <div style="font-size:11px;color:var(--m);margin-top:6px;">
-      💡 Selecione a cultura antes de buscar os produtos para ver a validação automática
+    {# Dropdown compartilhado #}
+    <div class="prod-dropdown" id="prodDropdown" style="margin-top:-4px;"></div>
+    <div style="font-size:12px;color:#9de0bc;margin-top:8px;text-shadow:var(--ts);">
+      💡 Selecione a cultura primeiro. Busque pelo nome comercial <em>ou</em> pelo princípio ativo — a validação é automática.
     </div>
 
     {# Lista de produtos adicionados #}
@@ -516,17 +574,63 @@ document.addEventListener('DOMContentLoaded', () => {
   {% endif %}
 
   atualizarContador();
-  if (culturaAtual.id) atualizarBadgeCultura(culturaAtual.nome);
+  if (culturaAtual.id) {
+    atualizarBadgeCultura(culturaAtual.nome);
+    // Mark selected in custom dropdown
+    document.querySelectorAll('.cust-sel-item').forEach(el => {
+      el.classList.toggle('selected', el.dataset.val == culturaAtual.id);
+    });
+  }
   atualizarStatusGeral();
 });
 
+// ── Custom select: Cultura ────────────────────────────────────────────────
+function toggleCulturaDropdown() {
+  const list = document.getElementById('culturaList');
+  const arrow = document.getElementById('culturaArrow');
+  const open = list.classList.toggle('open');
+  arrow.style.transform = open ? 'rotate(180deg)' : '';
+}
+
+function selecionarCultura(id, nome) {
+  document.getElementById('culturaId').value = id;
+  const disp = document.getElementById('culturaDisplayText');
+  const display = document.getElementById('culturaDisplay');
+  if (id) {
+    disp.textContent = nome;
+    display.style.borderColor = 'rgba(34,197,94,.55)';
+    disp.style.color = '#fff';
+    // Mark selected item
+    document.querySelectorAll('.cust-sel-item').forEach(el => {
+      el.classList.toggle('selected', el.dataset.val == id);
+    });
+    culturaAtual = {id, nome};
+    atualizarBadgeCultura(nome);
+    revalidarTodos();
+  } else {
+    disp.textContent = '— Selecione a cultura —';
+    display.style.borderColor = '';
+    culturaAtual = {id: null, nome: ''};
+    document.getElementById('culturaSelecionada').style.display = 'none';
+  }
+  document.getElementById('culturaList').classList.remove('open');
+  document.getElementById('culturaArrow').style.transform = '';
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  if (!e.target.closest('#culturaDisplay') && !e.target.closest('#culturaList')) {
+    document.getElementById('culturaList')?.classList.remove('open');
+    const arrow = document.getElementById('culturaArrow');
+    if (arrow) arrow.style.transform = '';
+  }
+});
+
 // ── Cultura selecionada ────────────────────────────────────────────────────
-function atualizarCultura(sel) {
-  const opt = sel.options[sel.selectedIndex];
-  culturaAtual = {id: sel.value, nome: opt.text};
-  if (sel.value) {
-    atualizarBadgeCultura(opt.text);
-    // Re-validar produtos já adicionados
+function atualizarCultura(id, nome) {
+  culturaAtual = {id, nome};
+  if (id) {
+    atualizarBadgeCultura(nome);
     revalidarTodos();
   } else {
     document.getElementById('culturaSelecionada').style.display = 'none';
@@ -540,35 +644,62 @@ function atualizarBadgeCultura(nome) {
   document.getElementById('culturaLabel').textContent = '🌱 ' + nome;
 }
 
-// ── Busca de produtos ──────────────────────────────────────────────────────
-function buscarProdutos(q) {
+// ── Busca de produtos (dual field: nome ou IA) ────────────────────────────
+function buscarProdutos(campo, q) {
   clearTimeout(searchTimer);
-  if (q.length < 2) { hideDropdown(); return; }
+  if (!q || q.length < 2) { hideDropdown(); return; }
+  // Sync both fields visually clear the other only if actively typing
   searchTimer = setTimeout(() => {
-    fetch('/api/receituario/produtos?q=' + encodeURIComponent(q) + '&limit=15')
+    fetch('/api/receituario/produtos?q=' + encodeURIComponent(q) + '&limit=20')
       .then(r => r.json())
-      .then(data => renderDropdown(data))
+      .then(data => {
+        // If searching by nome, filter by nome priority; by IA, filter by IA priority
+        if (campo === 'ia') {
+          data.sort((a,b) => {
+            const aMatch = a.ingrediente_ativo.toLowerCase().includes(q.toLowerCase());
+            const bMatch = b.ingrediente_ativo.toLowerCase().includes(q.toLowerCase());
+            return (bMatch ? 1:0) - (aMatch ? 1:0);
+          });
+        }
+        renderDropdown(data, campo, q);
+      })
       .catch(() => {});
-  }, 250);
+  }, 200);
 }
 
-function renderDropdown(produtos) {
+function renderDropdown(produtos, campo, q) {
   const dd = document.getElementById('prodDropdown');
-  if (!produtos.length) { dd.innerHTML = '<div style="padding:14px;color:rgba(255,255,255,.5);font-size:12px;">Nenhum produto encontrado</div>'; dd.classList.add('open'); return; }
+  if (!produtos.length) {
+    dd.innerHTML = `<div style="padding:14px 16px;color:rgba(255,255,255,.6);font-size:13px;">
+      🔎 Nenhum produto encontrado para "<strong>${escH(q||'')}</strong>"
+    </div>`;
+    dd.classList.add('open');
+    return;
+  }
   dd.innerHTML = produtos.map(p => {
     const cls = getClasseCSS(p.classe_agronomica);
+    // Highlight match
+    const nomeHL  = q ? escH(p.nome_comercial).replace(new RegExp(escReg(q),'gi'), m=>`<mark style="background:rgba(234,88,12,.40);color:#fff;border-radius:2px;">${m}</mark>`) : escH(p.nome_comercial);
+    const iaHL    = q ? escH(p.ingrediente_ativo).replace(new RegExp(escReg(q),'gi'), m=>`<mark style="background:rgba(234,88,12,.40);color:#fff;border-radius:2px;">${m}</mark>`) : escH(p.ingrediente_ativo);
     return `<div class="prod-item" onclick="adicionarProduto(${p.id}, '${escQ(p.nome_comercial)}', '${escQ(p.ingrediente_ativo)}', '${escQ(p.classe_agronomica)}', ${p.dose_min || 0}, ${p.dose_max || 0}, '${escQ(p.unidade || '')}', '${escQ(p.epi_obrigatorio || '')}')">
-      <span class="prod-item-name">${escH(p.nome_comercial)}</span>
-      <span class="prod-item-classe ${cls}">${escH(p.classe_agronomica || '')}</span>
-      <div class="prod-item-ia">${escH(p.ingrediente_ativo)}</div>
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span class="prod-item-name">${nomeHL}</span>
+        <span class="prod-item-classe ${cls}">${escH(p.classe_agronomica || '')}</span>
+      </div>
+      <div class="prod-item-ia" style="margin-top:3px;">🧬 ${iaHL}</div>
+      ${p.fabricante ? `<div style="font-size:10px;color:rgba(255,255,255,.40);margin-top:1px;">${escH(p.fabricante)}</div>` : ''}
     </div>`;
   }).join('');
   dd.classList.add('open');
 }
 
+function escReg(s) { return s.replace(/[.*+?^${}()|[\]\]/g,'\$&'); }
+
 function showDropdown() { document.getElementById('prodDropdown').classList.add('open'); }
 function hideDropdown() { document.getElementById('prodDropdown').classList.remove('open'); }
-document.addEventListener('click', e => { if (!e.target.closest('.prod-search-wrap')) hideDropdown(); });
+document.addEventListener('click', e => {
+  if (!e.target.closest('.prod-search-wrap') && !e.target.closest('#prodDropdown')) hideDropdown();
+});
 
 // ── Adicionar produto + validar ────────────────────────────────────────────
 function adicionarProduto(id, nome, ia, classe, dMin, dMax, un, epi) {
@@ -768,6 +899,10 @@ function showToast(msg, type) {
 document.addEventListener('DOMContentLoaded', () => {
   atualizarBadgeCultura("{{ rec.cultura.nome if rec and rec.cultura else '' }}");
   atualizarStatusGeral();
+  // Mark pre-selected culture item
+  document.querySelectorAll('.cust-sel-item').forEach(el => {
+    if (el.dataset.val == "{{ rec.cultura_id }}") el.classList.add('selected');
+  });
 });
 {% endif %}
 </script>
