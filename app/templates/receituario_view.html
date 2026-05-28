@@ -3,291 +3,402 @@
 
 {% block head_extra %}
 <style>
-:root{
-  --g:#064e3b;--ac:#16a34a;--or:#ea580c;
-  --bd:rgba(255,255,255,.12);--t:#e2f5e9;--m:rgba(255,255,255,.55);
-  --ok-bg:rgba(34,197,94,.14);--ok-c:#86efac;
-  --nao-bg:rgba(239,68,68,.14);--nao-c:#fca5a5;
-  --tal-bg:rgba(251,191,36,.12);--tal-c:#fde68a;
-  --r:13px;
+/* ══════════════════════════════════════════════════════════════════
+   RECEITUÁRIO AGRONÔMICO — Layout Paper Style
+   ══════════════════════════════════════════════════════════════════ */
+.rv-page{max-width:860px;margin:0 auto;padding:18px 14px 80px;}
+
+/* ── Barra de ações (web only) ─────────────────────────────────── */
+.rv-actions-bar{display:flex;align-items:center;justify-content:space-between;
+                flex-wrap:wrap;gap:10px;margin-bottom:18px;}
+.rv-ab-left,.rv-ab-right{display:flex;gap:8px;flex-wrap:wrap;}
+.rv-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;
+        border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;
+        border:none;text-decoration:none;transition:.15s;font-family:inherit;}
+.rv-btn-back{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.20);}
+.rv-btn-back:hover{background:rgba(255,255,255,.20);}
+.rv-btn-print{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.20);}
+.rv-btn-print:hover{background:rgba(255,255,255,.20);}
+.rv-btn-emit{background:#16a34a;color:#fff;}
+.rv-btn-emit:hover{background:#15803d;}
+.rv-btn-cancel{background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.30);}
+.rv-btn-cancel:hover{background:rgba(239,68,68,.30);}
+.rv-btn-edit{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.20);}
+.rv-btn-edit:hover{background:rgba(255,255,255,.20);}
+
+/* ── Documento "papel" ─────────────────────────────────────────── */
+.rv-doc{
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 8px 40px rgba(0,0,0,.35), 0 2px 8px rgba(0,0,0,.20);
+  overflow:hidden;
+  font-family:'Segoe UI',Arial,sans-serif;
+  color:#111;
 }
-.rv-wrap{max-width:900px;margin:0 auto;padding:16px 14px 80px;}
-.rv-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
 
-/* ── Documento ── */
-.rv-doc{background:rgba(3,58,36,.75);border:1px solid var(--bd);border-radius:16px;overflow:hidden;}
-.rv-doc-header{background:linear-gradient(135deg,#033a24 0%,#064e3b 60%,rgba(234,88,12,.3) 100%);
-               padding:24px 28px;border-bottom:1px solid var(--bd);}
-.rv-logo-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
-.rv-logo-txt{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;}
-.rv-logo-sub{font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.1em;}
-.rv-doc-title{font-size:28px;font-weight:900;color:#fff;text-align:center;margin-top:16px;letter-spacing:.03em;}
-.rv-doc-num{font-size:13px;color:#86efac;text-align:center;font-family:monospace;font-weight:700;margin-top:4px;}
+/* ── Topo do documento ─────────────────────────────────────────── */
+.rv-doc-top{
+  background:linear-gradient(135deg,#033a24 0%,#064e3b 55%,#0a5c46 80%,rgba(234,88,12,.25) 100%);
+  padding:20px 28px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+.rv-top-left{display:flex;align-items:center;gap:14px;}
+.rv-logo-img{width:56px;height:56px;object-fit:contain;border-radius:8px;
+             background:#fff;padding:3px;}
+.rv-brand-name{font-size:18px;font-weight:900;color:#fff;
+               text-shadow:0 1px 3px rgba(0,0,0,.5);line-height:1.2;}
+.rv-brand-sub{font-size:10px;color:rgba(255,255,255,.80);text-transform:uppercase;
+              letter-spacing:.12em;margin-top:2px;}
+.rv-top-right{text-align:right;}
+.rv-emit-label{font-size:9px;color:rgba(255,255,255,.65);text-transform:uppercase;
+               letter-spacing:.09em;}
+.rv-emit-date{font-size:15px;color:#fff;font-weight:800;margin-top:2px;}
+.rv-valid-until{font-size:10px;color:rgba(255,255,255,.70);margin-top:3px;}
 
-/* ── Status banner ── */
-.rv-status-banner{padding:12px 20px;text-align:center;font-size:12px;font-weight:800;
-                  text-transform:uppercase;letter-spacing:.08em;}
-.rsb-emitido{background:var(--ok-bg);color:var(--ok-c);border-bottom:1px solid rgba(34,197,94,.25);}
-.rsb-rascunho{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border-bottom:1px solid var(--bd);}
-.rsb-cancelado{background:var(--nao-bg);color:var(--nao-c);border-bottom:1px solid rgba(239,68,68,.25);}
+/* ── Título central ────────────────────────────────────────────── */
+.rv-title-band{
+  background:#064e3b;
+  padding:16px 28px 14px;
+  text-align:center;
+  border-bottom:3px solid #ea580c;
+}
+.rv-title-text{font-size:24px;font-weight:900;color:#fff;letter-spacing:.06em;
+               text-shadow:0 1px 4px rgba(0,0,0,.4);}
+.rv-title-num{font-size:12px;color:#6ee7b7;font-weight:700;margin-top:4px;
+              font-family:monospace;letter-spacing:.04em;}
 
-/* ── Seções do documento ── */
-.rv-sec{padding:20px 28px;border-bottom:1px solid rgba(255,255,255,.06);}
+/* ── Faixa de status ───────────────────────────────────────────── */
+.rv-status-band{
+  padding:10px 20px;
+  text-align:center;
+  font-size:12px;
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:.09em;
+}
+.rsb-emitido{background:#d1fae5;color:#065f46;border-bottom:2px solid #6ee7b7;}
+.rsb-rascunho{background:#fef3c7;color:#92400e;border-bottom:2px solid #fbbf24;}
+.rsb-cancelado{background:#fee2e2;color:#991b1b;border-bottom:2px solid #fca5a5;}
+
+/* ── Faixa de validação ────────────────────────────────────────── */
+.rv-valid-band{
+  margin:16px 24px 0;
+  padding:12px 16px;
+  border-radius:9px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  font-size:12.5px;
+  font-weight:600;
+}
+.rvvb-ok{background:#d1fae5;border:1.5px solid #34d399;color:#064e3b;}
+.rvvb-nao{background:#fee2e2;border:1.5px solid #f87171;color:#7f1d1d;}
+.rvvb-talvez{background:#fef3c7;border:1.5px solid #fbbf24;color:#78350f;}
+.rv-valid-icon{font-size:22px;flex-shrink:0;line-height:1;}
+
+/* ── Seções de conteúdo ────────────────────────────────────────── */
+.rv-sec{padding:14px 24px;border-bottom:1px solid #e5e7eb;}
 .rv-sec:last-child{border-bottom:none;}
-.rv-sec-title{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.09em;
-              color:var(--or);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
-.rv-sec-title::after{content:'';flex:1;height:1px;background:rgba(234,88,12,.25);}
-.rv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 20px;}
-.rv-field{display:flex;flex-direction:column;gap:3px;}
-.rv-field-label{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--m);}
-.rv-field-val{font-size:13px;color:var(--t);font-weight:600;}
-.rv-field-val-lg{font-size:15px;font-weight:800;}
+.rv-sec-hd{
+  font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.10em;
+  color:#fff;background:#064e3b;
+  padding:5px 10px;border-radius:4px;
+  margin-bottom:12px;display:inline-flex;align-items:center;gap:6px;
+}
+.rv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 18px;}
+.rv-field{display:flex;flex-direction:column;gap:2px;}
+.rv-fl{font-size:8.5px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;}
+.rv-fv{font-size:13px;color:#111;font-weight:600;line-height:1.4;}
+.rv-fv-lg{font-size:15px;font-weight:800;}
+.rv-cultura-tag{display:inline-flex;align-items:center;gap:5px;
+                background:#dcfce7;color:#14532d;border:1px solid #86efac;
+                padding:3px 10px;border-radius:20px;font-size:13px;font-weight:800;}
 
-/* ── Validação geral ── */
-.rv-validacao{margin:0 28px 20px;padding:14px 18px;border-radius:11px;
-              display:flex;align-items:flex-start;gap:12px;font-size:13px;}
-.rv-v-ok{background:var(--ok-bg);border:1.5px solid rgba(34,197,94,.35);color:var(--ok-c);}
-.rv-v-nao{background:var(--nao-bg);border:1.5px solid rgba(239,68,68,.35);color:var(--nao-c);}
-.rv-v-talvez{background:var(--tal-bg);border:1.5px solid rgba(251,191,36,.30);color:var(--tal-c);}
-.rv-v-icon{font-size:24px;flex-shrink:0;line-height:1;}
+/* ── Tabela de produtos ────────────────────────────────────────── */
+.rv-prod-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;}
+.rv-prod-tbl th{
+  padding:8px 10px;text-align:left;font-size:8.5px;font-weight:900;
+  text-transform:uppercase;letter-spacing:.08em;color:#374151;
+  background:#f3f4f6;border-bottom:2px solid #d1d5db;
+}
+.rv-prod-tbl td{padding:10px 10px;border-bottom:1px solid #e5e7eb;
+                color:#1f2937;vertical-align:top;}
+.rv-prod-tbl tr:last-child td{border-bottom:none;}
+.rv-prod-tbl tr:nth-child(even) td{background:#f9fafb;}
+.rv-prod-name{font-weight:800;color:#1f2937;font-size:13px;}
+.rv-prod-mapa{font-size:10px;color:#9ca3af;margin-top:2px;}
+.rv-prod-ia{font-size:11px;color:#4b5563;}
 
-/* ── Tabela de produtos ── */
-.rv-prod-table{width:100%;border-collapse:collapse;font-size:12px;}
-.rv-prod-table th{padding:9px 12px;text-align:left;font-size:9px;font-weight:900;
-                  text-transform:uppercase;letter-spacing:.07em;color:var(--m);
-                  background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.08);}
-.rv-prod-table td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.05);
-                  color:var(--t);vertical-align:top;}
-.rv-prod-table tr:last-child td{border-bottom:none;}
-.rv-prod-table tr:hover td{background:rgba(255,255,255,.02);}
+.rv-vbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
+           border-radius:20px;font-size:10px;font-weight:800;white-space:nowrap;}
+.rvvb-sim{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;}
+.rvvb-nao{background:#fee2e2;color:#7f1d1d;border:1px solid #fca5a5;}
+.rvvb-tal{background:#fef3c7;color:#78350f;border:1px solid #fbbf24;}
 
-.vbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;
-        font-size:10px;font-weight:800;}
-.vb-ok{background:var(--ok-bg);color:var(--ok-c);}
-.vb-nao{background:var(--nao-bg);color:var(--nao-c);}
-.vb-talvez{background:var(--tal-bg);color:var(--tal-c);}
-.classe-pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:800;}
-.cp-herb{background:rgba(251,191,36,.18);color:#fde68a;}
-.cp-fung{background:rgba(147,197,253,.18);color:#bfdbfe;}
-.cp-ins{background:rgba(252,165,165,.18);color:#fecaca;}
-.cp-reg{background:rgba(167,243,208,.18);color:#6ee7b7;}
-.cp-out{background:rgba(255,255,255,.10);color:#d1d5db;}
+.rv-cpill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:800;}
+.cp-herb{background:#fef3c7;color:#78350f;}
+.cp-fung{background:#eff6ff;color:#1e3a5f;}
+.cp-ins{background:#fff1f2;color:#881337;}
+.cp-reg{background:#f0fdf4;color:#14532d;}
+.cp-bio{background:#ecfdf5;color:#064e3b;}
+.cp-out{background:#f3f4f6;color:#374151;}
 
-.motivo-text{font-size:11px;margin-top:4px;padding:5px 8px;border-radius:6px;}
-.mt-nao{background:rgba(239,68,68,.10);color:#fca5a5;}
-.mt-talvez{background:rgba(251,191,36,.10);color:#fde68a;}
+.rv-motivo-cell{font-size:11px;margin-top:4px;padding:5px 8px;border-radius:5px;}
+.mc-nao{background:#fee2e2;color:#7f1d1d;}
+.mc-tal{background:#fef3c7;color:#78350f;}
 
-/* ── Assinatura ── */
-.rv-sign-area{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:28px;}
-.rv-sign-box{border-top:2px solid rgba(255,255,255,.3);padding-top:10px;}
-.rv-sign-label{font-size:10px;color:var(--m);font-weight:700;}
-.rv-sign-name{font-size:13px;color:var(--t);font-weight:800;margin-top:4px;}
-.rv-sign-detail{font-size:11px;color:var(--m);}
+/* ── EPI ────────────────────────────────────────────────────────── */
+.rv-epi-band{
+  background:#fffbeb;border:1px solid #fbbf24;border-radius:8px;
+  padding:10px 14px;margin-top:12px;font-size:12px;color:#78350f;
+}
+.rv-epi-title{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;
+              color:#92400e;margin-bottom:6px;}
 
-/* ── Botões de ação ── */
-.rv-actions{display:flex;gap:10px;flex-wrap:wrap;}
-.rv-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;
-        font-size:13px;font-weight:800;cursor:pointer;border:none;text-decoration:none;
-        transition:.15s;font-family:inherit;}
-.rv-btn-p{background:var(--ac);color:#fff;}
-.rv-btn-p:hover{background:#15803d;}
-.rv-btn-e{background:var(--or);color:#fff;}
-.rv-btn-e:hover{background:#c2410c;}
-.rv-btn-g{background:rgba(255,255,255,.10);color:#fff;border:1px solid var(--bd);}
-.rv-btn-g:hover{background:rgba(255,255,255,.16);}
-.rv-btn-danger{background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.30);}
-.rv-btn-danger:hover{background:rgba(239,68,68,.30);}
+/* ── Assinaturas ────────────────────────────────────────────────── */
+.rv-sign-area{
+  display:grid;grid-template-columns:1fr 1fr;gap:24px;
+  padding:18px 24px 20px;background:#f9fafb;
+}
+.rv-sign-box{border-top:2px solid #064e3b;padding-top:8px;}
+.rv-sign-role{font-size:9px;font-weight:900;text-transform:uppercase;
+              letter-spacing:.08em;color:#6b7280;}
+.rv-sign-name{font-size:14px;font-weight:800;color:#1f2937;margin-top:4px;}
+.rv-sign-detail{font-size:11px;color:#4b5563;margin-top:2px;}
 
-@media print{
-  body{background:#fff!important;color:#000!important;}
-  .rv-actions,.rv-hdr,nav,header,footer,.chatbot{display:none!important;}
-  .rv-doc{border:2px solid #000;box-shadow:none;background:#fff!important;color:#000!important;}
-  .rv-doc-header{background:#064e3b!important;}
-  .rv-sec{padding:12px 20px;}
-  .rv-field-val,.rv-prod-table td{color:#000;}
-  .rv-field-label,.rv-sec-title{color:#555;}
+/* ── Rodapé do documento ────────────────────────────────────────── */
+.rv-doc-footer{
+  background:#064e3b;color:rgba(255,255,255,.75);
+  font-size:9px;text-align:center;padding:8px 20px;
+  letter-spacing:.04em;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PRINT STYLES — esconde tudo exceto o documento
+   ══════════════════════════════════════════════════════════════════ */
+@media print {
+  /* Esconder interface do site */
+  header, nav, footer, .navbar, .footer,
+  .rv-actions-bar,
+  #cr-chat-btn, #cr-intro, #cr-chat-panel,
+  [class*="chatbot"], [class*="chat-btn"], [id*="chat"],
+  .imp-banner,
+  [class*="piloto"],
+  body > *:not(.rv-page) { display:none !important; }
+
+  /* Reset do body */
+  body, html {
+    background:#fff !important;
+    margin:0 !important; padding:0 !important;
+  }
+
+  /* Mostrar só o documento */
+  .rv-page { padding:0 !important; max-width:100% !important; }
+  .rv-doc  { box-shadow:none !important; border-radius:0 !important; }
+
+  /* Cores para impressão */
+  .rv-doc-top    { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rv-title-band { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rv-sec-hd     { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rv-doc-footer { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rv-prod-tbl th{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+
+  /* Não cortar tabelas */
+  .rv-prod-tbl tr { page-break-inside:avoid; }
+  .rv-sec          { page-break-inside:avoid; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="rv-wrap">
+<div class="rv-page">
 
-  {# Header #}
-  <div class="rv-hdr">
-    <div class="rv-actions">
+  {# ── Barra de ações (web) ──────────────────────────────────────── #}
+  <div class="rv-actions-bar">
+    <div class="rv-ab-left">
       <a href="{{ url_for('receituario.admin_lista') if modo=='admin' else url_for('receituario.func_lista') }}"
-         class="rv-btn rv-btn-g">← Voltar</a>
+         class="rv-btn rv-btn-back">← Voltar</a>
       {% if rec.status != 'emitido' and modo == 'admin' %}
-      <a href="{{ url_for('receituario.admin_editar', rid=rec.id) }}" class="rv-btn rv-btn-g">✏ Editar</a>
+      <a href="{{ url_for('receituario.admin_editar', rid=rec.id) }}" class="rv-btn rv-btn-edit">✏ Editar</a>
       {% endif %}
     </div>
-    <div class="rv-actions">
-      <button onclick="window.print()" class="rv-btn rv-btn-g">🖨 Imprimir</button>
+    <div class="rv-ab-right">
+      <button onclick="window.print()" class="rv-btn rv-btn-print">🖨 Imprimir / PDF</button>
       {% if rec.status == 'rascunho' and modo == 'admin' %}
       <form method="POST" action="{{ url_for('receituario.admin_emitir', rid=rec.id) }}" style="display:inline;">
-        <button type="submit" class="rv-btn rv-btn-p"
+        <button type="submit" class="rv-btn rv-btn-emit"
                 {% if rec.status_geral_validacao == 'NAO' %}disabled title="Há produtos incompatíveis"{% endif %}>
           ✅ Emitir Receituário
         </button>
       </form>
       {% endif %}
       {% if rec.status != 'cancelado' and modo == 'admin' %}
-      <form method="POST" action="{{ url_for('receituario.admin_cancelar', rid=rec.id) }}" style="display:inline;"
-            onsubmit="return confirm('Cancelar este receituário?')">
-        <button type="submit" class="rv-btn rv-btn-danger">✕ Cancelar</button>
+      <form method="POST" action="{{ url_for('receituario.admin_cancelar', rid=rec.id) }}"
+            style="display:inline;" onsubmit="return confirm('Cancelar este receituário?')">
+        <button type="submit" class="rv-btn rv-btn-cancel">✕ Cancelar</button>
       </form>
       {% endif %}
     </div>
   </div>
 
-  {# Documento #}
+  {# ── DOCUMENTO PAPEL ───────────────────────────────────────────── #}
   <div class="rv-doc">
 
-    {# Cabeçalho do documento #}
-    <div class="rv-doc-header">
-      <div class="rv-logo-row">
+    {# Topo: Logo + Empresa + Datas #}
+    <div class="rv-doc-top">
+      <div class="rv-top-left">
+        <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+             alt="Logo Combate Rasante" class="rv-logo-img">
         <div>
-          <div class="rv-logo-txt">CR COMBATE RASANTE</div>
-          <div class="rv-logo-sub">Aviação Agrícola</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.08em;">
-            Emitido em:
-          </div>
-          <div style="font-size:13px;color:#fff;font-weight:700;">
-            {{ rec.data_emissao.strftime('%d/%m/%Y') if rec.data_emissao else '—' }}
-          </div>
-          {% if rec.data_validade %}
-          <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:4px;">
-            Válido até: {{ rec.data_validade.strftime('%d/%m/%Y') }}
-          </div>
-          {% endif %}
+          <div class="rv-brand-name">COMBATE RASANTE</div>
+          <div class="rv-brand-sub">Aviação Agrícola</div>
         </div>
       </div>
-      <div class="rv-doc-title">RECEITUÁRIO AGRONÔMICO</div>
-      <div class="rv-doc-num">Nº {{ rec.numero }}</div>
+      <div class="rv-top-right">
+        <div class="rv-emit-label">Emitido em</div>
+        <div class="rv-emit-date">
+          {{ rec.data_emissao.strftime('%d/%m/%Y') if rec.data_emissao else '—' }}
+        </div>
+        {% if rec.data_validade %}
+        <div class="rv-valid-until">Válido até: {{ rec.data_validade.strftime('%d/%m/%Y') }}</div>
+        {% endif %}
+        <div style="font-size:10px;color:rgba(255,255,255,.60);margin-top:5px;font-family:monospace;">
+          Nº {{ rec.numero }}
+        </div>
+      </div>
     </div>
 
-    {# Status banner #}
+    {# Título central #}
+    <div class="rv-title-band">
+      <div class="rv-title-text">RECEITUÁRIO AGRONÔMICO</div>
+      <div class="rv-title-num">Nº {{ rec.numero }}</div>
+    </div>
+
+    {# Status #}
     {% if rec.status == 'emitido' %}
-    <div class="rv-status-banner rsb-emitido">✅ RECEITUÁRIO EMITIDO — VÁLIDO</div>
+    <div class="rv-status-band rsb-emitido">✅ Receituário Emitido — Documento Válido</div>
     {% elif rec.status == 'rascunho' %}
-    <div class="rv-status-banner rsb-rascunho">📝 RASCUNHO — NÃO EMITIDO</div>
+    <div class="rv-status-band rsb-rascunho">📝 Rascunho — Documento ainda não emitido</div>
     {% else %}
-    <div class="rv-status-banner rsb-cancelado">❌ CANCELADO</div>
+    <div class="rv-status-band rsb-cancelado">❌ Receituário Cancelado</div>
     {% endif %}
 
-    {# Validação geral #}
+    {# Validação agronômica #}
     {% if rec.itens %}
     {% set sv = rec.status_geral_validacao %}
-    <div style="padding:0 0 0 0;margin:16px 28px 0;">
+    <div style="padding:0 24px;">
       {% if sv == 'OK' %}
-      <div class="rv-validacao rv-v-ok">
-        <span class="rv-v-icon">✅</span>
+      <div class="rv-valid-band rvvb-ok">
+        <span class="rv-valid-icon">✅</span>
         <div>
           <strong>Receituário dentro das normas agronômicas</strong><br>
-          <span style="font-size:12px;">Todos os produtos são registrados e autorizados pelo MAPA para a cultura de {{ rec.cultura.nome if rec.cultura else '—' }}.</span>
+          Todos os produtos são registrados e autorizados pelo MAPA para a cultura de
+          <strong>{{ rec.cultura.nome if rec.cultura else '—' }}</strong>.
         </div>
       </div>
       {% elif sv == 'NAO' %}
-      <div class="rv-validacao rv-v-nao">
-        <span class="rv-v-icon">❌</span>
+      <div class="rv-valid-band rvvb-nao">
+        <span class="rv-valid-icon">❌</span>
         <div>
-          <strong>Atenção: produtos não autorizados identificados!</strong><br>
-          <span style="font-size:12px;">Um ou mais produtos não possuem registro para a cultura de {{ rec.cultura.nome if rec.cultura else '—' }}. Corrija antes de emitir.</span>
+          <strong>Atenção: produto(s) não autorizado(s) identificado(s)</strong><br>
+          Um ou mais produtos não possuem registro para a cultura de
+          <strong>{{ rec.cultura.nome if rec.cultura else '—' }}</strong>. Corrija antes de emitir.
         </div>
       </div>
       {% else %}
-      <div class="rv-validacao rv-v-talvez">
-        <span class="rv-v-icon">⚠️</span>
+      <div class="rv-valid-band rvvb-talvez">
+        <span class="rv-valid-icon">⚠️</span>
         <div>
           <strong>Uso com restrições — revise as condições</strong><br>
-          <span style="font-size:12px;">Um ou mais produtos possuem uso restrito ou condicionado para esta cultura. Verifique as observações.</span>
+          Um ou mais produtos possuem uso restrito ou condicionado para esta cultura.
         </div>
       </div>
       {% endif %}
     </div>
     {% endif %}
 
-    {# Seção 1: Produtor + Propriedade #}
-    <div class="rv-sec">
-      <div class="rv-sec-title">Identificação do Produtor</div>
+    {# ── 1. Identificação do Produtor ── #}
+    <div class="rv-sec" style="margin-top:14px;">
+      <div class="rv-sec-hd">📋 Identificação do Produtor</div>
       <div class="rv-grid">
         <div class="rv-field" style="grid-column:span 2;">
-          <span class="rv-field-label">Nome do Produtor</span>
-          <span class="rv-field-val rv-field-val-lg">{{ rec.nome_produtor }}</span>
+          <span class="rv-fl">Nome do Produtor</span>
+          <span class="rv-fv rv-fv-lg">{{ rec.nome_produtor }}</span>
         </div>
         <div class="rv-field">
-          <span class="rv-field-label">CPF / CNPJ</span>
-          <span class="rv-field-val">{{ rec.cpf_cnpj_produtor or '—' }}</span>
+          <span class="rv-fl">CPF / CNPJ</span>
+          <span class="rv-fv">{{ rec.cpf_cnpj_produtor or '—' }}</span>
         </div>
         <div class="rv-field">
-          <span class="rv-field-label">Telefone</span>
-          <span class="rv-field-val">{{ rec.telefone_produtor or '—' }}</span>
+          <span class="rv-fl">Telefone</span>
+          <span class="rv-fv">{{ rec.telefone_produtor or '—' }}</span>
         </div>
         <div class="rv-field" style="grid-column:span 2;">
-          <span class="rv-field-label">Propriedade / Fazenda</span>
-          <span class="rv-field-val">{{ rec.nome_propriedade or '—' }}</span>
+          <span class="rv-fl">Propriedade / Fazenda</span>
+          <span class="rv-fv">{{ rec.nome_propriedade or '—' }}</span>
         </div>
         <div class="rv-field">
-          <span class="rv-field-label">Município / UF</span>
-          <span class="rv-field-val">{{ rec.municipio or '—' }}{% if rec.estado %} / {{ rec.estado }}{% endif %}</span>
+          <span class="rv-fl">Município / UF</span>
+          <span class="rv-fv">{{ rec.municipio or '—' }}{% if rec.estado %} / {{ rec.estado }}{% endif %}</span>
         </div>
         <div class="rv-field">
-          <span class="rv-field-label">Área Total</span>
-          <span class="rv-field-val">{{ rec.area_ha }} ha</span>
+          <span class="rv-fl">Área Total</span>
+          <span class="rv-fv">{{ rec.area_ha }} ha</span>
         </div>
         <div class="rv-field">
-          <span class="rv-field-label">Talhão / Gleba</span>
-          <span class="rv-field-val">{{ rec.talhao or '—' }}</span>
+          <span class="rv-fl">Talhão / Gleba</span>
+          <span class="rv-fv">{{ rec.talhao or '—' }}</span>
         </div>
         {% if rec.car %}
         <div class="rv-field">
-          <span class="rv-field-label">CAR</span>
-          <span class="rv-field-val">{{ rec.car }}</span>
+          <span class="rv-fl">CAR (Cadastro Ambiental Rural)</span>
+          <span class="rv-fv">{{ rec.car }}</span>
         </div>
         {% endif %}
       </div>
     </div>
 
-    {# Seção 2: Dados agronômicos #}
+    {# ── 2. Dados Agronômicos ── #}
     <div class="rv-sec">
-      <div class="rv-sec-title">Dados Agronômicos</div>
+      <div class="rv-sec-hd">🌱 Dados Agronômicos</div>
       <div class="rv-grid">
         <div class="rv-field">
-          <span class="rv-field-label">Cultura</span>
-          <span class="rv-field-val rv-field-val-lg" style="color:#86efac;">
-            🌱 {{ rec.cultura.nome if rec.cultura else '—' }}
+          <span class="rv-fl">Cultura</span>
+          <span class="rv-fv">
+            <span class="rv-cultura-tag">🌱 {{ rec.cultura.nome if rec.cultura else '—' }}</span>
           </span>
         </div>
         <div class="rv-field">
-          <span class="rv-field-label">Estágio Fenológico</span>
-          <span class="rv-field-val">{{ rec.estagio_fenologico or '—' }}</span>
+          <span class="rv-fl">Estágio Fenológico</span>
+          <span class="rv-fv">{{ rec.estagio_fenologico or '—' }}</span>
         </div>
         <div class="rv-field" style="grid-column:span 2;">
-          <span class="rv-field-label">Praga / Doença / Planta Daninha Alvo</span>
-          <span class="rv-field-val">{{ rec.praga_alvo or '—' }}</span>
+          <span class="rv-fl">Praga / Doença / Planta Daninha Alvo</span>
+          <span class="rv-fv">{{ rec.praga_alvo or '—' }}</span>
         </div>
         <div class="rv-field" style="grid-column:span 2;">
-          <span class="rv-field-label">Diagnóstico / Problema Identificado</span>
-          <span class="rv-field-val" style="line-height:1.5;">{{ rec.diagnostico or '—' }}</span>
+          <span class="rv-fl">Diagnóstico / Problema Identificado</span>
+          <span class="rv-fv" style="line-height:1.5;">{{ rec.diagnostico or '—' }}</span>
         </div>
         {% if rec.nivel_acao %}
         <div class="rv-field">
-          <span class="rv-field-label">Nível de Ação</span>
-          <span class="rv-field-val">{{ rec.nivel_acao }}</span>
+          <span class="rv-fl">Nível de Ação</span>
+          <span class="rv-fv">{{ rec.nivel_acao }}</span>
         </div>
         {% endif %}
       </div>
     </div>
 
-    {# Seção 3: Produtos + Validação #}
+    {# ── 3. Produtos Recomendados ── #}
     <div class="rv-sec">
-      <div class="rv-sec-title">Produtos Recomendados</div>
+      <div class="rv-sec-hd">🧪 Produtos Recomendados</div>
       {% if rec.itens %}
       <div style="overflow-x:auto;">
-        <table class="rv-prod-table">
+        <table class="rv-prod-tbl">
           <thead>
             <tr>
               <th>#</th>
@@ -295,43 +406,48 @@
               <th>Ingrediente Ativo</th>
               <th>Classe</th>
               <th>Dose</th>
-              <th>Aplic.</th>
+              <th>Nº Aplic.</th>
               <th>Validação</th>
             </tr>
           </thead>
           <tbody>
             {% for item in rec.itens %}
             <tr>
-              <td style="font-weight:800;color:var(--m);">{{ loop.index }}</td>
+              <td style="font-weight:800;color:#9ca3af;font-size:12px;">{{ loop.index }}</td>
               <td>
-                <strong>{{ item.produto_nome }}</strong>
-                <br><small style="color:var(--m);">MAPA: {{ item.produto_id_api }}</small>
+                <div class="rv-prod-name">{{ item.produto_nome }}</div>
+                {% if item.produto_id_api %}
+                <div class="rv-prod-mapa">MAPA: {{ item.produto_id_api }}</div>
+                {% endif %}
               </td>
-              <td style="color:var(--m);font-size:11px;">{{ item.produto_ia }}</td>
+              <td class="rv-prod-ia">{{ item.produto_ia or '—' }}</td>
               <td>
                 {% set cls = item.produto_classe or '' %}
-                {% if 'Herb' in cls %}<span class="classe-pill cp-herb">{{ cls }}</span>
-                {% elif 'Fung' in cls %}<span class="classe-pill cp-fung">{{ cls }}</span>
-                {% elif 'Inset' in cls %}<span class="classe-pill cp-ins">{{ cls }}</span>
-                {% elif 'Regul' in cls %}<span class="classe-pill cp-reg">{{ cls }}</span>
-                {% else %}<span class="classe-pill cp-out">{{ cls }}</span>{% endif %}
+                {% if 'Herb' in cls %}<span class="rv-cpill cp-herb">{{ cls }}</span>
+                {% elif 'Fung' in cls %}<span class="rv-cpill cp-fung">{{ cls }}</span>
+                {% elif 'Inset' in cls %}<span class="rv-cpill cp-ins">{{ cls }}</span>
+                {% elif 'Regul' in cls %}<span class="rv-cpill cp-reg">{{ cls }}</span>
+                {% elif 'Bio' in cls %}<span class="rv-cpill cp-bio">{{ cls }}</span>
+                {% else %}<span class="rv-cpill cp-out">{{ cls or '—' }}</span>{% endif %}
               </td>
-              <td>
+              <td style="font-weight:700;white-space:nowrap;">
                 {% if item.dose %}{{ item.dose }} {{ item.unidade or '' }}{% else %}—{% endif %}
               </td>
-              <td style="text-align:center;">{{ item.num_aplicacoes or 1 }}×</td>
+              <td style="text-align:center;font-weight:700;">
+                {{ item.num_aplicacoes or 1 }}×
+              </td>
               <td>
                 {% if item.status_validacao in ('SIM','OK') %}
-                  <span class="vbadge vb-ok">✔ Autorizado</span>
+                  <span class="rv-vbadge rvvb-sim">✔ Autorizado</span>
                 {% elif item.status_validacao == 'NAO' %}
-                  <span class="vbadge vb-nao">✘ Não autorizado</span>
+                  <span class="rv-vbadge rvvb-nao">✘ Não autorizado</span>
                   {% if item.motivo_restricao %}
-                  <div class="motivo-text mt-nao">{{ item.motivo_restricao }}</div>
+                  <div class="rv-motivo-cell mc-nao">{{ item.motivo_restricao[:120] }}</div>
                   {% endif %}
                 {% else %}
-                  <span class="vbadge vb-talvez">⚠ Restrição</span>
+                  <span class="rv-vbadge rvvb-tal">⚠ Restrição</span>
                   {% if item.motivo_restricao %}
-                  <div class="motivo-text mt-talvez">{{ item.motivo_restricao }}</div>
+                  <div class="rv-motivo-cell mc-tal">{{ item.motivo_restricao[:120] }}</div>
                   {% endif %}
                 {% endif %}
               </td>
@@ -340,71 +456,84 @@
           </tbody>
         </table>
       </div>
-
       {% else %}
-      <div style="color:var(--m);font-size:13px;text-align:center;padding:20px;">
-        Nenhum produto adicionado.
-      </div>
+      <p style="color:#6b7280;font-size:13px;text-align:center;padding:16px;">Nenhum produto adicionado.</p>
       {% endif %}
     </div>
 
-    {# Seção 4: Aplicação #}
+    {# ── 4. Parâmetros de Aplicação ── #}
     <div class="rv-sec">
-      <div class="rv-sec-title">Parâmetros de Aplicação</div>
+      <div class="rv-sec-hd">✈ Parâmetros de Aplicação</div>
       <div class="rv-grid">
-        <div class="rv-field">
-          <span class="rv-field-label">Equipamento</span>
-          <span class="rv-field-val">{{ rec.tipo_equipamento or 'Aeronave agrícola' }}</span>
+        <div class="rv-field" style="grid-column:span 2;">
+          <span class="rv-fl">Equipamento / Aeronave</span>
+          <span class="rv-fv">{{ rec.tipo_equipamento or 'Aeronave agrícola' }}</span>
         </div>
         <div class="rv-field">
-          <span class="rv-field-label">Volume de Calda</span>
-          <span class="rv-field-val">{{ rec.volume_calda }} L/ha</span>
+          <span class="rv-fl">Volume de Calda</span>
+          <span class="rv-fv">{{ rec.volume_calda or '—' }} L/ha</span>
         </div>
         <div class="rv-field">
-          <span class="rv-field-label">Nº de Aplicações</span>
-          <span class="rv-field-val">{{ rec.num_aplicacoes }}</span>
+          <span class="rv-fl">Nº de Aplicações</span>
+          <span class="rv-fv">{{ rec.num_aplicacoes or 1 }}</span>
         </div>
         {% if rec.intervalo_aplicacoes %}
         <div class="rv-field">
-          <span class="rv-field-label">Intervalo entre Aplicações</span>
-          <span class="rv-field-val">{{ rec.intervalo_aplicacoes }} dias</span>
+          <span class="rv-fl">Intervalo entre Aplicações</span>
+          <span class="rv-fv">{{ rec.intervalo_aplicacoes }} dias</span>
         </div>
         {% endif %}
         {% if rec.epoca_aplicacao %}
         <div class="rv-field" style="grid-column:span 2;">
-          <span class="rv-field-label">Época / Período de Aplicação</span>
-          <span class="rv-field-val">{{ rec.epoca_aplicacao }}</span>
+          <span class="rv-fl">Época / Período de Aplicação</span>
+          <span class="rv-fv">{{ rec.epoca_aplicacao }}</span>
         </div>
         {% endif %}
         {% if rec.observacoes_aplicacao %}
         <div class="rv-field" style="grid-column:span 2;">
-          <span class="rv-field-label">Condições para Aplicação</span>
-          <span class="rv-field-val" style="line-height:1.5;">{{ rec.observacoes_aplicacao }}</span>
+          <span class="rv-fl">Condições para Aplicação</span>
+          <span class="rv-fv" style="line-height:1.5;">{{ rec.observacoes_aplicacao }}</span>
         </div>
         {% endif %}
       </div>
     </div>
 
+    {# ── 5. Observações Gerais ── #}
     {% if rec.observacoes %}
     <div class="rv-sec">
-      <div class="rv-sec-title">Observações Gerais</div>
-      <div style="font-size:13px;color:var(--t);line-height:1.6;">{{ rec.observacoes }}</div>
+      <div class="rv-sec-hd">📝 Observações Gerais</div>
+      <p style="font-size:13px;color:#1f2937;line-height:1.6;margin:0;">{{ rec.observacoes }}</p>
     </div>
     {% endif %}
 
-    {# Assinaturas #}
+    {# ── Assinaturas ── #}
     <div class="rv-sign-area">
       <div class="rv-sign-box">
-        <div class="rv-sign-label">Produtor / Proprietário</div>
+        <div class="rv-sign-role">Produtor / Proprietário</div>
         <div class="rv-sign-name">{{ rec.nome_produtor }}</div>
         <div class="rv-sign-detail">{{ rec.cpf_cnpj_produtor or '' }}</div>
+        <div style="margin-top:24px;border-top:1px dashed #9ca3af;padding-top:6px;
+                    font-size:10px;color:#9ca3af;">Assinatura</div>
       </div>
       <div class="rv-sign-box">
-        <div class="rv-sign-label">Responsável Técnico</div>
+        <div class="rv-sign-role">Responsável Técnico</div>
         <div class="rv-sign-name">{{ rec.responsavel_tecnico or '—' }}</div>
-        <div class="rv-sign-detail">{{ rec.crea_cfta or '' }}{% if rec.cpf_rt %} | CPF: {{ rec.cpf_rt }}{% endif %}</div>
+        <div class="rv-sign-detail">
+          {{ rec.crea_cfta or '' }}
+          {% if rec.cpf_rt %} | CPF: {{ rec.cpf_rt }}{% endif %}
+        </div>
+        <div style="margin-top:24px;border-top:1px dashed #9ca3af;padding-top:6px;
+                    font-size:10px;color:#9ca3af;">Assinatura e Carimbo</div>
       </div>
     </div>
 
-  </div></div>
+    {# Rodapé do documento #}
+    <div class="rv-doc-footer">
+      Combate Rasante Aviação Agrícola — Rod. GO 320, Km 82, Vicentinópolis/GO — (64) 99221-7002 |
+      Gerado em {{ rec.data_criacao.strftime('%d/%m/%Y às %H:%M') if rec.data_criacao else '' }} —
+      {{ rec.numero }}
+    </div>
+
+  </div>{# .rv-doc #}
+</div>{# .rv-page #}
 {% endblock %}
