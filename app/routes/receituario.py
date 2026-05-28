@@ -20,7 +20,6 @@ AGROAPI_SECRET = "KVYMu619dgmFUSqErSv18OFIIkka"
 TOKEN_CACHE = {"access_token": None, "expires_at": 0}
 
 def _get_agroapi_token():
-    """Gera um token de acesso de forma segura."""
     if TOKEN_CACHE["access_token"] and time.time() < TOKEN_CACHE["expires_at"]:
         return TOKEN_CACHE["access_token"]
 
@@ -46,9 +45,6 @@ def _get_agroapi_token():
         print(f"ERRO DE AUTENTICAÇÃO AGROAPI: {e}")
         return None
 
-# =============================================================================
-# Hack Silencioso de Banco de Dados (Auto Migrate)
-# =============================================================================
 def auto_migrate_db():
     """Cria as colunas novas na tabela do Railway para evitar a tela branca ao salvar."""
     try:
@@ -67,10 +63,6 @@ def auto_migrate_db():
     except Exception:
         pass
 
-
-# =============================================================================
-# Helpers e Rotas de Exibição
-# =============================================================================
 def _is_admin():
     emp = get_current_employee()
     return emp and emp.is_admin
@@ -233,13 +225,7 @@ def func_ver(rid):
     rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
     return render_template("receituario_view.html", current_employee=emp, current_user=get_current_user(), rec=rec, modo="func")
 
-
-# =============================================================================
-# API EMBRAPA — Sistema de Busca Blindado e Extração Dinâmica
-# =============================================================================
-
 def extrator_dinamico(item, chaves, padrao=""):
-    """Varre o dicionário da API da Embrapa procurando os dados, não importa a grafia que eles usem."""
     if not isinstance(item, dict): return padrao
     for k in chaves:
         if k in item and item[k] is not None and item[k] != "":
@@ -261,13 +247,10 @@ def api_produtos():
 
     headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
     url = "https://api.cnptia.embrapa.br/agrofit/v1/search/produtos-formulados"
-    
-    # Enviamos uma margem maior de "size" para a Embrapa
     params = {'marcaComercial': q, 'size': 100} if campo == 'nome' else {'ingredienteAtivo': q, 'size': 100}
 
     try:
         response = requests.get(url, headers=headers, params=params, timeout=12)
-        # Fallback se a API de busca cair
         if response.status_code == 404:
             url = "https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados"
             response = requests.get(url, headers=headers, params=params, timeout=12)
@@ -278,7 +261,6 @@ def api_produtos():
         response.raise_for_status()
         dados_embrapa = response.json()
         
-        # Desempacota a resposta seja qual for a estrutura (lista ou dicionário)
         itens = dados_embrapa if isinstance(dados_embrapa, list) else dados_embrapa.get('data', dados_embrapa.get('content', []))
         
         resultado = []
@@ -291,7 +273,6 @@ def api_produtos():
             nome = extrator_dinamico(p, ['marca_comercial', 'marcaComercial', 'nome_comercial', 'produto', 'nome', 'marca'])
             if not nome: nome = "Produto Sem Nome"
             
-            # Extraindo Ingrediente Ativo (que as vezes vem numa sublista complexa)
             ia_bruto = p.get('ingrediente_ativo') or p.get('ingredienteAtivo') or p.get('ingredientesAtivos') or p.get('ingredientes_ativos')
             if isinstance(ia_bruto, list):
                 ia = ", ".join([extrator_dinamico(x, ['nome', 'ingredienteAtivo', 'ingrediente_ativo']) for x in ia_bruto if isinstance(x, dict)])
@@ -300,7 +281,6 @@ def api_produtos():
             else:
                 ia = str(ia_bruto) if ia_bruto else "Princípio ativo não informado"
                 
-            # Filtro manual de segurança
             if campo == 'nome' and q_low not in nome.lower():
                 continue
             if campo == 'ia' and q_low not in ia.lower():
@@ -332,7 +312,6 @@ def api_produtos():
 
 @receituario_bp.route("/api/receituario/produto/<pid>/validar")
 def api_validar(pid):
-    # Trava de segurança para impedir a validação de botões de erro e null
     if pid in ('erro', 'vazio', 'null', 'undefined', 'None') or not pid or pid.startswith('REF-'):
         return jsonify({"compatibilidade": "TALVEZ", "motivo": "Revisão agronômica manual da bula necessária."})
 
@@ -358,7 +337,7 @@ def api_validar(pid):
         response.raise_for_status()
         produto_api = response.json()
         
-        # Garante que desempacota listas caso a API retorne uma
+        # AQUI ESTAVA O SEU ERRO ANTIGO: Esta linha garante que listas não quebrem o código!
         if isinstance(produto_api, list):
             produto_api = produto_api[0] if len(produto_api) > 0 else {}
             
@@ -395,13 +374,9 @@ def api_culturas():
     cs = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
     return jsonify([c.to_dict() for c in cs])
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Helper — salvar receituário
-# ─────────────────────────────────────────────────────────────────────────────
 def _salvar_receituario(form, rec, func_id=None):
     from app.models.receituario import (Receituario, ItemReceituario)
 
-    # Aciona a auto-correção do banco antes de salvar
     auto_migrate_db()
 
     cultura_id = form.get("cultura_id", type=int)
@@ -462,7 +437,6 @@ def _salvar_receituario(form, rec, func_id=None):
 
     for i, pid_str in enumerate(produto_ids):
         pid = pid_str.strip()
-        # Não arquiva produtos que na verdade são avisos de erro visual da busca
         if not pid or pid in ('erro', 'vazio', 'null', 'None'):
             continue
 
