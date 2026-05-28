@@ -11,46 +11,6 @@ from app.utils.security import login_required, admin_required, get_current_user,
 
 receituario_bp = Blueprint("receituario", __name__)
 
-@receituario_bp.route("/func/receituario/<int:rid>/editar", methods=["GET", "POST"])
-@_func_login_required
-def func_editar(rid):
-    from app.models.receituario import Receituario, Cultura
-    emp = _get_emp()
-    rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
-
-    if rec.status == "emitido":
-        flash("Receituários já emitidos não podem ser editados.", "error")
-        return redirect(url_for("receituario.func_ver", rid=rid))
-
-    culturas = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
-
-    if request.method == "POST":
-        return _salvar_receituario(request.form, rec, func_id=emp.id)
-
-    return render_template("receituario_form.html",
-                           current_employee=emp,
-                           current_user=get_current_user(),
-                           rec=rec, culturas=culturas, produtos=[], clientes=[],
-                           modo="func")
-
-
-@receituario_bp.route("/func/receituario/<int:rid>/excluir", methods=["POST"])
-@_func_login_required
-def func_excluir(rid):
-    from app.models.receituario import Receituario
-    emp = _get_emp()
-    rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
-
-    if rec.status == "emitido":
-        flash("Receituários emitidos não podem ser excluídos. Solicite cancelamento ao administrador.", "error")
-        return redirect(url_for("receituario.func_ver", rid=rid))
-
-    db.session.delete(rec)
-    db.session.commit()
-    flash(f"Receituário {rec.numero} excluído com sucesso.", "success")
-    return redirect(url_for("receituario.func_lista"))
-
-
 # =============================================================================
 # CREDENCIAIS DA AGROAPI (EMBRAPA)
 # =============================================================================
@@ -285,6 +245,46 @@ def func_ver(rid):
     return render_template("receituario_view.html",
                            current_employee=emp, current_user=get_current_user(),
                            rec=rec, fispq=_get_fispq(rec), modo="func")
+
+
+@receituario_bp.route("/func/receituario/<int:rid>/editar", methods=["GET", "POST"])
+@_func_login_required
+def func_editar(rid):
+    from app.models.receituario import Receituario, Cultura
+    emp = _get_emp()
+    rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
+
+    if rec.status == "emitido":
+        flash("Receituários já emitidos não podem ser editados.", "error")
+        return redirect(url_for("receituario.func_ver", rid=rid))
+
+    culturas = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+
+    if request.method == "POST":
+        return _salvar_receituario(request.form, rec, func_id=emp.id)
+
+    return render_template("receituario_form.html",
+                           current_employee=emp,
+                           current_user=get_current_user(),
+                           rec=rec, culturas=culturas, produtos=[], clientes=[],
+                           modo="func")
+
+
+@receituario_bp.route("/func/receituario/<int:rid>/excluir", methods=["POST"])
+@_func_login_required
+def func_excluir(rid):
+    from app.models.receituario import Receituario
+    emp = _get_emp()
+    rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
+
+    if rec.status == "emitido":
+        flash("Receituários emitidos não podem ser excluídos. Solicite cancelamento ao administrador.", "error")
+        return redirect(url_for("receituario.func_ver", rid=rid))
+
+    db.session.delete(rec)
+    db.session.commit()
+    flash(f"Receituário {rec.numero} excluído com sucesso.", "success")
+    return redirect(url_for("receituario.func_lista"))
 
 
 # =============================================================================
