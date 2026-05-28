@@ -47,8 +47,9 @@
   flex-wrap:wrap;
 }
 .rv-top-left{display:flex;align-items:center;gap:14px;}
-.rv-logo-img{width:56px;height:56px;object-fit:contain;border-radius:8px;
-             background:#fff;padding:3px;}
+.rv-logo-img{width:56px;height:56px;object-fit:contain;border-radius:10px;
+             filter:drop-shadow(0 2px 6px rgba(0,0,0,.35));
+             mix-blend-mode:normal;}
 .rv-brand-name{font-size:18px;font-weight:900;color:#fff;
                text-shadow:0 1px 3px rgba(0,0,0,.5);line-height:1.2;}
 .rv-brand-sub{font-size:10px;color:rgba(255,255,255,.80);text-transform:uppercase;
@@ -181,35 +182,66 @@
    PRINT STYLES — esconde tudo exceto o documento
    ══════════════════════════════════════════════════════════════════ */
 @media print {
-  /* Esconder interface do site */
-  header, nav, footer, .navbar, .footer,
-  .rv-actions-bar,
-  #cr-chat-btn, #cr-intro, #cr-chat-panel,
-  [class*="chatbot"], [class*="chat-btn"], [id*="chat"],
-  .imp-banner,
-  [class*="piloto"],
-  body > *:not(.rv-page) { display:none !important; }
+  /* ─ Esconder UI do site ─────────────────────────────────────────
+     IMPORTANTE: NÃO esconder <main> ou qualquer container que
+     envolva .rv-doc. Esconder apenas elementos específicos.     */
 
-  /* Reset do body */
-  body, html {
-    background:#fff !important;
-    margin:0 !important; padding:0 !important;
+  /* Navbar/header do site */
+  .navbar, .navbar__wrapper, nav { display:none !important; }
+  /* Footer do site */
+  .footer, footer { display:none !important; }
+  /* Garantir que #main-content fique visível */
+  #main-content { display:block !important; padding:0 !important; }
+
+  /* Barra de botões de ação (Voltar, Editar, Imprimir…) */
+  .rv-actions-bar { display:none !important; }
+
+  /* Chatbot "Piloto" — esconder todos os elementos */
+  #cr-chat-btn,
+  #cr-intro,
+  #cr-chat-panel,
+  #cr-chat-overlay { display:none !important; }
+
+  /* Banner de manutenção e outros overlays fixos */
+  .imp-banner,
+  [style*="position:fixed"][style*="top:0"] { display:none !important; }
+
+  /* ─ Ajustes de página ──────────────────────────────────────────*/
+  @page { margin:10mm; }
+
+  html, body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
   }
 
-  /* Mostrar só o documento */
-  .rv-page { padding:0 !important; max-width:100% !important; }
-  .rv-doc  { box-shadow:none !important; border-radius:0 !important; }
+  /* Padding extra do layout — remover */
+  main, .content-wrapper, [class*="content"] {
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
 
-  /* Cores para impressão */
-  .rv-doc-top    { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .rv-title-band { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .rv-sec-hd     { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .rv-doc-footer { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .rv-prod-tbl th{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .rv-page {
+    padding: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
 
-  /* Não cortar tabelas */
-  .rv-prod-tbl tr { page-break-inside:avoid; }
-  .rv-sec          { page-break-inside:avoid; }
+  .rv-doc {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* ─ Cores exatas na impressão ──────────────────────────────────*/
+  * { -webkit-print-color-adjust: exact !important;
+       print-color-adjust: exact !important; }
+
+  /* ─ Evitar quebra de página no meio de seções ─────────────────*/
+  .rv-prod-tbl tr { page-break-inside: avoid; }
+  .rv-sec          { page-break-inside: avoid; }
+  .rv-sign-area    { page-break-inside: avoid; }
 }
 </style>
 {% endblock %}
