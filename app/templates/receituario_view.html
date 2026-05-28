@@ -182,14 +182,136 @@
 
 /* Quebra de página entre pág 1 e pág 2 */
 .rv-pg2-break{
-  height:32px;
-  page-break-after: always;
-  break-after: page;
+  height:20px;
+  display:flex; align-items:center; justify-content:center;
+  color:#9ca3af; font-size:10px; letter-spacing:.08em;
 }
-@media print { .rv-pg2-break{ height:0; } }
+@media print {
+  /* ─────────────────────────────────────────────────────────────────
+     PRINT = 2 PÁGINAS A4 EXATAS
+     Estratégia: remover todo espaço vazio, compactar seções,
+     fontes menores, page-break só entre pág 1 e pág 2
+  ───────────────────────────────────────────────────────────────── */
+  @page { size: A4 portrait; margin: 8mm 10mm; }
 
-.rv-pg2{ margin-top:24px; }
-@media print { .rv-pg2{ margin-top:0; } }
+  /* Reset de altura — PRINCIPAL causa dos espaços em branco */
+  html, body, main, #main-content,
+  .content, .container, [class*="wrapper"],
+  .rv-page { min-height: 0 !important;
+              height: auto !important;
+              overflow: visible !important; }
+
+  /* Esconder UI */
+  .navbar, .navbar__wrapper, nav, header,
+  .footer, footer, .rv-actions-bar, .imp-banner { display:none !important; }
+
+  /* Chatbot — zero espaço */
+  #cr-intro, #cr-chat-btn, #cr-hello-bubble, #cr-chat-win,
+  [id^="cr-"], [class^="cr-"], [class*=" cr-"] {
+    display:none !important; visibility:hidden !important;
+    width:0 !important; height:0 !important;
+    position:absolute !important; top:-9999px !important;
+    overflow:hidden !important; }
+
+  /* Manter conteúdo */
+  #main-content { display:block !important; padding:0 !important; margin:0 !important; }
+
+  /* ─ Documento base ─ */
+  .rv-page  { padding:0 !important; margin:0 !important; max-width:100% !important; }
+  .rv-doc   { box-shadow:none !important; border-radius:0 !important;
+               font-size: 9pt !important; }
+
+  /* ─ Cabeçalho pág 1 — mais compacto ─ */
+  .rv-doc-top   { padding:10px 18px !important; }
+  .rv-logo-img  { width:42px !important; height:42px !important; }
+  .rv-brand-name { font-size:14px !important; }
+  .rv-top-right, .rv-top-left, .rv-doc-top > * { background:transparent !important; }
+
+  .rv-title-band  { padding:8px 18px !important; }
+  .rv-title-text  { font-size:18px !important; }
+  .rv-title-num   { font-size:10px !important; margin-top:2px !important; }
+
+  .rv-status-band { padding:6px 14px !important; font-size:10px !important; }
+  .rv-valid-band  { margin:8px 16px 0 !important; padding:8px 12px !important;
+                    font-size:10px !important; }
+
+  /* ─ Seções — padding reduzido ─ */
+  .rv-sec { padding:7px 16px !important; }
+  .rv-sec-hd { font-size:8px !important; padding:3px 8px !important;
+               margin-bottom:7px !important; }
+
+  /* ─ Campos de dados — menores ─ */
+  .rv-fl   { font-size:7px !important; }
+  .rv-fv   { font-size:10px !important; }
+  .rv-fv-lg { font-size:12px !important; }
+  .rv-grid  { gap:6px 14px !important; }
+  .rv-cultura-tag { font-size:10px !important; padding:2px 8px !important; }
+
+  /* ─ Tabela de produtos ─ */
+  .rv-prod-tbl th { padding:5px 8px !important; font-size:7px !important; }
+  .rv-prod-tbl td { padding:6px 8px !important; font-size:10px !important; }
+  .rv-prod-name   { font-size:11px !important; }
+  .rv-prod-mapa   { font-size:8px !important; }
+  .rv-prod-ia     { font-size:9px !important; }
+  .rv-vbadge, .rv-cpill { font-size:8px !important; padding:2px 6px !important; }
+
+  /* ─ Assinaturas ─ */
+  .rv-sign-area { padding:12px 16px 14px !important; gap:16px !important; }
+  .rv-sign-name { font-size:12px !important; }
+  .rv-sign-detail, .rv-sign-role { font-size:9px !important; }
+
+  /* ─ Rodapé ─ */
+  .rv-doc-footer { padding:5px 14px !important; font-size:8px !important; }
+
+  /* ─ Separador entre páginas — sem altura na tela, quebra na impressão ─ */
+  .rv-pg2-break { height:0 !important; margin:0 !important;
+                  page-break-before: always !important;
+                  break-before: page !important; }
+
+  /* ─ Página 2 — sem margem superior ─ */
+  .rv-pg2 { margin-top:0 !important; }
+  .rv-pg2-header { padding:8px 18px !important; }
+
+  /* ─ Cards meteo — linha única, menores ─ */
+  .rv-meteo-grid { grid-template-columns:repeat(4,1fr) !important;
+                   gap:6px !important; margin-bottom:8px !important; }
+  .rv-meteo-card { padding:7px !important; }
+  .rv-meteo-icon { font-size:16px !important; margin-bottom:2px !important; }
+  .rv-meteo-label { font-size:7px !important; }
+  .rv-meteo-val   { font-size:11px !important; margin:1px 0 !important; }
+  .rv-meteo-ideal { font-size:8px !important; }
+
+  /* ─ Barra de horário — compacta ─ */
+  .rv-time-bar-wrap { padding:7px 10px !important; margin-top:4px !important; }
+  .rv-time-title    { font-size:8px !important; margin-bottom:4px !important; }
+  .rv-time-seg      { padding:5px 8px !important; font-size:9px !important; }
+  .rv-time-hr       { font-size:11px !important; }
+  .rv-time-icon     { font-size:13px !important; }
+  .rv-time-intervalo { padding:5px 8px !important; font-size:9px !important; }
+
+  /* ─ Cards de bicos ─ */
+  .rv-bico-grid  { gap:8px !important; }
+  .rv-bico-card  { padding:9px 12px !important; }
+  .rv-bico-vol   { font-size:14px !important; }
+  .rv-bico-title { font-size:11px !important; margin-bottom:5px !important; }
+  .rv-bico-item  { font-size:9px !important; margin-bottom:2px !important; }
+  .rv-bico-note  { font-size:8px !important; padding-top:4px !important; }
+
+  /* ─ Banners de segurança ─ */
+  .rv-safety-banner { padding:6px 10px !important; font-size:9px !important; }
+
+  /* ─ Cores exatas ─ */
+  * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+
+  /* ─ Page breaks — não quebrar no meio de linhas de tabela ─ */
+  .rv-prod-tbl tr, .rv-sec, .rv-sign-area,
+  .rv-valid-band, .rv-bico-card { page-break-inside:avoid !important; }
+
+  /* ─ FORÇAR que pág.1 e pág.2 fiquem em páginas separadas ─ */
+  .rv-doc:first-of-type { page-break-after: avoid !important; }
+}
+
+.rv-pg2{ margin-top:4px; }
 
 /* Mini-cabeçalho pág 2 */
 .rv-pg2-header{
@@ -699,7 +821,7 @@
   {# ══════════════════════════════════════════════════════════════
      PÁGINA 2 — Informações Técnicas e de Segurança
      ══════════════════════════════════════════════════════════════ #}
-  <div class="rv-pg2-break"></div>
+  <div class="rv-pg2-break">── PÁGINA 2 ──</div>
   <div class="rv-doc rv-pg2">
 
     {# Mini-cabeçalho da Pág 2 #}
