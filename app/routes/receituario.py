@@ -135,9 +135,6 @@ def admin_editar(rid):
     return render_template("receituario_form.html", current_user=get_current_user(),
                            rec=rec, culturas=culturas, produtos=[], clientes=clientes, modo="admin")
 
-@receituario_bp.route("/admin/receituario/<int:rid>")
-@login_required
-@admin_required
 def _get_fispq(rec):
     """Retorna dict {produto_id_api_str: ProdutoAgricola} para os itens do receituário."""
     from app.models.receituario import ProdutoAgricola
@@ -145,12 +142,18 @@ def _get_fispq(rec):
     for item in rec.itens:
         pid = str(getattr(item, "produto_id_api", "") or "")
         if pid.isdigit():
-            p = ProdutoAgricola.query.get(int(pid))
-            if p:
-                fispq[pid] = p
+            try:
+                p = ProdutoAgricola.query.get(int(pid))
+                if p:
+                    fispq[pid] = p
+            except Exception:
+                pass
     return fispq
 
 
+@receituario_bp.route("/admin/receituario/<int:rid>")
+@login_required
+@admin_required
 def admin_ver(rid):
     from app.models.receituario import Receituario
     rec = Receituario.query.get_or_404(rid)
