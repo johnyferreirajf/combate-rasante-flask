@@ -20,6 +20,7 @@ AGROAPI_SECRET = "KVYMu619dgmFUSqErSv18OFIIkka"
 TOKEN_CACHE = {"access_token": None, "expires_at": 0}
 
 def _get_agroapi_token():
+    """Gera um token de acesso de forma segura."""
     if TOKEN_CACHE["access_token"] and time.time() < TOKEN_CACHE["expires_at"]:
         return TOKEN_CACHE["access_token"]
 
@@ -225,12 +226,10 @@ def func_ver(rid):
     rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
     return render_template("receituario_view.html", current_employee=emp, current_user=get_current_user(), rec=rec, modo="func")
 
-def extrator_dinamico(item, chaves, padrao=""):
-    if not isinstance(item, dict): return padrao
-    for k in chaves:
-        if k in item and item[k] is not None and item[k] != "":
-            return str(item[k])
-    return padrao
+
+# =============================================================================
+# API EMBRAPA — Busca Direta e Descomplicada
+# =============================================================================
 
 @receituario_bp.route("/api/receituario/produtos")
 def api_produtos():
@@ -246,74 +245,83 @@ def api_produtos():
         return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO NAS CHAVES', 'ingrediente_ativo': 'Autenticação com MAPA falhou'}])
 
     headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
-    url = "https://api.cnptia.embrapa.br/agrofit/v1/search/produtos-formulados"
-    params = {'marcaComercial': q, 'size': 100} if campo == 'nome' else {'ingredienteAtivo': q, 'size': 100}
+    url = "https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados"
+    
+    # Endpoint e chaves corretas garantidas pelo Agrofit V1 original
+    params = {'marcaComercial': q} if campo == 'nome' else {'ingredienteAtivo': q}
 
     try:
         response = requests.get(url, headers=headers, params=params, timeout=12)
-        if response.status_code == 404:
-            url = "https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados"
-            response = requests.get(url, headers=headers, params=params, timeout=12)
-            
         if response.status_code in (401, 403):
             return jsonify([{'id': 'erro', 'nome_comercial': f'⚠️ ACESSO NEGADO ({response.status_code})', 'ingrediente_ativo': 'API não assinada no AgroAPI'}])
             
         response.raise_for_status()
         dados_embrapa = response.json()
         
+        # Puxa o array de itens
         itens = dados_embrapa if isinstance(dados_embrapa, list) else dados_embrapa.get('data', dados_embrapa.get('content', []))
         
         resultado = []
-        q_low = q.lower()
-        
         for p in itens:
-            prod_id = extrator_dinamico(p, ['numero_registro', 'numeroRegistro', 'id', 'codigo_registro', 'registro'])
+            if not isinstance(p, dict):
+                continue
+                
+            # Captura a ID
+            prod_id = p.get('numeroRegistro') or p.get('id') or p.get('codigoRegistro') or p.get('registro')
             if not prod_id: continue
             
-            nome = extrator_dinamico(p, ['marca_comercial', 'marcaComercial', 'nome_comercial', 'produto', 'nome', 'marca'])
-            if not nome: nome = "Produto Sem Nome"
-            
-            ia_bruto = p.get('ingrediente_ativo') or p.get('ingredienteAtivo') or p.get('ingredientesAtivos') or p.get('ingredientes_ativos')
-            if isinstance(ia_bruto, list):
-                ia = ", ".join([extrator_dinamico(x, ['nome', 'ingredienteAtivo', 'ingrediente_ativo']) for x in ia_bruto if isinstance(x, dict)])
-            elif isinstance(ia_bruto, dict):
-                ia = extrator_dinamico(ia_bruto, ['nome', 'ingredienteAtivo', 'ingrediente_ativo'])
-            else:
-                ia = str(ia_bruto) if ia_bruto else "Princípio ativo não informado"
+            # Captura o Nome Comercial 
+            nome = p.get('marcaComercial') or p.get('nomeComercial') or p.get('produto')
+            if not nome: 
+                nome = f"Produto MAPA #{prod_id}"
                 
-            if campo == 'nome' and q_low not in nome.lower():
-                continue
-            if campo == 'ia' and q_low not in ia.lower():
-                continue
-            
-            classe = extrator_dinamico(p, ['classificacao_agronomica', 'classificacaoAgronomica', 'classe'], 'Outros')
-            fabricante = extrator_dinamico(p, ['titular_registro', 'titularRegistro', 'fabricante'])
+            # Captura o Princípio Ativo (às vezes a Embrapa manda um objeto dentro de uma lista)
+            ia_bruto = p.get('ingredienteAtivo') or p.get('ingredientesAtivos')
+            if isinstance(ia_bruto, list):
+                ia_list = []
+                for x in ia_bruto:
+                    if isinstance(x, dict):
+                        ia_list.append(x.get('nome') or x.get('ingredienteAtivo') or str(x))
+                    else:
+                        ia_list.append(str(x))
+                ia = ", ".join(ia_list)
+            elif isinstance(ia_bruto, dict):
+                ia = ia_bruto.get('nome') or ia_bruto.get('ingredienteAtivo') or "Desconhecido"
+            else:
+                ia = str(ia_bruto) if ia_bruto else "Não informado"
+                
+            classe = p.get('classificacaoAgronomica') or p.get('classeAgronomica') or 'Outros'
+            fabricante = p.get('titularRegistro') or p.get('fabricante') or ''
             
             resultado.append({
-                'id': prod_id, 
-                'nome_comercial': nome,
-                'ingrediente_ativo': ia,
-                'classe_agronomica': classe,
-                'fabricante': fabricante,
-                'dose_min': p.get('doseMinima', p.get('dose_minima', 0)),
-                'dose_max': p.get('doseMaxima', p.get('dose_maxima', 0)),
-                'unidade': p.get('unidadeMedida', p.get('unidade_medida', 'L/ha')),
+                'id': str(prod_id), 
+                'nome_comercial': str(nome),
+                'ingrediente_ativo': str(ia),
+                'classe_agronomica': str(classe),
+                'fabricante': str(fabricante),
+                'dose_min': p.get('doseMinima', 0),
+                'dose_max': p.get('doseMaxima', 0),
+                'unidade': p.get('unidadeMedida', 'L/ha'),
                 'epi_obrigatorio': p.get('epi', 'Verificar bula')
             })
             
             if len(resultado) >= limit:
                 break
                 
+        if not resultado:
+            return jsonify([{'id': 'vazio', 'nome_comercial': f'🔎 Nenhum produto registrado para "{q}"', 'ingrediente_ativo': 'Verifique a digitação', 'classe_agronomica': 'Outros'}])
+            
         return jsonify(resultado)
 
     except Exception as e:
-        print(f"Erro de Conexão MAPA: {e}")
-        return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO DE CONEXÃO', 'ingrediente_ativo': 'Servidor da Embrapa demorou.', 'classe_agronomica': 'Outros'}])
+        print(f"Erro MAPA/Agrofit: {e}")
+        return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO DE CONEXÃO', 'ingrediente_ativo': 'Servidor da Embrapa demorou a responder.', 'classe_agronomica': 'Outros'}])
 
 @receituario_bp.route("/api/receituario/produto/<pid>/validar")
 def api_validar(pid):
-    if pid in ('erro', 'vazio', 'null', 'undefined', 'None') or not pid or pid.startswith('REF-'):
-        return jsonify({"compatibilidade": "TALVEZ", "motivo": "Revisão agronômica manual da bula necessária."})
+    # Impede que cliques em produtos de erro ou vazios causem erro no servidor
+    if pid in ('erro', 'vazio', 'null', 'undefined', 'None') or not pid:
+        return jsonify({"compatibilidade": "TALVEZ", "motivo": "Revisão agronômica manual necessária."})
 
     from app.models.receituario import Cultura
     cultura_id = request.args.get("cultura_id", type=int)
@@ -337,7 +345,6 @@ def api_validar(pid):
         response.raise_for_status()
         produto_api = response.json()
         
-        # AQUI ESTAVA O SEU ERRO ANTIGO: Esta linha garante que listas não quebrem o código!
         if isinstance(produto_api, list):
             produto_api = produto_api[0] if len(produto_api) > 0 else {}
             
@@ -347,11 +354,11 @@ def api_validar(pid):
         dose_recomendada = ""
         
         for indicacao in indicacoes:
-            cultura_bula = extrator_dinamico(indicacao, ['cultura', 'Cultura']).upper()
+            cultura_bula = str(indicacao.get('cultura', '')).upper()
             if cultura.nome.upper() in cultura_bula:
                 cultura_permitida = True
-                dose_recomendada = extrator_dinamico(indicacao, ['dose', 'Dose'])
-                modalidade = extrator_dinamico(indicacao, ['modalidadeDeAplicacao', 'modalidade_de_aplicacao']).upper()
+                dose_recomendada = str(indicacao.get('dose', ''))
+                modalidade = str(indicacao.get('modalidadeDeAplicacao', '')).upper()
                 
                 if 'TERRESTRE' in modalidade and 'AÉREA' not in modalidade and 'AEREA' not in modalidade:
                     restricao_aerea = True
@@ -377,6 +384,7 @@ def api_culturas():
 def _salvar_receituario(form, rec, func_id=None):
     from app.models.receituario import (Receituario, ItemReceituario)
 
+    # Executa a auto-migração silenciosa para que as colunas novas surjam
     auto_migrate_db()
 
     cultura_id = form.get("cultura_id", type=int)
