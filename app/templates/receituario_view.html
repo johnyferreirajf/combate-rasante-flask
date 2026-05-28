@@ -296,7 +296,6 @@
               <th>Classe</th>
               <th>Dose</th>
               <th>Aplic.</th>
-              <th>Carência</th>
               <th>Validação</th>
             </tr>
           </thead>
@@ -305,17 +304,12 @@
             <tr>
               <td style="font-weight:800;color:var(--m);">{{ loop.index }}</td>
               <td>
-                <strong>{{ item.produto.nome_comercial }}</strong>
-                {% if item.produto.fabricante %}
-                <br><small style="color:var(--m);">{{ item.produto.fabricante }}</small>
-                {% endif %}
-                {% if item.produto.registro_mapa %}
-                <br><small style="color:var(--m);">MAPA: {{ item.produto.registro_mapa }}</small>
-                {% endif %}
+                <strong>{{ item.produto_nome }}</strong>
+                <br><small style="color:var(--m);">MAPA: {{ item.produto_id_api }}</small>
               </td>
-              <td style="color:var(--m);font-size:11px;">{{ item.produto.ingrediente_ativo }}</td>
+              <td style="color:var(--m);font-size:11px;">{{ item.produto_ia }}</td>
               <td>
-                {% set cls = item.produto.classe_agronomica or '' %}
+                {% set cls = item.produto_classe or '' %}
                 {% if 'Herb' in cls %}<span class="classe-pill cp-herb">{{ cls }}</span>
                 {% elif 'Fung' in cls %}<span class="classe-pill cp-fung">{{ cls }}</span>
                 {% elif 'Inset' in cls %}<span class="classe-pill cp-ins">{{ cls }}</span>
@@ -326,11 +320,6 @@
                 {% if item.dose %}{{ item.dose }} {{ item.unidade or '' }}{% else %}—{% endif %}
               </td>
               <td style="text-align:center;">{{ item.num_aplicacoes or 1 }}×</td>
-              <td>
-                {% if item.produto.periodo_carencia %}
-                  {{ item.produto.periodo_carencia }} dias
-                {% else %}—{% endif %}
-              </td>
               <td>
                 {% if item.status_validacao in ('SIM','OK') %}
                   <span class="vbadge vb-ok">✔ Autorizado</span>
@@ -351,22 +340,6 @@
           </tbody>
         </table>
       </div>
-
-      {# EPI resumido #}
-      {% set epis = rec.itens | selectattr('produto.epi_obrigatorio') | list %}
-      {% if epis %}
-      <div style="margin-top:16px;padding:12px 16px;background:rgba(251,191,36,.08);
-                  border:1px solid rgba(251,191,36,.25);border-radius:10px;">
-        <div style="font-size:10px;font-weight:900;text-transform:uppercase;color:#fde68a;margin-bottom:8px;">
-          🦺 EPI Obrigatório para o Aplicador
-        </div>
-        {% for item in epis %}
-        <div style="font-size:12px;color:var(--t);margin-bottom:4px;">
-          <strong>{{ item.produto.nome_comercial }}:</strong> {{ item.produto.epi_obrigatorio }}
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
 
       {% else %}
       <div style="color:var(--m);font-size:13px;text-align:center;padding:20px;">
@@ -433,7 +406,5 @@
       </div>
     </div>
 
-  </div><!-- .rv-doc -->
-
-</div>
+  </div></div>
 {% endblock %}

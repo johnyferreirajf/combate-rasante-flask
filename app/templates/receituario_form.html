@@ -323,16 +323,13 @@ textarea.rf-input{resize:vertical;min-height:72px;}
     <div class="rf-grid">
       <div class="rf-field" style="position:relative;">
         <label class="rf-label">Cultura *</label>
-        {# Campo hidden para enviar o valor ao form #}
         <input type="hidden" name="cultura_id" id="culturaId"
                value="{{ rec.cultura_id if rec and rec.cultura_id else '' }}" required>
-        {# Trigger visível do custom select #}
         <div class="cust-sel" id="culturaDisplay" onclick="toggleCulturaDropdown()"
              tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')toggleCulturaDropdown()">
           <span id="culturaDisplayText">{% if rec and rec.cultura %}{{ rec.cultura.nome }}{% else %}— Selecione a cultura —{% endif %}</span>
           <span id="culturaArrow" style="font-size:12px;transition:.2s;">▼</span>
         </div>
-        {# Dropdown list #}
         <div class="cust-sel-list" id="culturaList">
           <div class="cust-sel-item cust-sel-placeholder" data-val="" onclick="selecionarCultura('','')">
             — Selecione a cultura —
@@ -381,7 +378,6 @@ textarea.rf-input{resize:vertical;min-height:72px;}
       </span>
     </div>
 
-    {# Busca dual de produtos — Nome comercial + Princípio Ativo #}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;">
       <div class="prod-search-wrap">
         <div class="prod-mini-label" style="margin-bottom:5px;font-size:11px;color:#c9f0d8;text-shadow:var(--ts);">
@@ -410,7 +406,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
         </div>
       </div>
     </div>
-    {# Dropdown compartilhado #}
+    
     <div class="prod-dropdown" id="prodDropdown" style="margin-top:-4px;"></div>
     <div style="font-size:12px;color:#9de0bc;margin-top:8px;text-shadow:var(--ts);">
       💡 Selecione a cultura primeiro. Busque pelo nome comercial <em>ou</em> pelo princípio ativo — a validação é automática.
@@ -420,12 +416,16 @@ textarea.rf-input{resize:vertical;min-height:72px;}
     <div class="prod-lista" id="prodLista">
       {% if rec and rec.itens %}
         {% for item in rec.itens %}
-        <div class="prod-card {{ item.status_validacao|lower }}" id="pc-{{ item.produto_id }}">
-          <input type="hidden" name="produto_id[]" value="{{ item.produto_id }}">
+        <div class="prod-card {{ item.status_validacao|lower }}" id="pc-{{ item.produto_id_api }}">
+          <input type="hidden" name="produto_id[]" value="{{ item.produto_id_api }}">
+          <input type="hidden" name="produto_nome[]" value="{{ item.produto_nome }}">
+          <input type="hidden" name="produto_ia[]" value="{{ item.produto_ia }}">
+          <input type="hidden" name="produto_classe[]" value="{{ item.produto_classe }}">
+          
           <div class="prod-card-header">
             <div class="prod-card-info">
-              <div class="prod-card-name">{{ item.produto.nome_comercial }}</div>
-              <div class="prod-card-ia">{{ item.produto.ingrediente_ativo }}</div>
+              <div class="prod-card-name">{{ item.produto_nome }}</div>
+              <div class="prod-card-ia">{{ item.produto_ia }}</div>
               <div class="prod-card-badges">
                 {% if item.status_validacao == 'SIM' or item.status_validacao == 'OK' %}
                   <span class="validacao-badge vb-ok">✔ Autorizado</span>
@@ -434,8 +434,8 @@ textarea.rf-input{resize:vertical;min-height:72px;}
                 {% else %}
                   <span class="validacao-badge vb-talvez">⚠ Com Restrições</span>
                 {% endif %}
-                <span class="prod-item-classe pc-{% if item.produto.classe_agronomica %}{{ item.produto.classe_agronomica.lower()[:4] }}{% endif %}">
-                  {{ item.produto.classe_agronomica }}
+                <span class="prod-item-classe pc-{% if item.produto_classe %}{{ item.produto_classe.lower()[:4] }}{% endif %}">
+                  {{ item.produto_classe }}
                 </span>
               </div>
               {% if item.motivo_restricao %}
@@ -444,7 +444,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
               </div>
               {% endif %}
             </div>
-            <button type="button" class="prod-remove" onclick="removerProduto({{ item.produto_id }})">✕ Remover</button>
+            <button type="button" class="prod-remove" onclick="removerProduto('{{ item.produto_id_api }}')">✕ Remover</button>
           </div>
           <div class="prod-card-fields">
             <div>
@@ -553,19 +553,18 @@ let culturaAtual = {
   id: {{ (rec.cultura_id if rec and rec.cultura_id else 'null') }},
   nome: "{{ rec.cultura.nome if rec and rec.cultura else '' }}"
 };
-let produtosAdicionados = {};  // {produto_id: {nome, ia, classe, validacao, ...}}
+let produtosAdicionados = {};  
 let searchTimer = null;
 
 // ── Inicialização ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializar com produtos já existentes (edição)
   {% if rec and rec.itens %}
   {% for item in rec.itens %}
-  produtosAdicionados[{{ item.produto_id }}] = {
-    id: {{ item.produto_id }},
-    nome: "{{ item.produto.nome_comercial|replace('"',"'") }}",
-    ia: "{{ item.produto.ingrediente_ativo|replace('"',"'") }}",
-    classe: "{{ item.produto.classe_agronomica or '' }}",
+  produtosAdicionados["{{ item.produto_id_api }}"] = {
+    id: "{{ item.produto_id_api }}",
+    nome: "{{ item.produto_nome|replace('"',"'") }}",
+    ia: "{{ item.produto_ia|replace('"',"'") }}",
+    classe: "{{ item.produto_classe or '' }}",
     validacao: "{{ item.status_validacao or 'NAO' }}",
     motivo: "{{ (item.motivo_restricao or '')|replace('"',"'")|replace('\n',' ') }}",
     dose_rec: ""
@@ -576,7 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
   atualizarContador();
   if (culturaAtual.id) {
     atualizarBadgeCultura(culturaAtual.nome);
-    // Mark selected in custom dropdown
     document.querySelectorAll('.cust-sel-item').forEach(el => {
       el.classList.toggle('selected', el.dataset.val == culturaAtual.id);
     });
@@ -600,7 +598,6 @@ function selecionarCultura(id, nome) {
     disp.textContent = nome;
     display.style.borderColor = 'rgba(34,197,94,.55)';
     disp.style.color = '#fff';
-    // Mark selected item
     document.querySelectorAll('.cust-sel-item').forEach(el => {
       el.classList.toggle('selected', el.dataset.val == id);
     });
@@ -617,7 +614,6 @@ function selecionarCultura(id, nome) {
   document.getElementById('culturaArrow').style.transform = '';
 }
 
-// Close dropdown on outside click
 document.addEventListener('click', e => {
   if (!e.target.closest('#culturaDisplay') && !e.target.closest('#culturaList')) {
     document.getElementById('culturaList')?.classList.remove('open');
@@ -626,17 +622,6 @@ document.addEventListener('click', e => {
   }
 });
 
-// ── Cultura selecionada ────────────────────────────────────────────────────
-function atualizarCultura(id, nome) {
-  culturaAtual = {id, nome};
-  if (id) {
-    atualizarBadgeCultura(nome);
-    revalidarTodos();
-  } else {
-    document.getElementById('culturaSelecionada').style.display = 'none';
-  }
-}
-
 function atualizarBadgeCultura(nome) {
   const el = document.getElementById('culturaSelecionada');
   el.style.display = 'flex';
@@ -644,11 +629,10 @@ function atualizarBadgeCultura(nome) {
   document.getElementById('culturaLabel').textContent = '🌱 ' + nome;
 }
 
-// ── Busca de produtos (dual field: nome ou IA) ────────────────────────────
+// ── Busca de produtos ─────────────────────────────────────────────────────
 function buscarProdutos(campo, q) {
   clearTimeout(searchTimer);
   
-  // Limpa o outro input visualmente para não confundir o usuário
   if (campo === 'nome') {
     document.getElementById('prodSearchIA').value = '';
   } else {
@@ -660,38 +644,28 @@ function buscarProdutos(campo, q) {
     return; 
   }
 
-  // Feedback de carregamento (Spinner)
   const dd = document.getElementById('prodDropdown');
   dd.innerHTML = `<div style="padding:14px 16px;color:rgba(255,255,255,.6);font-size:13px;text-align:center;">
-                    <span class="spin" style="margin-right:8px;"></span> Buscando no Agrofit...
+                    <span class="spin" style="margin-right:8px;"></span> Buscando no MAPA/Agrofit...
                   </div>`;
   dd.classList.add('open');
 
-  // Dispara a busca após o usuário parar de digitar por 500ms
   searchTimer = setTimeout(() => {
-    // Adicionado o parâmetro '&campo=' para ajudar o backend a otimizar a busca
     fetch(`/api/receituario/produtos?q=${encodeURIComponent(q)}&campo=${campo}&limit=20`)
       .then(r => r.json())
       .then(data => {
-        // Ordenação de prioridade baseada no campo
         if (campo === 'ia') {
           data.sort((a,b) => {
             const aMatch = a.ingrediente_ativo.toLowerCase().includes(q.toLowerCase());
             const bMatch = b.ingrediente_ativo.toLowerCase().includes(q.toLowerCase());
             return (bMatch ? 1:0) - (aMatch ? 1:0);
           });
-        } else {
-          data.sort((a,b) => {
-            const aMatch = a.nome_comercial.toLowerCase().includes(q.toLowerCase());
-            const bMatch = b.nome_comercial.toLowerCase().includes(q.toLowerCase());
-            return (bMatch ? 1:0) - (aMatch ? 1:0);
-          });
         }
         renderDropdown(data, campo, q);
       })
       .catch(() => {
-        dd.innerHTML = `<div style="padding:14px 16px;color:#fca5a5;font-size:13px;text-align:center;">
-                          Erro ao buscar produtos. Tente novamente.
+         dd.innerHTML = `<div style="padding:14px 16px;color:#fca5a5;font-size:13px;text-align:center;">
+                          Erro ao buscar produtos.
                         </div>`;
       });
   }, 500);
@@ -708,10 +682,10 @@ function renderDropdown(produtos, campo, q) {
   }
   dd.innerHTML = produtos.map(p => {
     const cls = getClasseCSS(p.classe_agronomica);
-    // Highlight match
     const nomeHL  = q ? escH(p.nome_comercial).replace(new RegExp(escReg(q),'gi'), m=>`<mark style="background:rgba(234,88,12,.40);color:#fff;border-radius:2px;">${m}</mark>`) : escH(p.nome_comercial);
     const iaHL    = q ? escH(p.ingrediente_ativo).replace(new RegExp(escReg(q),'gi'), m=>`<mark style="background:rgba(234,88,12,.40);color:#fff;border-radius:2px;">${m}</mark>`) : escH(p.ingrediente_ativo);
-    return `<div class="prod-item" onclick="adicionarProduto(${p.id}, '${escQ(p.nome_comercial)}', '${escQ(p.ingrediente_ativo)}', '${escQ(p.classe_agronomica)}', ${p.dose_min || 0}, ${p.dose_max || 0}, '${escQ(p.unidade || '')}', '${escQ(p.epi_obrigatorio || '')}')">
+    
+    return `<div class="prod-item" onclick="adicionarProduto('${p.id}', '${escQ(p.nome_comercial)}', '${escQ(p.ingrediente_ativo)}', '${escQ(p.classe_agronomica)}', ${p.dose_min || 0}, ${p.dose_max || 0}, '${escQ(p.unidade || '')}', '${escQ(p.epi_obrigatorio || '')}')">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
         <span class="prod-item-name">${nomeHL}</span>
         <span class="prod-item-classe ${cls}">${escH(p.classe_agronomica || '')}</span>
@@ -723,27 +697,27 @@ function renderDropdown(produtos, campo, q) {
   dd.classList.add('open');
 }
 
-function escReg(s) { return s.replace(/[.*+?^${}()|[\]\]/g,'\$&'); }
+function escReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
 
-function showDropdown() { document.getElementById('prodDropdown').classList.add('open'); }
 function hideDropdown() { document.getElementById('prodDropdown').classList.remove('open'); }
 document.addEventListener('click', e => {
   if (!e.target.closest('.prod-search-wrap') && !e.target.closest('#prodDropdown')) hideDropdown();
 });
 
-// ── Adicionar produto + validar ────────────────────────────────────────────
+// ── Adicionar produto ──────────────────────────────────────────────────────
 function adicionarProduto(id, nome, ia, classe, dMin, dMax, un, epi) {
   hideDropdown();
-  document.getElementById('prodSearch').value = '';
+  document.getElementById('prodSearchNome').value = '';
+  document.getElementById('prodSearchIA').value = '';
+  
   if (produtosAdicionados[id]) { showToast('Produto já adicionado!', 'warn'); return; }
 
   if (!culturaAtual.id) {
     showToast('Selecione uma cultura primeiro!', 'warn');
-    document.getElementById('culturaSelect').focus();
+    document.getElementById('culturaDisplay').focus();
     return;
   }
 
-  // Validar via API
   fetch(`/api/receituario/produto/${id}/validar?cultura_id=${culturaAtual.id}`)
     .then(r => r.json())
     .then(data => {
@@ -758,8 +732,8 @@ function adicionarProduto(id, nome, ia, classe, dMin, dMax, un, epi) {
       document.getElementById('prodVazio').style.display = 'none';
     })
     .catch(() => {
-      produtosAdicionados[id] = {id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Não foi possível validar. Verifique manualmente.', dose_rec: ''};
-      renderProdutoCard({id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Erro ao validar. Verifique manualmente.', dose_min: dMin, dose_max: dMax, un, epi, dose_rec: ''});
+      produtosAdicionados[id] = {id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Falha na validação online.', dose_rec: ''};
+      renderProdutoCard({id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Erro ao conectar à API do MAPA. Verifique manualmente.', dose_min: dMin, dose_max: dMax, un, epi, dose_rec: ''});
       atualizarContador();
       atualizarStatusGeral();
       document.getElementById('prodVazio').style.display = 'none';
@@ -794,7 +768,7 @@ function renderProdutoCard(p) {
         ${motivoHtml}
         ${doseRecHtml}
       </div>
-      <button type="button" class="prod-remove" onclick="removerProduto(${p.id})">✕ Remover</button>
+      <button type="button" class="prod-remove" onclick="removerProduto('${p.id}')">✕ Remover</button>
     </div>
     <div class="prod-card-fields">
       <div>
@@ -813,9 +787,7 @@ function renderProdutoCard(p) {
         <input class="prod-mini-input" type="number" min="1" max="10" name="num_aplicacoes_p[]" value="1">
       </div>
     </div>
-    ${p.epi ? `<div style="font-size:11px;color:#fde68a;margin-top:10px;padding:7px 10px;background:rgba(251,191,36,.08);border-radius:7px;border:1px solid rgba(251,191,36,.20);">🦺 EPI: ${escH(p.epi)}</div>` : ''}
   </div>`;
-
   lista.insertAdjacentHTML('beforeend', html);
 }
 
@@ -828,7 +800,6 @@ function removerProduto(id) {
   if (!Object.keys(produtosAdicionados).length) document.getElementById('prodVazio').style.display = 'flex';
 }
 
-// ── Re-validar todos ao mudar cultura ─────────────────────────────────────
 function revalidarTodos() {
   const ids = Object.keys(produtosAdicionados);
   if (!ids.length || !culturaAtual.id) return;
@@ -838,7 +809,6 @@ function revalidarTodos() {
       .then(data => {
         produtosAdicionados[id].validacao = data.compatibilidade;
         produtosAdicionados[id].motivo    = data.motivo || '';
-        // Atualizar card visual
         const card = document.getElementById('pc-' + id);
         if (!card) return;
         const comp  = data.compatibilidade;
@@ -849,7 +819,6 @@ function revalidarTodos() {
           badge.className = `validacao-badge ${comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NAO' ? 'vb-nao' : 'vb-talvez'}`;
           badge.textContent = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
         }
-        // Motivo
         let mEl = card.querySelector('.prod-card-motivo');
         if (data.motivo) {
           if (!mEl) { const info = card.querySelector('.prod-card-info'); mEl = document.createElement('div'); info.appendChild(mEl); }
@@ -861,7 +830,6 @@ function revalidarTodos() {
   });
 }
 
-// ── Status geral ───────────────────────────────────────────────────────────
 function atualizarStatusGeral() {
   const sg  = document.getElementById('statusGeral');
   const txt = document.getElementById('statusGeralText');
@@ -872,30 +840,24 @@ function atualizarStatusGeral() {
     txt.textContent = 'Adicione produtos para ver a validação agronômica.';
     return;
   }
-
   const temNao    = vals.some(v => v === 'NAO');
   const temTalvez = vals.some(v => v === 'TALVEZ');
-
   if (temNao) {
     sg.className = 'status-geral sg-nao';
-    const nomes = Object.values(produtosAdicionados).filter(p => p.validacao === 'NAO').map(p => p.nome).join(', ');
-    txt.innerHTML = `<strong>✘ Receituário com incompatibilidade!</strong> Produto(s) não autorizado(s) para ${culturaAtual.nome || 'esta cultura'}: <em>${nomes}</em>. Corrija antes de emitir.`;
+    txt.innerHTML = `<strong>✘ Receituário com incompatibilidade!</strong> Corrija os produtos não autorizados antes de emitir.`;
   } else if (temTalvez) {
     sg.className = 'status-geral sg-talvez';
-    const nomes = Object.values(produtosAdicionados).filter(p => p.validacao === 'TALVEZ').map(p => p.nome).join(', ');
-    txt.innerHTML = `<strong>⚠ Atenção: uso com restrições!</strong> Produto(s) com limitações: <em>${nomes}</em>. Revise as condições antes de emitir.`;
+    txt.innerHTML = `<strong>⚠ Atenção: uso com restrições!</strong> Revise as condições dos produtos.`;
   } else {
     sg.className = 'status-geral sg-ok';
-    txt.innerHTML = `<strong>✔ Receituário dentro das normas!</strong> Todos os ${vals.length} produto(s) são autorizados para ${culturaAtual.nome || 'esta cultura'}.`;
+    txt.innerHTML = `<strong>✔ Receituário dentro das normas!</strong> Todos os produtos liberados para esta cultura.`;
   }
 }
 
 function atualizarContador() {
-  const n = Object.keys(produtosAdicionados).length;
-  document.getElementById('prodCount').textContent = n;
+  document.getElementById('prodCount').textContent = Object.keys(produtosAdicionados).length;
 }
 
-// ── Confirmar emissão ──────────────────────────────────────────────────────
 function confirmarEmissao() {
   const vals = Object.values(produtosAdicionados).map(p => p.validacao);
   if (vals.some(v => v === 'NAO')) {
@@ -906,7 +868,6 @@ function confirmarEmissao() {
   return confirm('Confirmar emissão do receituário? Esta ação não poderá ser desfeita.');
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 function getClasseCSS(classe) {
   if (!classe) return 'pc-out';
   const c = classe.toLowerCase();
@@ -932,7 +893,6 @@ function showToast(msg, type) {
 document.addEventListener('DOMContentLoaded', () => {
   atualizarBadgeCultura("{{ rec.cultura.nome if rec and rec.cultura else '' }}");
   atualizarStatusGeral();
-  // Mark pre-selected culture item
   document.querySelectorAll('.cust-sel-item').forEach(el => {
     if (el.dataset.val == "{{ rec.cultura_id }}") el.classList.add('selected');
   });
