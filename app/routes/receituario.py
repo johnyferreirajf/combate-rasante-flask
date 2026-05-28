@@ -1,6 +1,8 @@
 """Módulo de Receituário Agronômico — Combate Rasante Aviação Agrícola."""
 from datetime import datetime, date, timedelta
 import requests
+import time
+import base64
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, jsonify, session, current_app, Response)
 from app import db
@@ -8,10 +10,53 @@ from app.utils.security import login_required, admin_required, get_current_user,
 
 receituario_bp = Blueprint("receituario", __name__)
 
-# Configuração da AgroAPI (Token de Acesso do usuário)
-AGROAPI_TOKEN = "be6ecc38-5813-31d3-a571-c23419b8caf0"
+# =============================================================================
+# CREDENCIAIS DA AGROAPI (EMBRAPA)
+# Cole a sua Consumer Key e Consumer Secret abaixo:
+# =============================================================================
+AGROAPI_KEY = "CEpPWXr0CqatrJPFZJSfBoAxFTka"
+AGROAPI_SECRET = "KVYMu619dgmFUSqErSv18OFIIkka"
 
+# Cache para armazenar o token e sua validade na memória do servidor
+TOKEN_CACHE = {"access_token": None, "expires_at": 0}
+
+def _get_agroapi_token():
+    """Gera um token de acesso seguindo a documentação oficial da Embrapa (Base64)."""
+    # Se o token da memória ainda for válido (com 60s de folga), usamos ele
+    if TOKEN_CACHE["access_token"] and time.time() < TOKEN_CACHE["expires_at"]:
+        return TOKEN_CACHE["access_token"]
+
+    url = "https://api.cnptia.embrapa.br/token"
+    
+    # Fazendo exatamente a conversão Base64 exigida pela documentação (cURL)
+    credenciais = f"{AGROAPI_KEY}:{AGROAPI_SECRET}"
+    credenciais_b64 = base64.b64encode(credenciais.encode('utf-8')).decode('utf-8')
+    
+    headers = {
+        "Authorization": f"Basic {credenciais_b64}",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    data = {
+        "grant_type": "client_credentials"
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, data=data, timeout=10)
+        response.raise_for_status()
+        r_json = response.json()
+        
+        # Salva o novo token e a data de expiração (3600 segundos)
+        TOKEN_CACHE["access_token"] = r_json["access_token"]
+        TOKEN_CACHE["expires_at"] = time.time() + r_json.get("expires_in", 3600) - 60
+        
+        return TOKEN_CACHE["access_token"]
+    except Exception as e:
+        print(f"ERRO DE AUTENTICAÇÃO AGROAPI: {e}")
+        return None
+
+# =============================================================================
 # Helpers de auth
+# =============================================================================
 def _is_admin():
     emp = get_current_employee()
     return emp and emp.is_admin
@@ -82,7 +127,7 @@ def admin_novo():
     return render_template("receituario_form.html",
                            current_user=get_current_user(),
                            rec=None, culturas=culturas,
-                           produtos=[], clientes=clientes, # Produtos agora vêm da API
+                           produtos=[], clientes=clientes,
                            modo="admin")
 
 
@@ -207,7 +252,7 @@ def func_novo():
                            current_employee=emp,
                            current_user=get_current_user(),
                            rec=None, culturas=culturas,
-                           produtos=[], clientes=[], # Produtos vêm da API
+                           produtos=[], clientes=[],
                            modo="func")
 
 
@@ -229,7 +274,7 @@ def func_ver(rid):
 
 @receituario_bp.route("/api/receituario/produtos")
 def api_produtos():
-    """Retorna lista de produtos buscando na AgroAPI Embrapa."""
+    """Retorna lista de produtos buscando na AgroAPI Embrapa com autenticação automática."""
     q     = request.args.get("q", "").strip()
     campo = request.args.get("campo", "nome")
     limit = request.args.get("limit", 20, type=int)
@@ -237,8 +282,13 @@ def api_produtos():
     if not q or len(q) < 2:
         return jsonify([])
 
+    # 1. Pede o token dinâmico da função que criamos (NUNCA EXPIRA)
+    token = _get_agroapi_token()
+    if not token:
+         return jsonify({"erro": "Falha de autenticação com os servidores do MAPA"}), 500
+
     headers = {
-        'Authorization': f'Bearer {AGROAPI_TOKEN}',
+        'Authorization': f'Bearer {token}',
         'Accept': 'application/json'
     }
     
@@ -291,8 +341,13 @@ def api_validar(pid):
     if not cultura:
         return jsonify({"compatibilidade": "NAO", "motivo": "Cultura não encontrada."}), 404
 
+    # 2. Pede o token dinâmico da função que criamos
+    token = _get_agroapi_token()
+    if not token:
+         return jsonify({"compatibilidade": "TALVEZ", "motivo": "Falha de autenticação com o MAPA. Revise a bula manualmente."})
+
     headers = {
-        'Authorization': f'Bearer {AGROAPI_TOKEN}',
+        'Authorization': f'Bearer {token}',
         'Accept': 'application/json'
     }
     
@@ -354,8 +409,9 @@ def api_validar(pid):
 @receituario_bp.route("/api/receituario/produto/<pid>")
 def api_produto_detalhe(pid):
     """Busca detalhes estáticos do produto via API caso seja solicitado na edição."""
+    token = _get_agroapi_token()
     headers = {
-        'Authorization': f'Bearer {AGROAPI_TOKEN}',
+        'Authorization': f'Bearer {token}',
         'Accept': 'application/json'
     }
     url = f"https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados/{pid}"
