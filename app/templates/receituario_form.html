@@ -647,24 +647,54 @@ function atualizarBadgeCultura(nome) {
 // ── Busca de produtos (dual field: nome ou IA) ────────────────────────────
 function buscarProdutos(campo, q) {
   clearTimeout(searchTimer);
-  if (!q || q.length < 2) { hideDropdown(); return; }
-  // Sync both fields visually clear the other only if actively typing
+  
+  // Limpa o outro input visualmente para não confundir o usuário
+  if (campo === 'nome') {
+    document.getElementById('prodSearchIA').value = '';
+  } else {
+    document.getElementById('prodSearchNome').value = '';
+  }
+
+  if (!q || q.length < 2) { 
+    hideDropdown(); 
+    return; 
+  }
+
+  // Feedback de carregamento (Spinner)
+  const dd = document.getElementById('prodDropdown');
+  dd.innerHTML = `<div style="padding:14px 16px;color:rgba(255,255,255,.6);font-size:13px;text-align:center;">
+                    <span class="spin" style="margin-right:8px;"></span> Buscando no Agrofit...
+                  </div>`;
+  dd.classList.add('open');
+
+  // Dispara a busca após o usuário parar de digitar por 500ms
   searchTimer = setTimeout(() => {
-    fetch('/api/receituario/produtos?q=' + encodeURIComponent(q) + '&limit=20')
+    // Adicionado o parâmetro '&campo=' para ajudar o backend a otimizar a busca
+    fetch(`/api/receituario/produtos?q=${encodeURIComponent(q)}&campo=${campo}&limit=20`)
       .then(r => r.json())
       .then(data => {
-        // If searching by nome, filter by nome priority; by IA, filter by IA priority
+        // Ordenação de prioridade baseada no campo
         if (campo === 'ia') {
           data.sort((a,b) => {
             const aMatch = a.ingrediente_ativo.toLowerCase().includes(q.toLowerCase());
             const bMatch = b.ingrediente_ativo.toLowerCase().includes(q.toLowerCase());
             return (bMatch ? 1:0) - (aMatch ? 1:0);
           });
+        } else {
+          data.sort((a,b) => {
+            const aMatch = a.nome_comercial.toLowerCase().includes(q.toLowerCase());
+            const bMatch = b.nome_comercial.toLowerCase().includes(q.toLowerCase());
+            return (bMatch ? 1:0) - (aMatch ? 1:0);
+          });
         }
         renderDropdown(data, campo, q);
       })
-      .catch(() => {});
-  }, 200);
+      .catch(() => {
+        dd.innerHTML = `<div style="padding:14px 16px;color:#fca5a5;font-size:13px;text-align:center;">
+                          Erro ao buscar produtos. Tente novamente.
+                        </div>`;
+      });
+  }, 500);
 }
 
 function renderDropdown(produtos, campo, q) {
@@ -750,6 +780,9 @@ function renderProdutoCard(p) {
   const html = `
   <div class="prod-card ${compClass}" id="pc-${p.id}">
     <input type="hidden" name="produto_id[]" value="${p.id}">
+    <input type="hidden" name="produto_nome[]" value="${escH(p.nome)}">
+    <input type="hidden" name="produto_ia[]" value="${escH(p.ia)}">
+    <input type="hidden" name="produto_classe[]" value="${escH(p.classe)}">
     <div class="prod-card-header">
       <div class="prod-card-info">
         <div class="prod-card-name">${escH(p.nome)}</div>

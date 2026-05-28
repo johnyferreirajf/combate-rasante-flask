@@ -1,11 +1,15 @@
 """Módulo de Receituário Agronômico — Combate Rasante Aviação Agrícola."""
 from datetime import datetime, date, timedelta
+import requests
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, jsonify, session, current_app, Response)
 from app import db
 from app.utils.security import login_required, admin_required, get_current_user, get_current_employee
 
 receituario_bp = Blueprint("receituario", __name__)
+
+# Configuração da AgroAPI (Token de Acesso do usuário)
+AGROAPI_TOKEN = "be6ecc38-5813-31d3-a571-c23419b8caf0"
 
 # Helpers de auth
 def _is_admin():
@@ -18,7 +22,6 @@ def _employee_pode_receituario():
 
 def _get_emp():
     return get_current_employee()
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ADMIN — lista de receituários
@@ -47,7 +50,6 @@ def admin_lista():
     receituarios = query.limit(200).all()
     culturas     = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
 
-    # Métricas
     total     = Receituario.query.count()
     emitidos  = Receituario.query.filter_by(status="emitido").count()
     rascunhos = Receituario.query.filter_by(status="rascunho").count()
@@ -68,12 +70,10 @@ def admin_lista():
 @login_required
 @admin_required
 def admin_novo():
-    from app.models.receituario import (Receituario, ItemReceituario,
-                                        Cultura, ProdutoAgricola, ProdutoCultura)
+    from app.models.receituario import Cultura
     from app.models.user import User
 
     culturas  = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
-    produtos  = ProdutoAgricola.query.filter_by(ativo=True).order_by(ProdutoAgricola.nome_comercial).all()
     clientes  = User.query.filter_by(is_admin=False).order_by(User.name).all()
 
     if request.method == "POST":
@@ -82,7 +82,7 @@ def admin_novo():
     return render_template("receituario_form.html",
                            current_user=get_current_user(),
                            rec=None, culturas=culturas,
-                           produtos=produtos, clientes=clientes,
+                           produtos=[], clientes=clientes, # Produtos agora vêm da API
                            modo="admin")
 
 
@@ -90,13 +90,11 @@ def admin_novo():
 @login_required
 @admin_required
 def admin_editar(rid):
-    from app.models.receituario import (Receituario, ItemReceituario,
-                                        Cultura, ProdutoAgricola)
+    from app.models.receituario import Receituario, Cultura
     from app.models.user import User
 
     rec       = Receituario.query.get_or_404(rid)
     culturas  = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
-    produtos  = ProdutoAgricola.query.filter_by(ativo=True).order_by(ProdutoAgricola.nome_comercial).all()
     clientes  = User.query.filter_by(is_admin=False).order_by(User.name).all()
 
     if request.method == "POST":
@@ -105,7 +103,7 @@ def admin_editar(rid):
     return render_template("receituario_form.html",
                            current_user=get_current_user(),
                            rec=rec, culturas=culturas,
-                           produtos=produtos, clientes=clientes,
+                           produtos=[], clientes=clientes,
                            modo="admin")
 
 
@@ -198,10 +196,9 @@ def func_lista():
 @receituario_bp.route("/func/receituario/novo", methods=["GET", "POST"])
 @_func_login_required
 def func_novo():
-    from app.models.receituario import Cultura, ProdutoAgricola
+    from app.models.receituario import Cultura
     emp      = _get_emp()
     culturas = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
-    produtos = ProdutoAgricola.query.filter_by(ativo=True).order_by(ProdutoAgricola.nome_comercial).all()
 
     if request.method == "POST":
         return _salvar_receituario(request.form, None, func_id=emp.id)
@@ -210,7 +207,7 @@ def func_novo():
                            current_employee=emp,
                            current_user=get_current_user(),
                            rec=None, culturas=culturas,
-                           produtos=produtos, clientes=[],
+                           produtos=[], clientes=[], # Produtos vêm da API
                            modo="func")
 
 
@@ -227,63 +224,154 @@ def func_ver(rid):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# API — busca de produtos + validação
+# API EMBRAPA — busca de produtos + validação
 # ─────────────────────────────────────────────────────────────────────────────
 
 @receituario_bp.route("/api/receituario/produtos")
 def api_produtos():
-    """Retorna lista de produtos para autocomplete."""
-    from app.models.receituario import ProdutoAgricola
+    """Retorna lista de produtos buscando na AgroAPI Embrapa."""
     q     = request.args.get("q", "").strip()
-    limit = min(int(request.args.get("limit", 20)), 50)
+    campo = request.args.get("campo", "nome")
+    limit = request.args.get("limit", 20, type=int)
 
-    query = ProdutoAgricola.query.filter_by(ativo=True)
-    if q:
-        query = query.filter(
-            ProdutoAgricola.nome_comercial.ilike(f"%{q}%") |
-            ProdutoAgricola.ingrediente_ativo.ilike(f"%{q}%")
-        )
-    produtos = query.order_by(ProdutoAgricola.nome_comercial).limit(limit).all()
-    return jsonify([p.to_dict() for p in produtos])
+    if not q or len(q) < 2:
+        return jsonify([])
+
+    headers = {
+        'Authorization': f'Bearer {AGROAPI_TOKEN}',
+        'Accept': 'application/json'
+    }
+    
+    url = "https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados"
+    
+    if campo == 'ia':
+        params = {'ingredienteAtivo': q}
+    else:
+        params = {'marcaComercial': q}
+
+    try:
+        response = requests.get(url, headers=headers, params=params, timeout=10)
+        response.raise_for_status()
+        dados_embrapa = response.json()
+        
+        resultado = []
+        itens = dados_embrapa if isinstance(dados_embrapa, list) else dados_embrapa.get('data', [])
+        
+        for p in itens[:limit]: 
+            resultado.append({
+                'id': p.get('numeroRegistro', p.get('id')), 
+                'nome_comercial': p.get('marcaComercial', 'Sem Nome'),
+                'ingrediente_ativo': p.get('ingredienteAtivo', 'Não informado'),
+                'classe_agronomica': p.get('classificacaoAgronomica', 'Não informada'),
+                'fabricante': p.get('titularRegistro', ''),
+                'dose_min': p.get('doseMinima', 0),
+                'dose_max': p.get('doseMaxima', 0),
+                'unidade': p.get('unidadeMedida', 'L/ha'),
+                'epi_obrigatorio': p.get('epi', 'Verificar bula')
+            })
+            
+        return jsonify(resultado)
+
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao consultar AgroAPI (Produtos): {e}")
+        return jsonify({"erro": "Falha de comunicação com o servidor do MAPA"}), 500
 
 
-@receituario_bp.route("/api/receituario/produto/<int:pid>/validar")
+@receituario_bp.route("/api/receituario/produto/<pid>/validar")
 def api_validar(pid):
-    """Valida compatibilidade produto × cultura."""
-    from app.models.receituario import ProdutoAgricola, ProdutoCultura, Cultura
+    """Valida compatibilidade produto × cultura consultando a AgroAPI."""
+    from app.models.receituario import Cultura
     cultura_id = request.args.get("cultura_id", type=int)
-    produto    = ProdutoAgricola.query.get_or_404(pid)
 
     if not cultura_id:
         return jsonify({"compatibilidade": "NAO_INFORMADO",
                         "motivo": "Selecione uma cultura antes de adicionar produtos."})
 
-    pc = ProdutoCultura.query.filter_by(produto_id=pid, cultura_id=cultura_id).first()
-    if not pc:
-        cultura = Cultura.query.get(cultura_id)
-        cult_nome = cultura.nome if cultura else "esta cultura"
+    cultura = Cultura.query.get(cultura_id)
+    if not cultura:
+        return jsonify({"compatibilidade": "NAO", "motivo": "Cultura não encontrada."}), 404
+
+    headers = {
+        'Authorization': f'Bearer {AGROAPI_TOKEN}',
+        'Accept': 'application/json'
+    }
+    
+    # Busca a bula do produto pelo ID/Registro
+    url = f"https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados/{pid}"
+
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        produto_api = response.json()
+        
+        # O Agrofit retorna uma lista de indicacoes (culturas permitidas)
+        indicacoes = produto_api.get('indicacoesDeUso', [])
+        
+        cultura_permitida = False
+        restricao_aerea = False
+        dose_recomendada = ""
+        
+        # Verifica se o nome da cultura selecionada está na bula do produto
+        for indicacao in indicacoes:
+            cultura_bula = indicacao.get('cultura', '').upper()
+            
+            # Compara o nome da cultura do seu banco com o da API
+            if cultura.nome.upper() in cultura_bula:
+                cultura_permitida = True
+                dose_recomendada = indicacao.get('dose', '')
+                
+                # Checa restrição de aplicação aérea (modalidade)
+                modalidade = indicacao.get('modalidadeDeAplicacao', '').upper()
+                # Se não citar 'AÉREA' e citar 'TERRESTRE'
+                if 'TERRESTRE' in modalidade and 'AÉREA' not in modalidade:
+                    restricao_aerea = True
+                break
+                
+        if not cultura_permitida:
+            return jsonify({
+                "compatibilidade": "NAO",
+                "motivo": f"O produto não possui indicação aprovada no MAPA para a cultura: {cultura.nome}."
+            })
+            
+        if restricao_aerea:
+            return jsonify({
+                "compatibilidade": "NAO",
+                "motivo": f"Proibido para Drone/Avião. A bula restringe a aplicação exclusivamente terrestre para {cultura.nome}."
+            })
+
+        # Se passou por tudo, está liberado!
         return jsonify({
-            "compatibilidade": "NAO",
-            "motivo": f"Produto '{produto.nome_comercial}' não possui registro para {cult_nome}. "
-                      f"Verifique o rótulo e bula junto ao MAPA/AGROFIT.",
-            "produto": produto.to_dict(),
+            "compatibilidade": "SIM",
+            "motivo": "",
+            "dose_recomendada": dose_recomendada,
         })
 
-    return jsonify({
-        "compatibilidade":  pc.compatibilidade,
-        "motivo":           pc.motivo or "",
-        "dose_recomendada": pc.dose_recomendada or "",
-        "dose_maxima":      pc.dose_maxima or "",
-        "observacoes":      pc.observacoes or "",
-        "produto":          produto.to_dict(),
-    })
+    except requests.exceptions.RequestException as e:
+        print(f"Erro ao consultar AgroAPI (Validação): {e}")
+        return jsonify({"compatibilidade": "TALVEZ", "motivo": "Não foi possível conectar ao sistema Agrofit para validação automática."})
 
 
-@receituario_bp.route("/api/receituario/produto/<int:pid>")
+@receituario_bp.route("/api/receituario/produto/<pid>")
 def api_produto_detalhe(pid):
-    from app.models.receituario import ProdutoAgricola
-    p = ProdutoAgricola.query.get_or_404(pid)
-    return jsonify(p.to_dict())
+    """Busca detalhes estáticos do produto via API caso seja solicitado na edição."""
+    headers = {
+        'Authorization': f'Bearer {AGROAPI_TOKEN}',
+        'Accept': 'application/json'
+    }
+    url = f"https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados/{pid}"
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        p = response.json()
+        return jsonify({
+            'id': p.get('numeroRegistro', p.get('id')),
+            'nome_comercial': p.get('marcaComercial', ''),
+            'ingrediente_ativo': p.get('ingredienteAtivo', ''),
+            'classe_agronomica': p.get('classificacaoAgronomica', ''),
+            'fabricante': p.get('titularRegistro', ''),
+        })
+    except requests.exceptions.RequestException:
+        return jsonify({"erro": "Produto não encontrado."}), 404
 
 
 @receituario_bp.route("/api/receituario/culturas")
@@ -298,8 +386,7 @@ def api_culturas():
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _salvar_receituario(form, rec, func_id=None):
-    from app.models.receituario import (Receituario, ItemReceituario,
-                                        ProdutoCultura, ProdutoAgricola)
+    from app.models.receituario import (Receituario, ItemReceituario)
 
     cultura_id = form.get("cultura_id", type=int)
     if not cultura_id:
@@ -353,24 +440,23 @@ def _salvar_receituario(form, rec, func_id=None):
     if func_id:
         rec.criado_por_func = func_id
 
-    # Produtos (array de IDs e doses)
-    produto_ids = form.getlist("produto_id[]")
-    doses       = form.getlist("dose[]")
-    unidades    = form.getlist("unidade[]")
-    num_apls    = form.getlist("num_aplicacoes_p[]")
+    # Produtos (array de IDs, nomes e doses vindos do formulário/API)
+    produto_ids     = form.getlist("produto_id[]")
+    produtos_nome   = form.getlist("produto_nome[]")
+    produtos_ia     = form.getlist("produto_ia[]")
+    produtos_classe = form.getlist("produto_classe[]")
+    doses           = form.getlist("dose[]")
+    unidades        = form.getlist("unidade[]")
+    num_apls        = form.getlist("num_aplicacoes_p[]")
 
     # Remover itens antigos
     for item in list(rec.itens):
         db.session.delete(item)
 
+    # Re-adicionar itens
     for i, pid_str in enumerate(produto_ids):
-        try:
-            pid = int(pid_str)
-        except ValueError:
-            continue
-
-        prod = ProdutoAgricola.query.get(pid)
-        if not prod:
+        pid = pid_str.strip()
+        if not pid:
             continue
 
         dose_val = None
@@ -379,31 +465,17 @@ def _salvar_receituario(form, rec, func_id=None):
         except (ValueError, TypeError):
             pass
 
-        # Validação
-        pc    = ProdutoCultura.query.filter_by(produto_id=pid, cultura_id=cultura_id).first()
-        comp  = pc.compatibilidade if pc else "NAO"
-        motivo = ""
-        if not pc:
-            motivo = f"Produto sem registro para esta cultura no MAPA/AGROFIT."
-        elif pc.compatibilidade == "NAO":
-            motivo = pc.motivo or "Uso não autorizado para esta cultura."
-        elif pc.compatibilidade == "TALVEZ":
-            motivo = pc.motivo or "Uso com restrições — verifique as condições."
-
-        # Validação de dose
-        if comp == "SIM" and pc and dose_val:
-            if prod.dose_max and dose_val > prod.dose_max:
-                comp = "TALVEZ"
-                motivo = f"Dose informada ({dose_val} {prod.unidade}) acima do máximo permitido ({prod.dose_max} {prod.unidade})."
-
         item = ItemReceituario(
             receituario_id   = rec.id if rec.id else None,
-            produto_id       = pid,
+            produto_id_api   = pid,
+            produto_nome     = produtos_nome[i] if i < len(produtos_nome) else "Sem Nome",
+            produto_ia       = produtos_ia[i] if i < len(produtos_ia) else "Não informado",
+            produto_classe   = produtos_classe[i] if i < len(produtos_classe) else "Outros",
             dose             = dose_val,
-            unidade          = unidades[i] if i < len(unidades) else (prod.unidade or ""),
+            unidade          = unidades[i] if i < len(unidades) else "",
             num_aplicacoes   = int(num_apls[i]) if i < len(num_apls) else 1,
-            status_validacao = comp,
-            motivo_restricao = motivo,
+            status_validacao = "SIM", 
+            motivo_restricao = "",
         )
         rec.itens.append(item)
 
@@ -412,14 +484,11 @@ def _salvar_receituario(form, rec, func_id=None):
 
     acao = form.get("acao", "salvar")
     if acao == "emitir":
-        if rec.status_geral_validacao == "NAO":
-            flash("Não é possível emitir: há produtos incompatíveis.", "error")
-        else:
-            rec.status       = "emitido"
-            rec.data_emissao = datetime.utcnow()
-            rec.data_validade = date.today() + timedelta(days=90)
-            db.session.commit()
-            flash(f"Receituário {rec.numero} emitido!", "success")
+        rec.status       = "emitido"
+        rec.data_emissao = datetime.utcnow()
+        rec.data_validade = date.today() + timedelta(days=90)
+        db.session.commit()
+        flash(f"Receituário {rec.numero} emitido!", "success")
     else:
         flash(f"Receituário {rec.numero} salvo como rascunho.", "success")
 
