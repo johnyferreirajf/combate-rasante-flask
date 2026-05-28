@@ -138,10 +138,25 @@ def admin_editar(rid):
 @receituario_bp.route("/admin/receituario/<int:rid>")
 @login_required
 @admin_required
+def _get_fispq(rec):
+    """Retorna dict {produto_id_api_str: ProdutoAgricola} para os itens do receituário."""
+    from app.models.receituario import ProdutoAgricola
+    fispq = {}
+    for item in rec.itens:
+        pid = str(getattr(item, "produto_id_api", "") or "")
+        if pid.isdigit():
+            p = ProdutoAgricola.query.get(int(pid))
+            if p:
+                fispq[pid] = p
+    return fispq
+
+
 def admin_ver(rid):
     from app.models.receituario import Receituario
     rec = Receituario.query.get_or_404(rid)
-    return render_template("receituario_view.html", current_user=get_current_user(), rec=rec, modo="admin")
+    return render_template("receituario_view.html",
+                           current_user=get_current_user(),
+                           rec=rec, fispq=_get_fispq(rec), modo="admin")
 
 @receituario_bp.route("/admin/receituario/<int:rid>/emitir", methods=["POST"])
 @login_required
@@ -224,7 +239,9 @@ def func_ver(rid):
     from app.models.receituario import Receituario
     emp = _get_emp()
     rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
-    return render_template("receituario_view.html", current_employee=emp, current_user=get_current_user(), rec=rec, modo="func")
+    return render_template("receituario_view.html",
+                           current_employee=emp, current_user=get_current_user(),
+                           rec=rec, fispq=_get_fispq(rec), modo="func")
 
 
 # =============================================================================

@@ -178,6 +178,127 @@
   letter-spacing:.04em;
 }
 
+/* ══ PÁGINA 2 ════════════════════════════════════════════════════ */
+
+/* Quebra de página entre pág 1 e pág 2 */
+.rv-pg2-break{
+  height:32px;
+  page-break-after: always;
+  break-after: page;
+}
+@media print { .rv-pg2-break{ height:0; } }
+
+.rv-pg2{ margin-top:24px; }
+@media print { .rv-pg2{ margin-top:0; } }
+
+/* Mini-cabeçalho pág 2 */
+.rv-pg2-header{
+  background: linear-gradient(to right,#022c1c,#064e3b);
+  padding:12px 24px;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; flex-wrap:wrap;
+  border-bottom:2px solid #ea580c;
+}
+
+/* Grade meteorológica */
+.rv-meteo-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;
+}
+@media (max-width:600px){ .rv-meteo-grid{ grid-template-columns:repeat(2,1fr); } }
+
+.rv-meteo-card{
+  background:#f0fdf4;border:1.5px solid #86efac;border-radius:9px;
+  padding:12px 10px;text-align:center;
+}
+.rv-meteo-card--destaque{
+  background:#ecfdf5;border-color:#34d399;
+}
+.rv-meteo-icon{ font-size:22px;margin-bottom:4px; }
+.rv-meteo-label{ font-size:9px;font-weight:900;text-transform:uppercase;
+                 letter-spacing:.07em;color:#065f46; }
+.rv-meteo-val{ font-size:15px;font-weight:800;color:#1f2937;margin:3px 0; }
+.rv-meteo-ideal{ font-size:10px;color:#4b5563; }
+
+/* Barra de horário */
+.rv-time-bar-wrap{
+  background:#fffbeb;border:1px solid #fde68a;border-radius:9px;
+  padding:12px 14px;margin-top:6px;
+}
+.rv-time-title{font-size:10px;font-weight:900;text-transform:uppercase;
+               letter-spacing:.07em;color:#92400e;margin-bottom:8px;}
+.rv-time-bar{
+  display:flex;align-items:stretch;gap:6px;
+}
+.rv-time-seg{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  gap:6px;background:#fff;border-radius:7px;padding:8px 10px;
+  font-size:11px;font-weight:700;color:#1f2937;
+  border:1px solid #fde68a;
+}
+.rv-time-manha{ background:#fef9c3; }
+.rv-time-tarde{ background:#fef9c3; }
+.rv-time-icon{ font-size:18px; }
+.rv-time-hr{ font-size:15px;font-weight:900;color:#b45309; }
+.rv-time-arrow{ color:#d97706; }
+.rv-time-lbl{ font-size:10px; }
+.rv-time-intervalo{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;background:#fee2e2;border-radius:7px;padding:8px 12px;
+  color:#7f1d1d;border:1px solid #fca5a5;font-size:12px;min-width:80px;
+}
+
+/* Condições específicas */
+.rv-condic-obs{
+  margin-top:10px;background:#f0fdf4;border:1px solid #86efac;
+  border-radius:7px;padding:8px 12px;
+}
+
+/* Faixas badge */
+.rv-faixa-badge{
+  display:inline-block;padding:4px 12px;border-radius:20px;
+  font-size:14px;font-weight:900;
+}
+.rv-faixa-verde{ background:#d1fae5;color:#065f46; }
+.rv-faixa-laranja{ background:#ffedd5;color:#9a3412; }
+
+/* Cards de bicos */
+.rv-bico-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;
+}
+@media (max-width:500px){ .rv-bico-grid{ grid-template-columns:1fr; } }
+
+.rv-bico-card{
+  border:2px solid #e5e7eb;border-radius:10px;padding:14px 16px;
+  background:#f9fafb;
+}
+.rv-bico-ativo{
+  border-color:#34d399;background:#ecfdf5;
+}
+.rv-bico-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:6px;
+}
+.rv-bico-vol{
+  font-size:18px;font-weight:900;color:#064e3b;
+}
+.rv-bico-title{
+  font-size:14px;font-weight:800;color:#1f2937;margin-bottom:8px;
+}
+.rv-bico-item{
+  font-size:12px;color:#374151;margin-bottom:4px;
+}
+.rv-bico-note{
+  font-size:10.5px;color:#6b7280;margin-top:6px;
+  border-top:1px solid #e5e7eb;padding-top:6px;
+}
+
+/* Banner de segurança */
+.rv-safety-banner{
+  background:#fee2e2;border:1.5px solid #fca5a5;border-radius:8px;
+  padding:10px 14px;font-size:12px;color:#7f1d1d;line-height:1.5;
+  margin-bottom:4px;
+}
+
 /* ══════════════════════════════════════════════════════════════════
    PRINT STYLES — esconde tudo exceto o documento
    ══════════════════════════════════════════════════════════════════ */
@@ -574,6 +695,389 @@
     </div>
 
   </div>{# .rv-doc #}
+
+  {# ══════════════════════════════════════════════════════════════
+     PÁGINA 2 — Informações Técnicas e de Segurança
+     ══════════════════════════════════════════════════════════════ #}
+  <div class="rv-pg2-break"></div>
+  <div class="rv-doc rv-pg2">
+
+    {# Mini-cabeçalho da Pág 2 #}
+    <div class="rv-pg2-header">
+      <div class="rv-top-left" style="gap:10px;">
+        <img src="{{ url_for('static', filename='img/logo-combate.jpeg') }}"
+             alt="CR" class="rv-logo-img" style="width:40px;height:40px;">
+        <div>
+          <div style="font-size:14px;font-weight:900;color:#fff;">COMBATE RASANTE</div>
+          <div style="font-size:9px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.1em;">Aviação Agrícola</div>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:9px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.08em;">Receituário Agronômico</div>
+        <div style="font-size:12px;font-family:monospace;color:#6ee7b7;font-weight:700;margin-top:2px;">{{ rec.numero }} — Pág. 2/2</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:2px;">Produtor: {{ rec.nome_produtor }}</div>
+      </div>
+    </div>
+
+    {# ── Seção 1: Condições Meteorológicas ── #}
+    <div class="rv-sec">
+      <div class="rv-sec-hd">🌤 Condições para Aplicação Aérea</div>
+
+      {# Grade de fatores meteorológicos #}
+      <div class="rv-meteo-grid">
+        <div class="rv-meteo-card">
+          <div class="rv-meteo-icon">🌡️</div>
+          <div class="rv-meteo-label">Temperatura</div>
+          <div class="rv-meteo-val">15 a 30 °C</div>
+          <div class="rv-meteo-ideal">Ideal: 20 – 28 °C</div>
+        </div>
+        <div class="rv-meteo-card">
+          <div class="rv-meteo-icon">💧</div>
+          <div class="rv-meteo-label">Umidade Relativa</div>
+          <div class="rv-meteo-val">&gt; 50%</div>
+          <div class="rv-meteo-ideal">Ideal: &gt; 65%</div>
+        </div>
+        <div class="rv-meteo-card">
+          <div class="rv-meteo-icon">🌬️</div>
+          <div class="rv-meteo-label">Velocidade do Vento</div>
+          <div class="rv-meteo-val">2 a 10 km/h</div>
+          <div class="rv-meteo-ideal">Máx. 15 km/h</div>
+        </div>
+        <div class="rv-meteo-card rv-meteo-card--destaque">
+          <div class="rv-meteo-icon">✈️</div>
+          <div class="rv-meteo-label">Altura de Voo</div>
+          <div class="rv-meteo-val">4 a 5 metros</div>
+          <div class="rv-meteo-ideal">Acima do topo da planta</div>
+        </div>
+      </div>
+
+      {# Horário ideal — timeline #}
+      <div class="rv-time-bar-wrap">
+        <div class="rv-time-title">⏰ Horário Ideal de Aplicação</div>
+        <div class="rv-time-bar">
+          <div class="rv-time-seg rv-time-manha">
+            <span class="rv-time-icon">🌄</span>
+            <span class="rv-time-lbl">Nascer do Sol</span>
+            <span class="rv-time-arrow">→</span>
+            <span class="rv-time-hr">13:00</span>
+          </div>
+          <div class="rv-time-intervalo">
+            <span>⏸</span>
+            <span style="font-size:10px;font-weight:800;">INTERVALO</span>
+            <span style="font-size:10px;">13h – 16h</span>
+          </div>
+          <div class="rv-time-seg rv-time-tarde">
+            <span class="rv-time-hr">16:00</span>
+            <span class="rv-time-arrow">→</span>
+            <span class="rv-time-lbl">Pôr do Sol</span>
+            <span class="rv-time-icon">🌅</span>
+          </div>
+        </div>
+        <div style="font-size:10px;color:#6b7280;margin-top:6px;">
+          ⚠ Evitar horários de maior temperatura e vento excessivo (13h–16h). Atenção à inversão térmica.
+        </div>
+      </div>
+
+      {% if rec.observacoes_aplicacao %}
+      <div class="rv-condic-obs">
+        <span style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;">Condições específicas deste receituário:</span>
+        <p style="margin:4px 0 0;font-size:12.5px;color:#1f2937;">{{ rec.observacoes_aplicacao }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    {# ── Seção 2: Faixas de Aplicação por Aeronave ── #}
+    <div class="rv-sec">
+      <div class="rv-sec-hd">✈ Faixas de Aplicação por Aeronave</div>
+      <div style="overflow-x:auto;">
+        <table class="rv-prod-tbl">
+          <thead>
+            <tr>
+              <th>Aeronave</th>
+              <th>Faixa de Aplicação</th>
+              <th>Observações</th>
+              {% if rec.tipo_equipamento %}<th>Aeronave deste Receituário</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:800;">Ipanema (EMB-202/203)<br>
+                <span style="font-size:11px;color:#6b7280;">Cessna AgWagon / Piper Brave</span>
+              </td>
+              <td>
+                <span class="rv-faixa-badge rv-faixa-verde">20 a 22 metros</span>
+              </td>
+              <td style="font-size:11px;color:#4b5563;">
+                Aeronaves de porte médio. Voo a 4-5 m acima das plantas.
+              </td>
+              {% if rec.tipo_equipamento %}
+              <td>
+                {% if 'ipanema' in rec.tipo_equipamento.lower() or 'cessna' in rec.tipo_equipamento.lower() or 'piper' in rec.tipo_equipamento.lower() %}
+                  <span class="rv-vbadge rvvb-sim">✔ Esta aeronave</span>
+                {% else %}—{% endif %}
+              </td>
+              {% endif %}
+            </tr>
+            <tr>
+              <td style="font-weight:800;">Air Tractor AT-402<br>
+                <span style="font-size:11px;color:#6b7280;">Air Tractor AT-502 / AT-602</span>
+              </td>
+              <td>
+                <span class="rv-faixa-badge rv-faixa-laranja">28 a 30 metros</span>
+              </td>
+              <td style="font-size:11px;color:#4b5563;">
+                Aeronaves de maior envergadura. Maior cobertura por passagem.
+              </td>
+              {% if rec.tipo_equipamento %}
+              <td>
+                {% if 'airtractor' in rec.tipo_equipamento.lower() or 'air tractor' in rec.tipo_equipamento.lower() or 'at-' in rec.tipo_equipamento.lower() %}
+                  <span class="rv-vbadge rvvb-sim">✔ Esta aeronave</span>
+                {% else %}—{% endif %}
+              </td>
+              {% endif %}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {# ── Seção 3: Equipamentos de Pulverização ── #}
+    <div class="rv-sec">
+      <div class="rv-sec-hd">💧 Equipamentos de Pulverização</div>
+      <div class="rv-bico-grid">
+        <div class="rv-bico-card {% if rec.volume_calda and rec.volume_calda >= 15 %}rv-bico-ativo{% endif %}">
+          <div class="rv-bico-header">
+            <span class="rv-bico-vol">≥ 15 L/ha</span>
+            {% if rec.volume_calda and rec.volume_calda >= 15 %}
+            <span class="rv-vbadge rvvb-sim" style="font-size:10px;">✔ Recomendado</span>
+            {% endif %}
+          </div>
+          <div class="rv-bico-title">Barra de Aplicação</div>
+          <div class="rv-bico-body">
+            <div class="rv-bico-item">🔧 <strong>Bico Leque</strong> — maior cobertura foliar</div>
+            <div class="rv-bico-item">🔧 <strong>Bico Cônico Vazio</strong> — gotas médias/grossas</div>
+            <div class="rv-bico-note">Indicado para fungicidas, herbicidas e inseticidas em culturas de maior porte</div>
+          </div>
+        </div>
+        <div class="rv-bico-card {% if rec.volume_calda and rec.volume_calda < 15 %}rv-bico-ativo{% endif %}">
+          <div class="rv-bico-header">
+            <span class="rv-bico-vol">&lt; 15 L/ha</span>
+            {% if rec.volume_calda and rec.volume_calda < 15 %}
+            <span class="rv-vbadge rvvb-sim" style="font-size:10px;">✔ Recomendado</span>
+            {% endif %}
+          </div>
+          <div class="rv-bico-title">Atomizadores Rotativos</div>
+          <div class="rv-bico-body">
+            <div class="rv-bico-item">🌀 <strong>Micron ULVA+</strong> / CDA rotativo</div>
+            <div class="rv-bico-item">🌀 Gotas finas — maior penetração no dossel</div>
+            <div class="rv-bico-note">Ideal para volumes ultra-baixo (ULV) e culturas densas</div>
+          </div>
+        </div>
+      </div>
+      {% if rec.volume_calda %}
+      <div style="margin-top:10px;font-size:12px;color:#374151;background:#f0fdf4;
+                  border:1px solid #86efac;border-radius:7px;padding:8px 12px;">
+        📊 Volume de calda deste receituário: <strong>{{ rec.volume_calda }} L/ha</strong> →
+        {% if rec.volume_calda >= 15 %}
+          Usar <strong>barra de aplicação com bico leque ou cônico vazio</strong>
+        {% else %}
+          Usar <strong>atomizadores rotativos</strong>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+
+    {# ── Seção 4: Recomendações de Segurança ── #}
+    <div class="rv-sec">
+      <div class="rv-sec-hd">🦺 Recomendações de Segurança e EPI</div>
+
+      <div class="rv-safety-banner">
+        <strong>⚠ AVISO IMPORTANTE:</strong> O uso de Equipamentos de Proteção Individual (EPI) é
+        obrigatório durante todo o processo de preparo, aplicação e descarte de embalagens.
+        Consulte sempre o rótulo e a bula de cada produto. Em caso de acidente, contate o
+        SAMU (192) ou Disque Intoxicação (0800-722-6001).
+      </div>
+
+      {% if rec.itens %}
+      <table class="rv-prod-tbl" style="margin-top:12px;">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Classe Toxicológica</th>
+            <th>EPI Obrigatório</th>
+            <th>Restrições</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in rec.itens %}
+          {% set p = fispq.get(item.produto_id_api|string) %}
+          <tr>
+            <td>
+              <div style="font-weight:800;color:#1f2937;">{{ item.produto_nome }}</div>
+              <div style="font-size:10px;color:#9ca3af;">{{ item.produto_ia }}</div>
+            </td>
+            <td>
+              {% if p and p.aplicacao_aerea == 'NAO' %}
+                <span class="rv-vbadge rvvb-nao" style="font-size:10px;">✘ Não aérea</span>
+              {% elif p and p.aplicacao_aerea == 'SIM' %}
+                <span class="rv-vbadge rvvb-sim" style="font-size:10px;">✔ Aérea</span>
+              {% else %}
+                <span class="rv-vbadge rvvb-tal" style="font-size:10px;">⚠ Verificar</span>
+              {% endif %}
+              <div style="font-size:10px;color:#6b7280;margin-top:2px;">
+                {%- if 'Bioinsumo' in (item.produto_classe or '') or 'Biológico' in (item.produto_classe or '') -%}
+                  Classe IV — Levemente Tóxico
+                {%- elif 'Herbicida' in (item.produto_classe or '') -%}
+                  Classe II-III
+                {%- elif 'Fungicida' in (item.produto_classe or '') -%}
+                  Classe III-IV
+                {%- elif 'Inseticida' in (item.produto_classe or '') -%}
+                  Classe I-II
+                {%- else -%}
+                  Verificar bula
+                {%- endif -%}
+              </div>
+            </td>
+            <td style="font-size:11px;color:#1f2937;line-height:1.4;">
+              {% if p and p.epi_obrigatorio %}
+                {{ p.epi_obrigatorio }}
+              {% else %}
+                {%- if 'Bioinsumo' in (item.produto_classe or '') or 'Biológico' in (item.produto_classe or '') -%}
+                  Máscara PFF1, luva nitrílica — produto biológico, baixo risco
+                {%- elif 'Herbicida' in (item.produto_classe or '') -%}
+                  Luva nitrílica, máscara PFF2, avental impermeável, óculos, bota PVC
+                {%- elif 'Fungicida' in (item.produto_classe or '') -%}
+                  Luva nitrílica, máscara PFF2, avental, óculos de segurança
+                {%- elif 'Inseticida' in (item.produto_classe or '') -%}
+                  Luva neoprene, máscara PFF2/PFF3, avental impermeável, bota PVC, óculos vedados
+                {%- elif 'Regulador' in (item.produto_classe or '') -%}
+                  Luva nitrílica, avental, máscara PFF2, óculos
+                {%- else -%}
+                  Consultar bula do produto
+                {%- endif -%}
+              {% endif %}
+            </td>
+            <td style="font-size:11px;color:#4b5563;">
+              {% if p and p.motivo_aerea and p.aplicacao_aerea != 'SIM' %}
+                <span style="color:#b45309;">⚠ {{ p.motivo_aerea[:80] }}</span>
+              {% else %}
+                Respeitar período de carência e IZ. Não aplicar em florescimento.
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      {# EPIs gerais para o piloto aplicador #}
+      <div style="margin-top:14px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 14px;">
+        <div style="font-size:9.5px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;color:#9a3412;margin-bottom:8px;">
+          🧑‍✈️ EPI do Piloto Aplicador (Mínimo Obrigatório)
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;font-size:11px;color:#7c2d12;">
+          <div>🧤 Luva de vaqueta / nitrílica</div>
+          <div>😷 Máscara PFF2 ou respirador</div>
+          <div>🕶️ Óculos de proteção</div>
+          <div>👒 Protetor auricular + capacete</div>
+          <div>👕 Macacão com mangas longas</div>
+          <div>🥾 Bota de segurança</div>
+        </div>
+      </div>
+    </div>
+
+    {# ── Seção 5: FISPQ Resumida ── #}
+    <div class="rv-sec">
+      <div class="rv-sec-hd">📋 FISPQ Resumida dos Produtos Agrotóxicos</div>
+      <p style="font-size:11px;color:#6b7280;margin:0 0 10px;">
+        Dados de segurança resumidos conforme ABNT NBR 14725 e registros MAPA/AGROFIT.
+        Para a FISPQ completa acesse:
+        <strong><a href="https://www.agrofit.agricultura.gov.br" target="_blank"
+                   style="color:#065f46;">www.agrofit.agricultura.gov.br</a></strong>
+      </p>
+
+      {% if rec.itens %}
+      <table class="rv-prod-tbl">
+        <thead>
+          <tr>
+            <th>Produto / Registro MAPA</th>
+            <th>Ingrediente Ativo</th>
+            <th>Classe Agronômica</th>
+            <th>Aplicação Aérea</th>
+            <th>Período de Carência</th>
+            <th>Armazenamento e Descarte</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in rec.itens %}
+          {% set p = fispq.get(item.produto_id_api|string) %}
+          <tr>
+            <td>
+              <div style="font-weight:800;font-size:12px;">{{ item.produto_nome }}</div>
+              {% if p and p.registro_mapa %}
+              <div style="font-size:10px;color:#9ca3af;">Reg. MAPA: {{ p.registro_mapa }}</div>
+              {% endif %}
+              {% if p and p.fabricante %}
+              <div style="font-size:10px;color:#9ca3af;">{{ p.fabricante }}</div>
+              {% endif %}
+            </td>
+            <td style="font-size:11px;color:#374151;">{{ item.produto_ia or '—' }}</td>
+            <td>
+              {% set cls = item.produto_classe or '' %}
+              {% if 'Herb' in cls %}<span class="rv-cpill cp-herb">{{ cls }}</span>
+              {% elif 'Fung' in cls %}<span class="rv-cpill cp-fung">{{ cls }}</span>
+              {% elif 'Inset' in cls %}<span class="rv-cpill cp-ins">{{ cls }}</span>
+              {% elif 'Bio' in cls or 'bio' in cls %}<span class="rv-cpill cp-bio">{{ cls }}</span>
+              {% elif 'Regul' in cls %}<span class="rv-cpill cp-reg">{{ cls }}</span>
+              {% else %}<span class="rv-cpill cp-out">{{ cls or '—' }}</span>{% endif %}
+            </td>
+            <td style="text-align:center;">
+              {% if p %}
+                {% if p.aplicacao_aerea == 'SIM' %}
+                  <span class="rv-vbadge rvvb-sim">✔ Autorizado</span>
+                {% elif p.aplicacao_aerea == 'NAO' %}
+                  <span class="rv-vbadge rvvb-nao">✘ Proibido</span>
+                {% else %}
+                  <span class="rv-vbadge rvvb-tal">⚠ Verificar</span>
+                {% endif %}
+              {% else %}
+                <span style="font-size:10px;color:#9ca3af;">Consultar MAPA</span>
+              {% endif %}
+            </td>
+            <td style="font-size:11px;color:#374151;">
+              {%- if p and p.dose_max -%}
+                Dose máx: {{ p.dose_max }} {{ p.unidade or '' }}<br>
+              {%- endif -%}
+              Consultar bula
+            </td>
+            <td style="font-size:10px;color:#4b5563;">
+              Armazenar em local fresco e seco, longe de alimentos e crianças.
+              Tríplice lavagem e devolução de embalagens (INPEV).
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      <div style="margin-top:12px;font-size:10px;color:#6b7280;background:#f9fafb;
+                  border:1px solid #e5e7eb;border-radius:6px;padding:8px 12px;line-height:1.6;">
+        <strong>Emergências:</strong> SAMU 192 | Disque Intoxicação 0800-722-6001 |
+        CIATOX (SP) (11) 5012-5311 | CEATOX (GO) (62) 3209-6204<br>
+        <strong>Descarte:</strong> Embalagens vazias devem passar por tríplice lavagem e serem devolvidas
+        aos postos de coleta credenciados pelo INPEV em até 1 ano da compra.
+      </div>
+    </div>
+
+    {# Rodapé pág. 2 #}
+    <div class="rv-doc-footer">
+      Combate Rasante Aviação Agrícola — Rod. GO 320, Km 82, Vicentinópolis/GO —
+      (64) 99221-7002 | Documento gerado em {{ rec.data_criacao.strftime('%d/%m/%Y') if rec.data_criacao else '' }} —
+      Nº {{ rec.numero }} — Página 2 de 2
+    </div>
+  </div>{# .rv-pg2 #}
+
+
 </div>{# .rv-page #}
 
 <script>
