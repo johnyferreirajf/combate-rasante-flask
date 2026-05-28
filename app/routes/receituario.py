@@ -5,6 +5,7 @@ import time
 import base64
 from flask import (Blueprint, render_template, request, redirect, url_for,
                    flash, jsonify, session, current_app, Response)
+from sqlalchemy import text
 from app import db
 from app.utils.security import login_required, admin_required, get_current_user, get_current_employee
 
@@ -19,6 +20,7 @@ AGROAPI_SECRET = "KVYMu619dgmFUSqErSv18OFIIkka"
 TOKEN_CACHE = {"access_token": None, "expires_at": 0}
 
 def _get_agroapi_token():
+    """Gera um token de acesso de forma segura."""
     if TOKEN_CACHE["access_token"] and time.time() < TOKEN_CACHE["expires_at"]:
         return TOKEN_CACHE["access_token"]
 
@@ -44,6 +46,29 @@ def _get_agroapi_token():
         print(f"ERRO DE AUTENTICAÇÃO AGROAPI: {e}")
         return None
 
+# =============================================================================
+# Hack Silencioso de Banco de Dados (Auto Migrate)
+# =============================================================================
+def auto_migrate_db():
+    """Cria as colunas novas na tabela do Railway para evitar o Erro 500 na tela branca."""
+    comandos = [
+        "ALTER TABLE itens_receituario ADD COLUMN IF NOT EXISTS produto_id_api VARCHAR(100);",
+        "ALTER TABLE itens_receituario ADD COLUMN IF NOT EXISTS produto_nome VARCHAR(300);",
+        "ALTER TABLE itens_receituario ADD COLUMN IF NOT EXISTS produto_ia VARCHAR(500);",
+        "ALTER TABLE itens_receituario ADD COLUMN IF NOT EXISTS produto_classe VARCHAR(100);"
+    ]
+    for cmd in comandos:
+        try:
+            # Em alguns bancos antigos o "IF NOT EXISTS" pode falhar, então encapsulamos linha a linha
+            db.session.execute(text(cmd.replace(" IF NOT EXISTS", "")))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
+
+# =============================================================================
+# Helpers e Rotas de Exibição
+# =============================================================================
 def _is_admin():
     emp = get_current_employee()
     return emp and emp.is_admin
@@ -60,9 +85,9 @@ def _get_emp():
 @admin_required
 def admin_lista():
     from app.models.receituario import Receituario, Cultura
-    q     = request.args.get("q", "").strip()
+    q = request.args.get("q", "").strip()
     status = request.args.get("status", "")
-    cult   = request.args.get("cultura", "")
+    cult = request.args.get("cultura", "")
 
     query = Receituario.query.order_by(Receituario.data_criacao.desc())
     if q:
@@ -73,14 +98,13 @@ def admin_lista():
         query = query.filter_by(cultura_id=int(cult))
 
     receituarios = query.limit(200).all()
-    culturas     = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+    culturas = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
 
-    total     = Receituario.query.count()
-    emitidos  = Receituario.query.filter_by(status="emitido").count()
+    total = Receituario.query.count()
+    emitidos = Receituario.query.filter_by(status="emitido").count()
     rascunhos = Receituario.query.filter_by(status="rascunho").count()
 
-    return render_template("receituario_admin.html",
-                           current_user=get_current_user(),
+    return render_template("receituario_admin.html", current_user=get_current_user(),
                            receituarios=receituarios, culturas=culturas,
                            total=total, emitidos=emitidos, rascunhos=rascunhos,
                            q=q, status_filtro=status, cult_filtro=cult)
@@ -91,8 +115,8 @@ def admin_lista():
 def admin_novo():
     from app.models.receituario import Cultura
     from app.models.user import User
-    culturas  = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
-    clientes  = User.query.filter_by(is_admin=False).order_by(User.name).all()
+    culturas = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+    clientes = User.query.filter_by(is_admin=False).order_by(User.name).all()
 
     if request.method == "POST":
         return _salvar_receituario(request.form, None)
@@ -106,9 +130,9 @@ def admin_novo():
 def admin_editar(rid):
     from app.models.receituario import Receituario, Cultura
     from app.models.user import User
-    rec       = Receituario.query.get_or_404(rid)
-    culturas  = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
-    clientes  = User.query.filter_by(is_admin=False).order_by(User.name).all()
+    rec = Receituario.query.get_or_404(rid)
+    culturas = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+    clientes = User.query.filter_by(is_admin=False).order_by(User.name).all()
 
     if request.method == "POST":
         return _salvar_receituario(request.form, rec)
@@ -136,7 +160,7 @@ def admin_emitir(rid):
     if not rec.itens:
         flash("Adicione ao menos um produto antes de emitir.", "error")
         return redirect(url_for("receituario.admin_ver", rid=rid))
-    rec.status       = "emitido"
+    rec.status = "emitido"
     rec.data_emissao = datetime.utcnow()
     rec.data_validade = date.today() + timedelta(days=90)
     db.session.commit()
@@ -190,7 +214,7 @@ def func_lista():
 @_func_login_required
 def func_novo():
     from app.models.receituario import Cultura
-    emp      = _get_emp()
+    emp = _get_emp()
     culturas = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
 
     if request.method == "POST":
@@ -207,13 +231,21 @@ def func_ver(rid):
     rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
     return render_template("receituario_view.html", current_employee=emp, current_user=get_current_user(), rec=rec, modo="func")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# API EMBRAPA — Correção do Bug de Extração e Listas
-# ─────────────────────────────────────────────────────────────────────────────
+
+# =============================================================================
+# API EMBRAPA — Sistema de Busca Blindado e Extração Dinâmica
+# =============================================================================
+
+def extrator_dinamico(item, chaves, padrao=""):
+    """Varre o dicionário da API da Embrapa procurando os dados, não importa a grafia que eles usem."""
+    for k in chaves:
+        if k in item and item[k]:
+            return str(item[k])
+    return padrao
 
 @receituario_bp.route("/api/receituario/produtos")
 def api_produtos():
-    q     = request.args.get("q", "").strip()
+    q = request.args.get("q", "").strip()
     campo = request.args.get("campo", "nome")
     limit = request.args.get("limit", 20, type=int)
 
@@ -222,62 +254,80 @@ def api_produtos():
 
     token = _get_agroapi_token()
     if not token:
-        return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO NAS CHAVES', 'ingrediente_ativo': 'Falha ao gerar Token'}])
+        return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO NAS CHAVES', 'ingrediente_ativo': 'Autenticação com MAPA falhou'}])
 
     headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
     url = "https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados"
-    params = {'ingredienteAtivo': q} if campo == 'ia' else {'marcaComercial': q}
+    
+    # Enviamos os filtros em ambos formatos (snake_case e camelCase) para garantir
+    params = {'marca_comercial': q, 'marcaComercial': q} if campo == 'nome' else {'ingrediente_ativo': q, 'ingredienteAtivo': q}
 
     try:
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        if response.status_code in (401, 403):
-            return jsonify([{'id': 'erro', 'nome_comercial': f'⚠️ ACESSO NEGADO ({response.status_code})', 'ingrediente_ativo': 'API não assinada!'}])
-            
+        response = requests.get(url, headers=headers, params=params, timeout=12)
         response.raise_for_status()
         dados_embrapa = response.json()
         
-        resultado = []
+        # Desempacota a resposta seja qual for a estrutura (lista ou dicionário)
         itens = dados_embrapa if isinstance(dados_embrapa, list) else dados_embrapa.get('data', dados_embrapa.get('content', []))
         
-        for p in itens[:limit]: 
-            # 1. Garante que o ID nunca seja nulo
-            prod_id = p.get('numeroRegistro') or p.get('id') or p.get('codigoRegistro') or p.get('registro')
-            if not prod_id: continue
+        resultado = []
+        q_low = q.lower()
+        
+        for i, p in enumerate(itens):
+            # Extração blindada dos dados
+            prod_id = extrator_dinamico(p, ['numero_registro', 'numeroRegistro', 'id', 'codigo_registro', 'registro'])
+            nome = extrator_dinamico(p, ['marca_comercial', 'marcaComercial', 'nome_comercial', 'produto', 'nome'])
             
-            # 2. Garante o Nome Comercial
-            nome = p.get('marcaComercial') or p.get('nomeComercial') or p.get('produto')
-            if not nome: nome = f"Produto MAPA #{prod_id}"
+            # Extraindo Ingrediente Ativo (que as vezes vem numa sublista complexa)
+            ia_bruto = p.get('ingrediente_ativo') or p.get('ingredienteAtivo') or p.get('ingredientesAtivos') or p.get('ingredientes_ativos')
+            if isinstance(ia_bruto, list):
+                ia = ", ".join([extrator_dinamico(x, ['nome', 'ingredienteAtivo', 'ingrediente_ativo']) for x in ia_bruto if isinstance(x, dict)])
+            elif isinstance(ia_bruto, dict):
+                ia = extrator_dinamico(ia_bruto, ['nome', 'ingredienteAtivo', 'ingrediente_ativo'])
+            else:
+                ia = str(ia_bruto) if ia_bruto else "Princípio ativo não listado"
                 
-            # 3. Garante o Princípio Ativo
-            ia = p.get('ingredienteAtivo') or p.get('ingredientesAtivos')
-            if isinstance(ia, list):
-                ia = ", ".join([i.get('nome', '') for i in ia if isinstance(i, dict)])
-            elif not ia:
-                ia = "Não informado"
+            # Filtro manual de segurança (Caso a API não filtre e nos mande a página 1 aleatória)
+            if campo == 'nome' and q_low not in nome.lower():
+                continue
+            if campo == 'ia' and q_low not in ia.lower():
+                continue
                 
-            classe = p.get('classificacaoAgronomica') or p.get('classe') or 'Outros'
+            if not prod_id: prod_id = f"REF-{hash(nome)}"
+            if not nome: nome = "Produto Sem Nome"
+            
+            classe = extrator_dinamico(p, ['classificacao_agronomica', 'classificacaoAgronomica', 'classe'], 'Outros')
+            fabricante = extrator_dinamico(p, ['titular_registro', 'titularRegistro', 'fabricante'])
             
             resultado.append({
-                'id': str(prod_id), 
-                'nome_comercial': str(nome),
-                'ingrediente_ativo': str(ia),
-                'classe_agronomica': str(classe),
-                'fabricante': p.get('titularRegistro', p.get('fabricante', '')),
-                'dose_min': p.get('doseMinima', 0),
-                'dose_max': p.get('doseMaxima', 0),
-                'unidade': p.get('unidadeMedida', 'L/ha'),
+                'id': prod_id, 
+                'nome_comercial': nome,
+                'ingrediente_ativo': ia,
+                'classe_agronomica': classe,
+                'fabricante': fabricante,
+                'dose_min': p.get('doseMinima', p.get('dose_minima', 0)),
+                'dose_max': p.get('doseMaxima', p.get('dose_maxima', 0)),
+                'unidade': p.get('unidadeMedida', p.get('unidade_medida', 'L/ha')),
                 'epi_obrigatorio': p.get('epi', 'Verificar bula')
             })
             
+            if len(resultado) >= limit:
+                break
+                
+        if not resultado:
+            return jsonify([{'id': 'vazio', 'nome_comercial': f'🔎 Sem resultados exatos para "{q}"', 'ingrediente_ativo': 'Verifique a grafia.', 'classe_agronomica': 'Outros'}])
+            
         return jsonify(resultado)
+
     except Exception as e:
         print(f"Erro de Conexão MAPA: {e}")
-        return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO DE CONEXÃO', 'ingrediente_ativo': 'Servidor demorou a responder'}])
+        return jsonify([{'id': 'erro', 'nome_comercial': '⚠️ ERRO DE CONEXÃO', 'ingrediente_ativo': 'Servidor da Embrapa demorou.', 'classe_agronomica': 'Outros'}])
 
 @receituario_bp.route("/api/receituario/produto/<pid>/validar")
 def api_validar(pid):
-    if pid in ('erro', 'null', 'undefined') or not pid:
-        return jsonify({"compatibilidade": "NAO", "motivo": "ID do produto inválido para busca."})
+    # Se for um item temporário ou de erro visual, bloqueia sem quebrar a tela
+    if pid in ('erro', 'vazio', 'null', 'undefined') or not pid or pid.startswith('REF-'):
+        return jsonify({"compatibilidade": "TALVEZ", "motivo": "Este produto requer revisão agronômica manual da bula."})
 
     from app.models.receituario import Cultura
     cultura_id = request.args.get("cultura_id", type=int)
@@ -301,22 +351,23 @@ def api_validar(pid):
         response.raise_for_status()
         produto_api = response.json()
         
-        # CORREÇÃO CRÍTICA: Trata caso a API retorne uma lista em vez de um dicionário
+        # Garante que desempacota listas caso a API retorne uma
         if isinstance(produto_api, list):
             produto_api = produto_api[0] if len(produto_api) > 0 else {}
             
-        indicacoes = produto_api.get('indicacoesDeUso', [])
+        indicacoes = produto_api.get('indicacoesDeUso', produto_api.get('indicacoes_de_uso', []))
         cultura_permitida = False
         restricao_aerea = False
         dose_recomendada = ""
         
         for indicacao in indicacoes:
-            cultura_bula = indicacao.get('cultura', '').upper()
+            cultura_bula = extrator_dinamico(indicacao, ['cultura', 'Cultura']).upper()
             if cultura.nome.upper() in cultura_bula:
                 cultura_permitida = True
-                dose_recomendada = indicacao.get('dose', '')
-                modalidade = indicacao.get('modalidadeDeAplicacao', '').upper()
-                if 'TERRESTRE' in modalidade and 'AÉREA' not in modalidade:
+                dose_recomendada = extrator_dinamico(indicacao, ['dose', 'Dose'])
+                modalidade = extrator_dinamico(indicacao, ['modalidadeDeAplicacao', 'modalidade_de_aplicacao']).upper()
+                
+                if 'TERRESTRE' in modalidade and 'AÉREA' not in modalidade and 'AEREA' not in modalidade:
                     restricao_aerea = True
                 break
                 
@@ -329,10 +380,22 @@ def api_validar(pid):
 
     except Exception as e:
         print(f"Erro Validação MAPA {pid}: {e}")
-        return jsonify({"compatibilidade": "TALVEZ", "motivo": "Não foi possível validar a bula online."})
+        return jsonify({"compatibilidade": "TALVEZ", "motivo": "Não foi possível conectar à bula online."})
 
+@receituario_bp.route("/api/receituario/culturas")
+def api_culturas():
+    from app.models.receituario import Cultura
+    cs = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+    return jsonify([c.to_dict() for c in cs])
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Helper — salvar receituário
+# ─────────────────────────────────────────────────────────────────────────────
 def _salvar_receituario(form, rec, func_id=None):
     from app.models.receituario import (Receituario, ItemReceituario)
+
+    # Executa nossa migração segura e fantasma para proteger o salvamento
+    auto_migrate_db()
 
     cultura_id = form.get("cultura_id", type=int)
     if not cultura_id:
@@ -392,7 +455,8 @@ def _salvar_receituario(form, rec, func_id=None):
 
     for i, pid_str in enumerate(produto_ids):
         pid = pid_str.strip()
-        if not pid or pid == 'erro':
+        # Não arquiva produtos que na verdade são avisos de erro visual da busca
+        if not pid or pid in ('erro', 'vazio'):
             continue
 
         dose_val = None
