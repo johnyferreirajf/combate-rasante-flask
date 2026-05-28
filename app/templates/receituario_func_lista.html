@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+{% block title %}Meus Receituários — COMBATE RASANTE{% endblock %}
+
+{% block head_extra %}
+<style>
+:root{--g:rgba(3,58,36,.80);--bd:rgba(255,255,255,.12);--ac:#16a34a;--or:#ea580c;--t:#e2f5e9;--m:rgba(255,255,255,.55);}
+.fl-wrap{max-width:900px;margin:0 auto;padding:18px 14px 60px;}
+.fl-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;}
+.fl-title{font-size:20px;font-weight:900;color:#fff;}
+.fl-title span{font-size:12px;color:var(--m);font-weight:400;display:block;margin-top:3px;}
+.fl-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:10px;
+        font-size:13px;font-weight:800;cursor:pointer;border:none;text-decoration:none;
+        background:var(--ac);color:#fff;transition:.15s;}
+.fl-btn:hover{background:#15803d;}
+.fl-card{background:var(--g);border:1px solid var(--bd);border-radius:13px;padding:18px 20px;
+         margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+         transition:.15s;}
+.fl-card:hover{border-color:rgba(34,197,94,.35);}
+.fl-card-info{flex:1;}
+.fl-card-num{font-size:11px;font-family:monospace;color:#86efac;font-weight:700;margin-bottom:4px;}
+.fl-card-name{font-size:15px;font-weight:800;color:#fff;}
+.fl-card-meta{font-size:12px;color:var(--m);margin-top:3px;}
+.fl-card-badges{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:800;}
+.badge-emitido{background:rgba(34,197,94,.18);color:#86efac;}
+.badge-rascunho{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);}
+.badge-ok{background:rgba(34,197,94,.15);color:#86efac;}
+.badge-nao{background:rgba(239,68,68,.16);color:#fca5a5;}
+.badge-talvez{background:rgba(251,191,36,.14);color:#fde68a;}
+.fl-view{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:9px;
+         background:rgba(255,255,255,.10);border:1px solid var(--bd);color:#fff;
+         font-size:12px;font-weight:800;text-decoration:none;transition:.15s;}
+.fl-view:hover{background:rgba(255,255,255,.18);}
+.fl-empty{text-align:center;padding:60px 20px;color:var(--m);}
+.fl-empty-icon{font-size:48px;margin-bottom:12px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fl-wrap">
+  <div class="fl-hdr">
+    <div>
+      <div class="fl-title">🌿 Meus Receituários
+        <span>Receituários Agronômicos emitidos por você</span>
+      </div>
+    </div>
+    <a href="{{ url_for('receituario.func_novo') }}" class="fl-btn">✚ Novo Receituário</a>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+    <div style="padding:10px 16px;border-radius:9px;margin-bottom:12px;font-size:13px;
+                background:{% if cat=='error' %}rgba(239,68,68,.16){% else %}rgba(34,197,94,.14){% endif %};
+                color:{% if cat=='error' %}#fca5a5{% else %}#86efac{% endif %};">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% if receituarios %}
+    {% for r in receituarios %}
+    <div class="fl-card">
+      <div class="fl-card-info">
+        <div class="fl-card-num">{{ r.numero }}</div>
+        <div class="fl-card-name">{{ r.nome_produtor }}</div>
+        <div class="fl-card-meta">
+          🌱 {{ r.cultura.nome if r.cultura else '—' }}
+          {% if r.municipio %} · 📍 {{ r.municipio }}/{{ r.estado }}{% endif %}
+          {% if r.area_ha %} · {{ r.area_ha }} ha{% endif %}
+        </div>
+        <div class="fl-card-badges">
+          {% if r.status == 'emitido' %}
+            <span class="badge badge-emitido">✅ Emitido</span>
+          {% else %}
+            <span class="badge badge-rascunho">📝 Rascunho</span>
+          {% endif %}
+          {% set sv = r.status_geral_validacao %}
+          {% if sv == 'OK' %}<span class="badge badge-ok">✔ Validado</span>
+          {% elif sv == 'NAO' %}<span class="badge badge-nao">✘ Incompatível</span>
+          {% elif sv == 'TALVEZ' %}<span class="badge badge-talvez">⚠ Restrição</span>{% endif %}
+          <span style="font-size:11px;color:var(--m);">
+            {{ r.data_criacao.strftime('%d/%m/%Y') if r.data_criacao else '' }}
+          </span>
+        </div>
+      </div>
+      <a href="{{ url_for('receituario.func_ver', rid=r.id) }}" class="fl-view">👁 Ver</a>
+    </div>
+    {% endfor %}
+  {% else %}
+    <div class="fl-empty">
+      <div class="fl-empty-icon">🌾</div>
+      <div style="font-size:16px;font-weight:700;color:var(--t);">Nenhum receituário ainda</div>
+      <div style="font-size:13px;margin-top:6px;">
+        <a href="{{ url_for('receituario.func_novo') }}" style="color:#86efac;">Criar o primeiro receituário</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

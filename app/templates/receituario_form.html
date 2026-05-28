@@ -1,0 +1,774 @@
+{% extends "layout.html" %}
+{% block title %}{% if rec %}Editar{% else %}Novo{% endif %} Receituário — COMBATE RASANTE{% endblock %}
+
+{% block head_extra %}
+<style>
+:root{
+  --g:#064e3b;--g2:rgba(6,78,59,.90);--ac:#16a34a;--or:#ea580c;
+  --bd:rgba(255,255,255,.12);--bh:rgba(34,197,94,.50);
+  --t:#e2f5e9;--m:rgba(255,255,255,.55);
+  --ok-bg:rgba(34,197,94,.14);--ok-c:#86efac;
+  --nao-bg:rgba(239,68,68,.16);--nao-c:#fca5a5;
+  --tal-bg:rgba(251,191,36,.16);--tal-c:#fde68a;
+  --r:13px;
+}
+*{box-sizing:border-box;}
+.rf-wrap{max-width:1100px;margin:0 auto;padding:16px 14px 80px;}
+.rf-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+        gap:10px;margin-bottom:20px;}
+.rf-title{font-size:20px;font-weight:900;color:#fff;}
+.rf-title span{font-size:13px;font-weight:400;color:var(--m);display:block;margin-top:2px;}
+
+/* ── Section card ── */
+.rf-sec{background:rgba(3,58,36,.80);border:1px solid var(--bd);border-radius:var(--r);
+        padding:20px 22px;margin-bottom:14px;}
+.rf-sec-title{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;
+              color:var(--ac);margin-bottom:16px;display:flex;align-items:center;gap:7px;}
+.rf-sec-title::before{content:'';display:block;width:3px;height:14px;
+                      background:var(--or);border-radius:2px;flex-shrink:0;}
+.rf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
+.rf-grid-3{grid-template-columns:repeat(3,1fr);}
+.rf-field{display:flex;flex-direction:column;gap:4px;}
+.rf-label{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:var(--m);}
+.rf-input{padding:9px 12px;border-radius:9px;border:1px solid var(--bd);
+          background:rgba(255,255,255,.07);color:#fff;font-size:13px;
+          font-family:inherit;outline:none;transition:border-color .15s;width:100%;}
+.rf-input:focus{border-color:var(--bh);}
+.rf-select{appearance:none;-webkit-appearance:none;cursor:pointer;}
+textarea.rf-input{resize:vertical;min-height:72px;}
+
+/* ── Botões ── */
+.rf-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:10px;
+        font-size:13px;font-weight:800;cursor:pointer;border:none;font-family:inherit;
+        text-decoration:none;transition:.15s;}
+.rf-btn-p{background:var(--ac);color:#fff;}
+.rf-btn-p:hover{background:#15803d;}
+.rf-btn-e{background:var(--or);color:#fff;}
+.rf-btn-e:hover{background:#c2410c;}
+.rf-btn-g{background:rgba(255,255,255,.10);color:#fff;border:1px solid var(--bd);}
+.rf-btn-g:hover{background:rgba(255,255,255,.16);}
+
+/* ── Cultura selecionada badge ── */
+.cultura-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
+               border-radius:20px;background:rgba(22,163,74,.20);border:1px solid var(--bh);
+               color:#86efac;font-size:12px;font-weight:800;}
+
+/* ── Painel de produtos ── */
+.prod-search-wrap{position:relative;}
+.prod-search{width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:1px solid var(--bd);
+             background:rgba(255,255,255,.07);color:#fff;font-size:13px;
+             font-family:inherit;outline:none;transition:border-color .15s;}
+.prod-search:focus{border-color:var(--bh);}
+.prod-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);
+                  font-size:16px;pointer-events:none;}
+.prod-dropdown{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:50;
+               background:#0d3b2e;border:1px solid var(--bh);border-radius:10px;
+               max-height:280px;overflow-y:auto;display:none;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.prod-dropdown.open{display:block;}
+.prod-item{padding:10px 14px;cursor:pointer;transition:.1s;border-bottom:1px solid rgba(255,255,255,.06);}
+.prod-item:last-child{border-bottom:none;}
+.prod-item:hover{background:rgba(34,197,94,.12);}
+.prod-item-name{font-size:13px;font-weight:700;color:#fff;}
+.prod-item-ia{font-size:11px;color:var(--m);}
+.prod-item-classe{font-size:10px;font-weight:800;text-transform:uppercase;
+                  padding:2px 7px;border-radius:20px;margin-left:6px;}
+.pc-herb{background:rgba(251,191,36,.18);color:#fde68a;}
+.pc-fung{background:rgba(147,197,253,.18);color:#bfdbfe;}
+.pc-ins{background:rgba(252,165,165,.18);color:#fecaca;}
+.pc-reg{background:rgba(167,243,208,.18);color:#6ee7b7;}
+.pc-out{background:rgba(255,255,255,.12);color:#d1d5db;}
+
+/* ── Lista de produtos adicionados ── */
+.prod-lista{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+.prod-card{border-radius:11px;border:2px solid var(--bd);padding:14px 16px;
+           transition:border-color .2s;position:relative;animation:slideIn .2s ease;}
+.prod-card.ok{border-color:rgba(34,197,94,.40);background:rgba(34,197,94,.06);}
+.prod-card.nao{border-color:rgba(239,68,68,.50);background:rgba(239,68,68,.06);}
+.prod-card.talvez{border-color:rgba(251,191,36,.40);background:rgba(251,191,36,.06);}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+
+.prod-card-header{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;}
+.prod-card-info{flex:1;}
+.prod-card-name{font-size:14px;font-weight:800;color:#fff;}
+.prod-card-ia{font-size:11px;color:var(--m);margin-top:2px;}
+.prod-card-badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+
+.validacao-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;
+                 border-radius:30px;font-size:11px;font-weight:900;}
+.vb-ok{background:var(--ok-bg);color:var(--ok-c);}
+.vb-nao{background:var(--nao-bg);color:var(--nao-c);}
+.vb-talvez{background:var(--tal-bg);color:var(--tal-c);}
+
+.prod-card-motivo{font-size:12px;padding:8px 12px;border-radius:8px;margin-top:8px;}
+.motivo-nao{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.25);}
+.motivo-talvez{background:rgba(251,191,36,.10);color:#fde68a;border:1px solid rgba(251,191,36,.25);}
+
+.prod-card-fields{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;}
+.prod-mini-input{padding:7px 10px;border-radius:8px;border:1px solid var(--bd);
+                 background:rgba(255,255,255,.06);color:#fff;font-size:12px;
+                 font-family:inherit;outline:none;width:100%;}
+.prod-mini-input:focus{border-color:var(--bh);}
+.prod-mini-label{font-size:9px;font-weight:900;text-transform:uppercase;color:var(--m);margin-bottom:3px;}
+
+.prod-remove{background:rgba(239,68,68,.20);border:1px solid rgba(239,68,68,.35);
+             color:#fca5a5;border-radius:7px;padding:5px 9px;cursor:pointer;
+             font-size:12px;font-weight:800;transition:.15s;align-self:flex-start;}
+.prod-remove:hover{background:rgba(239,68,68,.35);}
+
+/* ── Status geral ── */
+.status-geral{padding:14px 18px;border-radius:11px;margin-bottom:14px;
+              display:flex;align-items:center;gap:12px;font-size:13px;font-weight:700;}
+.sg-ok{background:rgba(34,197,94,.14);border:1.5px solid rgba(34,197,94,.40);color:#86efac;}
+.sg-nao{background:rgba(239,68,68,.14);border:1.5px solid rgba(239,68,68,.40);color:#fca5a5;}
+.sg-talvez{background:rgba(251,191,36,.12);border:1.5px solid rgba(251,191,36,.35);color:#fde68a;}
+.sg-vazio{background:rgba(255,255,255,.08);border:1px solid var(--bd);color:var(--m);}
+.sg-icon{font-size:22px;}
+
+/* ── Footer de ações ── */
+.rf-footer{position:fixed;bottom:0;left:0;right:0;
+           background:rgba(3,26,18,.95);backdrop-filter:blur(12px);
+           border-top:1px solid var(--bd);padding:12px 20px;
+           display:flex;align-items:center;justify-content:space-between;
+           gap:12px;z-index:100;}
+.rf-footer-left{font-size:12px;color:var(--m);}
+.rf-footer-right{display:flex;gap:10px;}
+
+/* ── Loading spinner ── */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
+      border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Dose info ── */
+.dose-rec{font-size:10px;color:#86efac;margin-top:2px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rf-wrap">
+<form method="POST" id="rfForm">
+
+  {# Header #}
+  <div class="rf-hdr">
+    <div>
+      <div class="rf-title">
+        {% if rec %}✏ Editar Receituário <span style="color:#86efac;font-size:16px;">{{ rec.numero }}</span>
+        {% else %}🌿 Novo Receituário Agronômico{% endif %}
+        <span>Aviação Agrícola — Combate Rasante</span>
+      </div>
+    </div>
+    <a href="{{ url_for('receituario.admin_lista') if modo=='admin' else url_for('receituario.func_lista') }}"
+       class="rf-btn rf-btn-g">← Voltar</a>
+  </div>
+
+  {# Mensagens flash #}
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+    <div style="padding:10px 16px;border-radius:9px;margin-bottom:12px;font-size:13px;
+                background:{% if cat=='error' %}rgba(239,68,68,.16){% else %}rgba(34,197,94,.14){% endif %};
+                color:{% if cat=='error' %}#fca5a5{% else %}#86efac{% endif %};
+                border:1px solid {% if cat=='error' %}rgba(239,68,68,.30){% else %}rgba(34,197,94,.30){% endif %};">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {# Status geral de validação (dinâmico) #}
+  <div class="status-geral sg-vazio" id="statusGeral">
+    <span class="sg-icon">🌾</span>
+    <span id="statusGeralText">Adicione produtos para ver a validação agronômica.</span>
+  </div>
+
+  {# ── SEÇÃO 1 — Produtor + Propriedade ── #}
+  <div class="rf-sec">
+    <div class="rf-sec-title">📋 Identificação do Produtor e Propriedade</div>
+    <div class="rf-grid">
+      <div class="rf-field" style="grid-column:span 2;">
+        <label class="rf-label">Nome do Produtor *</label>
+        {% if modo=='admin' and clientes %}
+        <select name="nome_produtor" id="clienteSelect" class="rf-input rf-select"
+                onchange="preencherCliente(this)">
+          <option value="">— Selecionar ou digitar abaixo —</option>
+          {% for c in clientes %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}
+        </select>
+        <input class="rf-input" type="text" name="nome_produtor" id="nomeProdutorInput"
+               placeholder="Nome completo do produtor"
+               value="{{ rec.nome_produtor if rec else '' }}" required style="margin-top:6px;">
+        {% else %}
+        <input class="rf-input" type="text" name="nome_produtor"
+               placeholder="Nome completo do produtor"
+               value="{{ rec.nome_produtor if rec else '' }}" required>
+        {% endif %}
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">CPF / CNPJ</label>
+        <input class="rf-input" type="text" name="cpf_cnpj_produtor"
+               placeholder="000.000.000-00"
+               value="{{ rec.cpf_cnpj_produtor if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Telefone</label>
+        <input class="rf-input" type="text" name="telefone_produtor"
+               placeholder="(00) 90000-0000"
+               value="{{ rec.telefone_produtor if rec else '' }}">
+      </div>
+      <div class="rf-field" style="grid-column:span 2;">
+        <label class="rf-label">Nome da Propriedade / Fazenda</label>
+        <input class="rf-input" type="text" name="nome_propriedade"
+               placeholder="Ex.: Fazenda Boa Vista"
+               value="{{ rec.nome_propriedade if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Município</label>
+        <input class="rf-input" type="text" name="municipio"
+               placeholder="Vicentinópolis"
+               value="{{ rec.municipio if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Estado (UF)</label>
+        <select name="estado" class="rf-input rf-select">
+          {% set uf_list = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'] %}
+          {% for uf in uf_list %}
+          <option value="{{ uf }}" {% if rec and rec.estado==uf %}selected{% endif %}>{{ uf }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Área (ha) *</label>
+        <input class="rf-input" type="number" step="0.01" name="area_ha"
+               placeholder="250.50"
+               value="{{ rec.area_ha if rec else '' }}" required>
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Talhão / Gleba</label>
+        <input class="rf-input" type="text" name="talhao"
+               placeholder="Ex.: Talhão A-1"
+               value="{{ rec.talhao if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">CAR (Cad. Ambiental Rural)</label>
+        <input class="rf-input" type="text" name="car"
+               placeholder="GO-XXXXX-XXXXXX…"
+               value="{{ rec.car if rec else '' }}">
+      </div>
+    </div>
+  </div>
+
+  {# ── SEÇÃO 2 — Responsável Técnico ── #}
+  <div class="rf-sec">
+    <div class="rf-sec-title">👨‍🔬 Responsável Técnico</div>
+    <div class="rf-grid">
+      <div class="rf-field" style="grid-column:span 2;">
+        <label class="rf-label">Nome do Eng. Agrônomo / Técnico *</label>
+        <input class="rf-input" type="text" name="responsavel_tecnico"
+               placeholder="Eng. Agr. João da Silva"
+               value="{{ rec.responsavel_tecnico if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Nº CREA / CFTA *</label>
+        <input class="rf-input" type="text" name="crea_cfta"
+               placeholder="CREA 12345-D/GO"
+               value="{{ rec.crea_cfta if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">CPF do RT</label>
+        <input class="rf-input" type="text" name="cpf_rt"
+               placeholder="000.000.000-00"
+               value="{{ rec.cpf_rt if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">E-mail</label>
+        <input class="rf-input" type="email" name="email_rt"
+               placeholder="rt@empresa.com.br"
+               value="{{ rec.email_rt if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Telefone</label>
+        <input class="rf-input" type="text" name="telefone_rt"
+               placeholder="(64) 99900-0000"
+               value="{{ rec.telefone_rt if rec else '' }}">
+      </div>
+    </div>
+  </div>
+
+  {# ── SEÇÃO 3 — Dados Agronômicos ── #}
+  <div class="rf-sec">
+    <div class="rf-sec-title">🌱 Dados Agronômicos</div>
+    <div class="rf-grid">
+      <div class="rf-field">
+        <label class="rf-label">Cultura *</label>
+        <select name="cultura_id" id="culturaSelect" class="rf-input rf-select"
+                onchange="atualizarCultura(this)" required>
+          <option value="">— Selecione a cultura —</option>
+          {% for c in culturas %}
+          <option value="{{ c.id }}"
+                  {% if rec and rec.cultura_id==c.id %}selected{% endif %}>
+            {{ c.nome }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Estágio Fenológico</label>
+        <input class="rf-input" type="text" name="estagio_fenologico"
+               placeholder="Ex.: V4-V6 / R1 / Perfilhamento"
+               value="{{ rec.estagio_fenologico if rec else '' }}">
+      </div>
+      <div class="rf-field" style="grid-column:span 2;">
+        <label class="rf-label">Diagnóstico / Problema Identificado *</label>
+        <textarea class="rf-input" name="diagnostico"
+                  placeholder="Descreva a praga, doença ou planta daninha identificada e o nível de infestação/severidade…">{{ rec.diagnostico if rec else '' }}</textarea>
+      </div>
+      <div class="rf-field" style="grid-column:span 2;">
+        <label class="rf-label">Praga / Doença / Planta Daninha Alvo</label>
+        <input class="rf-input" type="text" name="praga_alvo"
+               placeholder="Ex.: Ferrugem asiática (Phakopsora pachyrhizi), Helicoverpa armigera"
+               value="{{ rec.praga_alvo if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Nível de Ação</label>
+        <input class="rf-input" type="text" name="nivel_acao"
+               placeholder="Ex.: 10% de incidência foliar"
+               value="{{ rec.nivel_acao if rec else '' }}">
+      </div>
+    </div>
+  </div>
+
+  {# ── SEÇÃO 4 — PRODUTOS (principal) ── #}
+  <div class="rf-sec">
+    <div class="rf-sec-title">🧪 Produtos Recomendados</div>
+
+    <div id="culturaSelecionada" style="margin-bottom:14px;display:none;">
+      <span class="cultura-badge" id="culturaLabel">🌱 Cultura</span>
+      <span style="font-size:12px;color:var(--m);margin-left:8px;">
+        Compatibilidade validada automaticamente com o banco de dados MAPA/AGROFIT
+      </span>
+    </div>
+
+    {# Busca de produtos #}
+    <div class="prod-search-wrap">
+      <span class="prod-search-icon">🔍</span>
+      <input class="prod-search" type="text" id="prodSearch"
+             placeholder="Buscar produto pelo nome comercial ou ingrediente ativo…"
+             oninput="buscarProdutos(this.value)"
+             onfocus="if(this.value.length>=2) showDropdown()"
+             autocomplete="off">
+      <div class="prod-dropdown" id="prodDropdown"></div>
+    </div>
+    <div style="font-size:11px;color:var(--m);margin-top:6px;">
+      💡 Selecione a cultura antes de buscar os produtos para ver a validação automática
+    </div>
+
+    {# Lista de produtos adicionados #}
+    <div class="prod-lista" id="prodLista">
+      {% if rec and rec.itens %}
+        {% for item in rec.itens %}
+        <div class="prod-card {{ item.status_validacao|lower }}" id="pc-{{ item.produto_id }}">
+          <input type="hidden" name="produto_id[]" value="{{ item.produto_id }}">
+          <div class="prod-card-header">
+            <div class="prod-card-info">
+              <div class="prod-card-name">{{ item.produto.nome_comercial }}</div>
+              <div class="prod-card-ia">{{ item.produto.ingrediente_ativo }}</div>
+              <div class="prod-card-badges">
+                {% if item.status_validacao == 'SIM' or item.status_validacao == 'OK' %}
+                  <span class="validacao-badge vb-ok">✔ Autorizado</span>
+                {% elif item.status_validacao == 'NAO' %}
+                  <span class="validacao-badge vb-nao">✘ Não Autorizado</span>
+                {% else %}
+                  <span class="validacao-badge vb-talvez">⚠ Com Restrições</span>
+                {% endif %}
+                <span class="prod-item-classe pc-{% if item.produto.classe_agronomica %}{{ item.produto.classe_agronomica.lower()[:4] }}{% endif %}">
+                  {{ item.produto.classe_agronomica }}
+                </span>
+              </div>
+              {% if item.motivo_restricao %}
+              <div class="prod-card-motivo {% if item.status_validacao=='NAO' %}motivo-nao{% else %}motivo-talvez{% endif %}">
+                ⚠ {{ item.motivo_restricao }}
+              </div>
+              {% endif %}
+            </div>
+            <button type="button" class="prod-remove" onclick="removerProduto({{ item.produto_id }})">✕ Remover</button>
+          </div>
+          <div class="prod-card-fields">
+            <div>
+              <div class="prod-mini-label">Dose</div>
+              <input class="prod-mini-input" type="number" step="0.001"
+                     name="dose[]" value="{{ item.dose or '' }}"
+                     placeholder="Ex.: 0.5">
+            </div>
+            <div>
+              <div class="prod-mini-label">Unidade</div>
+              <select class="prod-mini-input" name="unidade[]">
+                {% for u in ['L/ha','kg/ha','g/ha','mL/ha','g/100L'] %}
+                <option {% if item.unidade==u %}selected{% endif %}>{{ u }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <div class="prod-mini-label">Nº Aplicações</div>
+              <input class="prod-mini-input" type="number" min="1" max="10"
+                     name="num_aplicacoes_p[]" value="{{ item.num_aplicacoes or 1 }}">
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+    <div id="prodVazio" style="display:{{ 'none' if rec and rec.itens else 'flex' }};
+         flex-direction:column;align-items:center;padding:30px;color:var(--m);font-size:13px;gap:6px;">
+      <span style="font-size:36px;">🧪</span>
+      Nenhum produto adicionado ainda. Busque acima.
+    </div>
+  </div>
+
+  {# ── SEÇÃO 5 — Aplicação Aérea ── #}
+  <div class="rf-sec">
+    <div class="rf-sec-title">✈ Parâmetros de Aplicação Aérea</div>
+    <div class="rf-grid">
+      <div class="rf-field" style="grid-column:span 2;">
+        <label class="rf-label">Equipamento / Aeronave</label>
+        <input class="rf-input" type="text" name="tipo_equipamento"
+               value="{{ rec.tipo_equipamento if rec else 'Aeronave agrícola' }}"
+               placeholder="Ex.: Aeronave agrícola — Ipanema EMB 203">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Volume de Calda (L/ha)</label>
+        <input class="rf-input" type="number" step="0.1" name="volume_calda"
+               placeholder="Ex.: 30"
+               value="{{ rec.volume_calda if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Nº de Aplicações</label>
+        <input class="rf-input" type="number" min="1" max="10" name="num_aplicacoes"
+               value="{{ rec.num_aplicacoes if rec else 1 }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Intervalo entre Aplicações (dias)</label>
+        <input class="rf-input" type="number" min="1" name="intervalo_aplicacoes"
+               placeholder="14"
+               value="{{ rec.intervalo_aplicacoes if rec else '' }}">
+      </div>
+      <div class="rf-field">
+        <label class="rf-label">Época / Período de Aplicação</label>
+        <input class="rf-input" type="text" name="epoca_aplicacao"
+               placeholder="Ex.: Pós-emergência V4-V6 / Florescimento"
+               value="{{ rec.epoca_aplicacao if rec else '' }}">
+      </div>
+      <div class="rf-field" style="grid-column:span 2;">
+        <label class="rf-label">Condições para Aplicação / Observações</label>
+        <textarea class="rf-input" name="observacoes_aplicacao"
+                  placeholder="Temperatura: 15-28°C | Umidade relativa: > 50% | Vento: 2-10 km/h | Não aplicar com orvalho">{{ rec.observacoes_aplicacao if rec else '' }}</textarea>
+      </div>
+    </div>
+  </div>
+
+  {# ── SEÇÃO 6 — Observações gerais ── #}
+  <div class="rf-sec">
+    <div class="rf-sec-title">📝 Observações Gerais</div>
+    <textarea class="rf-input" name="observacoes" rows="3"
+              placeholder="Informações adicionais, alertas, recomendações complementares…">{{ rec.observacoes if rec else '' }}</textarea>
+  </div>
+
+  {# Footer fixo com ações #}
+  <div class="rf-footer">
+    <div class="rf-footer-left" id="footerInfo">
+      <span id="prodCount">0</span> produto(s) adicionado(s)
+    </div>
+    <div class="rf-footer-right">
+      <a href="{{ url_for('receituario.admin_lista') if modo=='admin' else url_for('receituario.func_lista') }}"
+         class="rf-btn rf-btn-g">Cancelar</a>
+      <button type="submit" name="acao" value="salvar" class="rf-btn rf-btn-p">
+        💾 Salvar Rascunho
+      </button>
+      <button type="submit" name="acao" value="emitir" class="rf-btn rf-btn-e"
+              id="btnEmitir" onclick="return confirmarEmissao()">
+        ✅ Salvar e Emitir
+      </button>
+    </div>
+  </div>
+
+</form>
+</div>
+
+<script>
+// ── Estado global ──────────────────────────────────────────────────────────
+let culturaAtual = {
+  id: {{ (rec.cultura_id if rec and rec.cultura_id else 'null') }},
+  nome: "{{ rec.cultura.nome if rec and rec.cultura else '' }}"
+};
+let produtosAdicionados = {};  // {produto_id: {nome, ia, classe, validacao, ...}}
+let searchTimer = null;
+
+// ── Inicialização ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Inicializar com produtos já existentes (edição)
+  {% if rec and rec.itens %}
+  {% for item in rec.itens %}
+  produtosAdicionados[{{ item.produto_id }}] = {
+    id: {{ item.produto_id }},
+    nome: "{{ item.produto.nome_comercial|replace('"',"'") }}",
+    ia: "{{ item.produto.ingrediente_ativo|replace('"',"'") }}",
+    classe: "{{ item.produto.classe_agronomica or '' }}",
+    validacao: "{{ item.status_validacao or 'NAO' }}",
+    motivo: "{{ (item.motivo_restricao or '')|replace('"',"'")|replace('\n',' ') }}",
+    dose_rec: ""
+  };
+  {% endfor %}
+  {% endif %}
+
+  atualizarContador();
+  if (culturaAtual.id) atualizarBadgeCultura(culturaAtual.nome);
+  atualizarStatusGeral();
+});
+
+// ── Cultura selecionada ────────────────────────────────────────────────────
+function atualizarCultura(sel) {
+  const opt = sel.options[sel.selectedIndex];
+  culturaAtual = {id: sel.value, nome: opt.text};
+  if (sel.value) {
+    atualizarBadgeCultura(opt.text);
+    // Re-validar produtos já adicionados
+    revalidarTodos();
+  } else {
+    document.getElementById('culturaSelecionada').style.display = 'none';
+  }
+}
+
+function atualizarBadgeCultura(nome) {
+  const el = document.getElementById('culturaSelecionada');
+  el.style.display = 'flex';
+  el.style.alignItems = 'center';
+  document.getElementById('culturaLabel').textContent = '🌱 ' + nome;
+}
+
+// ── Busca de produtos ──────────────────────────────────────────────────────
+function buscarProdutos(q) {
+  clearTimeout(searchTimer);
+  if (q.length < 2) { hideDropdown(); return; }
+  searchTimer = setTimeout(() => {
+    fetch('/api/receituario/produtos?q=' + encodeURIComponent(q) + '&limit=15')
+      .then(r => r.json())
+      .then(data => renderDropdown(data))
+      .catch(() => {});
+  }, 250);
+}
+
+function renderDropdown(produtos) {
+  const dd = document.getElementById('prodDropdown');
+  if (!produtos.length) { dd.innerHTML = '<div style="padding:14px;color:rgba(255,255,255,.5);font-size:12px;">Nenhum produto encontrado</div>'; dd.classList.add('open'); return; }
+  dd.innerHTML = produtos.map(p => {
+    const cls = getClasseCSS(p.classe_agronomica);
+    return `<div class="prod-item" onclick="adicionarProduto(${p.id}, '${escQ(p.nome_comercial)}', '${escQ(p.ingrediente_ativo)}', '${escQ(p.classe_agronomica)}', ${p.dose_min || 0}, ${p.dose_max || 0}, '${escQ(p.unidade || '')}', '${escQ(p.epi_obrigatorio || '')}')">
+      <span class="prod-item-name">${escH(p.nome_comercial)}</span>
+      <span class="prod-item-classe ${cls}">${escH(p.classe_agronomica || '')}</span>
+      <div class="prod-item-ia">${escH(p.ingrediente_ativo)}</div>
+    </div>`;
+  }).join('');
+  dd.classList.add('open');
+}
+
+function showDropdown() { document.getElementById('prodDropdown').classList.add('open'); }
+function hideDropdown() { document.getElementById('prodDropdown').classList.remove('open'); }
+document.addEventListener('click', e => { if (!e.target.closest('.prod-search-wrap')) hideDropdown(); });
+
+// ── Adicionar produto + validar ────────────────────────────────────────────
+function adicionarProduto(id, nome, ia, classe, dMin, dMax, un, epi) {
+  hideDropdown();
+  document.getElementById('prodSearch').value = '';
+  if (produtosAdicionados[id]) { showToast('Produto já adicionado!', 'warn'); return; }
+
+  if (!culturaAtual.id) {
+    showToast('Selecione uma cultura primeiro!', 'warn');
+    document.getElementById('culturaSelect').focus();
+    return;
+  }
+
+  // Validar via API
+  fetch(`/api/receituario/produto/${id}/validar?cultura_id=${culturaAtual.id}`)
+    .then(r => r.json())
+    .then(data => {
+      const comp = data.compatibilidade;
+      const motivo = data.motivo || '';
+      const doseRec = data.dose_recomendada || '';
+
+      produtosAdicionados[id] = {id, nome, ia, classe, validacao: comp, motivo, dose_rec: doseRec};
+      renderProdutoCard({id, nome, ia, classe, validacao: comp, motivo, dose_rec: doseRec, dose_min: dMin, dose_max: dMax, un, epi});
+      atualizarContador();
+      atualizarStatusGeral();
+      document.getElementById('prodVazio').style.display = 'none';
+    })
+    .catch(() => {
+      produtosAdicionados[id] = {id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Não foi possível validar. Verifique manualmente.', dose_rec: ''};
+      renderProdutoCard({id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Erro ao validar. Verifique manualmente.', dose_min: dMin, dose_max: dMax, un, epi, dose_rec: ''});
+      atualizarContador();
+      atualizarStatusGeral();
+      document.getElementById('prodVazio').style.display = 'none';
+    });
+}
+
+function renderProdutoCard(p) {
+  const lista = document.getElementById('prodLista');
+  const comp   = p.validacao;
+  const compClass = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NAO' ? 'nao' : 'talvez';
+  const badgeClass = comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NAO' ? 'vb-nao' : 'vb-talvez';
+  const badgeText  = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
+  const cls = getClasseCSS(p.classe);
+
+  const motivoHtml = p.motivo ? `<div class="prod-card-motivo ${comp === 'NAO' ? 'motivo-nao' : 'motivo-talvez'}">⚠ ${escH(p.motivo)}</div>` : '';
+  const doseRecHtml = p.dose_rec ? `<div class="dose-rec">📌 Recomendado: ${escH(p.dose_rec)}</div>` : '';
+
+  const html = `
+  <div class="prod-card ${compClass}" id="pc-${p.id}">
+    <input type="hidden" name="produto_id[]" value="${p.id}">
+    <div class="prod-card-header">
+      <div class="prod-card-info">
+        <div class="prod-card-name">${escH(p.nome)}</div>
+        <div class="prod-card-ia">${escH(p.ia)}</div>
+        <div class="prod-card-badges">
+          <span class="validacao-badge ${badgeClass}">${badgeText}</span>
+          <span class="prod-item-classe ${cls}">${escH(p.classe || '')}</span>
+        </div>
+        ${motivoHtml}
+        ${doseRecHtml}
+      </div>
+      <button type="button" class="prod-remove" onclick="removerProduto(${p.id})">✕ Remover</button>
+    </div>
+    <div class="prod-card-fields">
+      <div>
+        <div class="prod-mini-label">Dose ${p.un ? '(' + escH(p.un) + ')' : ''}</div>
+        <input class="prod-mini-input" type="number" step="0.001" name="dose[]"
+               placeholder="${p.dose_min || ''}${p.dose_max ? '–' + p.dose_max : ''}">
+      </div>
+      <div>
+        <div class="prod-mini-label">Unidade</div>
+        <select class="prod-mini-input" name="unidade[]">
+          ${['L/ha','kg/ha','g/ha','mL/ha','g/100L'].map(u => `<option ${u===p.un?'selected':''}>${u}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <div class="prod-mini-label">Nº Aplicações</div>
+        <input class="prod-mini-input" type="number" min="1" max="10" name="num_aplicacoes_p[]" value="1">
+      </div>
+    </div>
+    ${p.epi ? `<div style="font-size:11px;color:#fde68a;margin-top:10px;padding:7px 10px;background:rgba(251,191,36,.08);border-radius:7px;border:1px solid rgba(251,191,36,.20);">🦺 EPI: ${escH(p.epi)}</div>` : ''}
+  </div>`;
+
+  lista.insertAdjacentHTML('beforeend', html);
+}
+
+function removerProduto(id) {
+  const card = document.getElementById('pc-' + id);
+  if (card) { card.style.animation = 'none'; card.style.opacity = '0'; card.style.transform = 'scale(.95)'; card.style.transition = '.2s'; setTimeout(() => card.remove(), 200); }
+  delete produtosAdicionados[id];
+  atualizarContador();
+  atualizarStatusGeral();
+  if (!Object.keys(produtosAdicionados).length) document.getElementById('prodVazio').style.display = 'flex';
+}
+
+// ── Re-validar todos ao mudar cultura ─────────────────────────────────────
+function revalidarTodos() {
+  const ids = Object.keys(produtosAdicionados);
+  if (!ids.length || !culturaAtual.id) return;
+  ids.forEach(id => {
+    fetch(`/api/receituario/produto/${id}/validar?cultura_id=${culturaAtual.id}`)
+      .then(r => r.json())
+      .then(data => {
+        produtosAdicionados[id].validacao = data.compatibilidade;
+        produtosAdicionados[id].motivo    = data.motivo || '';
+        // Atualizar card visual
+        const card = document.getElementById('pc-' + id);
+        if (!card) return;
+        const comp  = data.compatibilidade;
+        const cls   = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NAO' ? 'nao' : 'talvez';
+        card.className = `prod-card ${cls}`;
+        const badge = card.querySelector('.validacao-badge');
+        if (badge) {
+          badge.className = `validacao-badge ${comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NAO' ? 'vb-nao' : 'vb-talvez'}`;
+          badge.textContent = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
+        }
+        // Motivo
+        let mEl = card.querySelector('.prod-card-motivo');
+        if (data.motivo) {
+          if (!mEl) { const info = card.querySelector('.prod-card-info'); mEl = document.createElement('div'); info.appendChild(mEl); }
+          mEl.className = `prod-card-motivo ${comp === 'NAO' ? 'motivo-nao' : 'motivo-talvez'}`;
+          mEl.textContent = '⚠ ' + data.motivo;
+        } else if (mEl) mEl.remove();
+        atualizarStatusGeral();
+      }).catch(() => {});
+  });
+}
+
+// ── Status geral ───────────────────────────────────────────────────────────
+function atualizarStatusGeral() {
+  const sg  = document.getElementById('statusGeral');
+  const txt = document.getElementById('statusGeralText');
+  const vals = Object.values(produtosAdicionados).map(p => p.validacao);
+
+  if (!vals.length) {
+    sg.className = 'status-geral sg-vazio';
+    txt.textContent = 'Adicione produtos para ver a validação agronômica.';
+    return;
+  }
+
+  const temNao    = vals.some(v => v === 'NAO');
+  const temTalvez = vals.some(v => v === 'TALVEZ');
+
+  if (temNao) {
+    sg.className = 'status-geral sg-nao';
+    const nomes = Object.values(produtosAdicionados).filter(p => p.validacao === 'NAO').map(p => p.nome).join(', ');
+    txt.innerHTML = `<strong>✘ Receituário com incompatibilidade!</strong> Produto(s) não autorizado(s) para ${culturaAtual.nome || 'esta cultura'}: <em>${nomes}</em>. Corrija antes de emitir.`;
+  } else if (temTalvez) {
+    sg.className = 'status-geral sg-talvez';
+    const nomes = Object.values(produtosAdicionados).filter(p => p.validacao === 'TALVEZ').map(p => p.nome).join(', ');
+    txt.innerHTML = `<strong>⚠ Atenção: uso com restrições!</strong> Produto(s) com limitações: <em>${nomes}</em>. Revise as condições antes de emitir.`;
+  } else {
+    sg.className = 'status-geral sg-ok';
+    txt.innerHTML = `<strong>✔ Receituário dentro das normas!</strong> Todos os ${vals.length} produto(s) são autorizados para ${culturaAtual.nome || 'esta cultura'}.`;
+  }
+}
+
+function atualizarContador() {
+  const n = Object.keys(produtosAdicionados).length;
+  document.getElementById('prodCount').textContent = n;
+}
+
+// ── Confirmar emissão ──────────────────────────────────────────────────────
+function confirmarEmissao() {
+  const vals = Object.values(produtosAdicionados).map(p => p.validacao);
+  if (vals.some(v => v === 'NAO')) {
+    showToast('Não é possível emitir: há produto(s) não autorizado(s)!', 'error');
+    return false;
+  }
+  if (!vals.length) { showToast('Adicione ao menos um produto.', 'warn'); return false; }
+  return confirm('Confirmar emissão do receituário? Esta ação não poderá ser desfeita.');
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function getClasseCSS(classe) {
+  if (!classe) return 'pc-out';
+  const c = classe.toLowerCase();
+  if (c.includes('herb')) return 'pc-herb';
+  if (c.includes('fung')) return 'pc-fung';
+  if (c.includes('inset')) return 'pc-ins';
+  if (c.includes('regul')) return 'pc-reg';
+  return 'pc-out';
+}
+function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escQ(s) { return String(s).replace(/'/g,"\\'").replace(/"/g,'\\"'); }
+
+function showToast(msg, type) {
+  const t = document.createElement('div');
+  const bg = type === 'error' ? '#dc2626' : type === 'warn' ? '#d97706' : '#16a34a';
+  t.style.cssText = `position:fixed;bottom:80px;right:20px;background:${bg};color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;animation:slideIn .3s ease;`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+{% if rec and rec.cultura_id %}
+document.addEventListener('DOMContentLoaded', () => {
+  atualizarBadgeCultura("{{ rec.cultura.nome if rec and rec.cultura else '' }}");
+  atualizarStatusGeral();
+});
+{% endif %}
+</script>
+{% endblock %}

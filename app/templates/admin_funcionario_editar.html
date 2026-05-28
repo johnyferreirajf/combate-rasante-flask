@@ -72,6 +72,19 @@
             </small>
           </span>
         </label>
+        <label class="el" style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;
+               background:rgba(234,88,12,.10);border:1px solid rgba(234,88,12,.30);
+               border-radius:9px;padding:8px 12px;">
+          <input type="checkbox" name="pode_receituario" value="1"
+                 {% if funcionario.pode_receituario %}checked{% endif %}
+                 style="width:16px;height:16px;cursor:pointer;accent-color:#ea580c;">
+          <span>
+            🌿 <strong style="color:#fdba74;">Receituário Agronômico</strong><br>
+            <small style="color:rgba(255,255,255,.55);font-weight:400;">
+              Permite ao funcionário emitir receituários agronômicos de aviação agrícola
+            </small>
+          </span>
+        </label>
       </div>
       <div class="er">
         <a href="{{ url_for('auth.admin_funcionarios') }}" class="eb">Cancelar</a>

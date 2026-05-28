@@ -371,7 +371,8 @@ def admin_funcionario_editar(eid):
             emp.name       = nome
             emp.username   = username
             emp.is_admin   = is_admin
-            emp.acesso_gis = request.form.get("acesso_gis") == "1"
+            emp.acesso_gis        = request.form.get("acesso_gis") == "1"
+            emp.pode_receituario = request.form.get("pode_receituario") == "1"
             db.session.commit()
             flash("Dados atualizados!", "success")
 

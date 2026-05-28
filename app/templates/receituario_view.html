@@ -1,0 +1,439 @@
+{% extends "layout.html" %}
+{% block title %}Receituário {{ rec.numero }} — COMBATE RASANTE{% endblock %}
+
+{% block head_extra %}
+<style>
+:root{
+  --g:#064e3b;--ac:#16a34a;--or:#ea580c;
+  --bd:rgba(255,255,255,.12);--t:#e2f5e9;--m:rgba(255,255,255,.55);
+  --ok-bg:rgba(34,197,94,.14);--ok-c:#86efac;
+  --nao-bg:rgba(239,68,68,.14);--nao-c:#fca5a5;
+  --tal-bg:rgba(251,191,36,.12);--tal-c:#fde68a;
+  --r:13px;
+}
+.rv-wrap{max-width:900px;margin:0 auto;padding:16px 14px 80px;}
+.rv-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+
+/* ── Documento ── */
+.rv-doc{background:rgba(3,58,36,.75);border:1px solid var(--bd);border-radius:16px;overflow:hidden;}
+.rv-doc-header{background:linear-gradient(135deg,#033a24 0%,#064e3b 60%,rgba(234,88,12,.3) 100%);
+               padding:24px 28px;border-bottom:1px solid var(--bd);}
+.rv-logo-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.rv-logo-txt{font-size:22px;font-weight:900;color:#fff;letter-spacing:-.5px;}
+.rv-logo-sub{font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.1em;}
+.rv-doc-title{font-size:28px;font-weight:900;color:#fff;text-align:center;margin-top:16px;letter-spacing:.03em;}
+.rv-doc-num{font-size:13px;color:#86efac;text-align:center;font-family:monospace;font-weight:700;margin-top:4px;}
+
+/* ── Status banner ── */
+.rv-status-banner{padding:12px 20px;text-align:center;font-size:12px;font-weight:800;
+                  text-transform:uppercase;letter-spacing:.08em;}
+.rsb-emitido{background:var(--ok-bg);color:var(--ok-c);border-bottom:1px solid rgba(34,197,94,.25);}
+.rsb-rascunho{background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border-bottom:1px solid var(--bd);}
+.rsb-cancelado{background:var(--nao-bg);color:var(--nao-c);border-bottom:1px solid rgba(239,68,68,.25);}
+
+/* ── Seções do documento ── */
+.rv-sec{padding:20px 28px;border-bottom:1px solid rgba(255,255,255,.06);}
+.rv-sec:last-child{border-bottom:none;}
+.rv-sec-title{font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.09em;
+              color:var(--or);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.rv-sec-title::after{content:'';flex:1;height:1px;background:rgba(234,88,12,.25);}
+.rv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 20px;}
+.rv-field{display:flex;flex-direction:column;gap:3px;}
+.rv-field-label{font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;color:var(--m);}
+.rv-field-val{font-size:13px;color:var(--t);font-weight:600;}
+.rv-field-val-lg{font-size:15px;font-weight:800;}
+
+/* ── Validação geral ── */
+.rv-validacao{margin:0 28px 20px;padding:14px 18px;border-radius:11px;
+              display:flex;align-items:flex-start;gap:12px;font-size:13px;}
+.rv-v-ok{background:var(--ok-bg);border:1.5px solid rgba(34,197,94,.35);color:var(--ok-c);}
+.rv-v-nao{background:var(--nao-bg);border:1.5px solid rgba(239,68,68,.35);color:var(--nao-c);}
+.rv-v-talvez{background:var(--tal-bg);border:1.5px solid rgba(251,191,36,.30);color:var(--tal-c);}
+.rv-v-icon{font-size:24px;flex-shrink:0;line-height:1;}
+
+/* ── Tabela de produtos ── */
+.rv-prod-table{width:100%;border-collapse:collapse;font-size:12px;}
+.rv-prod-table th{padding:9px 12px;text-align:left;font-size:9px;font-weight:900;
+                  text-transform:uppercase;letter-spacing:.07em;color:var(--m);
+                  background:rgba(0,0,0,.15);border-bottom:1px solid rgba(255,255,255,.08);}
+.rv-prod-table td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.05);
+                  color:var(--t);vertical-align:top;}
+.rv-prod-table tr:last-child td{border-bottom:none;}
+.rv-prod-table tr:hover td{background:rgba(255,255,255,.02);}
+
+.vbadge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;
+        font-size:10px;font-weight:800;}
+.vb-ok{background:var(--ok-bg);color:var(--ok-c);}
+.vb-nao{background:var(--nao-bg);color:var(--nao-c);}
+.vb-talvez{background:var(--tal-bg);color:var(--tal-c);}
+.classe-pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:800;}
+.cp-herb{background:rgba(251,191,36,.18);color:#fde68a;}
+.cp-fung{background:rgba(147,197,253,.18);color:#bfdbfe;}
+.cp-ins{background:rgba(252,165,165,.18);color:#fecaca;}
+.cp-reg{background:rgba(167,243,208,.18);color:#6ee7b7;}
+.cp-out{background:rgba(255,255,255,.10);color:#d1d5db;}
+
+.motivo-text{font-size:11px;margin-top:4px;padding:5px 8px;border-radius:6px;}
+.mt-nao{background:rgba(239,68,68,.10);color:#fca5a5;}
+.mt-talvez{background:rgba(251,191,36,.10);color:#fde68a;}
+
+/* ── Assinatura ── */
+.rv-sign-area{display:grid;grid-template-columns:1fr 1fr;gap:28px;padding:28px;}
+.rv-sign-box{border-top:2px solid rgba(255,255,255,.3);padding-top:10px;}
+.rv-sign-label{font-size:10px;color:var(--m);font-weight:700;}
+.rv-sign-name{font-size:13px;color:var(--t);font-weight:800;margin-top:4px;}
+.rv-sign-detail{font-size:11px;color:var(--m);}
+
+/* ── Botões de ação ── */
+.rv-actions{display:flex;gap:10px;flex-wrap:wrap;}
+.rv-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;
+        font-size:13px;font-weight:800;cursor:pointer;border:none;text-decoration:none;
+        transition:.15s;font-family:inherit;}
+.rv-btn-p{background:var(--ac);color:#fff;}
+.rv-btn-p:hover{background:#15803d;}
+.rv-btn-e{background:var(--or);color:#fff;}
+.rv-btn-e:hover{background:#c2410c;}
+.rv-btn-g{background:rgba(255,255,255,.10);color:#fff;border:1px solid var(--bd);}
+.rv-btn-g:hover{background:rgba(255,255,255,.16);}
+.rv-btn-danger{background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.30);}
+.rv-btn-danger:hover{background:rgba(239,68,68,.30);}
+
+@media print{
+  body{background:#fff!important;color:#000!important;}
+  .rv-actions,.rv-hdr,nav,header,footer,.chatbot{display:none!important;}
+  .rv-doc{border:2px solid #000;box-shadow:none;background:#fff!important;color:#000!important;}
+  .rv-doc-header{background:#064e3b!important;}
+  .rv-sec{padding:12px 20px;}
+  .rv-field-val,.rv-prod-table td{color:#000;}
+  .rv-field-label,.rv-sec-title{color:#555;}
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rv-wrap">
+
+  {# Header #}
+  <div class="rv-hdr">
+    <div class="rv-actions">
+      <a href="{{ url_for('receituario.admin_lista') if modo=='admin' else url_for('receituario.func_lista') }}"
+         class="rv-btn rv-btn-g">← Voltar</a>
+      {% if rec.status != 'emitido' and modo == 'admin' %}
+      <a href="{{ url_for('receituario.admin_editar', rid=rec.id) }}" class="rv-btn rv-btn-g">✏ Editar</a>
+      {% endif %}
+    </div>
+    <div class="rv-actions">
+      <button onclick="window.print()" class="rv-btn rv-btn-g">🖨 Imprimir</button>
+      {% if rec.status == 'rascunho' and modo == 'admin' %}
+      <form method="POST" action="{{ url_for('receituario.admin_emitir', rid=rec.id) }}" style="display:inline;">
+        <button type="submit" class="rv-btn rv-btn-p"
+                {% if rec.status_geral_validacao == 'NAO' %}disabled title="Há produtos incompatíveis"{% endif %}>
+          ✅ Emitir Receituário
+        </button>
+      </form>
+      {% endif %}
+      {% if rec.status != 'cancelado' and modo == 'admin' %}
+      <form method="POST" action="{{ url_for('receituario.admin_cancelar', rid=rec.id) }}" style="display:inline;"
+            onsubmit="return confirm('Cancelar este receituário?')">
+        <button type="submit" class="rv-btn rv-btn-danger">✕ Cancelar</button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Documento #}
+  <div class="rv-doc">
+
+    {# Cabeçalho do documento #}
+    <div class="rv-doc-header">
+      <div class="rv-logo-row">
+        <div>
+          <div class="rv-logo-txt">CR COMBATE RASANTE</div>
+          <div class="rv-logo-sub">Aviação Agrícola</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.08em;">
+            Emitido em:
+          </div>
+          <div style="font-size:13px;color:#fff;font-weight:700;">
+            {{ rec.data_emissao.strftime('%d/%m/%Y') if rec.data_emissao else '—' }}
+          </div>
+          {% if rec.data_validade %}
+          <div style="font-size:10px;color:rgba(255,255,255,.65);margin-top:4px;">
+            Válido até: {{ rec.data_validade.strftime('%d/%m/%Y') }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="rv-doc-title">RECEITUÁRIO AGRONÔMICO</div>
+      <div class="rv-doc-num">Nº {{ rec.numero }}</div>
+    </div>
+
+    {# Status banner #}
+    {% if rec.status == 'emitido' %}
+    <div class="rv-status-banner rsb-emitido">✅ RECEITUÁRIO EMITIDO — VÁLIDO</div>
+    {% elif rec.status == 'rascunho' %}
+    <div class="rv-status-banner rsb-rascunho">📝 RASCUNHO — NÃO EMITIDO</div>
+    {% else %}
+    <div class="rv-status-banner rsb-cancelado">❌ CANCELADO</div>
+    {% endif %}
+
+    {# Validação geral #}
+    {% if rec.itens %}
+    {% set sv = rec.status_geral_validacao %}
+    <div style="padding:0 0 0 0;margin:16px 28px 0;">
+      {% if sv == 'OK' %}
+      <div class="rv-validacao rv-v-ok">
+        <span class="rv-v-icon">✅</span>
+        <div>
+          <strong>Receituário dentro das normas agronômicas</strong><br>
+          <span style="font-size:12px;">Todos os produtos são registrados e autorizados pelo MAPA para a cultura de {{ rec.cultura.nome if rec.cultura else '—' }}.</span>
+        </div>
+      </div>
+      {% elif sv == 'NAO' %}
+      <div class="rv-validacao rv-v-nao">
+        <span class="rv-v-icon">❌</span>
+        <div>
+          <strong>Atenção: produtos não autorizados identificados!</strong><br>
+          <span style="font-size:12px;">Um ou mais produtos não possuem registro para a cultura de {{ rec.cultura.nome if rec.cultura else '—' }}. Corrija antes de emitir.</span>
+        </div>
+      </div>
+      {% else %}
+      <div class="rv-validacao rv-v-talvez">
+        <span class="rv-v-icon">⚠️</span>
+        <div>
+          <strong>Uso com restrições — revise as condições</strong><br>
+          <span style="font-size:12px;">Um ou mais produtos possuem uso restrito ou condicionado para esta cultura. Verifique as observações.</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# Seção 1: Produtor + Propriedade #}
+    <div class="rv-sec">
+      <div class="rv-sec-title">Identificação do Produtor</div>
+      <div class="rv-grid">
+        <div class="rv-field" style="grid-column:span 2;">
+          <span class="rv-field-label">Nome do Produtor</span>
+          <span class="rv-field-val rv-field-val-lg">{{ rec.nome_produtor }}</span>
+        </div>
+        <div class="rv-field">
+          <span class="rv-field-label">CPF / CNPJ</span>
+          <span class="rv-field-val">{{ rec.cpf_cnpj_produtor or '—' }}</span>
+        </div>
+        <div class="rv-field">
+          <span class="rv-field-label">Telefone</span>
+          <span class="rv-field-val">{{ rec.telefone_produtor or '—' }}</span>
+        </div>
+        <div class="rv-field" style="grid-column:span 2;">
+          <span class="rv-field-label">Propriedade / Fazenda</span>
+          <span class="rv-field-val">{{ rec.nome_propriedade or '—' }}</span>
+        </div>
+        <div class="rv-field">
+          <span class="rv-field-label">Município / UF</span>
+          <span class="rv-field-val">{{ rec.municipio or '—' }}{% if rec.estado %} / {{ rec.estado }}{% endif %}</span>
+        </div>
+        <div class="rv-field">
+          <span class="rv-field-label">Área Total</span>
+          <span class="rv-field-val">{{ rec.area_ha }} ha</span>
+        </div>
+        <div class="rv-field">
+          <span class="rv-field-label">Talhão / Gleba</span>
+          <span class="rv-field-val">{{ rec.talhao or '—' }}</span>
+        </div>
+        {% if rec.car %}
+        <div class="rv-field">
+          <span class="rv-field-label">CAR</span>
+          <span class="rv-field-val">{{ rec.car }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Seção 2: Dados agronômicos #}
+    <div class="rv-sec">
+      <div class="rv-sec-title">Dados Agronômicos</div>
+      <div class="rv-grid">
+        <div class="rv-field">
+          <span class="rv-field-label">Cultura</span>
+          <span class="rv-field-val rv-field-val-lg" style="color:#86efac;">
+            🌱 {{ rec.cultura.nome if rec.cultura else '—' }}
+          </span>
+        </div>
+        <div class="rv-field">
+          <span class="rv-field-label">Estágio Fenológico</span>
+          <span class="rv-field-val">{{ rec.estagio_fenologico or '—' }}</span>
+        </div>
+        <div class="rv-field" style="grid-column:span 2;">
+          <span class="rv-field-label">Praga / Doença / Planta Daninha Alvo</span>
+          <span class="rv-field-val">{{ rec.praga_alvo or '—' }}</span>
+        </div>
+        <div class="rv-field" style="grid-column:span 2;">
+          <span class="rv-field-label">Diagnóstico / Problema Identificado</span>
+          <span class="rv-field-val" style="line-height:1.5;">{{ rec.diagnostico or '—' }}</span>
+        </div>
+        {% if rec.nivel_acao %}
+        <div class="rv-field">
+          <span class="rv-field-label">Nível de Ação</span>
+          <span class="rv-field-val">{{ rec.nivel_acao }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Seção 3: Produtos + Validação #}
+    <div class="rv-sec">
+      <div class="rv-sec-title">Produtos Recomendados</div>
+      {% if rec.itens %}
+      <div style="overflow-x:auto;">
+        <table class="rv-prod-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Produto Comercial</th>
+              <th>Ingrediente Ativo</th>
+              <th>Classe</th>
+              <th>Dose</th>
+              <th>Aplic.</th>
+              <th>Carência</th>
+              <th>Validação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in rec.itens %}
+            <tr>
+              <td style="font-weight:800;color:var(--m);">{{ loop.index }}</td>
+              <td>
+                <strong>{{ item.produto.nome_comercial }}</strong>
+                {% if item.produto.fabricante %}
+                <br><small style="color:var(--m);">{{ item.produto.fabricante }}</small>
+                {% endif %}
+                {% if item.produto.registro_mapa %}
+                <br><small style="color:var(--m);">MAPA: {{ item.produto.registro_mapa }}</small>
+                {% endif %}
+              </td>
+              <td style="color:var(--m);font-size:11px;">{{ item.produto.ingrediente_ativo }}</td>
+              <td>
+                {% set cls = item.produto.classe_agronomica or '' %}
+                {% if 'Herb' in cls %}<span class="classe-pill cp-herb">{{ cls }}</span>
+                {% elif 'Fung' in cls %}<span class="classe-pill cp-fung">{{ cls }}</span>
+                {% elif 'Inset' in cls %}<span class="classe-pill cp-ins">{{ cls }}</span>
+                {% elif 'Regul' in cls %}<span class="classe-pill cp-reg">{{ cls }}</span>
+                {% else %}<span class="classe-pill cp-out">{{ cls }}</span>{% endif %}
+              </td>
+              <td>
+                {% if item.dose %}{{ item.dose }} {{ item.unidade or '' }}{% else %}—{% endif %}
+              </td>
+              <td style="text-align:center;">{{ item.num_aplicacoes or 1 }}×</td>
+              <td>
+                {% if item.produto.periodo_carencia %}
+                  {{ item.produto.periodo_carencia }} dias
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                {% if item.status_validacao in ('SIM','OK') %}
+                  <span class="vbadge vb-ok">✔ Autorizado</span>
+                {% elif item.status_validacao == 'NAO' %}
+                  <span class="vbadge vb-nao">✘ Não autorizado</span>
+                  {% if item.motivo_restricao %}
+                  <div class="motivo-text mt-nao">{{ item.motivo_restricao }}</div>
+                  {% endif %}
+                {% else %}
+                  <span class="vbadge vb-talvez">⚠ Restrição</span>
+                  {% if item.motivo_restricao %}
+                  <div class="motivo-text mt-talvez">{{ item.motivo_restricao }}</div>
+                  {% endif %}
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {# EPI resumido #}
+      {% set epis = rec.itens | selectattr('produto.epi_obrigatorio') | list %}
+      {% if epis %}
+      <div style="margin-top:16px;padding:12px 16px;background:rgba(251,191,36,.08);
+                  border:1px solid rgba(251,191,36,.25);border-radius:10px;">
+        <div style="font-size:10px;font-weight:900;text-transform:uppercase;color:#fde68a;margin-bottom:8px;">
+          🦺 EPI Obrigatório para o Aplicador
+        </div>
+        {% for item in epis %}
+        <div style="font-size:12px;color:var(--t);margin-bottom:4px;">
+          <strong>{{ item.produto.nome_comercial }}:</strong> {{ item.produto.epi_obrigatorio }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      {% else %}
+      <div style="color:var(--m);font-size:13px;text-align:center;padding:20px;">
+        Nenhum produto adicionado.
+      </div>
+      {% endif %}
+    </div>
+
+    {# Seção 4: Aplicação #}
+    <div class="rv-sec">
+      <div class="rv-sec-title">Parâmetros de Aplicação</div>
+      <div class="rv-grid">
+        <div class="rv-field">
+          <span class="rv-field-label">Equipamento</span>
+          <span class="rv-field-val">{{ rec.tipo_equipamento or 'Aeronave agrícola' }}</span>
+        </div>
+        <div class="rv-field">
+          <span class="rv-field-label">Volume de Calda</span>
+          <span class="rv-field-val">{{ rec.volume_calda }} L/ha</span>
+        </div>
+        <div class="rv-field">
+          <span class="rv-field-label">Nº de Aplicações</span>
+          <span class="rv-field-val">{{ rec.num_aplicacoes }}</span>
+        </div>
+        {% if rec.intervalo_aplicacoes %}
+        <div class="rv-field">
+          <span class="rv-field-label">Intervalo entre Aplicações</span>
+          <span class="rv-field-val">{{ rec.intervalo_aplicacoes }} dias</span>
+        </div>
+        {% endif %}
+        {% if rec.epoca_aplicacao %}
+        <div class="rv-field" style="grid-column:span 2;">
+          <span class="rv-field-label">Época / Período de Aplicação</span>
+          <span class="rv-field-val">{{ rec.epoca_aplicacao }}</span>
+        </div>
+        {% endif %}
+        {% if rec.observacoes_aplicacao %}
+        <div class="rv-field" style="grid-column:span 2;">
+          <span class="rv-field-label">Condições para Aplicação</span>
+          <span class="rv-field-val" style="line-height:1.5;">{{ rec.observacoes_aplicacao }}</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if rec.observacoes %}
+    <div class="rv-sec">
+      <div class="rv-sec-title">Observações Gerais</div>
+      <div style="font-size:13px;color:var(--t);line-height:1.6;">{{ rec.observacoes }}</div>
+    </div>
+    {% endif %}
+
+    {# Assinaturas #}
+    <div class="rv-sign-area">
+      <div class="rv-sign-box">
+        <div class="rv-sign-label">Produtor / Proprietário</div>
+        <div class="rv-sign-name">{{ rec.nome_produtor }}</div>
+        <div class="rv-sign-detail">{{ rec.cpf_cnpj_produtor or '' }}</div>
+      </div>
+      <div class="rv-sign-box">
+        <div class="rv-sign-label">Responsável Técnico</div>
+        <div class="rv-sign-name">{{ rec.responsavel_tecnico or '—' }}</div>
+        <div class="rv-sign-detail">{{ rec.crea_cfta or '' }}{% if rec.cpf_rt %} | CPF: {{ rec.cpf_rt }}{% endif %}</div>
+      </div>
+    </div>
+
+  </div><!-- .rv-doc -->
+
+</div>
+{% endblock %}

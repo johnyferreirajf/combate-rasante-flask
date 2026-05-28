@@ -1,0 +1,214 @@
+{% extends "layout.html" %}
+{% block title %}Receituário Agronômico — COMBATE RASANTE{% endblock %}
+
+{% block head_extra %}
+<style>
+:root{
+  --cr-green:#16a34a;--cr-green-d:#064e3b;--cr-green-l:rgba(22,163,74,.15);
+  --cr-orange:#ea580c;--cr-orange-l:rgba(234,88,12,.15);
+  --cr-card:rgba(3,58,36,.80);--cr-border:rgba(255,255,255,.12);
+  --cr-text:#e2f5e9;--cr-muted:rgba(255,255,255,.55);
+  --cr-ok:rgba(34,197,94,.18);--cr-nao:rgba(239,68,68,.18);--cr-talvez:rgba(251,191,36,.18);
+  --cr-r:14px;
+}
+.ra-wrap{max-width:1300px;margin:0 auto;padding:18px 16px 60px;}
+
+/* ── Métricas ── */
+.ra-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:22px;}
+.ra-metric{background:var(--cr-card);border:1px solid var(--cr-border);border-radius:var(--cr-r);
+           padding:18px 20px;display:flex;flex-direction:column;gap:4px;}
+.ra-metric-val{font-size:28px;font-weight:900;color:var(--cr-text);}
+.ra-metric-lab{font-size:11px;color:var(--cr-muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+
+/* ── Toolbar ── */
+.ra-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+.ra-search{flex:1;min-width:200px;padding:9px 14px;border-radius:10px;
+           border:1px solid var(--cr-border);background:rgba(255,255,255,.08);
+           color:#fff;font-size:13px;font-family:inherit;outline:none;}
+.ra-search:focus{border-color:var(--cr-green);}
+.ra-select{padding:9px 12px;border-radius:10px;border:1px solid var(--cr-border);
+           background:rgba(255,255,255,.08);color:#fff;font-size:13px;font-family:inherit;
+           outline:none;cursor:pointer;}
+.ra-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;
+        font-size:13px;font-weight:800;cursor:pointer;border:none;text-decoration:none;
+        transition:.15s;font-family:inherit;}
+.ra-btn-p{background:var(--cr-green);color:#fff;}
+.ra-btn-p:hover{background:#15803d;}
+.ra-btn-g{background:rgba(255,255,255,.10);color:#fff;border:1px solid var(--cr-border);}
+.ra-btn-g:hover{background:rgba(255,255,255,.16);}
+
+/* ── Tabela ── */
+.ra-table-wrap{background:var(--cr-card);border:1px solid var(--cr-border);border-radius:var(--cr-r);overflow:hidden;}
+.ra-table{width:100%;border-collapse:collapse;font-size:13px;}
+.ra-table th{padding:12px 16px;text-align:left;font-size:10px;font-weight:900;
+             text-transform:uppercase;letter-spacing:.07em;color:var(--cr-muted);
+             border-bottom:1px solid var(--cr-border);background:rgba(0,0,0,.15);}
+.ra-table td{padding:13px 16px;border-bottom:1px solid rgba(255,255,255,.06);color:var(--cr-text);}
+.ra-table tr:last-child td{border-bottom:none;}
+.ra-table tr:hover td{background:rgba(255,255,255,.03);}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:30px;
+       font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;}
+.badge-ok{background:var(--cr-ok);color:#86efac;}
+.badge-nao{background:var(--cr-nao);color:#fca5a5;}
+.badge-talvez{background:var(--cr-talvez);color:#fde68a;}
+.badge-rascunho{background:rgba(255,255,255,.12);color:rgba(255,255,255,.7);}
+.badge-emitido{background:var(--cr-green-l);color:#86efac;}
+.badge-cancelado{background:var(--cr-nao);color:#fca5a5;}
+
+.ra-empty{text-align:center;padding:50px 20px;color:var(--cr-muted);}
+.ra-empty-icon{font-size:48px;margin-bottom:10px;}
+
+/* ── Header ── */
+.ra-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+.ra-title{font-size:22px;font-weight:900;color:#fff;display:flex;align-items:center;gap:10px;}
+.ra-title-sub{font-size:13px;color:var(--cr-muted);font-weight:400;display:block;margin-top:2px;}
+
+/* ── Número formatado ── */
+.rec-num{font-family:monospace;font-size:12px;color:#86efac;font-weight:700;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="ra-wrap">
+  <div style="display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;">
+    <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">👤 Clientes</a>
+    <a href="{{ url_for('auth.admin_funcionarios') }}" class="btn btn--ghost">👷 Funcionários</a>
+    <a href="{{ url_for('auth.admin_arquivos') }}" class="btn btn--ghost">📁 Arquivos</a>
+    <a href="{{ url_for('auth.admin_mensagens') }}" class="btn btn--ghost">✉ Mensagens</a>
+    <a href="{{ url_for('receituario.admin_lista') }}" class="btn btn--primary">🌿 Receituário</a>
+    <a href="{{ url_for('auth.trocar_senha') }}" class="btn btn--ghost">🔑 Trocar Senha</a>
+  </div>
+
+
+  <div class="ra-header">
+    <div>
+      <div class="ra-title">
+        <span>🌿</span> Receituário Agronômico
+      </div>
+      <span class="ra-title-sub">Gestão completa de receituários de aviação agrícola</span>
+    </div>
+    <a href="{{ url_for('receituario.admin_novo') }}" class="ra-btn ra-btn-p">
+      ✚ Novo Receituário
+    </a>
+  </div>
+
+  {# Métricas #}
+  <div class="ra-metrics">
+    <div class="ra-metric">
+      <span class="ra-metric-val">{{ total }}</span>
+      <span class="ra-metric-lab">📋 Total</span>
+    </div>
+    <div class="ra-metric">
+      <span class="ra-metric-val" style="color:#86efac;">{{ emitidos }}</span>
+      <span class="ra-metric-lab">✅ Emitidos</span>
+    </div>
+    <div class="ra-metric">
+      <span class="ra-metric-val" style="color:#fde68a;">{{ rascunhos }}</span>
+      <span class="ra-metric-lab">📝 Rascunhos</span>
+    </div>
+    <div class="ra-metric">
+      <span class="ra-metric-val" style="color:#fb923c;">{{ total - emitidos - rascunhos }}</span>
+      <span class="ra-metric-lab">❌ Cancelados</span>
+    </div>
+  </div>
+
+  {# Toolbar de filtros #}
+  <form method="get" class="ra-toolbar">
+    <input class="ra-search" type="search" name="q" value="{{ q }}"
+           placeholder="🔍  Buscar por produtor ou número…">
+    <select class="ra-select" name="status">
+      <option value="">Todos os status</option>
+      <option value="rascunho" {% if status_filtro=='rascunho' %}selected{% endif %}>Rascunho</option>
+      <option value="emitido"  {% if status_filtro=='emitido'  %}selected{% endif %}>Emitido</option>
+      <option value="cancelado"{% if status_filtro=='cancelado'%}selected{% endif %}>Cancelado</option>
+    </select>
+    <select class="ra-select" name="cultura">
+      <option value="">Todas as culturas</option>
+      {% for c in culturas %}
+      <option value="{{ c.id }}" {% if cult_filtro|string==c.id|string %}selected{% endif %}>
+        {{ c.nome }}
+      </option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="ra-btn ra-btn-g">🔍 Filtrar</button>
+    <a href="{{ url_for('receituario.admin_lista') }}" class="ra-btn ra-btn-g">✕ Limpar</a>
+  </form>
+
+  {# Tabela #}
+  <div class="ra-table-wrap">
+    {% if receituarios %}
+    <table class="ra-table">
+      <thead>
+        <tr>
+          <th>Número</th>
+          <th>Produtor</th>
+          <th>Propriedade</th>
+          <th>Cultura</th>
+          <th>Praga</th>
+          <th>Status</th>
+          <th>Validação</th>
+          <th>Data</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in receituarios %}
+        <tr>
+          <td><span class="rec-num">{{ r.numero }}</span></td>
+          <td><strong>{{ r.nome_produtor }}</strong>
+            {% if r.municipio %}<br><small style="color:var(--cr-muted);">{{ r.municipio }}/{{ r.estado }}</small>{% endif %}
+          </td>
+          <td>{{ r.nome_propriedade or '—' }}
+            {% if r.area_ha %}<br><small style="color:var(--cr-muted);">{{ r.area_ha }} ha</small>{% endif %}
+          </td>
+          <td>{{ r.cultura.nome if r.cultura else '—' }}</td>
+          <td><small>{{ (r.praga_alvo or '—')[:40] }}</small></td>
+          <td>
+            {% if r.status == 'emitido' %}
+              <span class="badge badge-emitido">✅ Emitido</span>
+            {% elif r.status == 'rascunho' %}
+              <span class="badge badge-rascunho">📝 Rascunho</span>
+            {% else %}
+              <span class="badge badge-cancelado">❌ Cancelado</span>
+            {% endif %}
+          </td>
+          <td>
+            {% set sv = r.status_geral_validacao %}
+            {% if sv == 'OK' %}
+              <span class="badge badge-ok">✔ OK</span>
+            {% elif sv == 'NAO' %}
+              <span class="badge badge-nao">✘ Incompatível</span>
+            {% elif sv == 'TALVEZ' %}
+              <span class="badge badge-talvez">⚠ Restrição</span>
+            {% else %}
+              <span style="color:var(--cr-muted);font-size:11px;">Sem itens</span>
+            {% endif %}
+          </td>
+          <td><small style="color:var(--cr-muted);">
+            {{ r.data_criacao.strftime('%d/%m/%Y') if r.data_criacao else '—' }}
+          </small></td>
+          <td style="white-space:nowrap;display:flex;gap:6px;">
+            <a href="{{ url_for('receituario.admin_ver', rid=r.id) }}" class="ra-btn ra-btn-g" style="padding:6px 10px;font-size:11px;">👁 Ver</a>
+            {% if r.status != 'emitido' %}
+            <a href="{{ url_for('receituario.admin_editar', rid=r.id) }}" class="ra-btn ra-btn-g" style="padding:6px 10px;font-size:11px;">✏</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="ra-empty">
+      <div class="ra-empty-icon">🌾</div>
+      <div style="font-size:16px;font-weight:700;color:var(--cr-text);">Nenhum receituário encontrado</div>
+      <div style="font-size:13px;margin-top:6px;">
+        <a href="{{ url_for('receituario.admin_novo') }}" style="color:#86efac;">Criar o primeiro receituário</a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

@@ -42,6 +42,96 @@ def create_app():
             from sqlalchemy import text as _text
             with db.engine.connect() as _conn:
                 _migrations = [
+                    # ── Receituário Agronômico ──────────────────────────────
+                    "ALTER TABLE employees ADD COLUMN IF NOT EXISTS pode_receituario BOOLEAN NOT NULL DEFAULT FALSE",
+                    """CREATE TABLE IF NOT EXISTS culturas (
+                        id SERIAL PRIMARY KEY,
+                        nome VARCHAR(100) NOT NULL UNIQUE,
+                        nome_cientifico VARCHAR(200),
+                        descricao TEXT,
+                        ativo BOOLEAN DEFAULT TRUE
+                    )""",
+                    """CREATE TABLE IF NOT EXISTS produtos_agricolas (
+                        id SERIAL PRIMARY KEY,
+                        nome_comercial VARCHAR(300) NOT NULL,
+                        ingrediente_ativo VARCHAR(500) NOT NULL,
+                        classe_agronomica VARCHAR(100),
+                        grupo_quimico VARCHAR(200),
+                        fabricante VARCHAR(300),
+                        registro_mapa VARCHAR(100),
+                        formulacao VARCHAR(100),
+                        dose_min FLOAT,
+                        dose_max FLOAT,
+                        unidade VARCHAR(50),
+                        vol_calda_min FLOAT,
+                        vol_calda_max FLOAT,
+                        intervalo_seguranca INTEGER,
+                        periodo_carencia INTEGER,
+                        classe_toxicologica VARCHAR(50),
+                        classe_ambiental VARCHAR(50),
+                        epi_obrigatorio TEXT,
+                        restricoes TEXT,
+                        modo_acao VARCHAR(300),
+                        ativo BOOLEAN DEFAULT TRUE
+                    )""",
+                    """CREATE TABLE IF NOT EXISTS produto_cultura (
+                        id SERIAL PRIMARY KEY,
+                        produto_id INTEGER REFERENCES produtos_agricolas(id) ON DELETE CASCADE,
+                        cultura_id INTEGER REFERENCES culturas(id) ON DELETE CASCADE,
+                        compatibilidade VARCHAR(10) DEFAULT 'NAO',
+                        motivo TEXT,
+                        dose_recomendada VARCHAR(100),
+                        dose_maxima VARCHAR(100),
+                        observacoes TEXT
+                    )""",
+                    """CREATE TABLE IF NOT EXISTS receituarios (
+                        id SERIAL PRIMARY KEY,
+                        numero VARCHAR(50) UNIQUE NOT NULL,
+                        nome_produtor VARCHAR(300) NOT NULL,
+                        cpf_cnpj_produtor VARCHAR(30),
+                        telefone_produtor VARCHAR(30),
+                        nome_propriedade VARCHAR(300),
+                        municipio VARCHAR(200),
+                        estado VARCHAR(2),
+                        area_ha FLOAT,
+                        talhao VARCHAR(200),
+                        car VARCHAR(100),
+                        responsavel_tecnico VARCHAR(300),
+                        crea_cfta VARCHAR(100),
+                        cpf_rt VARCHAR(30),
+                        email_rt VARCHAR(200),
+                        telefone_rt VARCHAR(30),
+                        cultura_id INTEGER REFERENCES culturas(id),
+                        diagnostico TEXT,
+                        praga_alvo VARCHAR(500),
+                        estagio_fenologico VARCHAR(300),
+                        nivel_acao VARCHAR(200),
+                        tipo_equipamento VARCHAR(200),
+                        volume_calda FLOAT,
+                        num_aplicacoes INTEGER DEFAULT 1,
+                        intervalo_aplicacoes INTEGER,
+                        epoca_aplicacao VARCHAR(300),
+                        observacoes_aplicacao TEXT,
+                        status VARCHAR(20) DEFAULT 'rascunho',
+                        criado_por_user INTEGER,
+                        criado_por_func INTEGER,
+                        data_criacao TIMESTAMP DEFAULT NOW(),
+                        data_emissao TIMESTAMP,
+                        data_validade DATE,
+                        observacoes TEXT
+                    )""",
+                    """CREATE TABLE IF NOT EXISTS itens_receituario (
+                        id SERIAL PRIMARY KEY,
+                        receituario_id INTEGER REFERENCES receituarios(id) ON DELETE CASCADE,
+                        produto_id INTEGER REFERENCES produtos_agricolas(id),
+                        dose FLOAT,
+                        unidade VARCHAR(50),
+                        volume_calda FLOAT,
+                        num_aplicacoes INTEGER DEFAULT 1,
+                        status_validacao VARCHAR(10),
+                        motivo_restricao TEXT,
+                        observacoes TEXT
+                    )""",
                     "ALTER TABLE employees ADD COLUMN IF NOT EXISTS foto_url TEXT",
                     "ALTER TABLE employees ADD COLUMN IF NOT EXISTS acesso_gis BOOLEAN NOT NULL DEFAULT FALSE",
                     "ALTER TABLE employee_files ADD COLUMN IF NOT EXISTS cloudinary_url TEXT",
@@ -174,18 +264,27 @@ def create_app():
             db.session.add(admin_employee)
             db.session.commit()
 
+        # Seed Receituário Agronômico (culturas + produtos)
+        try:
+            from app.models.receituario import seed_receituario
+            seed_receituario()
+        except Exception as _se:
+            pass
+
     # Blueprints
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
     from app.routes.employee import employee_bp
     from app.routes.posts import posts_bp
     from app.routes.talhoes import talhoes_bp
+    from app.routes.receituario import receituario_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(employee_bp)
     app.register_blueprint(posts_bp)
     app.register_blueprint(talhoes_bp)
+    app.register_blueprint(receituario_bp)
 
     # Context: current_user (cliente)
     from app.utils.security import get_current_user, get_current_employee

@@ -1,0 +1,428 @@
+"""Módulo de Receituário Agronômico — Combate Rasante Aviação Agrícola."""
+from datetime import datetime, date, timedelta
+from flask import (Blueprint, render_template, request, redirect, url_for,
+                   flash, jsonify, session, current_app, Response)
+from app import db
+from app.utils.security import login_required, admin_required, get_current_user, get_current_employee
+
+receituario_bp = Blueprint("receituario", __name__)
+
+# Helpers de auth
+def _is_admin():
+    emp = get_current_employee()
+    return emp and emp.is_admin
+
+def _employee_pode_receituario():
+    emp = get_current_employee()
+    return emp and getattr(emp, "pode_receituario", False)
+
+def _get_emp():
+    return get_current_employee()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADMIN — lista de receituários
+# ─────────────────────────────────────────────────────────────────────────────
+
+@receituario_bp.route("/admin/receituario")
+@login_required
+@admin_required
+def admin_lista():
+    from app.models.receituario import Receituario, Cultura
+    from app.models.user import User
+
+    q     = request.args.get("q", "").strip()
+    status = request.args.get("status", "")
+    cult   = request.args.get("cultura", "")
+
+    query = Receituario.query.order_by(Receituario.data_criacao.desc())
+    if q:
+        query = query.filter(Receituario.nome_produtor.ilike(f"%{q}%") |
+                             Receituario.numero.ilike(f"%{q}%"))
+    if status:
+        query = query.filter_by(status=status)
+    if cult:
+        query = query.filter_by(cultura_id=int(cult))
+
+    receituarios = query.limit(200).all()
+    culturas     = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+
+    # Métricas
+    total     = Receituario.query.count()
+    emitidos  = Receituario.query.filter_by(status="emitido").count()
+    rascunhos = Receituario.query.filter_by(status="rascunho").count()
+
+    return render_template("receituario_admin.html",
+                           current_user=get_current_user(),
+                           receituarios=receituarios,
+                           culturas=culturas,
+                           total=total, emitidos=emitidos, rascunhos=rascunhos,
+                           q=q, status_filtro=status, cult_filtro=cult)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADMIN — criar / editar receituário
+# ─────────────────────────────────────────────────────────────────────────────
+
+@receituario_bp.route("/admin/receituario/novo", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_novo():
+    from app.models.receituario import (Receituario, ItemReceituario,
+                                        Cultura, ProdutoAgricola, ProdutoCultura)
+    from app.models.user import User
+
+    culturas  = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+    produtos  = ProdutoAgricola.query.filter_by(ativo=True).order_by(ProdutoAgricola.nome_comercial).all()
+    clientes  = User.query.filter_by(is_admin=False).order_by(User.name).all()
+
+    if request.method == "POST":
+        return _salvar_receituario(request.form, None)
+
+    return render_template("receituario_form.html",
+                           current_user=get_current_user(),
+                           rec=None, culturas=culturas,
+                           produtos=produtos, clientes=clientes,
+                           modo="admin")
+
+
+@receituario_bp.route("/admin/receituario/<int:rid>/editar", methods=["GET", "POST"])
+@login_required
+@admin_required
+def admin_editar(rid):
+    from app.models.receituario import (Receituario, ItemReceituario,
+                                        Cultura, ProdutoAgricola)
+    from app.models.user import User
+
+    rec       = Receituario.query.get_or_404(rid)
+    culturas  = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+    produtos  = ProdutoAgricola.query.filter_by(ativo=True).order_by(ProdutoAgricola.nome_comercial).all()
+    clientes  = User.query.filter_by(is_admin=False).order_by(User.name).all()
+
+    if request.method == "POST":
+        return _salvar_receituario(request.form, rec)
+
+    return render_template("receituario_form.html",
+                           current_user=get_current_user(),
+                           rec=rec, culturas=culturas,
+                           produtos=produtos, clientes=clientes,
+                           modo="admin")
+
+
+@receituario_bp.route("/admin/receituario/<int:rid>")
+@login_required
+@admin_required
+def admin_ver(rid):
+    from app.models.receituario import Receituario
+    rec = Receituario.query.get_or_404(rid)
+    return render_template("receituario_view.html",
+                           current_user=get_current_user(),
+                           rec=rec, modo="admin")
+
+
+@receituario_bp.route("/admin/receituario/<int:rid>/emitir", methods=["POST"])
+@login_required
+@admin_required
+def admin_emitir(rid):
+    from app.models.receituario import Receituario
+    rec = Receituario.query.get_or_404(rid)
+    if rec.status_geral_validacao == "NAO":
+        flash("Não é possível emitir: há produtos incompatíveis com a cultura.", "error")
+        return redirect(url_for("receituario.admin_ver", rid=rid))
+    if not rec.itens:
+        flash("Adicione ao menos um produto antes de emitir.", "error")
+        return redirect(url_for("receituario.admin_ver", rid=rid))
+    rec.status       = "emitido"
+    rec.data_emissao = datetime.utcnow()
+    rec.data_validade = date.today() + timedelta(days=90)
+    db.session.commit()
+    flash(f"Receituário {rec.numero} emitido com sucesso!", "success")
+    return redirect(url_for("receituario.admin_ver", rid=rid))
+
+
+@receituario_bp.route("/admin/receituario/<int:rid>/cancelar", methods=["POST"])
+@login_required
+@admin_required
+def admin_cancelar(rid):
+    from app.models.receituario import Receituario
+    rec = Receituario.query.get_or_404(rid)
+    rec.status = "cancelado"
+    db.session.commit()
+    flash("Receituário cancelado.", "success")
+    return redirect(url_for("receituario.admin_lista"))
+
+
+@receituario_bp.route("/admin/receituario/<int:rid>/excluir", methods=["POST"])
+@login_required
+@admin_required
+def admin_excluir(rid):
+    from app.models.receituario import Receituario
+    rec = Receituario.query.get_or_404(rid)
+    db.session.delete(rec)
+    db.session.commit()
+    flash("Receituário excluído.", "success")
+    return redirect(url_for("receituario.admin_lista"))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FUNCIONÁRIO — receituário (se tiver permissão)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _func_login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        emp = _get_emp()
+        if not emp:
+            return redirect(url_for("employee.login"))
+        if not getattr(emp, "pode_receituario", False) and not emp.is_admin:
+            flash("Você não tem permissão para acessar o Receituário Agronômico.", "error")
+            return redirect(url_for("employee.index"))
+        return f(*args, **kwargs)
+    return decorated
+
+
+@receituario_bp.route("/func/receituario")
+@_func_login_required
+def func_lista():
+    from app.models.receituario import Receituario
+    emp = _get_emp()
+    recs = (Receituario.query
+            .filter_by(criado_por_func=emp.id)
+            .order_by(Receituario.data_criacao.desc())
+            .limit(100).all())
+    return render_template("receituario_func_lista.html",
+                           current_employee=emp, receituarios=recs)
+
+
+@receituario_bp.route("/func/receituario/novo", methods=["GET", "POST"])
+@_func_login_required
+def func_novo():
+    from app.models.receituario import Cultura, ProdutoAgricola
+    emp      = _get_emp()
+    culturas = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+    produtos = ProdutoAgricola.query.filter_by(ativo=True).order_by(ProdutoAgricola.nome_comercial).all()
+
+    if request.method == "POST":
+        return _salvar_receituario(request.form, None, func_id=emp.id)
+
+    return render_template("receituario_form.html",
+                           current_employee=emp,
+                           current_user=get_current_user(),
+                           rec=None, culturas=culturas,
+                           produtos=produtos, clientes=[],
+                           modo="func")
+
+
+@receituario_bp.route("/func/receituario/<int:rid>")
+@_func_login_required
+def func_ver(rid):
+    from app.models.receituario import Receituario
+    emp = _get_emp()
+    rec = Receituario.query.filter_by(id=rid, criado_por_func=emp.id).first_or_404()
+    return render_template("receituario_view.html",
+                           current_employee=emp,
+                           current_user=get_current_user(),
+                           rec=rec, modo="func")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# API — busca de produtos + validação
+# ─────────────────────────────────────────────────────────────────────────────
+
+@receituario_bp.route("/api/receituario/produtos")
+def api_produtos():
+    """Retorna lista de produtos para autocomplete."""
+    from app.models.receituario import ProdutoAgricola
+    q     = request.args.get("q", "").strip()
+    limit = min(int(request.args.get("limit", 20)), 50)
+
+    query = ProdutoAgricola.query.filter_by(ativo=True)
+    if q:
+        query = query.filter(
+            ProdutoAgricola.nome_comercial.ilike(f"%{q}%") |
+            ProdutoAgricola.ingrediente_ativo.ilike(f"%{q}%")
+        )
+    produtos = query.order_by(ProdutoAgricola.nome_comercial).limit(limit).all()
+    return jsonify([p.to_dict() for p in produtos])
+
+
+@receituario_bp.route("/api/receituario/produto/<int:pid>/validar")
+def api_validar(pid):
+    """Valida compatibilidade produto × cultura."""
+    from app.models.receituario import ProdutoAgricola, ProdutoCultura, Cultura
+    cultura_id = request.args.get("cultura_id", type=int)
+    produto    = ProdutoAgricola.query.get_or_404(pid)
+
+    if not cultura_id:
+        return jsonify({"compatibilidade": "NAO_INFORMADO",
+                        "motivo": "Selecione uma cultura antes de adicionar produtos."})
+
+    pc = ProdutoCultura.query.filter_by(produto_id=pid, cultura_id=cultura_id).first()
+    if not pc:
+        cultura = Cultura.query.get(cultura_id)
+        cult_nome = cultura.nome if cultura else "esta cultura"
+        return jsonify({
+            "compatibilidade": "NAO",
+            "motivo": f"Produto '{produto.nome_comercial}' não possui registro para {cult_nome}. "
+                      f"Verifique o rótulo e bula junto ao MAPA/AGROFIT.",
+            "produto": produto.to_dict(),
+        })
+
+    return jsonify({
+        "compatibilidade":  pc.compatibilidade,
+        "motivo":           pc.motivo or "",
+        "dose_recomendada": pc.dose_recomendada or "",
+        "dose_maxima":      pc.dose_maxima or "",
+        "observacoes":      pc.observacoes or "",
+        "produto":          produto.to_dict(),
+    })
+
+
+@receituario_bp.route("/api/receituario/produto/<int:pid>")
+def api_produto_detalhe(pid):
+    from app.models.receituario import ProdutoAgricola
+    p = ProdutoAgricola.query.get_or_404(pid)
+    return jsonify(p.to_dict())
+
+
+@receituario_bp.route("/api/receituario/culturas")
+def api_culturas():
+    from app.models.receituario import Cultura
+    cs = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
+    return jsonify([c.to_dict() for c in cs])
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Helper — salvar receituário (create / update)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _salvar_receituario(form, rec, func_id=None):
+    from app.models.receituario import (Receituario, ItemReceituario,
+                                        ProdutoCultura, ProdutoAgricola)
+
+    cultura_id = form.get("cultura_id", type=int)
+    if not cultura_id:
+        flash("Selecione uma cultura.", "error")
+        return redirect(request.url)
+
+    nome_produtor = (form.get("nome_produtor") or "").strip()
+    if not nome_produtor:
+        flash("Informe o nome do produtor.", "error")
+        return redirect(request.url)
+
+    is_new = rec is None
+    if is_new:
+        rec = Receituario(numero=Receituario.gerar_numero())
+        db.session.add(rec)
+
+    # Dados do produtor / propriedade
+    rec.nome_produtor         = nome_produtor
+    rec.cpf_cnpj_produtor     = form.get("cpf_cnpj_produtor", "")
+    rec.telefone_produtor     = form.get("telefone_produtor", "")
+    rec.nome_propriedade      = form.get("nome_propriedade", "")
+    rec.municipio             = form.get("municipio", "")
+    rec.estado                = form.get("estado", "")
+    rec.area_ha               = form.get("area_ha", type=float) or 0.0
+    rec.talhao                = form.get("talhao", "")
+    rec.car                   = form.get("car", "")
+
+    # Responsável técnico
+    rec.responsavel_tecnico   = form.get("responsavel_tecnico", "")
+    rec.crea_cfta             = form.get("crea_cfta", "")
+    rec.cpf_rt                = form.get("cpf_rt", "")
+    rec.email_rt              = form.get("email_rt", "")
+    rec.telefone_rt           = form.get("telefone_rt", "")
+
+    # Dados agronômicos
+    rec.cultura_id            = cultura_id
+    rec.diagnostico           = form.get("diagnostico", "")
+    rec.praga_alvo            = form.get("praga_alvo", "")
+    rec.estagio_fenologico    = form.get("estagio_fenologico", "")
+    rec.nivel_acao            = form.get("nivel_acao", "")
+
+    # Aplicação
+    rec.tipo_equipamento      = form.get("tipo_equipamento", "Aeronave agrícola")
+    rec.volume_calda          = form.get("volume_calda", type=float)
+    rec.num_aplicacoes        = form.get("num_aplicacoes", type=int) or 1
+    rec.intervalo_aplicacoes  = form.get("intervalo_aplicacoes", type=int)
+    rec.epoca_aplicacao       = form.get("epoca_aplicacao", "")
+    rec.observacoes_aplicacao = form.get("observacoes_aplicacao", "")
+    rec.observacoes           = form.get("observacoes", "")
+
+    if func_id:
+        rec.criado_por_func = func_id
+
+    # Produtos (array de IDs e doses)
+    produto_ids = form.getlist("produto_id[]")
+    doses       = form.getlist("dose[]")
+    unidades    = form.getlist("unidade[]")
+    num_apls    = form.getlist("num_aplicacoes_p[]")
+
+    # Remover itens antigos
+    for item in list(rec.itens):
+        db.session.delete(item)
+
+    for i, pid_str in enumerate(produto_ids):
+        try:
+            pid = int(pid_str)
+        except ValueError:
+            continue
+
+        prod = ProdutoAgricola.query.get(pid)
+        if not prod:
+            continue
+
+        dose_val = None
+        try:
+            dose_val = float(doses[i]) if i < len(doses) else None
+        except (ValueError, TypeError):
+            pass
+
+        # Validação
+        pc    = ProdutoCultura.query.filter_by(produto_id=pid, cultura_id=cultura_id).first()
+        comp  = pc.compatibilidade if pc else "NAO"
+        motivo = ""
+        if not pc:
+            motivo = f"Produto sem registro para esta cultura no MAPA/AGROFIT."
+        elif pc.compatibilidade == "NAO":
+            motivo = pc.motivo or "Uso não autorizado para esta cultura."
+        elif pc.compatibilidade == "TALVEZ":
+            motivo = pc.motivo or "Uso com restrições — verifique as condições."
+
+        # Validação de dose
+        if comp == "SIM" and pc and dose_val:
+            if prod.dose_max and dose_val > prod.dose_max:
+                comp = "TALVEZ"
+                motivo = f"Dose informada ({dose_val} {prod.unidade}) acima do máximo permitido ({prod.dose_max} {prod.unidade})."
+
+        item = ItemReceituario(
+            receituario_id   = rec.id if rec.id else None,
+            produto_id       = pid,
+            dose             = dose_val,
+            unidade          = unidades[i] if i < len(unidades) else (prod.unidade or ""),
+            num_aplicacoes   = int(num_apls[i]) if i < len(num_apls) else 1,
+            status_validacao = comp,
+            motivo_restricao = motivo,
+        )
+        rec.itens.append(item)
+
+    db.session.flush()
+    db.session.commit()
+
+    acao = form.get("acao", "salvar")
+    if acao == "emitir":
+        if rec.status_geral_validacao == "NAO":
+            flash("Não é possível emitir: há produtos incompatíveis.", "error")
+        else:
+            rec.status       = "emitido"
+            rec.data_emissao = datetime.utcnow()
+            rec.data_validade = date.today() + timedelta(days=90)
+            db.session.commit()
+            flash(f"Receituário {rec.numero} emitido!", "success")
+    else:
+        flash(f"Receituário {rec.numero} salvo como rascunho.", "success")
+
+    if func_id:
+        return redirect(url_for("receituario.func_ver", rid=rec.id))
+    return redirect(url_for("receituario.admin_ver", rid=rec.id))
