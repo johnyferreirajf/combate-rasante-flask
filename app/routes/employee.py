@@ -770,9 +770,9 @@ def download(file_id: int):
     if item.cloudinary_url:
         filename = item.original_filename or "arquivo"
         safe_name = filename.replace('"', '').replace("\n", "")
+        fetch_url = item.cloudinary_url  # fallback
         try:
             from app.utils.storage import _init_cloudinary
-            from cloudinary.utils import private_download_url as _pdu
             _init_cloudinary()
             pid = getattr(item, "public_id", "") or ""
             if not pid and "/upload/" in item.cloudinary_url:
@@ -781,12 +781,21 @@ def download(file_id: int):
                     pid = m.group(1)
             if pid:
                 m_ext = _re.search(r"\.([^./]+)$", pid)
-                file_fmt = m_ext.group(1) if m_ext else os.path.splitext(filename)[1].lstrip(".").lower()
+                file_fmt  = m_ext.group(1) if m_ext else os.path.splitext(filename)[1].lstrip(".").lower()
                 pid_clean = pid[:m_ext.start()] if m_ext else pid
-                fetch_url = _pdu(pid_clean, file_fmt, resource_type="raw",
-                                 expires_at=int(time.time()) + 300)
-            else:
-                fetch_url = item.cloudinary_url
+                # Estratégia A: CDN signed com versão
+                try:
+                    from cloudinary.utils import cloudinary_url as _cu
+                    m_ver = _re.search(r"/upload/(v\d+)/", item.cloudinary_url)
+                    ku = dict(resource_type="raw", type="upload", sign_url=True)
+                    if m_ver:
+                        ku["version"] = m_ver.group(1)
+                    fetch_url, _ = _cu(pid, **ku)
+                except Exception:
+                    # Estratégia B: private_download_url com type="upload"
+                    from cloudinary.utils import private_download_url as _pdu
+                    fetch_url = _pdu(pid_clean, file_fmt, resource_type="raw",
+                                     type="upload", expires_at=int(time.time()) + 300)
         except Exception:
             fetch_url = item.cloudinary_url
 
@@ -889,9 +898,9 @@ def preview(file_id: int):
     # Preferir Cloudinary
     cloud_url = getattr(item, "cloudinary_url", None)
     if cloud_url:
+        fetch_url = cloud_url
         try:
             from app.utils.storage import _init_cloudinary
-            from cloudinary.utils import private_download_url as _pdu
             _init_cloudinary()
             pid = getattr(item, "public_id", "") or ""
             if not pid and "/upload/" in cloud_url:
@@ -900,12 +909,19 @@ def preview(file_id: int):
                     pid = m.group(1)
             if pid:
                 m_ext = _re.search(r"\.([^./]+)$", pid)
-                file_fmt = m_ext.group(1) if m_ext else os.path.splitext(filename)[1].lstrip(".").lower()
+                file_fmt  = m_ext.group(1) if m_ext else os.path.splitext(filename)[1].lstrip(".").lower()
                 pid_clean = pid[:m_ext.start()] if m_ext else pid
-                fetch_url = _pdu(pid_clean, file_fmt, resource_type="raw",
-                                 expires_at=int(time.time()) + 300)
-            else:
-                fetch_url = cloud_url
+                try:
+                    from cloudinary.utils import cloudinary_url as _cu
+                    m_ver = _re.search(r"/upload/(v\d+)/", cloud_url)
+                    ku = dict(resource_type="raw", type="upload", sign_url=True)
+                    if m_ver:
+                        ku["version"] = m_ver.group(1)
+                    fetch_url, _ = _cu(pid, **ku)
+                except Exception:
+                    from cloudinary.utils import private_download_url as _pdu
+                    fetch_url = _pdu(pid_clean, file_fmt, resource_type="raw",
+                                     type="upload", expires_at=int(time.time()) + 300)
         except Exception:
             fetch_url = cloud_url
         try:
@@ -963,10 +979,18 @@ def analise_aplicacao(file_id: int):
                     if m: pid = m.group(1)
                 if pid:
                     m_ext = _re.search(r"\.([^./]+)$", pid)
-                    file_fmt = m_ext.group(1) if m_ext else ("kmz" if is_kmz else "kml")
+                    file_fmt  = m_ext.group(1) if m_ext else ("kmz" if is_kmz else "kml")
                     pid_clean = pid[:m_ext.start()] if m_ext else pid
-                    fetch_url = _pdu(pid_clean, file_fmt, resource_type="raw",
-                                     expires_at=int(_time.time()) + 300)
+                    try:
+                        from cloudinary.utils import cloudinary_url as _cu
+                        m_ver = _re.search(r"/upload/(v\d+)/", cloud_url)
+                        ku = dict(resource_type="raw", type="upload", sign_url=True)
+                        if m_ver: ku["version"] = m_ver.group(1)
+                        fetch_url, _ = _cu(pid, **ku)
+                    except Exception:
+                        from cloudinary.utils import private_download_url as _pdu
+                        fetch_url = _pdu(pid_clean, file_fmt, resource_type="raw",
+                                         type="upload", expires_at=int(_time.time()) + 300)
             except Exception:
                 pass
             r = _rq.get(fetch_url, timeout=60, headers={"User-Agent": "CombateRasante/1.0"},

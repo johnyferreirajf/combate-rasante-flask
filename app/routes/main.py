@@ -201,14 +201,14 @@ def painel_download(file_id):
 
     # ── Determinar URL para baixar (original ou assinada) ────────────────────
     def _get_signed_url(original_url):
-        """Gera URL autenticada via Cloudinary API (private_download_url).
-        Para raw resources, result['public_id'] inclui a extensão.
-        private_download_url exige pid SEM extensão + format COM extensão."""
+        """Tenta múltiplas estratégias para obter URL baixável do Cloudinary.
+        Log detalhado para diagnóstico."""
         try:
             import time
             from app.utils.storage import _init_cloudinary
-            from cloudinary.utils import private_download_url as _pdu
             _init_cloudinary()
+
+            # ── extrair pid do banco ou da URL ──────────────────────────────
             pid = cf.public_id or ""
             if not pid and "/upload/" in original_url:
                 m = re.search(r"/upload/(?:v\d+/)?(.+)$", original_url)
@@ -216,13 +216,48 @@ def painel_download(file_id):
                     pid = m.group(1)
             if not pid:
                 return None
-            # Separar public_id da extensão (private_download_url precisa assim)
+
+            # ── separar extensão ────────────────────────────────────────────
             m_ext = re.search(r"\.([^./]+)$", pid)
-            file_fmt = m_ext.group(1) if m_ext else (ext or "")
+            file_fmt  = m_ext.group(1) if m_ext else (ext or "")
             pid_clean = pid[:m_ext.start()] if m_ext else pid
-            signed = _pdu(pid_clean, file_fmt, resource_type="raw",
-                          expires_at=int(time.time()) + 300)
-            return signed
+
+            current_app.logger.info(
+                f"[download] file_id={cf.id} "
+                f"db_public_id={repr(cf.public_id)} "
+                f"pid_clean={repr(pid_clean)} file_fmt={repr(file_fmt)}"
+            )
+
+            # ── Estratégia A: CDN signed URL com versão extraída da URL real ─
+            try:
+                from cloudinary.utils import cloudinary_url as _cu
+                m_ver = re.search(r"/upload/(v\d+)/", original_url)
+                version = m_ver.group(1) if m_ver else None
+                ku = dict(resource_type="raw", type="upload", sign_url=True)
+                if version:
+                    ku["version"] = version
+                signed_cdn, _ = _cu(pid, **ku)
+                current_app.logger.info(f"[download] estratégia A (CDN signed): {signed_cdn[:80]}")
+                return signed_cdn
+            except Exception as ea:
+                current_app.logger.warning(f"[download] estratégia A falhou: {ea}")
+
+            # ── Estratégia B: private_download_url com type='upload' explícito
+            try:
+                from cloudinary.utils import private_download_url as _pdu
+                signed_api = _pdu(
+                    pid_clean, file_fmt,
+                    resource_type="raw",
+                    type="upload",
+                    attachment=True,
+                    expires_at=int(time.time()) + 300,
+                )
+                current_app.logger.info(f"[download] estratégia B (private_dl): {signed_api[:80]}")
+                return signed_api
+            except Exception as eb:
+                current_app.logger.warning(f"[download] estratégia B falhou: {eb}")
+
+            return None
         except Exception as e2:
             current_app.logger.warning(f"signed URL generation failed: {e2}")
             return None
@@ -271,17 +306,21 @@ def painel_download(file_id):
     except Exception as e:
         current_app.logger.warning(f"painel_download: original URL failed ({e}), trying signed URL")
 
-    # ── Tentativa 2: URL assinada (para arquivos privados no Cloudinary) ──────
-    signed = _get_signed_url(url)
-    if signed:
+    # ── Tentativa 2: Estratégia A (CDN signed com versão) ────────────────────
+    signed_a = _get_signed_url(url)  # retorna estratégia A (CDN) ou B (API)
+    if signed_a:
         try:
-            return _proxy(signed, ext)
+            return _proxy(signed_a, ext)
+        except _req.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else 0
+            current_app.logger.error(f"painel_download: signed URL also failed ({status}): {e}")
+            current_app.logger.error(f"painel_download: URL tentada: {signed_a[:100]}")
         except Exception as e:
             current_app.logger.error(f"painel_download: signed URL also failed: {e}")
 
     # ── Último recurso: redirecionar (melhor que nada) ────────────────────────
     current_app.logger.error(f"painel_download: all methods failed for file {file_id}")
-    return redirect(signed or url)
+    return redirect(signed_a or url)
 
 
 @main_bp.route("/painel/download-pasta")
@@ -377,12 +416,10 @@ def painel_analise_aplicacao(file_id):
         return r.content
 
     def _get_signed_url():
-        """Gera URL autenticada via Cloudinary API (private_download_url).
-        public_id do banco inclui extensão; private_download_url precisa separado."""
+        """Tenta múltiplas estratégias para obter URL do Cloudinary."""
         try:
             import time
             from app.utils.storage import _init_cloudinary
-            from cloudinary.utils import private_download_url as _pdu
             _init_cloudinary()
             pid = cf.public_id or ""
             if not pid and "/upload/" in url:
@@ -393,11 +430,23 @@ def painel_analise_aplicacao(file_id):
                 return None
             m_ext = re.search(r"\.([^./]+)$", pid)
             fname_lower = (cf.original_filename or "").lower()
-            file_fmt = m_ext.group(1) if m_ext else ("kmz" if fname_lower.endswith(".kmz") else "kml")
+            file_fmt  = m_ext.group(1) if m_ext else ("kmz" if fname_lower.endswith(".kmz") else "kml")
             pid_clean = pid[:m_ext.start()] if m_ext else pid
-            signed = _pdu(pid_clean, file_fmt, resource_type="raw",
-                          expires_at=int(time.time()) + 300)
-            return signed
+            # Estratégia A: CDN signed com versão
+            try:
+                from cloudinary.utils import cloudinary_url as _cu
+                m_ver = re.search(r"/upload/(v\d+)/", url)
+                ku = dict(resource_type="raw", type="upload", sign_url=True)
+                if m_ver:
+                    ku["version"] = m_ver.group(1)
+                signed_cdn, _ = _cu(pid, **ku)
+                return signed_cdn
+            except Exception:
+                pass
+            # Estratégia B: private_download_url com type="upload"
+            from cloudinary.utils import private_download_url as _pdu
+            return _pdu(pid_clean, file_fmt, resource_type="raw",
+                        type="upload", expires_at=int(time.time()) + 300)
         except Exception as e2:
             current_app.logger.warning(f"painel_analise signed URL failed: {e2}")
             return None
