@@ -231,7 +231,7 @@ def painel_download(file_id):
             # ── Estratégia A: CDN signed URL com versão extraída da URL real ─
             try:
                 from cloudinary.utils import cloudinary_url as _cu
-                m_ver = re.search(r"/upload/(v\d+)/", original_url)
+                m_ver = re.search(r"/upload/v(\d+)/", original_url)
                 version = m_ver.group(1) if m_ver else None
                 ku = dict(resource_type="raw", type="upload", sign_url=True)
                 if version:
@@ -435,7 +435,7 @@ def painel_analise_aplicacao(file_id):
             # Estratégia A: CDN signed com versão
             try:
                 from cloudinary.utils import cloudinary_url as _cu
-                m_ver = re.search(r"/upload/(v\d+)/", url)
+                m_ver = re.search(r"/upload/v(\d+)/", url)
                 ku = dict(resource_type="raw", type="upload", sign_url=True)
                 if m_ver:
                     ku["version"] = m_ver.group(1)

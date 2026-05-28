@@ -786,7 +786,7 @@ def download(file_id: int):
                 # Estratégia A: CDN signed com versão
                 try:
                     from cloudinary.utils import cloudinary_url as _cu
-                    m_ver = _re.search(r"/upload/(v\d+)/", item.cloudinary_url)
+                    m_ver = _re.search(r"/upload/v(\d+)/", item.cloudinary_url)
                     ku = dict(resource_type="raw", type="upload", sign_url=True)
                     if m_ver:
                         ku["version"] = m_ver.group(1)
@@ -913,7 +913,7 @@ def preview(file_id: int):
                 pid_clean = pid[:m_ext.start()] if m_ext else pid
                 try:
                     from cloudinary.utils import cloudinary_url as _cu
-                    m_ver = _re.search(r"/upload/(v\d+)/", cloud_url)
+                    m_ver = _re.search(r"/upload/v(\d+)/", cloud_url)
                     ku = dict(resource_type="raw", type="upload", sign_url=True)
                     if m_ver:
                         ku["version"] = m_ver.group(1)
@@ -983,7 +983,7 @@ def analise_aplicacao(file_id: int):
                     pid_clean = pid[:m_ext.start()] if m_ext else pid
                     try:
                         from cloudinary.utils import cloudinary_url as _cu
-                        m_ver = _re.search(r"/upload/(v\d+)/", cloud_url)
+                        m_ver = _re.search(r"/upload/v(\d+)/", cloud_url)
                         ku = dict(resource_type="raw", type="upload", sign_url=True)
                         if m_ver: ku["version"] = m_ver.group(1)
                         fetch_url, _ = _cu(pid, **ku)
