@@ -14,8 +14,10 @@
   --ts:0 1px 4px rgba(0,0,0,.85), 0 2px 8px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box;}
-/* FIX LAYOUT: Padding bottom aumentado para 150px para não encavalar no rodapé */
-.rf-wrap{max-width:1100px;margin:0 auto;padding:16px 14px 150px;}
+
+/* FIX LAYOUT: Padding bottom de 220px garante que a página role até o final sem a barra tampar */
+.rf-wrap{max-width:1100px;margin:0 auto;padding:16px 14px 220px;}
+
 .rf-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
         gap:10px;margin-bottom:20px;}
 .rf-title{font-size:22px;font-weight:900;color:#fff;text-shadow:var(--ts);}
@@ -146,15 +148,16 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 .sg-vazio{background:rgba(255,255,255,.08);border:1px solid var(--bd);color:var(--m);}
 .sg-icon{font-size:22px;}
 
-.rf-footer{position:fixed;bottom:0;left:0;right:0;
-           background:rgba(3,26,18,.95);backdrop-filter:blur(12px);
-           border-top:1px solid var(--bd);padding:12px 20px;
-           display:flex;align-items:center;justify-content:space-between;
-           gap:12px;z-index:100;}
-.rf-footer-left{font-size:13px;color:#c9f0d8;text-shadow:var(--ts);}
-
-/* FIX LAYOUT: Padding right de 70px para não ficar embaixo da bolinha do Chat IA */
-.rf-footer-right{display:flex;gap:10px;padding-right:70px;}
+/* FIX LAYOUT: Botões no centro da tela e margens ajustadas para não bater no chatbot */
+.rf-footer{
+    position:fixed; bottom:0; left:0; right:0;
+    background:rgba(3,26,18,.95); backdrop-filter:blur(12px);
+    border-top:1px solid var(--bd); padding:16px 20px;
+    display:flex; align-items:center; justify-content:center; 
+    gap:40px; z-index:100; flex-wrap: wrap;
+}
+.rf-footer-left{font-size:13px; color:#c9f0d8; text-shadow:var(--ts); display:none;}
+.rf-footer-right{display:flex; gap:12px; margin: 0 auto;}
 
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
       border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
@@ -347,7 +350,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
       💡 Selecione a cultura primeiro. Busque pelo nome comercial ou IA — a validação é automática.
     </div>
 
-    {# Lista de produtos adicionados (CORRIGIDA VARIÁVEL JINJA) #}
+    {# Lista de produtos adicionados #}
     <div class="prod-lista" id="prodLista">
       {% if rec and rec.itens %}
         {% for item in rec.itens %}
@@ -441,7 +444,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
     <textarea class="rf-input" name="observacoes" rows="3">{{ rec.observacoes if rec else '' }}</textarea>
   </div>
 
-  {# Footer fixo #}
+  {# Footer fixo com ações #}
   <div class="rf-footer">
     <div class="rf-footer-left" id="footerInfo">
       <span id="prodCount">0</span> produto(s) adicionado(s)
