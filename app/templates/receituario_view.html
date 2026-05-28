@@ -182,66 +182,73 @@
    PRINT STYLES — esconde tudo exceto o documento
    ══════════════════════════════════════════════════════════════════ */
 @media print {
-  /* ─ Esconder UI do site ─────────────────────────────────────────
-     IMPORTANTE: NÃO esconder <main> ou qualquer container que
-     envolva .rv-doc. Esconder apenas elementos específicos.     */
+  /* ════ ESCONDER TODA A INTERFACE — só o documento imprime ════ */
 
-  /* Navbar/header do site */
-  .navbar, .navbar__wrapper, nav { display:none !important; }
-  /* Footer do site */
-  .footer, footer { display:none !important; }
-  /* Garantir que #main-content fique visível */
+  /* Site nav, header, footer */
+  .navbar, .navbar__wrapper, nav, header { display:none !important; }
+  .footer, footer                         { display:none !important; }
+  .rv-actions-bar                         { display:none !important; }
+  .imp-banner                             { display:none !important; }
+
+  /* ── CHATBOT "PILOTO" — todos os elementos ──
+     #cr-intro = vídeo/foto do campo (causa a foto de cana)
+     #cr-hello-bubble = balão "Oi! Sou o Piloto" (causa espaço branco)
+     #cr-chat-btn = avatar circular
+     #cr-chat-win = janela do chat                              ── */
+  #cr-intro,
+  #cr-chat-btn,
+  #cr-hello-bubble,
+  #cr-chat-win,
+  [id^="cr-"],
+  [class^="cr-"],
+  [class*=" cr-"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    top: -9999px !important;
+    left: -9999px !important;
+  }
+
+  /* Manter conteúdo principal visível */
   #main-content { display:block !important; padding:0 !important; }
 
-  /* Barra de botões de ação (Voltar, Editar, Imprimir…) */
-  .rv-actions-bar { display:none !important; }
-
-  /* Chatbot "Piloto" — esconder todos os elementos */
-  #cr-chat-btn,
-  #cr-intro,
-  #cr-chat-panel,
-  #cr-chat-overlay { display:none !important; }
-
-  /* Banner de manutenção e outros overlays fixos */
-  .imp-banner,
-  [style*="position:fixed"][style*="top:0"] { display:none !important; }
-
-  /* ─ Ajustes de página ──────────────────────────────────────────*/
-  @page { margin:10mm; }
+  /* ─ Ajustes de página ─ */
+  @page { margin:10mm; size:A4 portrait; }
 
   html, body {
     background: #fff !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
+    background-image: none !important;
+    margin: 0 !important; padding: 0 !important;
   }
 
-  /* Padding extra do layout — remover */
-  main, .content-wrapper, [class*="content"] {
-    padding: 0 !important;
-    margin: 0 !important;
+  main, #main-content {
+    padding: 0 !important; margin: 0 !important;
     background: transparent !important;
+    background-image: none !important;
   }
 
-  .rv-page {
-    padding: 0 !important;
-    max-width: 100% !important;
-    margin: 0 !important;
-  }
+  .rv-page { padding:0 !important; max-width:100% !important; margin:0 !important; }
+  .rv-doc  { box-shadow:none !important; border-radius:0 !important; }
 
-  .rv-doc {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-  }
+  /* ── Corrigir "caixa branca" no canto superior direito
+     O Chrome às vezes renderiza um background em flex-items.
+     Forçar transparent em todos os filhos do .rv-doc-top ── */
+  .rv-top-right,
+  .rv-top-left,
+  .rv-doc-top > * { background: transparent !important; }
 
-  /* ─ Cores exatas na impressão ──────────────────────────────────*/
-  * { -webkit-print-color-adjust: exact !important;
-       print-color-adjust: exact !important; }
+  /* ─ Cores exatas na impressão ─ */
+  .rv-doc-top, .rv-title-band, .rv-status-band,
+  .rv-sec-hd, .rv-doc-footer, .rv-prod-tbl th,
+  .rv-cultura-tag, .rv-vbadge, .rv-cpill,
+  .rv-valid-band { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
 
-  /* ─ Evitar quebra de página no meio de seções ─────────────────*/
-  .rv-prod-tbl tr { page-break-inside: avoid; }
-  .rv-sec          { page-break-inside: avoid; }
-  .rv-sign-area    { page-break-inside: avoid; }
+  /* ─ Não quebrar seções no meio da página ─ */
+  .rv-prod-tbl tr, .rv-sec, .rv-sign-area,
+  .rv-valid-band  { page-break-inside:avoid; }
 }
 </style>
 {% endblock %}
@@ -568,4 +575,36 @@
 
   </div>{# .rv-doc #}
 </div>{# .rv-page #}
+
+<script>
+/* ── Esconder chatbot antes de imprimir ─────────────────────────── */
+(function(){
+  var CHAT_IDS = ['cr-intro','cr-chat-btn','cr-hello-bubble','cr-chat-win'];
+
+  function hideChatbot() {
+    CHAT_IDS.forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) { el.setAttribute('data-print-hidden','1'); el.style.setProperty('display','none','important'); }
+    });
+    /* Também esconder por classe cr- */
+    document.querySelectorAll('[class^="cr-"],[class*=" cr-"]').forEach(function(el){
+      if (!el.closest('.rv-doc')) {
+        el.setAttribute('data-print-hidden','2');
+        el.style.setProperty('display','none','important');
+      }
+    });
+  }
+
+  function restoreChatbot() {
+    document.querySelectorAll('[data-print-hidden]').forEach(function(el){
+      el.style.removeProperty('display');
+      el.removeAttribute('data-print-hidden');
+    });
+  }
+
+  window.addEventListener('beforeprint', hideChatbot);
+  window.addEventListener('afterprint',  restoreChatbot);
+})();
+</script>
+
 {% endblock %}
