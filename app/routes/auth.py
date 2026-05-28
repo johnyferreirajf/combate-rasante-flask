@@ -1301,3 +1301,93 @@ def admin_mensagem_excluir(mid):
     db.session.commit()
     flash("Mensagem excluída.", "success")
     return redirect(url_for("auth.admin_mensagens"))
+
+
+# ── Download de arquivo de cliente via proxy (admin) ────────────────────────
+@auth_bp.route("/admin/arquivo/download/<int:file_id>")
+@login_required
+@admin_required
+def admin_arquivo_download(file_id):
+    """Proxy de download de ClientFile pelo admin — preserva nome original."""
+    import requests as _req, re, mimetypes
+    from flask import Response, stream_with_context, redirect
+    from app.models.client_file import ClientFile
+
+    cf = ClientFile.query.get_or_404(file_id)
+
+    # ── Nome seguro para Content-Disposition ────────────────────────────────
+    name = cf.original_filename or cf.title or "arquivo"
+    ext  = (cf.file_ext or "").lower()
+    if ext and not name.lower().endswith(f".{ext}"):
+        name = f"{name}.{ext}"
+    safe_name = re.sub(r'[\x00-\x1f"\\]', "", name).strip() or "arquivo"
+    encoded   = _req.utils.quote(safe_name)
+
+    url = cf.url or ""
+
+    # ── Gera URL assinada (CDN signed com versão) ───────────────────────────
+    def _signed(original_url):
+        try:
+            from app.utils.storage import _init_cloudinary
+            from cloudinary.utils import cloudinary_url as _cu
+            _init_cloudinary()
+            pid = cf.public_id or ""
+            if not pid and "/upload/" in original_url:
+                m = re.search(r"/upload/(?:v\d+/)?(.+)$", original_url)
+                if m:
+                    pid = m.group(1)
+            if not pid:
+                return original_url
+            m_ver = re.search(r"/upload/v(\d+)/", original_url)
+            ku = dict(resource_type="raw", type="upload", sign_url=True)
+            if m_ver:
+                ku["version"] = m_ver.group(1)
+            s, _ = _cu(pid, **ku)
+            return s
+        except Exception:
+            return original_url
+
+    # ── Proxy com Content-Disposition correto ───────────────────────────────
+    def _proxy(fetch_url):
+        r = _req.get(fetch_url, stream=True, timeout=120,
+                     headers={"User-Agent": "CombateRasante/1.0"},
+                     allow_redirects=True)
+        r.raise_for_status()
+        ct = r.headers.get("Content-Type", "application/octet-stream")
+        if ext == "pdf":
+            ct = "application/pdf"
+        elif "octet-stream" in ct and ext:
+            guessed, _ = mimetypes.guess_type(name)
+            if guessed:
+                ct = guessed
+
+        def _gen():
+            for chunk in r.iter_content(chunk_size=65536):
+                if chunk:
+                    yield chunk
+
+        resp = Response(stream_with_context(_gen()), content_type=ct)
+        resp.headers["Content-Disposition"] = (
+            f'attachment; filename="{safe_name}"; filename*=UTF-8\'\'{encoded}'
+        )
+        resp.headers["Cache-Control"]          = "no-store"
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        if "Content-Length" in r.headers:
+            resp.headers["Content-Length"] = r.headers["Content-Length"]
+        return resp
+
+    # Tenta URL direta; se falhar (401), usa assinada
+    try:
+        return _proxy(url)
+    except _req.exceptions.HTTPError:
+        pass
+    except Exception:
+        pass
+
+    fetch = _signed(url)
+    try:
+        return _proxy(fetch)
+    except Exception:
+        pass
+
+    return redirect(fetch or url)

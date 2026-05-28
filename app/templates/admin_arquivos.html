@@ -209,13 +209,13 @@
             {% elif ext == 'zip' %}📦
             {% else %}📎{% endif %}
           </span>
-          <a href="{{ item.url }}" target="_blank" rel="noopener">{{ item.display_name }}</a>
+          <a href="{{ url_for('auth.admin_arquivo_download', file_id=item.id) }}" target="_blank" rel="noopener">{{ item.display_name }}</a>
         </div>
         <div><span class="af-pill">{{ (item.file_ext or 'arq')|upper }}</span></div>
         <div><span class="af-sm">{{ item.size_human }}</span></div>
         <div><span class="af-sm">{{ item.uploaded_at.strftime('%d/%m/%Y') if item.uploaded_at else '—' }}</span></div>
         <div class="af-ac">
-          <a class="af-b" href="{{ item.url }}" target="_blank" rel="noopener">↗ Abrir</a>
+          <a class="af-b" href="{{ url_for('auth.admin_arquivo_download', file_id=item.id) }}" target="_blank" rel="noopener">↗ Abrir</a>
           <button class="af-b" onclick="abrirRenomear({{ item.id }}, '{{ item.display_name|replace("'","\\'") }}')">✏ Renomear</button>
           <form method="POST" action="{{ url_for('auth.admin_arquivo_excluir', file_id=item.id) }}"
                 onsubmit="return confirm('Excluir {{ item.display_name }}?')">
