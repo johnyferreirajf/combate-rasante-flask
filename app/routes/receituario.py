@@ -12,23 +12,19 @@ receituario_bp = Blueprint("receituario", __name__)
 
 # =============================================================================
 # CREDENCIAIS DA AGROAPI (EMBRAPA)
-# Cole a sua Consumer Key e Consumer Secret abaixo:
 # =============================================================================
 AGROAPI_KEY = "CEpPWXr0CqatrJPFZJSfBoAxFTka"
 AGROAPI_SECRET = "KVYMu619dgmFUSqErSv18OFIIkka"
 
-# Cache para armazenar o token e sua validade na memória do servidor
 TOKEN_CACHE = {"access_token": None, "expires_at": 0}
 
 def _get_agroapi_token():
-    """Gera um token de acesso seguindo a documentação oficial da Embrapa (Base64)."""
-    # Se o token da memória ainda for válido (com 60s de folga), usamos ele
+    """Gera o token e previne que o servidor trave em caso de erro na Embrapa."""
     if TOKEN_CACHE["access_token"] and time.time() < TOKEN_CACHE["expires_at"]:
         return TOKEN_CACHE["access_token"]
 
     url = "https://api.cnptia.embrapa.br/token"
     
-    # Fazendo exatamente a conversão Base64 exigida pela documentação (cURL)
     credenciais = f"{AGROAPI_KEY}:{AGROAPI_SECRET}"
     credenciais_b64 = base64.b64encode(credenciais.encode('utf-8')).decode('utf-8')
     
@@ -36,19 +32,15 @@ def _get_agroapi_token():
         "Authorization": f"Basic {credenciais_b64}",
         "Content-Type": "application/x-www-form-urlencoded"
     }
-    data = {
-        "grant_type": "client_credentials"
-    }
+    data = {"grant_type": "client_credentials"}
     
     try:
         response = requests.post(url, headers=headers, data=data, timeout=10)
         response.raise_for_status()
         r_json = response.json()
         
-        # Salva o novo token e a data de expiração (3600 segundos)
         TOKEN_CACHE["access_token"] = r_json["access_token"]
         TOKEN_CACHE["expires_at"] = time.time() + r_json.get("expires_in", 3600) - 60
-        
         return TOKEN_CACHE["access_token"]
     except Exception as e:
         print(f"ERRO DE AUTENTICAÇÃO AGROAPI: {e}")
@@ -68,8 +60,9 @@ def _employee_pode_receituario():
 def _get_emp():
     return get_current_employee()
 
+
 # ─────────────────────────────────────────────────────────────────────────────
-# ADMIN — lista de receituários
+# ADMIN — Rotas de visualização (mantidas exatamente iguais)
 # ─────────────────────────────────────────────────────────────────────────────
 
 @receituario_bp.route("/admin/receituario")
@@ -106,11 +99,6 @@ def admin_lista():
                            total=total, emitidos=emitidos, rascunhos=rascunhos,
                            q=q, status_filtro=status, cult_filtro=cult)
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ADMIN — criar / editar receituário
-# ─────────────────────────────────────────────────────────────────────────────
-
 @receituario_bp.route("/admin/receituario/novo", methods=["GET", "POST"])
 @login_required
 @admin_required
@@ -129,7 +117,6 @@ def admin_novo():
                            rec=None, culturas=culturas,
                            produtos=[], clientes=clientes,
                            modo="admin")
-
 
 @receituario_bp.route("/admin/receituario/<int:rid>/editar", methods=["GET", "POST"])
 @login_required
@@ -151,7 +138,6 @@ def admin_editar(rid):
                            produtos=[], clientes=clientes,
                            modo="admin")
 
-
 @receituario_bp.route("/admin/receituario/<int:rid>")
 @login_required
 @admin_required
@@ -161,7 +147,6 @@ def admin_ver(rid):
     return render_template("receituario_view.html",
                            current_user=get_current_user(),
                            rec=rec, modo="admin")
-
 
 @receituario_bp.route("/admin/receituario/<int:rid>/emitir", methods=["POST"])
 @login_required
@@ -182,7 +167,6 @@ def admin_emitir(rid):
     flash(f"Receituário {rec.numero} emitido com sucesso!", "success")
     return redirect(url_for("receituario.admin_ver", rid=rid))
 
-
 @receituario_bp.route("/admin/receituario/<int:rid>/cancelar", methods=["POST"])
 @login_required
 @admin_required
@@ -193,7 +177,6 @@ def admin_cancelar(rid):
     db.session.commit()
     flash("Receituário cancelado.", "success")
     return redirect(url_for("receituario.admin_lista"))
-
 
 @receituario_bp.route("/admin/receituario/<int:rid>/excluir", methods=["POST"])
 @login_required
@@ -206,9 +189,8 @@ def admin_excluir(rid):
     flash("Receituário excluído.", "success")
     return redirect(url_for("receituario.admin_lista"))
 
-
 # ─────────────────────────────────────────────────────────────────────────────
-# FUNCIONÁRIO — receituário (se tiver permissão)
+# FUNCIONÁRIO — Rotas de visualização
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _func_login_required(f):
@@ -224,7 +206,6 @@ def _func_login_required(f):
         return f(*args, **kwargs)
     return decorated
 
-
 @receituario_bp.route("/func/receituario")
 @_func_login_required
 def func_lista():
@@ -236,7 +217,6 @@ def func_lista():
             .limit(100).all())
     return render_template("receituario_func_lista.html",
                            current_employee=emp, receituarios=recs)
-
 
 @receituario_bp.route("/func/receituario/novo", methods=["GET", "POST"])
 @_func_login_required
@@ -255,7 +235,6 @@ def func_novo():
                            produtos=[], clientes=[],
                            modo="func")
 
-
 @receituario_bp.route("/func/receituario/<int:rid>")
 @_func_login_required
 def func_ver(rid):
@@ -269,12 +248,12 @@ def func_ver(rid):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# API EMBRAPA — busca de produtos + validação
+# API EMBRAPA — BUSCA COM RETORNO VISUAL DE ERROS
 # ─────────────────────────────────────────────────────────────────────────────
 
 @receituario_bp.route("/api/receituario/produtos")
 def api_produtos():
-    """Retorna lista de produtos buscando na AgroAPI Embrapa com autenticação automática."""
+    """Busca produtos. Se houver erro, retorna um item visual de erro para a tela não travar."""
     q     = request.args.get("q", "").strip()
     campo = request.args.get("campo", "nome")
     limit = request.args.get("limit", 20, type=int)
@@ -282,10 +261,16 @@ def api_produtos():
     if not q or len(q) < 2:
         return jsonify([])
 
-    # 1. Pede o token dinâmico da função que criamos (NUNCA EXPIRA)
     token = _get_agroapi_token()
     if not token:
-         return jsonify({"erro": "Falha de autenticação com os servidores do MAPA"}), 500
+        # Retorna o erro na forma de um "produto falso" para o usuário ver na lista do frontend
+        return jsonify([{
+            'id': 'erro',
+            'nome_comercial': '⚠️ ERRO NAS CHAVES',
+            'ingrediente_ativo': 'Falha ao gerar Token',
+            'classe_agronomica': 'Outros',
+            'fabricante': 'As chaves do código estão incorretas.'
+        }])
 
     headers = {
         'Authorization': f'Bearer {token}',
@@ -293,19 +278,27 @@ def api_produtos():
     }
     
     url = "https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados"
-    
-    if campo == 'ia':
-        params = {'ingredienteAtivo': q}
-    else:
-        params = {'marcaComercial': q}
+    params = {'ingredienteAtivo': q} if campo == 'ia' else {'marcaComercial': q}
 
     try:
         response = requests.get(url, headers=headers, params=params, timeout=10)
+        
+        # Tratamento especial para o erro de Assinatura (Falta de Inscrição na API)
+        if response.status_code in (401, 403):
+            return jsonify([{
+                'id': 'erro',
+                'nome_comercial': f'⚠️ ACESSO NEGADO ({response.status_code})',
+                'ingrediente_ativo': 'Você ainda não assinou a API Agrofit no painel da Embrapa!',
+                'classe_agronomica': 'Outros',
+                'fabricante': 'Acesse o portal > APIs > Agrofit > Aba Assinaturas > Inscrever-se.'
+            }])
+            
         response.raise_for_status()
         dados_embrapa = response.json()
         
         resultado = []
-        itens = dados_embrapa if isinstance(dados_embrapa, list) else dados_embrapa.get('data', [])
+        # Garante que vai ler a lista, independente da forma que a API enviar
+        itens = dados_embrapa if isinstance(dados_embrapa, list) else dados_embrapa.get('data', dados_embrapa.get('content', []))
         
         for p in itens[:limit]: 
             resultado.append({
@@ -322,36 +315,38 @@ def api_produtos():
             
         return jsonify(resultado)
 
-    except requests.exceptions.RequestException as e:
-        print(f"Erro ao consultar AgroAPI (Produtos): {e}")
-        return jsonify({"erro": "Falha de comunicação com o servidor do MAPA"}), 500
+    except Exception as e:
+        print(f"Erro de Conexão MAPA: {e}")
+        return jsonify([{
+            'id': 'erro',
+            'nome_comercial': '⚠️ ERRO DE CONEXÃO',
+            'ingrediente_ativo': 'O servidor do MAPA demorou a responder',
+            'classe_agronomica': 'Outros',
+            'fabricante': 'Tente novamente em instantes.'
+        }])
 
 
 @receituario_bp.route("/api/receituario/produto/<pid>/validar")
 def api_validar(pid):
-    """Valida compatibilidade produto × cultura consultando a AgroAPI."""
+    """Valida a compatibilidade. Blindado para não quebrar se o usuário clicar no alerta de erro."""
+    if pid == 'erro':
+        return jsonify({"compatibilidade": "NAO", "motivo": "Esta é apenas uma mensagem de erro, não um produto real."})
+
     from app.models.receituario import Cultura
     cultura_id = request.args.get("cultura_id", type=int)
 
     if not cultura_id:
-        return jsonify({"compatibilidade": "NAO_INFORMADO",
-                        "motivo": "Selecione uma cultura antes de adicionar produtos."})
+        return jsonify({"compatibilidade": "NAO_INFORMADO", "motivo": "Selecione a cultura."})
 
     cultura = Cultura.query.get(cultura_id)
     if not cultura:
         return jsonify({"compatibilidade": "NAO", "motivo": "Cultura não encontrada."}), 404
 
-    # 2. Pede o token dinâmico da função que criamos
     token = _get_agroapi_token()
     if not token:
-         return jsonify({"compatibilidade": "TALVEZ", "motivo": "Falha de autenticação com o MAPA. Revise a bula manualmente."})
+         return jsonify({"compatibilidade": "TALVEZ", "motivo": "Falha na conexão com MAPA."})
 
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'Accept': 'application/json'
-    }
-    
-    # Busca a bula do produto pelo ID/Registro
+    headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
     url = f"https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados/{pid}"
 
     try:
@@ -359,25 +354,18 @@ def api_validar(pid):
         response.raise_for_status()
         produto_api = response.json()
         
-        # O Agrofit retorna uma lista de indicacoes (culturas permitidas)
         indicacoes = produto_api.get('indicacoesDeUso', [])
         
         cultura_permitida = False
         restricao_aerea = False
         dose_recomendada = ""
         
-        # Verifica se o nome da cultura selecionada está na bula do produto
         for indicacao in indicacoes:
             cultura_bula = indicacao.get('cultura', '').upper()
-            
-            # Compara o nome da cultura do seu banco com o da API
             if cultura.nome.upper() in cultura_bula:
                 cultura_permitida = True
                 dose_recomendada = indicacao.get('dose', '')
-                
-                # Checa restrição de aplicação aérea (modalidade)
                 modalidade = indicacao.get('modalidadeDeAplicacao', '').upper()
-                # Se não citar 'AÉREA' e citar 'TERRESTRE'
                 if 'TERRESTRE' in modalidade and 'AÉREA' not in modalidade:
                     restricao_aerea = True
                 break
@@ -385,35 +373,25 @@ def api_validar(pid):
         if not cultura_permitida:
             return jsonify({
                 "compatibilidade": "NAO",
-                "motivo": f"O produto não possui indicação aprovada no MAPA para a cultura: {cultura.nome}."
+                "motivo": f"O produto não possui indicação aprovada no MAPA para: {cultura.nome}."
             })
             
         if restricao_aerea:
             return jsonify({
                 "compatibilidade": "NAO",
-                "motivo": f"Proibido para Drone/Avião. A bula restringe a aplicação exclusivamente terrestre para {cultura.nome}."
+                "motivo": f"A bula restringe a aplicação exclusivamente terrestre para {cultura.nome}."
             })
 
-        # Se passou por tudo, está liberado!
-        return jsonify({
-            "compatibilidade": "SIM",
-            "motivo": "",
-            "dose_recomendada": dose_recomendada,
-        })
+        return jsonify({"compatibilidade": "SIM", "motivo": "", "dose_recomendada": dose_recomendada})
 
-    except requests.exceptions.RequestException as e:
-        print(f"Erro ao consultar AgroAPI (Validação): {e}")
-        return jsonify({"compatibilidade": "TALVEZ", "motivo": "Não foi possível conectar ao sistema Agrofit para validação automática."})
+    except Exception:
+        return jsonify({"compatibilidade": "TALVEZ", "motivo": "Não foi possível validar online."})
 
 
 @receituario_bp.route("/api/receituario/produto/<pid>")
 def api_produto_detalhe(pid):
-    """Busca detalhes estáticos do produto via API caso seja solicitado na edição."""
     token = _get_agroapi_token()
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'Accept': 'application/json'
-    }
+    headers = {'Authorization': f'Bearer {token}', 'Accept': 'application/json'}
     url = f"https://api.cnptia.embrapa.br/agrofit/v1/produtos-formulados/{pid}"
     try:
         response = requests.get(url, headers=headers, timeout=10)
@@ -426,7 +404,7 @@ def api_produto_detalhe(pid):
             'classe_agronomica': p.get('classificacaoAgronomica', ''),
             'fabricante': p.get('titularRegistro', ''),
         })
-    except requests.exceptions.RequestException:
+    except Exception:
         return jsonify({"erro": "Produto não encontrado."}), 404
 
 
@@ -505,14 +483,13 @@ def _salvar_receituario(form, rec, func_id=None):
     unidades        = form.getlist("unidade[]")
     num_apls        = form.getlist("num_aplicacoes_p[]")
 
-    # Remover itens antigos
     for item in list(rec.itens):
         db.session.delete(item)
 
-    # Re-adicionar itens
     for i, pid_str in enumerate(produto_ids):
         pid = pid_str.strip()
-        if not pid:
+        # Ignora itens fantasmas de erro se o usuário por acaso tentar salvar
+        if not pid or pid == 'erro':
             continue
 
         dose_val = None
