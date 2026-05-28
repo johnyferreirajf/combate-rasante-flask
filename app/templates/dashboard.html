@@ -3,6 +3,22 @@
 
 {% block head_extra %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+<style>
+  /* Melhoria de contraste para os botões do painel */
+  .card-destaque {
+     box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
+     transition: all 0.2s ease;
+  }
+  .card-destaque:hover {
+     box-shadow: 0 8px 24px rgba(0,0,0,0.25) !important;
+     transform: translateY(-2px);
+  }
+  .card-destaque, .card-destaque * {
+     color: #022c22 !important; /* Verde super escuro */
+     text-shadow: 0px 1px 3px rgba(255, 255, 255, 0.95) !important;
+     font-weight: 800 !important;
+  }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -223,7 +239,6 @@
 })();
 </script>
 
-<!-- ═══════════════ ANÁLISE DE APLICAÇÃO ═══════════════ -->
 <style>
 #am{display:none;position:fixed;inset:0;z-index:9999;background:#050d0a;flex-direction:column;font-family:system-ui,sans-serif;}
 #am.open{display:flex;}
