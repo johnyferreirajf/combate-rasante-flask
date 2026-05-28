@@ -23,6 +23,8 @@
 .rv-btn-emit:hover{background:#15803d;}
 .rv-btn-cancel{background:rgba(239,68,68,.18);color:#fca5a5;border:1px solid rgba(239,68,68,.30);}
 .rv-btn-cancel:hover{background:rgba(239,68,68,.30);}
+.rv-btn-delete{background:rgba(239,68,68,.22);color:#fca5a5;border:1px solid rgba(239,68,68,.40);}
+.rv-btn-delete:hover{background:rgba(239,68,68,.40);}
 .rv-btn-edit{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.20);}
 .rv-btn-edit:hover{background:rgba(255,255,255,.20);}
 
@@ -205,9 +207,11 @@
   .navbar, .navbar__wrapper, nav, header,
   .footer, footer, .rv-actions-bar, .imp-banner { display:none !important; }
 
-  /* Chatbot — zero espaço */
+  /* Chatbot + Intro do site — zero espaço */
   #cr-intro, #cr-chat-btn, #cr-hello-bubble, #cr-chat-win,
-  [id^="cr-"], [class^="cr-"], [class*=" cr-"] {
+  [id^="cr-"], [class^="cr-"], [class*=" cr-"],
+  #introVideo, #introVideo video,
+  .stream-hero, body.intro-lock { 
     display:none !important; visibility:hidden !important;
     width:0 !important; height:0 !important;
     position:absolute !important; top:-9999px !important;
@@ -504,24 +508,46 @@
     <div class="rv-ab-left">
       <a href="{{ url_for('receituario.admin_lista') if modo=='admin' else url_for('receituario.func_lista') }}"
          class="rv-btn rv-btn-back">← Voltar</a>
+
+      {# ADMIN: editar rascunhos #}
       {% if rec.status != 'emitido' and modo == 'admin' %}
       <a href="{{ url_for('receituario.admin_editar', rid=rec.id) }}" class="rv-btn rv-btn-edit">✏ Editar</a>
       {% endif %}
+
+      {# FUNCIONÁRIO: editar rascunho próprio #}
+      {% if modo == 'func' and rec.status == 'rascunho' %}
+      <a href="{{ url_for('receituario.func_editar', rid=rec.id) }}" class="rv-btn rv-btn-edit">✏ Editar</a>
+      {% endif %}
     </div>
+
     <div class="rv-ab-right">
       <button onclick="window.print()" class="rv-btn rv-btn-print">🖨 Imprimir / PDF</button>
+
+      {# ADMIN: emitir #}
       {% if rec.status == 'rascunho' and modo == 'admin' %}
       <form method="POST" action="{{ url_for('receituario.admin_emitir', rid=rec.id) }}" style="display:inline;">
         <button type="submit" class="rv-btn rv-btn-emit"
                 {% if rec.status_geral_validacao == 'NAO' %}disabled title="Há produtos incompatíveis"{% endif %}>
-          ✅ Emitir Receituário
+          ✅ Emitir
         </button>
       </form>
       {% endif %}
-      {% if rec.status != 'cancelado' and modo == 'admin' %}
-      <form method="POST" action="{{ url_for('receituario.admin_cancelar', rid=rec.id) }}"
-            style="display:inline;" onsubmit="return confirm('Cancelar este receituário?')">
-        <button type="submit" class="rv-btn rv-btn-cancel">✕ Cancelar</button>
+
+      {# ADMIN: excluir permanentemente #}
+      {% if modo == 'admin' %}
+      <form method="POST" action="{{ url_for('receituario.admin_excluir', rid=rec.id) }}"
+            style="display:inline;"
+            onsubmit="return confirm('Excluir permanentemente o receituário {{ rec.numero }}? Esta ação não pode ser desfeita.')">
+        <button type="submit" class="rv-btn rv-btn-delete">🗑 Excluir</button>
+      </form>
+      {% endif %}
+
+      {# FUNCIONÁRIO: excluir rascunho próprio #}
+      {% if modo == 'func' and rec.status == 'rascunho' %}
+      <form method="POST" action="{{ url_for('receituario.func_excluir', rid=rec.id) }}"
+            style="display:inline;"
+            onsubmit="return confirm('Excluir o receituário {{ rec.numero }}?')">
+        <button type="submit" class="rv-btn rv-btn-delete">🗑 Excluir</button>
       </form>
       {% endif %}
     </div>
@@ -1205,7 +1231,7 @@
 <script>
 /* ── Esconder chatbot antes de imprimir ─────────────────────────── */
 (function(){
-  var CHAT_IDS = ['cr-intro','cr-chat-btn','cr-hello-bubble','cr-chat-win'];
+  var CHAT_IDS = ['cr-intro','cr-chat-btn','cr-hello-bubble','cr-chat-win','introVideo'];
 
   function hideChatbot() {
     CHAT_IDS.forEach(function(id){
