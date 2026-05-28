@@ -14,13 +14,13 @@
   --ts:0 1px 4px rgba(0,0,0,.85), 0 2px 8px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box;}
-.rf-wrap{max-width:1100px;margin:0 auto;padding:16px 14px 80px;}
+/* FIX LAYOUT: Padding bottom aumentado para 150px para não encavalar no rodapé */
+.rf-wrap{max-width:1100px;margin:0 auto;padding:16px 14px 150px;}
 .rf-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
         gap:10px;margin-bottom:20px;}
 .rf-title{font-size:22px;font-weight:900;color:#fff;text-shadow:var(--ts);}
 .rf-title span{font-size:13px;font-weight:400;color:var(--m);display:block;margin-top:2px;}
 
-/* ── Section card ── */
 .rf-sec{background:rgba(3,46,27,.93);border:1px solid var(--bd);border-radius:var(--r);
         padding:20px 22px;margin-bottom:14px;box-shadow:0 4px 24px rgba(0,0,0,.35);}
 .rf-sec-title{font-size:13px;font-weight:900;text-transform:uppercase;letter-spacing:.07em;
@@ -29,7 +29,6 @@
 .rf-sec-title::before{content:'';display:block;width:3px;height:14px;
                       background:var(--or);border-radius:2px;flex-shrink:0;}
 .rf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;}
-.rf-grid-3{grid-template-columns:repeat(3,1fr);}
 .rf-field{display:flex;flex-direction:column;gap:4px;}
 .rf-label{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;color:#c9f0d8;
              text-shadow:var(--ts);}
@@ -43,7 +42,6 @@
 .rf-select option:hover,.rf-select option:checked{background:#16a34a;color:#fff;}
 textarea.rf-input{resize:vertical;min-height:72px;}
 
-/* ── Botões ── */
 .rf-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:10px;
         font-size:13px;font-weight:800;cursor:pointer;border:none;font-family:inherit;
         text-decoration:none;transition:.15s;}
@@ -54,12 +52,10 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 .rf-btn-g{background:rgba(255,255,255,.10);color:#fff;border:1px solid var(--bd);}
 .rf-btn-g:hover{background:rgba(255,255,255,.16);}
 
-/* ── Cultura selecionada badge ── */
 .cultura-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
                border-radius:20px;background:rgba(22,163,74,.20);border:1px solid var(--bh);
                color:#86efac;font-size:12px;font-weight:800;}
 
-/* ── Painel de produtos CORRIGIDO PARA REALATIVA ── */
 .prod-search-row-container { position:relative; display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px; }
 .prod-search-wrap{position:relative;}
 .prod-search{width:100%;padding:10px 14px 10px 38px;border-radius:10px;border:1px solid rgba(255,255,255,.22);
@@ -68,7 +64,6 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 .prod-search:focus{border-color:var(--bh);background:rgba(0,0,0,.38);}
 .prod-search::placeholder{color:rgba(255,255,255,.38);}
 
-/* ── Custom select cultura ── */
 .cust-sel{display:flex;align-items:center;justify-content:space-between;
           padding:10px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.22);
           background:rgba(0,0,0,.28);color:#fff;font-size:14px;cursor:pointer;
@@ -89,7 +84,6 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 .prod-search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);
                   font-size:16px;pointer-events:none;}
 
-/* Dropdown reposicionado perfeitamente abaixo dos campos */
 .prod-dropdown{position:absolute;top:100%;left:0;right:0;z-index:999;
                background:#0d3b2e;border:2px solid var(--bh);border-radius:10px;
                max-height:280px;overflow-y:auto;display:none;box-shadow:0 12px 38px rgba(0,0,0,.65);}
@@ -107,7 +101,6 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 .pc-reg{background:rgba(167,243,208,.18);color:#6ee7b7;}
 .pc-out{background:rgba(255,255,255,.12);color:#d1d5db;}
 
-/* ── Lista de produtos adicionados ── */
 .prod-lista{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
 .prod-card{border-radius:11px;border:2px solid var(--bd);padding:14px 16px;
            transition:border-color .2s;position:relative;animation:slideIn .2s ease;}
@@ -144,7 +137,6 @@ textarea.rf-input{resize:vertical;min-height:72px;}
              font-size:12px;font-weight:800;transition:.15s;align-self:flex-start;}
 .prod-remove:hover{background:rgba(239,68,68,.35);}
 
-/* ── Status geral ── */
 .status-geral{padding:14px 18px;border-radius:11px;margin-bottom:14px;
               display:flex;align-items:center;gap:12px;font-size:14px;font-weight:700;
               text-shadow:0 1px 3px rgba(0,0,0,.5);}
@@ -154,21 +146,19 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 .sg-vazio{background:rgba(255,255,255,.08);border:1px solid var(--bd);color:var(--m);}
 .sg-icon{font-size:22px;}
 
-/* ── Footer de ações ── */
 .rf-footer{position:fixed;bottom:0;left:0;right:0;
            background:rgba(3,26,18,.95);backdrop-filter:blur(12px);
            border-top:1px solid var(--bd);padding:12px 20px;
            display:flex;align-items:center;justify-content:space-between;
            gap:12px;z-index:100;}
 .rf-footer-left{font-size:13px;color:#c9f0d8;text-shadow:var(--ts);}
-.rf-footer-right{display:flex;gap:10px;}
 
-/* ── Loading spinner ── */
+/* FIX LAYOUT: Padding right de 70px para não ficar embaixo da bolinha do Chat IA */
+.rf-footer-right{display:flex;gap:10px;padding-right:70px;}
+
 .spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);
       border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-
-/* ── Dose info ── */
 .dose-rec{font-size:10px;color:#86efac;margin-top:2px;}
 </style>
 {% endblock %}
@@ -177,7 +167,6 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 <div class="rf-wrap">
 <form method="POST" id="rfForm">
 
-  {# Header #}
   <div class="rf-hdr">
     <div>
       <div class="rf-title">
@@ -190,7 +179,6 @@ textarea.rf-input{resize:vertical;min-height:72px;}
        class="rf-btn rf-btn-g">← Voltar</a>
   </div>
 
-  {# Mensagens flash #}
   {% with msgs = get_flashed_messages(with_categories=true) %}
     {% for cat, msg in msgs %}
     <div style="padding:10px 16px;border-radius:9px;margin-bottom:12px;font-size:13px;
@@ -202,56 +190,43 @@ textarea.rf-input{resize:vertical;min-height:72px;}
     {% endfor %}
   {% endwith %}
 
-  {# Status geral de validação #}
   <div class="status-geral sg-vazio" id="statusGeral">
     <span class="sg-icon">🌾</span>
     <span id="statusGeralText">Adicione produtos para ver a validação agronômica.</span>
   </div>
 
-  {# ── SEÇÃO 1 — Produtor + Propriedade ── #}
+  {# ── SEÇÃO 1 ── #}
   <div class="rf-sec">
     <div class="rf-sec-title">📋 Identificação do Produtor e Propriedade</div>
     <div class="rf-grid">
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Nome do Produtor *</label>
         {% if modo=='admin' and clientes %}
-        <select name="nome_produtor" id="clienteSelect" class="rf-input rf-select"
-                onchange="preencherCliente(this)">
+        <select name="nome_produtor" id="clienteSelect" class="rf-input rf-select" onchange="preencherCliente(this)">
           <option value="">— Selecionar ou digitar abaixo —</option>
           {% for c in clientes %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}
         </select>
         <input class="rf-input" type="text" name="nome_produtor" id="nomeProdutorInput"
-               placeholder="Nome completo do produtor"
-               value="{{ rec.nome_produtor if rec else '' }}" required style="margin-top:6px;">
+               placeholder="Nome completo do produtor" value="{{ rec.nome_produtor if rec else '' }}" required style="margin-top:6px;">
         {% else %}
-        <input class="rf-input" type="text" name="nome_produtor"
-               placeholder="Nome completo do produtor"
-               value="{{ rec.nome_produtor if rec else '' }}" required>
+        <input class="rf-input" type="text" name="nome_produtor" placeholder="Nome completo do produtor" value="{{ rec.nome_produtor if rec else '' }}" required>
         {% endif %}
       </div>
       <div class="rf-field">
         <label class="rf-label">CPF / CNPJ</label>
-        <input class="rf-input" type="text" name="cpf_cnpj_produtor"
-               placeholder="000.000.000-00"
-               value="{{ rec.cpf_cnpj_produtor if rec else '' }}">
+        <input class="rf-input" type="text" name="cpf_cnpj_produtor" placeholder="000.000.000-00" value="{{ rec.cpf_cnpj_produtor if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Telefone</label>
-        <input class="rf-input" type="text" name="telefone_produtor"
-               placeholder="(00) 90000-0000"
-               value="{{ rec.telefone_produtor if rec else '' }}">
+        <input class="rf-input" type="text" name="telefone_produtor" placeholder="(00) 90000-0000" value="{{ rec.telefone_produtor if rec else '' }}">
       </div>
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Nome da Propriedade / Fazenda</label>
-        <input class="rf-input" type="text" name="nome_propriedade"
-               placeholder="Ex.: Fazenda Boa Vista"
-               value="{{ rec.nome_propriedade if rec else '' }}">
+        <input class="rf-input" type="text" name="nome_propriedade" placeholder="Ex.: Fazenda Boa Vista" value="{{ rec.nome_propriedade if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Município</label>
-        <input class="rf-input" type="text" name="municipio"
-               placeholder="Vicentinópolis"
-               value="{{ rec.municipio if rec else '' }}">
+        <input class="rf-input" type="text" name="municipio" placeholder="Vicentinópolis" value="{{ rec.municipio if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Estado (UF)</label>
@@ -264,159 +239,115 @@ textarea.rf-input{resize:vertical;min-height:72px;}
       </div>
       <div class="rf-field">
         <label class="rf-label">Área (ha) *</label>
-        <input class="rf-input" type="number" step="0.01" name="area_ha"
-               placeholder="250.50"
-               value="{{ rec.area_ha if rec else '' }}" required>
+        <input class="rf-input" type="number" step="0.01" name="area_ha" placeholder="250.50" value="{{ rec.area_ha if rec else '' }}" required>
       </div>
       <div class="rf-field">
         <label class="rf-label">Talhão / Gleba</label>
-        <input class="rf-input" type="text" name="talhao"
-               placeholder="Ex.: Talhão A-1"
-               value="{{ rec.talhao if rec else '' }}">
+        <input class="rf-input" type="text" name="talhao" placeholder="Ex.: Talhão A-1" value="{{ rec.talhao if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">CAR (Cad. Ambiental Rural)</label>
-        <input class="rf-input" type="text" name="car"
-               placeholder="GO-XXXXX-XXXXXX…"
-               value="{{ rec.car if rec else '' }}">
+        <input class="rf-input" type="text" name="car" placeholder="GO-XXXXX-XXXXXX…" value="{{ rec.car if rec else '' }}">
       </div>
     </div>
   </div>
 
-  {# ── SEÇÃO 2 — Responsável Técnico ── #}
+  {# ── SEÇÃO 2 ── #}
   <div class="rf-sec">
     <div class="rf-sec-title">👨‍🔬 Responsável Técnico</div>
     <div class="rf-grid">
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Nome do Eng. Agrônomo / Técnico *</label>
-        <input class="rf-input" type="text" name="responsavel_tecnico"
-               placeholder="Eng. Agr. João da Silva"
-               value="{{ rec.responsavel_tecnico if rec else '' }}">
+        <input class="rf-input" type="text" name="responsavel_tecnico" placeholder="Eng. Agr. João da Silva" value="{{ rec.responsavel_tecnico if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Nº CREA / CFTA *</label>
-        <input class="rf-input" type="text" name="crea_cfta"
-               placeholder="CREA 12345-D/GO"
-               value="{{ rec.crea_cfta if rec else '' }}">
+        <input class="rf-input" type="text" name="crea_cfta" placeholder="CREA 12345-D/GO" value="{{ rec.crea_cfta if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">CPF do RT</label>
-        <input class="rf-input" type="text" name="cpf_rt"
-               placeholder="000.000.000-00"
-               value="{{ rec.cpf_rt if rec else '' }}">
+        <input class="rf-input" type="text" name="cpf_rt" placeholder="000.000.000-00" value="{{ rec.cpf_rt if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">E-mail</label>
-        <input class="rf-input" type="email" name="email_rt"
-               placeholder="rt@empresa.com.br"
-               value="{{ rec.email_rt if rec else '' }}">
+        <input class="rf-input" type="email" name="email_rt" placeholder="rt@empresa.com.br" value="{{ rec.email_rt if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Telefone</label>
-        <input class="rf-input" type="text" name="telefone_rt"
-               placeholder="(64) 99900-0000"
-               value="{{ rec.telefone_rt if rec else '' }}">
+        <input class="rf-input" type="text" name="telefone_rt" placeholder="(64) 99900-0000" value="{{ rec.telefone_rt if rec else '' }}">
       </div>
     </div>
   </div>
 
-  {# ── SEÇÃO 3 — Dados Agronômicos ── #}
+  {# ── SEÇÃO 3 ── #}
   <div class="rf-sec">
     <div class="rf-sec-title">🌱 Dados Agronômicos</div>
     <div class="rf-grid">
       <div class="rf-field" style="position:relative;">
         <label class="rf-label">Cultura *</label>
-        <input type="hidden" name="cultura_id" id="culturaId"
-               value="{{ rec.cultura_id if rec and rec.cultura_id else '' }}" required>
-        <div class="cust-sel" id="culturaDisplay" onclick="toggleCulturaDropdown()"
-             tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')toggleCulturaDropdown()">
+        <input type="hidden" name="cultura_id" id="culturaId" value="{{ rec.cultura_id if rec and rec.cultura_id else '' }}" required>
+        <div class="cust-sel" id="culturaDisplay" onclick="toggleCulturaDropdown()" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')toggleCulturaDropdown()">
           <span id="culturaDisplayText">{% if rec and rec.cultura %}{{ rec.cultura.nome }}{% else %}— Selecione a cultura —{% endif %}</span>
           <span id="culturaArrow" style="font-size:12px;transition:.2s;">▼</span>
         </div>
         <div class="cust-sel-list" id="culturaList">
-          <div class="cust-sel-item cust-sel-placeholder" data-val="" onclick="selecionarCultura('','')">
-            — Selecione a cultura —
-          </div>
+          <div class="cust-sel-item cust-sel-placeholder" data-val="" onclick="selecionarCultura('','')">— Selecione a cultura —</div>
           {% for c in culturas %}
-          <div class="cust-sel-item" data-val="{{ c.id }}" onclick="selecionarCultura('{{ c.id }}','{{ c.nome }}')">
-            🌱 {{ c.nome }}
-          </div>
+          <div class="cust-sel-item" data-val="{{ c.id }}" onclick="selecionarCultura('{{ c.id }}','{{ c.nome }}')">🌱 {{ c.nome }}</div>
           {% endfor %}
         </div>
       </div>
       <div class="rf-field">
         <label class="rf-label">Estágio Fenológico</label>
-        <input class="rf-input" type="text" name="estagio_fenologico"
-               placeholder="Ex.: V4-V6 / R1 / Perfilhamento"
-               value="{{ rec.estagio_fenologico if rec else '' }}">
+        <input class="rf-input" type="text" name="estagio_fenologico" placeholder="Ex.: V4-V6 / R1 / Perfilhamento" value="{{ rec.estagio_fenologico if rec else '' }}">
       </div>
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Diagnóstico / Problema Identificado *</label>
-        <textarea class="rf-input" name="diagnostico"
-                  placeholder="Descreva a praga, doença ou planta daninha identificada e o nível de infestation…">{{ rec.diagnostico if rec else '' }}</textarea>
+        <textarea class="rf-input" name="diagnostico" placeholder="Descreva a praga, doença ou planta daninha identificada…">{{ rec.diagnostico if rec else '' }}</textarea>
       </div>
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Praga / Doença / Planta Daninha Alvo</label>
-        <input class="rf-input" type="text" name="praga_alvo"
-               placeholder="Ex.: Ferrugem asiática (Phakopsora pachyrhizi), Helicoverpa armigera"
-               value="{{ rec.praga_alvo if rec else '' }}">
+        <input class="rf-input" type="text" name="praga_alvo" placeholder="Ex.: Ferrugem asiática, Helicoverpa armigera" value="{{ rec.praga_alvo if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Nível de Ação</label>
-        <input class="rf-input" type="text" name="nivel_acao"
-               placeholder="Ex.: 10% de incidência foliar"
-               value="{{ rec.nivel_acao if rec else '' }}">
+        <input class="rf-input" type="text" name="nivel_acao" placeholder="Ex.: 10% de incidência foliar" value="{{ rec.nivel_acao if rec else '' }}">
       </div>
     </div>
   </div>
 
-  {# ── SEÇÃO 4 — PRODUTOS (principal) CONTÊINER PAI RELATIVO APLICADO ── #}
+  {# ── SEÇÃO 4 — PRODUTOS ── #}
   <div class="rf-sec" style="position:relative;">
     <div class="rf-sec-title">🧪 Produtos Recomendados</div>
 
     <div id="culturaSelecionada" style="margin-bottom:14px;display:none;">
       <span class="cultura-badge" id="culturaLabel">🌱 Cultura</span>
-      <span style="font-size:12px;color:var(--m);margin-left:8px;">
-        Compatibilidade validada automaticamente com o banco de dados MAPA/AGROFIT
-      </span>
+      <span style="font-size:12px;color:var(--m);margin-left:8px;">Compatibilidade validada com MAPA/AGROFIT</span>
     </div>
 
     <div class="prod-search-row-container">
       <div class="prod-search-wrap">
-        <div class="prod-mini-label" style="margin-bottom:5px;font-size:11px;color:#c9f0d8;text-shadow:var(--ts);">
-          🧴 NOME COMERCIAL
-        </div>
+        <div class="prod-mini-label" style="margin-bottom:5px;font-size:11px;color:#c9f0d8;text-shadow:var(--ts);">🧴 NOME COMERCIAL</div>
         <div style="position:relative;">
           <span class="prod-search-icon">🔍</span>
-          <input class="prod-search" type="text" id="prodSearchNome"
-                 placeholder="Ex.: Roundup, Nativo, Belt…"
-                 oninput="buscarProdutos('nome', this.value)"
-                 onfocus="if(this.value.length>=1) buscarProdutos('nome', this.value)"
-                 autocomplete="off">
+          <input class="prod-search" type="text" id="prodSearchNome" placeholder="Ex.: Roundup, Nativo…" oninput="buscarProdutos('nome', this.value)" onfocus="if(this.value.length>=1) buscarProdutos('nome', this.value)" autocomplete="off">
         </div>
       </div>
       <div class="prod-search-wrap">
-        <div class="prod-mini-label" style="margin-bottom:5px;font-size:11px;color:#c9f0d8;text-shadow:var(--ts);">
-          🧬 PRINCÍPIO ATIVO (IA)
-        </div>
+        <div class="prod-mini-label" style="margin-bottom:5px;font-size:11px;color:#c9f0d8;text-shadow:var(--ts);">🧬 PRINCÍPIO ATIVO (IA)</div>
         <div style="position:relative;">
           <span class="prod-search-icon">🔬</span>
-          <input class="prod-search" type="text" id="prodSearchIA"
-                 placeholder="Ex.: Glifosato, Tebuconazol…"
-                 oninput="buscarProdutos('ia', this.value)"
-                 onfocus="if(this.value.length>=1) buscarProdutos('ia', this.value)"
-                 autocomplete="off">
+          <input class="prod-search" type="text" id="prodSearchIA" placeholder="Ex.: Glifosato, Tebuconazol…" oninput="buscarProdutos('ia', this.value)" onfocus="if(this.value.length>=1) buscarProdutos('ia', this.value)" autocomplete="off">
         </div>
       </div>
-      {# Dropdown realocado perfeitamente alinhado abaixo da row #}
       <div class="prod-dropdown" id="prodDropdown"></div>
     </div>
     
     <div style="font-size:12px;color:#9de0bc;margin-top:8px;text-shadow:var(--ts);">
-      💡 Selecione a cultura primeiro. Busque pelo nome comercial <em>ou</em> pelo princípio ativo — a validação é automática.
+      💡 Selecione a cultura primeiro. Busque pelo nome comercial ou IA — a validação é automática.
     </div>
 
-    {# Lista de produtos adicionados #}
+    {# Lista de produtos adicionados (CORRIGIDA VARIÁVEL JINJA) #}
     <div class="prod-lista" id="prodLista">
       {% if rec and rec.itens %}
         {% for item in rec.itens %}
@@ -431,21 +362,17 @@ textarea.rf-input{resize:vertical;min-height:72px;}
               <div class="prod-card-name">{{ item.produto_nome }}</div>
               <div class="prod-card-ia">{{ item.produto_ia }}</div>
               <div class="prod-card-badges">
-                {% if item.status_validacao == 'SIM' or item.status_validacao == 'OK' %}
+                {% if item.status_validacao in ('SIM','OK') %}
                   <span class="validacao-badge vb-ok">✔ Autorizado</span>
-                {% elif item.status_validacao == 'NAO' %}
+                {% elif item.status_validacao in ('NAO','NÃO') %}
                   <span class="validacao-badge vb-nao">✘ Não Autorizado</span>
                 {% else %}
                   <span class="validacao-badge vb-talvez">⚠ Com Restrições</span>
                 {% endif %}
-                <span class="prod-item-classe pc-{% if item.produto_classe %}{{ item.produto_classe.lower()[:4] }}{% endif %}">
-                  {{ item.produto_classe }}
-                </span>
+                <span class="prod-item-classe pc-{% if item.produto_classe %}{{ item.produto_classe.lower()[:4] }}{% endif %}">{{ item.produto_classe }}</span>
               </div>
               {% if item.motivo_restricao %}
-              <div class="prod-card-motivo {% if item.status_validacao=='NAO' %}motivo-nao{% else %}motivo-talvez{% endif %}">
-                ⚠ {{ item.motivo_restricao }}
-              </div>
+              <div class="prod-card-motivo {% if item.status_validacao in ('NAO','NÃO') %}motivo-nao{% else %}motivo-talvez{% endif %}">⚠ {{ item.motivo_restricao }}</div>
               {% endif %}
             </div>
             <button type="button" class="prod-remove" onclick="removerProduto('{{ item.produto_id_api }}')">✕ Remover</button>
@@ -453,9 +380,7 @@ textarea.rf-input{resize:vertical;min-height:72px;}
           <div class="prod-card-fields">
             <div>
               <div class="prod-mini-label">Dose</div>
-              <input class="prod-mini-input" type="number" step="0.001"
-                     name="dose[]" value="{{ item.dose or '' }}"
-                     placeholder="Ex.: 0.5">
+              <input class="prod-mini-input" type="number" step="0.001" name="dose[]" value="{{ item.dose or '' }}">
             </div>
             <div>
               <div class="prod-mini-label">Unidade</div>
@@ -467,84 +392,64 @@ textarea.rf-input{resize:vertical;min-height:72px;}
             </div>
             <div>
               <div class="prod-mini-label">Nº Aplicações</div>
-              <input class="prod-mini-input" type="number" min="1" max="10"
-                     name="num_aplicacoes_p[]" value="{{ item.num_aplicacoes or 1 }}">
+              <input class="prod-mini-input" type="number" min="1" max="10" name="num_aplicacoes_p[]" value="{{ item.num_aplicacoes or 1 }}">
             </div>
           </div>
         </div>
         {% endfor %}
       {% endif %}
     </div>
-    <div id="prodVazio" style="display:{{ 'none' if rec and rec.itens else 'flex' }};
-         flex-direction:column;align-items:center;padding:30px;color:var(--m);font-size:13px;gap:6px;">
-      <span style="font-size:36px;">🧪</span>
-      Nenhum produto adicionado ainda. Busque acima.
+    <div id="prodVazio" style="display:{{ 'none' if rec and rec.itens else 'flex' }};flex-direction:column;align-items:center;padding:30px;color:var(--m);font-size:13px;gap:6px;">
+      <span style="font-size:36px;">🧪</span> Nenhum produto adicionado.
     </div>
   </div>
 
-  {# ── SEÇÃO 5 — Aplicação Aérea ── #}
+  {# ── SEÇÃO 5 ── #}
   <div class="rf-sec">
     <div class="rf-sec-title">✈ Parâmetros de Aplicação Aérea</div>
     <div class="rf-grid">
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Equipamento / Aeronave</label>
-        <input class="rf-input" type="text" name="tipo_equipamento"
-               value="{{ rec.tipo_equipamento if rec else 'Aeronave agrícola' }}"
-               placeholder="Ex.: Aeronave agrícola — Ipanema EMB 203">
+        <input class="rf-input" type="text" name="tipo_equipamento" value="{{ rec.tipo_equipamento if rec else 'Aeronave agrícola' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Volume de Calda (L/ha)</label>
-        <input class="rf-input" type="number" step="0.1" name="volume_calda"
-               placeholder="Ex.: 30"
-               value="{{ rec.volume_calda if rec else '' }}">
+        <input class="rf-input" type="number" step="0.1" name="volume_calda" value="{{ rec.volume_calda if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Nº de Aplicações</label>
-        <input class="rf-input" type="number" min="1" max="10" name="num_aplicacoes"
-               value="{{ rec.num_aplicacoes if rec else 1 }}">
+        <input class="rf-input" type="number" min="1" max="10" name="num_aplicacoes" value="{{ rec.num_aplicacoes if rec else 1 }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Intervalo entre Aplicações (dias)</label>
-        <input class="rf-input" type="number" min="1" name="intervalo_aplicacoes"
-               placeholder="14"
-               value="{{ rec.intervalo_aplicacoes if rec else '' }}">
+        <input class="rf-input" type="number" min="1" name="intervalo_aplicacoes" value="{{ rec.intervalo_aplicacoes if rec else '' }}">
       </div>
       <div class="rf-field">
         <label class="rf-label">Época / Período de Aplicação</label>
-        <input class="rf-input" type="text" name="epoca_aplicacao"
-               placeholder="Ex.: Pós-emergência V4-V6 / Florescimento"
-               value="{{ rec.epoca_aplicacao if rec else '' }}">
+        <input class="rf-input" type="text" name="epoca_aplicacao" value="{{ rec.epoca_aplicacao if rec else '' }}">
       </div>
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Condições para Aplicação / Observações</label>
-        <textarea class="rf-input" name="observacoes_aplicacao"
-                  placeholder="Temperatura: 15-28°C | Umidade relativa: > 50% | Vento: 2-10 km/h | Não aplicar com orvalho">{{ rec.observacoes_aplicacao if rec else '' }}</textarea>
+        <textarea class="rf-input" name="observacoes_aplicacao">{{ rec.observacoes_aplicacao if rec else '' }}</textarea>
       </div>
     </div>
   </div>
 
-  {# ── SEÇÃO 6 — Observações gerais ── #}
+  {# ── SEÇÃO 6 ── #}
   <div class="rf-sec">
     <div class="rf-sec-title">📝 Observações Gerais</div>
-    <textarea class="rf-input" name="observacoes" rows="3"
-              placeholder="Informações adicionais, alertas, recomendações complementares…">{{ rec.observacoes if rec else '' }}</textarea>
+    <textarea class="rf-input" name="observacoes" rows="3">{{ rec.observacoes if rec else '' }}</textarea>
   </div>
 
-  {# Footer fixo com ações #}
+  {# Footer fixo #}
   <div class="rf-footer">
     <div class="rf-footer-left" id="footerInfo">
       <span id="prodCount">0</span> produto(s) adicionado(s)
     </div>
     <div class="rf-footer-right">
-      <a href="{{ url_for('receituario.admin_lista') if modo=='admin' else url_for('receituario.func_lista') }}"
-         class="rf-btn rf-btn-g">Cancelar</a>
-      <button type="submit" name="acao" value="salvar" class="rf-btn rf-btn-p">
-        💾 Salvar Rascunho
-      </button>
-      <button type="submit" name="acao" value="emitir" class="rf-btn rf-btn-e"
-              id="btnEmitir" onclick="return confirmarEmissao()">
-        ✅ Salvar e Emitir
-      </button>
+      <a href="{{ url_for('receituario.admin_lista') if modo=='admin' else url_for('receituario.func_lista') }}" class="rf-btn rf-btn-g">Cancelar</a>
+      <button type="submit" name="acao" value="salvar" class="rf-btn rf-btn-p">💾 Salvar Rascunho</button>
+      <button type="submit" name="acao" value="emitir" class="rf-btn rf-btn-e" id="btnEmitir" onclick="return confirmarEmissao()">✅ Salvar e Emitir</button>
     </div>
   </div>
 
@@ -552,15 +457,10 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 </div>
 
 <script>
-// ── Estado global ──────────────────────────────────────────────────────────
-let culturaAtual = {
-  id: {{ (rec.cultura_id if rec and rec.cultura_id else 'null') }},
-  nome: "{{ rec.cultura.nome if rec and rec.cultura else '' }}"
-};
+let culturaAtual = { id: {{ (rec.cultura_id if rec and rec.cultura_id else 'null') }}, nome: "{{ rec.cultura.nome if rec and rec.cultura else '' }}" };
 let produtosAdicionados = {};  
 let searchTimer = null;
 
-// ── Inicialização ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   {% if rec and rec.itens %}
   {% for item in rec.itens %}
@@ -575,18 +475,14 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   {% endfor %}
   {% endif %}
-
   atualizarContador();
   if (culturaAtual.id) {
     atualizarBadgeCultura(culturaAtual.nome);
-    document.querySelectorAll('.cust-sel-item').forEach(el => {
-      el.classList.toggle('selected', el.dataset.val == culturaAtual.id);
-    });
+    document.querySelectorAll('.cust-sel-item').forEach(el => el.classList.toggle('selected', el.dataset.val == culturaAtual.id));
   }
   atualizarStatusGeral();
 });
 
-// ── Custom select: Cultura ────────────────────────────────────────────────
 function toggleCulturaDropdown() {
   const list = document.getElementById('culturaList');
   const arrow = document.getElementById('culturaArrow');
@@ -602,9 +498,7 @@ function selecionarCultura(id, nome) {
     disp.textContent = nome;
     display.style.borderColor = 'rgba(34,197,94,.55)';
     disp.style.color = '#fff';
-    document.querySelectorAll('.cust-sel-item').forEach(el => {
-      el.classList.toggle('selected', el.dataset.val == id);
-    });
+    document.querySelectorAll('.cust-sel-item').forEach(el => el.classList.toggle('selected', el.dataset.val == id));
     culturaAtual = {id, nome};
     atualizarBadgeCultura(nome);
     revalidarTodos();
@@ -633,44 +527,24 @@ function atualizarBadgeCultura(nome) {
   document.getElementById('culturaLabel').textContent = '🌱 ' + nome;
 }
 
-// ── Busca de produtos (Otimizada e com correção de mapeamento) ──────────────
 function buscarProdutos(campo, q) {
   clearTimeout(searchTimer);
-  
-  if (campo === 'nome') {
-    document.getElementById('prodSearchIA').value = '';
-  } else {
-    document.getElementById('prodSearchNome').value = '';
-  }
-
-  if (!q || q.length < 2) { 
-    hideDropdown(); 
-    return; 
-  }
+  if (campo === 'nome') document.getElementById('prodSearchIA').value = '';
+  else document.getElementById('prodSearchNome').value = '';
+  if (!q || q.length < 2) { hideDropdown(); return; }
 
   const dd = document.getElementById('prodDropdown');
-  dd.innerHTML = `<div style="padding:14px 16px;color:rgba(255,255,255,.6);font-size:13px;text-align:center;">
-                    <span class="spin" style="margin-right:8px;"></span> Buscando no MAPA/Agrofit...
-                  </div>`;
+  dd.innerHTML = `<div style="padding:14px 16px;color:rgba(255,255,255,.6);font-size:13px;text-align:center;"><span class="spin" style="margin-right:8px;"></span> Buscando no MAPA/Agrofit...</div>`;
   dd.classList.add('open');
 
   searchTimer = setTimeout(() => {
     fetch(`/api/receituario/produtos?q=${encodeURIComponent(q)}&campo=${campo}&limit=20`)
       .then(r => r.json())
       .then(data => {
-        if (campo === 'ia') {
-          data.sort((a,b) => {
-            const aMatch = a.ingrediente_ativo.toLowerCase().includes(q.toLowerCase());
-            const bMatch = b.ingrediente_ativo.toLowerCase().includes(q.toLowerCase());
-            return (bMatch ? 1:0) - (aMatch ? 1:0);
-          });
-        }
+        if (campo === 'ia') data.sort((a,b) => (b.ingrediente_ativo.toLowerCase().includes(q.toLowerCase())?1:0) - (a.ingrediente_ativo.toLowerCase().includes(q.toLowerCase())?1:0));
         renderDropdown(data, campo, q);
-      })
-      .catch(() => {
-         dd.innerHTML = `<div style="padding:14px 16px;color:#fca5a5;font-size:13px;text-align:center;">
-                          Erro ao buscar produtos.
-                        </div>`;
+      }).catch(() => {
+         dd.innerHTML = `<div style="padding:14px 16px;color:#fca5a5;font-size:13px;text-align:center;">Erro ao buscar produtos.</div>`;
       });
   }, 500);
 }
@@ -678,9 +552,7 @@ function buscarProdutos(campo, q) {
 function renderDropdown(produtos, campo, q) {
   const dd = document.getElementById('prodDropdown');
   if (!produtos.length) {
-    dd.innerHTML = `<div style="padding:14px 16px;color:rgba(255,255,255,.6);font-size:13px;">
-      🔎 Nenhum produto encontrado para "<strong>${escH(q||'')}</strong>"
-    </div>`;
+    dd.innerHTML = `<div style="padding:14px 16px;color:rgba(255,255,255,.6);font-size:13px;">🔎 Nenhum encontrado para "<strong>${escH(q||'')}</strong>"</div>`;
     dd.classList.add('open');
     return;
   }
@@ -688,11 +560,9 @@ function renderDropdown(produtos, campo, q) {
     const cls = getClasseCSS(p.classe_agronomica);
     const nomeHL  = q ? escH(p.nome_comercial).replace(new RegExp(escReg(q),'gi'), m=>`<mark style="background:rgba(234,88,12,.40);color:#fff;border-radius:2px;">${m}</mark>`) : escH(p.nome_comercial);
     const iaHL    = q ? escH(p.ingrediente_ativo).replace(new RegExp(escReg(q),'gi'), m=>`<mark style="background:rgba(234,88,12,.40);color:#fff;border-radius:2px;">${m}</mark>`) : escH(p.ingrediente_ativo);
-    
     return `<div class="prod-item" onclick="adicionarProduto('${p.id}', '${escQ(p.nome_comercial)}', '${escQ(p.ingrediente_ativo)}', '${escQ(p.classe_agronomica)}', ${p.dose_min || 0}, ${p.dose_max || 0}, '${escQ(p.unidade || '')}', '${escQ(p.epi_obrigatorio || '')}')">
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <span class="prod-item-name">${nomeHL}</span>
-        <span class="prod-item-classe ${cls}">${escH(p.classe_agronomica || '')}</span>
+        <span class="prod-item-name">${nomeHL}</span><span class="prod-item-classe ${cls}">${escH(p.classe_agronomica || '')}</span>
       </div>
       <div class="prod-item-ia" style="margin-top:3px;">🧬 ${iaHL}</div>
       ${p.fabricante ? `<div style="font-size:10px;color:rgba(255,255,255,.40);margin-top:1px;">${escH(p.fabricante)}</div>` : ''}
@@ -702,59 +572,34 @@ function renderDropdown(produtos, campo, q) {
 }
 
 function escReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
-
 function hideDropdown() { document.getElementById('prodDropdown').classList.remove('open'); }
 document.addEventListener('click', e => {
   if (!e.target.closest('.prod-search-row-container') && !e.target.closest('#prodDropdown')) hideDropdown();
 });
 
-// ── Adicionar produto ──────────────────────────────────────────────────────
 function adicionarProduto(id, nome, ia, classe, dMin, dMax, un, epi) {
-  hideDropdown();
-  document.getElementById('prodSearchNome').value = '';
-  document.getElementById('prodSearchIA').value = '';
-  
+  hideDropdown(); document.getElementById('prodSearchNome').value = ''; document.getElementById('prodSearchIA').value = '';
   if (produtosAdicionados[id]) { showToast('Produto já adicionado!', 'warn'); return; }
-
-  if (!culturaAtual.id) {
-    showToast('Selecione uma cultura primeiro!', 'warn');
-    document.getElementById('culturaDisplay').focus();
-    return;
-  }
+  if (!culturaAtual.id) { showToast('Selecione uma cultura primeiro!', 'warn'); document.getElementById('culturaDisplay').focus(); return; }
 
   fetch(`/api/receituario/produto/${id}/validar?cultura_id=${culturaAtual.id}`)
     .then(r => r.json())
     .then(data => {
-      const comp = data.compatibilidade;
-      const motivo = data.motivo || '';
-      const doseRec = data.dose_recomendada || '';
-
-      produtosAdicionados[id] = {id, nome, ia, classe, validacao: comp, motivo, dose_rec: doseRec};
-      renderProdutoCard({id, nome, ia, classe, validacao: comp, motivo, dose_rec: doseRec, dose_min: dMin, dose_max: dMax, un, epi});
-      atualizarContador();
-      atualizarStatusGeral();
-      document.getElementById('prodVazio').style.display = 'none';
-    })
-    .catch(() => {
-      produtosAdicionados[id] = {id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Falha na validação online.', dose_rec: ''};
-      renderProdutoCard({id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Erro ao conectar à API do MAPA. Verifique manualmente.', dose_min: dMin, dose_max: dMax, un, epi, dose_rec: ''});
-      atualizarContador();
-      atualizarStatusGeral();
-      document.getElementById('prodVazio').style.display = 'none';
+      produtosAdicionados[id] = {id, nome, ia, classe, validacao: data.compatibilidade, motivo: data.motivo || '', dose_rec: data.dose_recomendada || ''};
+      renderProdutoCard(produtosAdicionados[id], dMin, dMax, un, epi);
+      atualizarContador(); atualizarStatusGeral(); document.getElementById('prodVazio').style.display = 'none';
+    }).catch(() => {
+      produtosAdicionados[id] = {id, nome, ia, classe, validacao: 'TALVEZ', motivo: 'Erro API MAPA. Verifique bula.', dose_rec: ''};
+      renderProdutoCard(produtosAdicionados[id], dMin, dMax, un, epi);
+      atualizarContador(); atualizarStatusGeral(); document.getElementById('prodVazio').style.display = 'none';
     });
 }
 
-function renderProdutoCard(p) {
+function renderProdutoCard(p, dMin, dMax, un, epi) {
   const lista = document.getElementById('prodLista');
-  const comp   = p.validacao;
-  const compClass = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NÃO' || comp === 'NAO' ? 'nao' : 'talvez';
-  const badgeClass = comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NÃO' || comp === 'NAO' ? 'vb-nao' : 'vb-talvez';
-  const badgeText  = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NÃO' || comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
-  const cls = getClasseCSS(p.classe);
-
-  const motivoHtml = p.motivo ? `<div class="prod-card-motivo ${compClass === 'nao' ? 'motivo-nao' : 'motivo-talvez'}">⚠ ${escH(p.motivo)}</div>` : '';
-  const doseRecHtml = p.dose_rec ? `<div class="dose-rec">📌 Recomendado: ${escH(p.dose_rec)}</div>` : '';
-
+  const compClass = p.validacao === 'SIM' || p.validacao === 'OK' ? 'ok' : p.validacao === 'NAO' || p.validacao === 'NÃO' ? 'nao' : 'talvez';
+  const badgeClass = p.validacao === 'SIM' || p.validacao === 'OK' ? 'vb-ok' : p.validacao === 'NAO' || p.validacao === 'NÃO' ? 'vb-nao' : 'vb-talvez';
+  const badgeText  = p.validacao === 'SIM' || p.validacao === 'OK' ? '✔ Autorizado' : p.validacao === 'NAO' || p.validacao === 'NÃO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
   const html = `
   <div class="prod-card ${compClass}" id="pc-${p.id}">
     <input type="hidden" name="produto_id[]" value="${p.id}">
@@ -767,29 +612,20 @@ function renderProdutoCard(p) {
         <div class="prod-card-ia">${escH(p.ia)}</div>
         <div class="prod-card-badges">
           <span class="validacao-badge ${badgeClass}">${badgeText}</span>
-          <span class="prod-item-classe ${cls}">${escH(p.classe || '')}</span>
+          <span class="prod-item-classe ${getClasseCSS(p.classe)}">${escH(p.classe || '')}</span>
         </div>
-        ${motivoHtml}
-        ${doseRecHtml}
+        ${p.motivo ? `<div class="prod-card-motivo ${compClass === 'nao' ? 'motivo-nao' : 'motivo-talvez'}">⚠ ${escH(p.motivo)}</div>` : ''}
+        ${p.dose_rec ? `<div class="dose-rec">📌 Recomendado: ${escH(p.dose_rec)}</div>` : ''}
       </div>
       <button type="button" class="prod-remove" onclick="removerProduto('${p.id}')">✕ Remover</button>
     </div>
     <div class="prod-card-fields">
-      <div>
-        <div class="prod-mini-label">Dose ${p.un ? '(' + escH(p.un) + ')' : ''}</div>
-        <input class="prod-mini-input" type="number" step="0.001" name="dose[]"
-               placeholder="${p.dose_min || ''}${p.dose_max ? '–' + p.dose_max : ''}">
-      </div>
+      <div><div class="prod-mini-label">Dose</div><input class="prod-mini-input" type="number" step="0.001" name="dose[]"></div>
       <div>
         <div class="prod-mini-label">Unidade</div>
-        <select class="prod-mini-input" name="unidade[]">
-          ${['L/ha','kg/ha','g/ha','mL/ha','g/100L'].map(u => `<option ${u===p.un?'selected':''}>${u}</option>`).join('')}
-        </select>
+        <select class="prod-mini-input" name="unidade[]">${['L/ha','kg/ha','g/ha','mL/ha','g/100L'].map(u=>`<option ${u===(un||'')?'selected':''}>${u}</option>`).join('')}</select>
       </div>
-      <div>
-        <div class="prod-mini-label">Nº Aplicações</div>
-        <input class="prod-mini-input" type="number" min="1" max="10" name="num_aplicacoes_p[]" value="1">
-      </div>
+      <div><div class="prod-mini-label">Nº Aplicações</div><input class="prod-mini-input" type="number" min="1" max="10" name="num_aplicacoes_p[]" value="1"></div>
     </div>
   </div>`;
   lista.insertAdjacentHTML('beforeend', html);
@@ -797,10 +633,9 @@ function renderProdutoCard(p) {
 
 function removerProduto(id) {
   const card = document.getElementById('pc-' + id);
-  if (card) { card.style.animation = 'none'; card.style.opacity = '0'; card.style.transform = 'scale(.95)'; card.style.transition = '.2s'; setTimeout(() => card.remove(), 200); }
+  if (card) { card.style.animation = 'none'; card.style.opacity = '0'; card.style.transform = 'scale(.95)'; setTimeout(() => card.remove(), 200); }
   delete produtosAdicionados[id];
-  atualizarContador();
-  atualizarStatusGeral();
+  atualizarContador(); atualizarStatusGeral();
   if (!Object.keys(produtosAdicionados).length) document.getElementById('prodVazio').style.display = 'flex';
 }
 
@@ -808,26 +643,17 @@ function revalidarTodos() {
   const ids = Object.keys(produtosAdicionados);
   if (!ids.length || !culturaAtual.id) return;
   ids.forEach(id => {
-    fetch(`/api/receituario/produto/${id}/validar?cultura_id=${culturaAtual.id}`)
-      .then(r => r.json())
-      .then(data => {
-        produtosAdicionados[id].validacao = data.compatibilidade;
-        produtosAdicionados[id].motivo    = data.motivo || '';
-        const card = document.getElementById('pc-' + id);
-        if (!card) return;
-        const comp  = data.compatibilidade;
-        const cls   = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NÃO' || comp === 'NAO' ? 'nao' : 'talvez';
+    fetch(`/api/receituario/produto/${id}/validar?cultura_id=${culturaAtual.id}`).then(r => r.json()).then(data => {
+        produtosAdicionados[id].validacao = data.compatibilidade; produtosAdicionados[id].motivo = data.motivo || '';
+        const card = document.getElementById('pc-' + id); if (!card) return;
+        const comp = data.compatibilidade; const cls = comp === 'SIM' || comp === 'OK' ? 'ok' : comp === 'NAO' || comp === 'NÃO' ? 'nao' : 'talvez';
         card.className = `prod-card ${cls}`;
         const badge = card.querySelector('.validacao-badge');
-        if (badge) {
-          badge.className = `validacao-badge ${comp === 'SIM' || comp === 'OK' ? 'vb-ok' : comp === 'NÃO' || comp === 'NAO' ? 'vb-nao' : 'vb-talvez'}`;
-          badge.textContent = comp === 'SIM' || comp === 'OK' ? '✔ Autorizado' : comp === 'NÃO' || comp === 'NAO' ? '✘ Não Autorizado' : '⚠ Com Restrições';
-        }
+        if(badge){ badge.className=`validacao-badge ${cls==='ok'?'vb-ok':cls==='nao'?'vb-nao':'vb-talvez'}`; badge.textContent=cls==='ok'?'✔ Autorizado':cls==='nao'?'✘ Não Autorizado':'⚠ Com Restrições'; }
         let mEl = card.querySelector('.prod-card-motivo');
         if (data.motivo) {
           if (!mEl) { const info = card.querySelector('.prod-card-info'); mEl = document.createElement('div'); info.appendChild(mEl); }
-          mEl.className = `prod-card-motivo ${cls === 'nao' ? 'motivo-nao' : 'motivo-talvez'}`;
-          mEl.textContent = '⚠ ' + data.motivo;
+          mEl.className = `prod-card-motivo ${cls === 'nao' ? 'motivo-nao' : 'motivo-talvez'}`; mEl.textContent = '⚠ ' + data.motivo;
         } else if (mEl) mEl.remove();
         atualizarStatusGeral();
       }).catch(() => {});
@@ -835,72 +661,28 @@ function revalidarTodos() {
 }
 
 function atualizarStatusGeral() {
-  const sg  = document.getElementById('statusGeral');
-  const txt = document.getElementById('statusGeralText');
+  const sg = document.getElementById('statusGeral'); const txt = document.getElementById('statusGeralText');
   const vals = Object.values(produtosAdicionados).map(p => p.validacao);
-
-  if (!vals.length) {
-    sg.className = 'status-geral sg-vazio';
-    txt.textContent = 'Adicione produtos para ver a validação agronômica.';
-    return;
-  }
-  const temNao    = vals.some(v => v === 'NAO' || v === 'NÃO');
-  const temTalvez = vals.some(v => v === 'TALVEZ');
-  if (temNao) {
-    sg.className = 'status-geral sg-nao';
-    txt.innerHTML = `<strong>✘ Receituário com incompatibilidade!</strong> Corrija os produtos não autorizados antes de emitir.`;
-  } else if (temTalvez) {
-    sg.className = 'status-geral sg-talvez';
-    txt.innerHTML = `<strong>⚠ Atenção: uso com restrições!</strong> Revise as condições dos produtos.`;
-  } else {
-    sg.className = 'status-geral sg-ok';
-    txt.innerHTML = `<strong>✔ Receituário dentro das normas!</strong> Todos os produtos liberados para esta cultura.`;
-  }
+  if (!vals.length) { sg.className = 'status-geral sg-vazio'; txt.textContent = 'Adicione produtos para ver a validação agronômica.'; return; }
+  if (vals.some(v => v === 'NAO' || v === 'NÃO')) { sg.className = 'status-geral sg-nao'; txt.innerHTML = `<strong>✘ Receituário com incompatibilidade!</strong> Corrija os produtos não autorizados.`; }
+  else if (vals.some(v => v === 'TALVEZ')) { sg.className = 'status-geral sg-talvez'; txt.innerHTML = `<strong>⚠ Atenção: uso com restrições!</strong> Revise as condições dos produtos.`; }
+  else { sg.className = 'status-geral sg-ok'; txt.innerHTML = `<strong>✔ Receituário dentro das normas!</strong> Todos liberados.`; }
 }
-
-function atualizarContador() {
-  document.getElementById('prodCount').textContent = Object.keys(produtosAdicionados).length;
-}
-
+function atualizarContador() { document.getElementById('prodCount').textContent = Object.keys(produtosAdicionados).length; }
 function confirmarEmissao() {
-  const vals = Object.values(produtosAdicionados).map(p => p.validacao);
-  if (vals.some(v => v === 'NAO' || v === 'NÃO')) {
-    showToast('Não é possível emitir: há produto(s) não autorizado(s)!', 'error');
-    return false;
-  }
-  if (!vals.length) { showToast('Adicione ao menos um produto.', 'warn'); return false; }
+  if (Object.values(produtosAdicionados).some(p => p.validacao === 'NAO' || p.validacao === 'NÃO')) { showToast('Não é possível emitir com produtos não autorizados!', 'error'); return false; }
+  if (!Object.keys(produtosAdicionados).length) { showToast('Adicione ao menos um produto.', 'warn'); return false; }
   return confirm('Confirmar emissão do receituário? Esta ação não poderá ser desfeita.');
 }
-
-function getClasseCSS(classe) {
-  if (!classe) return 'pc-out';
-  const c = classe.toLowerCase();
-  if (c.includes('herb')) return 'pc-herb';
-  if (c.includes('fung')) return 'pc-fung';
-  if (c.includes('inset')) return 'pc-ins';
-  if (c.includes('regul')) return 'pc-reg';
-  return 'pc-out';
-}
+function getClasseCSS(c) { if (!c) return 'pc-out'; const l=c.toLowerCase(); return l.includes('herb')?'pc-herb':l.includes('fung')?'pc-fung':l.includes('inset')?'pc-ins':l.includes('regul')?'pc-reg':'pc-out'; }
 function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escQ(s) { return String(s).replace(/'/g,"\\'").replace(/"/g,'\\"'); }
-
-function showToast(msg, type) {
-  const t = document.createElement('div');
-  const bg = type === 'error' ? '#dc2626' : type === 'warn' ? '#d97706' : '#16a34a';
-  t.style.cssText = `position:fixed;bottom:80px;right:20px;background:${bg};color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;animation:slideIn .3s ease;`;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+function showToast(m, type) {
+  const t = document.createElement('div'); t.style.cssText = `position:fixed;bottom:80px;right:20px;background:${type==='error'?'#dc2626':type==='warn'?'#d97706':'#16a34a'};color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;`;
+  t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
 }
-
 {% if rec and rec.cultura_id %}
-document.addEventListener('DOMContentLoaded', () => {
-  atualizarBadgeCultura("{{ rec.cultura.nome if rec and rec.cultura else '' }}");
-  atualizarStatusGeral();
-  document.querySelectorAll('.cust-sel-item').forEach(el => {
-    if (el.dataset.val == "{{ rec.cultura_id }}") el.classList.add('selected');
-  });
-});
+document.addEventListener('DOMContentLoaded', () => { atualizarBadgeCultura("{{ rec.cultura.nome if rec and rec.cultura else '' }}"); atualizarStatusGeral(); document.querySelectorAll('.cust-sel-item').forEach(el => { if (el.dataset.val == "{{ rec.cultura_id }}") el.classList.add('selected'); }); });
 {% endif %}
 </script>
 {% endblock %}
