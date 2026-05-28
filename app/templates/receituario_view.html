@@ -1231,31 +1231,67 @@
 <script>
 /* ── Esconder chatbot antes de imprimir ─────────────────────────── */
 (function(){
-  var CHAT_IDS = ['cr-intro','cr-chat-btn','cr-hello-bubble','cr-chat-win','introVideo'];
+  /* IDs de elementos que DEVEM SER REMOVIDOS do DOM antes de imprimir.
+     display:none não é suficiente para position:fixed — o Chrome renderiza
+     elementos fixed como páginas extras. Remoção do DOM é garantida. */
+  var IDS = [
+    'introVideo',    // intro fullscreen do site (position:fixed full viewport)
+    'cr-intro',      // intro do chatbot (video position:fixed)
+    'cr-chat-btn',   // botão avatar
+    'cr-hello-bubble', // balão "Oi! Sou o Piloto"
+    'cr-chat-win',   // janela do chat
+    'imp-banner',    // banner de aviso
+  ];
 
-  function hideChatbot() {
-    CHAT_IDS.forEach(function(id){
+  var _removed = [];  // guarda {parent, node, nextSibling} para restaurar
+
+  function removeForPrint() {
+    // 1. Remover pelos IDs conhecidos
+    IDS.forEach(function(id) {
       var el = document.getElementById(id);
-      if (el) { el.setAttribute('data-print-hidden','1'); el.style.setProperty('display','none','important'); }
-    });
-    /* Também esconder por classe cr- */
-    document.querySelectorAll('[class^="cr-"],[class*=" cr-"]').forEach(function(el){
-      if (!el.closest('.rv-doc')) {
-        el.setAttribute('data-print-hidden','2');
-        el.style.setProperty('display','none','important');
+      if (el && el.parentNode) {
+        _removed.push({ parent: el.parentNode, node: el, next: el.nextSibling });
+        el.parentNode.removeChild(el);
       }
     });
-  }
 
-  function restoreChatbot() {
-    document.querySelectorAll('[data-print-hidden]').forEach(function(el){
-      el.style.removeProperty('display');
-      el.removeAttribute('data-print-hidden');
+    // 2. Remover qualquer outro elemento fixed fora do documento
+    document.querySelectorAll('body > *').forEach(function(el) {
+      if (el.classList.contains('rv-page')) return;
+      if (el.id === 'main-content') return;
+      var st = window.getComputedStyle(el);
+      if (st.position === 'fixed' || st.position === 'absolute') {
+        _removed.push({ parent: el.parentNode, node: el, next: el.nextSibling });
+        el.parentNode.removeChild(el);
+      }
     });
+
+    // 3. Remover elementos cr- que não estejam dentro do documento
+    document.querySelectorAll('[id^="cr-"],[class^="cr-"],[class*=" cr-"]')
+      .forEach(function(el) {
+        if (!el.closest('.rv-doc') && el.parentNode) {
+          _removed.push({ parent: el.parentNode, node: el, next: el.nextSibling });
+          el.parentNode.removeChild(el);
+        }
+      });
   }
 
-  window.addEventListener('beforeprint', hideChatbot);
-  window.addEventListener('afterprint',  restoreChatbot);
+  function restoreAfterPrint() {
+    _removed.forEach(function(item) {
+      try {
+        item.parent.insertBefore(item.node, item.next);
+      } catch(e) {}
+    });
+    _removed = [];
+  }
+
+  window.addEventListener('beforeprint', removeForPrint);
+  window.addEventListener('afterprint',  restoreAfterPrint);
+
+  // Também forçar via CSS como dupla proteção
+  var style = document.createElement('style');
+  style.innerHTML = '@media print{#introVideo,#introVideo *{display:none!important;position:static!important;width:0!important;height:0!important;overflow:hidden!important;opacity:0!important;}}';
+  document.head.appendChild(style);
 })();
 </script>
 
