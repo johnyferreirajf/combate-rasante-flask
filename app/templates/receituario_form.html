@@ -164,6 +164,29 @@ textarea.rf-input{resize:vertical;min-height:72px;}
       border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .dose-rec{font-size:10px;color:#86efac;margin-top:2px;}
+
+/* ── Validação IA ── */
+.ia-btn{display:inline-flex;align-items:center;gap:7px;padding:11px 20px;
+        border-radius:11px;background:linear-gradient(135deg,#4f46e5,#7c3aed);
+        color:#fff;font-size:13px;font-weight:800;cursor:pointer;border:none;
+        font-family:inherit;transition:.15s;margin-top:12px;width:100%;}
+.ia-btn:hover{background:linear-gradient(135deg,#4338ca,#6d28d9);}
+.ia-btn:disabled{opacity:.6;cursor:not-allowed;}
+.ia-result{margin-top:12px;border-radius:11px;padding:14px 16px;
+           border:2px solid;display:none;}
+.ia-aprovado{background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.45);color:#d1fae5;}
+.ia-alerta{background:rgba(251,191,36,.10);border-color:rgba(251,191,36,.40);color:#fef3c7;}
+.ia-reprovado{background:rgba(239,68,68,.13);border-color:rgba(239,68,68,.45);color:#fee2e2;}
+.ia-erro{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25);color:#e5e7eb;}
+.ia-title{font-size:14px;font-weight:900;margin-bottom:8px;display:flex;align-items:center;gap:7px;}
+.ia-resumo{font-size:12px;line-height:1.5;margin-bottom:10px;}
+.ia-item{font-size:11.5px;padding:7px 10px;border-radius:7px;margin-bottom:5px;line-height:1.4;}
+.ia-item-ok{background:rgba(34,197,94,.12);}
+.ia-item-alerta{background:rgba(251,191,36,.10);}
+.ia-item-reprovado{background:rgba(239,68,68,.14);}
+.ia-calda{font-size:11px;margin-top:8px;padding:7px 10px;border-radius:7px;background:rgba(255,255,255,.08);}
+.ia-rec{font-size:11px;margin-top:8px;padding:7px 10px;border-radius:7px;
+        background:rgba(255,255,255,.06);border-left:3px solid rgba(255,255,255,.3);}
 </style>
 {% endblock %}
 
@@ -406,6 +429,13 @@ textarea.rf-input{resize:vertical;min-height:72px;}
     <div id="prodVazio" style="display:{{ 'none' if rec and rec.itens else 'flex' }};flex-direction:column;align-items:center;padding:30px;color:var(--m);font-size:13px;gap:6px;">
       <span style="font-size:36px;">🧪</span> Nenhum produto adicionado.
     </div>
+
+    {# ── Botão de validação por IA ── #}
+    <button type="button" class="ia-btn" id="btnValidarIA" onclick="validarComIA()">
+      <span id="iaSpinIcon">🤖</span>
+      <span id="iaBtnTxt"> Validar com Inteligência Artificial</span>
+    </button>
+    <div class="ia-result" id="iaResult"></div>
   </div>
 
   {# ── SEÇÃO 5 ── #}
@@ -685,6 +715,113 @@ function showToast(m, type) {
   const t = document.createElement('div'); t.style.cssText = `position:fixed;bottom:80px;right:20px;background:${type==='error'?'#dc2626':type==='warn'?'#d97706':'#16a34a'};color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;z-index:9999;`;
   t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
 }
+// ── Validação por IA ──────────────────────────────────────────────────────
+function validarComIA() {
+  const prods = Object.values(produtosAdicionados);
+  if (!prods.length) { showToast('Adicione ao menos um produto.','warn'); return; }
+  if (!culturaAtual.id) { showToast('Selecione uma cultura.','warn'); return; }
+
+  const btn = document.getElementById('btnValidarIA');
+  const res = document.getElementById('iaResult');
+  const icoEl = document.getElementById('iaSpinIcon');
+  const txtEl = document.getElementById('iaBtnTxt');
+
+  btn.disabled = true;
+  icoEl.innerHTML = '<span class="spin"></span>';
+  txtEl.textContent = ' Consultando IA...';
+  res.style.display = 'none';
+
+  // Coletar dados dos produtos com doses
+  const cards = document.querySelectorAll('#prodLista .prod-card');
+  const prodData = [];
+  prods.forEach(p => {
+    const card = document.getElementById('pc-' + p.id);
+    let dose = '', un = '', nAplic = 1;
+    if (card) {
+      const doseInp = card.querySelector('input[name="dose[]"]');
+      const unSel   = card.querySelector('select[name="unidade[]"]');
+      const aplInp  = card.querySelector('input[name="num_aplicacoes_p[]"]');
+      dose   = doseInp ? doseInp.value : '';
+      un     = unSel   ? unSel.value   : '';
+      nAplic = aplInp  ? aplInp.value  : 1;
+    }
+    prodData.push({ id: p.id, nome: p.nome, ia: p.ia, classe: p.classe,
+                    dose: dose, unidade: un, num_aplic: nAplic });
+  });
+
+  const payload = {
+    cultura_nome:    culturaAtual.nome,
+    produtos:        prodData,
+    volume_calda:    document.querySelector('input[name="volume_calda"]')?.value || '',
+    num_aplicacoes:  document.querySelector('input[name="num_aplicacoes"]')?.value || 1,
+    equipamento:     document.querySelector('input[name="tipo_equipamento"]')?.value || 'Aeronave agricola',
+  };
+
+  fetch('/api/receituario/validar-ia', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload),
+  })
+  .then(r => r.json())
+  .then(data => {
+    btn.disabled = false;
+    icoEl.textContent = '🤖';
+    txtEl.textContent = ' Validar com Inteligência Artificial';
+    renderIAResult(data);
+  })
+  .catch(err => {
+    btn.disabled = false;
+    icoEl.textContent = '🤖';
+    txtEl.textContent = ' Validar com Inteligência Artificial';
+    renderIAResult({status_geral:'ERRO', resumo:'Erro de conexão: ' + err.message,
+                    itens:[], recomendacoes:''});
+  });
+}
+
+function renderIAResult(data) {
+  const res = document.getElementById('iaResult');
+  const sg  = (data.status_geral || 'ERRO').toUpperCase();
+
+  const cls = sg === 'APROVADO' ? 'ia-aprovado' :
+              sg === 'ALERTA'   ? 'ia-alerta' :
+              sg === 'REPROVADO'? 'ia-reprovado' : 'ia-erro';
+
+  const icon = sg === 'APROVADO' ? '✅' : sg === 'ALERTA' ? '⚠️' :
+               sg === 'REPROVADO' ? '❌' : '🔴';
+
+  let html = '<div class="ia-title">' + icon + ' VALIDAÇÃO IA: ' + sg + '</div>';
+  if (data.resumo) html += '<div class="ia-resumo">' + escH(data.resumo) + '</div>';
+
+  if (data.itens && data.itens.length) {
+    data.itens.forEach(item => {
+      const st  = (item.status || 'ALERTA').toUpperCase();
+      const c   = st === 'OK' ? 'ia-item-ok' : st === 'REPROVADO' ? 'ia-item-reprovado' : 'ia-item-alerta';
+      const ico = st === 'OK' ? '✔' : st === 'REPROVADO' ? '✘' : '⚠';
+      html += '<div class="ia-item ' + c + '">';
+      html += '<strong>' + ico + ' ' + escH(item.produto || '') + '</strong>';
+      if (item.dose_informada) html += ' — Dose: ' + escH(item.dose_informada);
+      if (item.motivo) html += '<br><span style="font-size:10.5px;">' + escH(item.motivo) + '</span>';
+      html += '</div>';
+    });
+  }
+
+  if (data.compatibilidade_calda && data.compatibilidade_calda !== 'OK') {
+    html += '<div class="ia-calda">🧪 Compatibilidade da calda: <strong>' +
+            escH(data.compatibilidade_calda) + '</strong>';
+    if (data.observacao_calda) html += ' — ' + escH(data.observacao_calda);
+    html += '</div>';
+  }
+
+  if (data.recomendacoes) {
+    html += '<div class="ia-rec">💡 ' + escH(data.recomendacoes) + '</div>';
+  }
+
+  res.className = 'ia-result ' + cls;
+  res.innerHTML = html;
+  res.style.display = 'block';
+  res.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
 {% if rec and rec.cultura_id %}
 document.addEventListener('DOMContentLoaded', () => { atualizarBadgeCultura("{{ rec.cultura.nome if rec and rec.cultura else '' }}"); atualizarStatusGeral(); document.querySelectorAll('.cust-sel-item').forEach(el => { if (el.dataset.val == "{{ rec.cultura_id }}") el.classList.add('selected'); }); });
 {% endif %}

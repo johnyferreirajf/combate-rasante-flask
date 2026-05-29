@@ -471,6 +471,108 @@ def api_culturas():
     cs = Cultura.query.filter_by(ativo=True).order_by(Cultura.nome).all()
     return jsonify([c.to_dict() for c in cs])
 
+
+@receituario_bp.route("/api/receituario/validar-ia", methods=["POST"])
+def api_validar_ia():
+    import os, json as _json
+    import requests as _req
+
+    data = request.get_json() or {}
+    cultura_nome = data.get("cultura_nome", "Nao informada")
+    produtos = data.get("produtos", [])
+    volume_calda = str(data.get("volume_calda", "nao informado"))
+    num_aplic = str(data.get("num_aplicacoes", 1))
+    equipamento = data.get("equipamento", "Aeronave agricola")
+
+    if not produtos:
+        return jsonify({"status_geral": "SEM_DADOS",
+                        "resumo": "Nenhum produto informado.",
+                        "itens": [], "recomendacoes": ""})
+
+    linhas = []
+    for p in produtos:
+        linha = ("  * " + str(p.get("nome","?")) +
+                 " | IA: " + str(p.get("ia","?")) +
+                 " | Dose: " + str(p.get("dose","N/I")) +
+                 " " + str(p.get("unidade","")) +
+                 " | Aplic: " + str(p.get("num_aplic",1)) + "x")
+        linhas.append(linha)
+    produtos_txt = "\n".join(linhas)
+
+    fmt = ('{"status_geral":"APROVADO|ALERTA|REPROVADO",'
+           '"resumo":"texto curto",'
+           '"itens":[{"produto":"nome","dose_informada":"dose",'
+           '"status":"OK|ALERTA|REPROVADO","motivo":"justificativa"}],'
+           '"compatibilidade_calda":"OK|ALERTA|INCOMPATIVEL",'
+           '"observacao_calda":"texto",'
+           '"recomendacoes":"texto"}')
+
+    system_prompt = (
+        "Voce e um engenheiro agronomo especialista em aviacao agricola no Brasil. "
+        "Analise rigorosamente receituarios agronomicos. "
+        "Doses fora dos limites registrados no MAPA = REPROVADO. "
+        "Dose absurda (ex: 1000 L/ha de qualquer produto) = REPROVADO imediato. "
+        "Retorne SOMENTE JSON valido: " + fmt
+    )
+
+    user_msg = (
+        "Valide este receituario para aviacao agricola:" + chr(10) +
+        "CULTURA: " + cultura_nome + chr(10) +
+        "EQUIPAMENTO: " + equipamento + chr(10) +
+        "VOLUME CALDA: " + volume_calda + " L/ha" + chr(10) +
+        "APLICACOES: " + num_aplic + chr(10) + chr(10) +
+        "PRODUTOS:" + chr(10) + produtos_txt + chr(10) + chr(10) +
+        "1. Dose dentro dos limites MAPA para esta cultura?" + chr(10) +
+        "2. Produtos compativeis na mesma calda?" + chr(10) +
+        "3. Volume de calda adequado para aviacao (10-30 L/ha)?" + chr(10) +
+        "4. Restricoes para aplicacao aerea?" + chr(10) +
+        "RIGOROSO: dose absurda = REPROVADO imediato."
+    )
+
+    api_key = os.getenv("ANTHROPIC_API_KEY", "")
+    if not api_key:
+        return jsonify({
+            "status_geral": "ERRO",
+            "resumo": "ANTHROPIC_API_KEY nao configurada.",
+            "itens": [],
+            "recomendacoes": "Configure ANTHROPIC_API_KEY nas variaveis do Railway."
+        }), 503
+
+    try:
+        resp = _req.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-sonnet-4-20250514",
+                "max_tokens": 1500,
+                "system": system_prompt,
+                "messages": [{"role": "user", "content": user_msg}],
+            },
+            timeout=35,
+        )
+        resp.raise_for_status()
+        raw = resp.json()["content"][0]["text"].strip()
+        if "```" in raw:
+            parts = raw.split("```")
+            raw = parts[1] if len(parts) > 1 else raw
+            if raw.lower().startswith("json"):
+                raw = raw[4:]
+        resultado = _json.loads(raw.strip())
+        return jsonify(resultado)
+    except _json.JSONDecodeError:
+        return jsonify({"status_geral": "ERRO",
+                        "resumo": "IA retornou resposta invalida.",
+                        "itens": [], "recomendacoes": ""})
+    except Exception as e:
+        return jsonify({"status_geral": "ERRO",
+                        "resumo": "Erro: " + str(e)[:150],
+                        "itens": [], "recomendacoes": ""}), 500
+
+
 def _salvar_receituario(form, rec, func_id=None):
     from app.models.receituario import (Receituario, ItemReceituario)
 
