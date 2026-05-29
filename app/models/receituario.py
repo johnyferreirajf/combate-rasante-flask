@@ -651,7 +651,10 @@ _NOVOS_PRODUTOS = [
 
 
 def seed_produtos_novos():
-    """Adiciona produtos que ainda não existem no banco (roda a cada startup)."""
+    """Adiciona produtos que ainda nao existem no banco.
+    Tambem remove duplicatas causadas por race condition no startup.
+    Roda a cada inicializacao do gunicorn — seguro para multiplos workers.
+    """
     if not _NOVOS_PRODUTOS:
         return
 
@@ -659,39 +662,69 @@ def seed_produtos_novos():
     if not cult_map:
         return
 
+    # ── 1. Remover duplicatas (race condition entre workers) ─────────────────
+    try:
+        from sqlalchemy import func as _func
+        # Subquery: menor id por nome_comercial (o que vamos MANTER)
+        keep_ids = (
+            db.session.query(_func.min(ProdutoAgricola.id))
+            .group_by(ProdutoAgricola.nome_comercial)
+            .subquery()
+        )
+        duplicados = ProdutoAgricola.query.filter(
+            ~ProdutoAgricola.id.in_(
+                db.session.query(keep_ids.c[0])
+            )
+        ).all()
+        if duplicados:
+            for dup in duplicados:
+                # Remover compatibilidades do duplicado primeiro
+                ProdutoCultura.query.filter_by(produto_id=dup.id).delete()
+                db.session.delete(dup)
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+    # ── 2. Adicionar produtos novos ───────────────────────────────────────────
+    # Recarregar nomes existentes APOS limpeza
+    existentes = {p.nome_comercial for p in ProdutoAgricola.query.with_entities(
+        ProdutoAgricola.nome_comercial).all()}
+
     adicionados = 0
     for row in _NOVOS_PRODUTOS:
         (nome, ia, classe, fab, mapa, form, dmin, dmax, un,
          epi, aerea, mot_aerea, compat) = row
 
-        if ProdutoAgricola.query.filter_by(nome_comercial=nome).first():
-            continue  # já existe
+        if nome in existentes:
+            continue  # ja existe
 
-        p = ProdutoAgricola(
-            nome_comercial=nome, ingrediente_ativo=ia,
-            classe_agronomica=classe, fabricante=fab,
-            registro_mapa=mapa, formulacao=form,
-            dose_min=float(dmin) if dmin else None,
-            dose_max=float(dmax) if dmax else None,
-            unidade=un, epi_obrigatorio=epi,
-            aplicacao_aerea=aerea, motivo_aerea=mot_aerea,
-            ativo=True,
-        )
-        db.session.add(p)
-        db.session.flush()
+        try:
+            p = ProdutoAgricola(
+                nome_comercial=nome, ingrediente_ativo=ia,
+                classe_agronomica=classe, fabricante=fab,
+                registro_mapa=mapa, formulacao=form,
+                dose_min=float(dmin) if dmin else None,
+                dose_max=float(dmax) if dmax else None,
+                unidade=un, epi_obrigatorio=epi,
+                aplicacao_aerea=aerea, motivo_aerea=mot_aerea,
+                ativo=True,
+            )
+            db.session.add(p)
+            db.session.flush()
 
-        for cult_nome, val in compat.items():
-            if isinstance(val, tuple):
-                comp, motivo = val[0], val[1]
-            else:
-                comp, motivo = "SIM", ""
-            cid = cult_map.get(cult_nome)
-            if cid:
-                db.session.add(ProdutoCultura(
-                    produto_id=p.id, cultura_id=cid,
-                    compatibilidade=comp, motivo=motivo,
-                ))
-        adicionados += 1
+            for cult_nome, val in compat.items():
+                comp   = val[0] if isinstance(val, tuple) else "SIM"
+                motivo = val[1] if isinstance(val, tuple) else ""
+                cid = cult_map.get(cult_nome)
+                if cid:
+                    db.session.add(ProdutoCultura(
+                        produto_id=p.id, cultura_id=cid,
+                        compatibilidade=comp, motivo=motivo,
+                    ))
+            existentes.add(nome)
+            adicionados += 1
+        except Exception:
+            db.session.rollback()
 
     if adicionados:
         db.session.commit()
