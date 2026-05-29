@@ -453,3 +453,245 @@ def seed_produtos():
                 ))
 
     db.session.commit()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Produtos adicionais — adicionados incrementalmente a cada startup
+# ─────────────────────────────────────────────────────────────────────────────
+
+_NOVOS_PRODUTOS = [
+    # (nome, ia, classe, fab, mapa, form, d_min, d_max, un, epi, aerea, mot_aerea,
+    #  {cultura: (SIM|NAO|TALVEZ, motivo)})
+
+    # ── INSETICIDAS ──────────────────────────────────────────────────────────
+    ("Altacor WG",
+     "Clorantraniliprole 350 g/kg", "Inseticida", "Corteva (Du Pont)", "BR09402019", "WG",
+     0.03, 0.10, "kg/ha", "Luva nitrílica, máscara PFF2, avental, óculos",
+     "SIM", "Clorantraniliprole registrado para aplicação aérea em soja, milho, algodão e cana.",
+     {"Soja":("SIM","Lagartas — altamente eficaz"), "Milho":("SIM","Spodoptera frugiperda"),
+      "Algodão":("SIM","Alabama, lagartas"), "Cana-de-açúcar":("SIM","Broca-da-cana"),
+      "Feijão":("SIM",""), "Trigo":("SIM",""), "Café":("SIM","Broca-do-café"),
+      "Arroz":("SIM",""), "Sorgo":("SIM",""), "Girassol":("SIM",""),
+      "Pastagem":("TALVEZ","Verificar registro"), "Citros":("SIM","Minadora")}),
+
+    ("Actara 250 WG",
+     "Tiametoxam 250 g/kg", "Inseticida", "Syngenta", "BR08002019", "WG",
+     0.1, 0.2, "kg/ha", "Luva neoprene, máscara PFF2, avental, óculos",
+     "SIM", "Tiametoxam registrado para aplicação aérea em diversas culturas.",
+     {"Soja":("SIM","Percevejo, mosca-branca, pulgão"), "Milho":("SIM","Cigarrinha, pulgão"),
+      "Algodão":("SIM","Mosca-branca, tripes"), "Cana-de-açúcar":("SIM","Cigarrinha"),
+      "Trigo":("SIM","Pulgões"), "Café":("SIM",""), "Citros":("SIM",""),
+      "Feijão":("SIM",""), "Arroz":("SIM",""), "Sorgo":("SIM",""),
+      "Pastagem":("SIM","Cigarrinha-das-pastagens"), "Girassol":("SIM","")}),
+
+    ("Proclaim 050 WG",
+     "Emamectina benzoato 50 g/kg", "Inseticida", "Syngenta", "BR07802019", "WG",
+     0.1, 0.2, "kg/ha", "Luva nitrílica, máscara PFF2, avental, óculos, bota",
+     "SIM", "Emamectina registrada para aplicação aérea em soja, algodão e milho.",
+     {"Soja":("SIM","Lagartas e Helicoverpa"), "Algodão":("SIM","Alabama, Helicoverpa"),
+      "Milho":("SIM","Spodoptera, Helicoverpa"), "Café":("SIM","Bicho-mineiro"),
+      "Feijão":("SIM",""), "Tomate":("SIM",""), "Sorgo":("SIM",""), "Girassol":("SIM",""),
+      "Trigo":("SIM",""), "Arroz":("SIM",""), "Cana-de-açúcar":("TALVEZ","Verificar registro"),
+      "Pastagem":("NAO","Sem registro"), "Citros":("SIM","")}),
+
+    ("Certero SC",
+     "Triflumurom 480 g/L", "Inseticida", "Bayer CropScience", "BR03602019", "SC",
+     0.06, 0.08, "L/ha", "Luva nitrílica, avental, óculos",
+     "SIM", "Triflumurom (IGR) registrado para aplicação aérea.",
+     {"Soja":("SIM","Lagartas — IGR seletivo"), "Milho":("SIM","Spodoptera"),
+      "Algodão":("SIM","Alabama, Helicoverpa"), "Cana-de-açúcar":("SIM","Broca-da-cana"),
+      "Feijão":("SIM",""), "Café":("SIM",""), "Girassol":("SIM",""), "Sorgo":("SIM",""),
+      "Arroz":("SIM",""), "Trigo":("SIM",""),
+      "Pastagem":("TALVEZ","Verificar registro"), "Citros":("SIM","")}),
+
+    # ── FUNGICIDAS ────────────────────────────────────────────────────────────
+    ("Aproach Prima",
+     "Picoxistrobina 200 g/L + Ciproconazol 80 g/L", "Fungicida", "Corteva", "BR06402019", "SC",
+     0.25, 0.3, "L/ha", "Luva nitrílica, máscara PFF2, avental, óculos",
+     "SIM", "Picoxistrobina + Ciproconazol registrados para aplicação aérea.",
+     {"Soja":("SIM","Ferrugem, antracnose"), "Milho":("SIM","Helmintosporiose, ferrugem"),
+      "Trigo":("SIM","Septoriose, giberela"), "Algodão":("SIM","Ramulária"),
+      "Feijão":("SIM",""), "Arroz":("SIM","Brusone"), "Sorgo":("SIM",""), "Girassol":("SIM",""),
+      "Cana-de-açúcar":("TALVEZ","Verificar registro"),
+      "Café":("TALVEZ","Verificar registro"), "Pastagem":("NAO","Sem registro"),
+      "Citros":("NAO","Sem registro")}),
+
+    ("Amistar Top SC",
+     "Azoxistrobina 200 g/L + Difenoconazol 125 g/L", "Fungicida", "Syngenta", "BR06502019", "SC",
+     0.3, 0.5, "L/ha", "Luva nitrílica, máscara PFF2, avental, óculos",
+     "SIM", "Azoxistrobina + Difenoconazol registrados para aplicação aérea.",
+     {"Soja":("SIM","Ferrugem, antracnose, DFC"), "Milho":("SIM","Helmintosporiose"),
+      "Trigo":("SIM","Septoriose, mancha-amarela"), "Algodão":("SIM","Ramulária"),
+      "Café":("SIM","Ferrugem, cercospora"), "Feijão":("SIM",""), "Arroz":("SIM","Brusone"),
+      "Sorgo":("SIM",""), "Girassol":("SIM","Sclerotinia"), "Citros":("SIM","Melanose"),
+      "Cana-de-açúcar":("TALVEZ","Verificar registro"), "Pastagem":("NAO","Sem registro")}),
+
+    ("Score SC",
+     "Difenoconazol 250 g/L", "Fungicida", "Syngenta", "BR00402019", "SC",
+     0.3, 0.5, "L/ha", "Luva nitrílica, máscara PFF2, avental",
+     "SIM", "Difenoconazol registrado para aplicação aérea em diversas culturas.",
+     {"Soja":("SIM","Ferrugem, antracnose"), "Milho":("SIM",""), "Trigo":("SIM",""),
+      "Algodão":("SIM",""), "Café":("SIM","Ferrugem"), "Feijão":("SIM",""),
+      "Arroz":("SIM","Brusone"), "Sorgo":("SIM",""), "Girassol":("SIM",""),
+      "Citros":("SIM",""), "Cana-de-açúcar":("TALVEZ","Verificar"),
+      "Pastagem":("NAO","Sem registro")}),
+
+    # ── FERTILIZANTES FOLIARES ────────────────────────────────────────────────
+    ("Volt Fertilizante Foliar",
+     "Boro 1,5% + Zinco 3,0% + Manganês 2,0% + Molibdênio 0,2%",
+     "Fertilizante Foliar", "Tradecorp / Stoller", "BR—FERT—VOLT", "SC",
+     0.5, 2.0, "L/ha", "Luva nitrílica, óculos — produto fertilizante de baixo risco",
+     "SIM", "Fertilizante foliar registrado para aplicação aérea. Não é agrotóxico — sem restrições de modalidade.",
+     {c: ("SIM", "Fertilizante foliar — uso geral em todas as culturas via aérea")
+      for c in ["Soja","Milho","Cana-de-açúcar","Algodão","Trigo","Arroz",
+                "Pastagem","Café","Feijão","Citros","Sorgo","Girassol"]}),
+
+    ("Boro Foliar 15%",
+     "Boro 150 g/L (ácido bórico)", "Fertilizante Foliar", "Vários", "BR—FERT—BORO", "SC",
+     0.3, 1.0, "L/ha", "Luva nitrílica, óculos",
+     "SIM", "Fertilizante foliar de boro — aplicação aérea permitida.",
+     {c: ("SIM", "Micronutriente foliar — sem restrições de modalidade de aplicação")
+      for c in ["Soja","Milho","Cana-de-açúcar","Algodão","Trigo","Arroz",
+                "Pastagem","Café","Feijão","Citros","Sorgo","Girassol"]}),
+
+    ("Zinc 700 SC",
+     "Zinco 700 g/L", "Fertilizante Foliar", "Vários", "BR—FERT—ZN", "SC",
+     0.3, 1.0, "L/ha", "Luva nitrílica, óculos",
+     "SIM", "Fertilizante foliar de zinco — aplicação aérea permitida.",
+     {c: ("SIM", "Micronutriente foliar") for c in
+      ["Soja","Milho","Cana-de-açúcar","Algodão","Trigo","Arroz",
+       "Pastagem","Café","Feijão","Citros","Sorgo","Girassol"]}),
+
+    # ── ADJUVANTES ────────────────────────────────────────────────────────────
+    ("Forth Neutro (Adjuvante)",
+     "Espalhante adesivo neutro (alquilpoliglicosídeo)", "Adjuvante",
+     "Forth Jardim / Agroter", "BR—ADJ—FORTH", "EC",
+     0.05, 0.3, "L/100L calda", "Luva nitrílica, óculos",
+     "SIM", "Adjuvante neutro — uso geral para melhorar cobertura e adesão em aplicação aérea.",
+     {c: ("SIM", "Adjuvante — sem restrição de cultura ou modalidade de aplicação")
+      for c in ["Soja","Milho","Cana-de-açúcar","Algodão","Trigo","Arroz",
+                "Pastagem","Café","Feijão","Citros","Sorgo","Girassol"]}),
+
+    ("Break-Thru S 240 (Silwet)",
+     "Organosilicone 240 g/L (polialquilenglicol modificado)",
+     "Adjuvante", "Evonik", "BR—ADJ—SILW", "EC",
+     0.02, 0.1, "L/100L calda", "Luva nitrílica, óculos",
+     "SIM", "Adjuvante de silicone de alto desempenho — aprovado para aviação agrícola.",
+     {c: ("SIM", "Adjuvante de silicone — melhora penetração e cobertura em aplicação aérea")
+      for c in ["Soja","Milho","Cana-de-açúcar","Algodão","Trigo","Arroz",
+                "Pastagem","Café","Feijão","Citros","Sorgo","Girassol"]}),
+
+    ("Dash HC (Adjuvante BASF)",
+     "Metiloleato de metilo + álcool etoxilado",
+     "Adjuvante", "BASF", "BR—ADJ—DASH", "EC",
+     0.25, 0.5, "L/100L calda", "Luva nitrílica, avental",
+     "SIM", "Adjuvante de óleo mineral — registrado para uso com herbicidas em aplicação aérea.",
+     {c: ("SIM", "Adjuvante — uso geral com herbicidas e fungicidas")
+      for c in ["Soja","Milho","Cana-de-açúcar","Algodão","Trigo","Arroz",
+                "Pastagem","Café","Feijão","Citros","Sorgo","Girassol"]}),
+
+    # ── BIOLÓGICOS ADICIONAIS ─────────────────────────────────────────────────
+    ("Nomuraea rileyi WP",
+     "Nomuraea rileyi", "Bioinsumo / Fungo Entomopatogênico",
+     "Koppert / Embrapa", "BR—BIO—NOM", "WP",
+     0.5, 2.0, "kg/ha", "Máscara PFF1, luva — produto biológico",
+     "SIM", "Nomuraea rileyi registrado para aplicação aérea. Controle de lagartas.",
+     {"Soja":("SIM","Lagartas — Anticarsia gemmatalis"), "Milho":("SIM","Spodoptera"),
+      "Algodão":("SIM","Alabama, Helicoverpa"),
+      **{c: ("SIM","Controle de lagartas via fungo entomopatogênico") for c in
+         ["Trigo","Arroz","Cana-de-açúcar","Feijão","Café","Citros","Sorgo","Girassol","Pastagem"]}}),
+
+    ("Baculovirus Anticarsia WP",
+     "Baculovirus Anticarsia gemmatalis (AgMNPV)",
+     "Bioinsumo / Biopesticida", "Cooperativas / Embrapa", "BR—BIO—BAC", "WP",
+     0.1, 0.3, "kg/ha", "Máscara PFF1, luva — produto biológico",
+     "SIM", "Baculovirus Anticarsia: bioinsumo clássico para controle de lagarta-da-soja. Aplicação aérea permitida.",
+     {"Soja":("SIM","Controle específico de Anticarsia gemmatalis — lagarta-da-soja"),
+      **{c: ("TALVEZ","Especificidade para Anticarsia — verificar eficácia nesta cultura") for c in
+         ["Milho","Algodão","Trigo","Arroz","Cana-de-açúcar","Feijão","Café",
+          "Citros","Sorgo","Girassol","Pastagem"]}}),
+
+    ("Spod-X LC (Baculovirus Spodoptera)",
+     "Baculovirus Spodoptera frugiperda (SfMNPV)",
+     "Bioinsumo / Biopesticida", "Koppert", "BR—BIO—SPD", "LC",
+     0.2, 0.4, "L/ha", "Máscara PFF1, luva",
+     "SIM", "Baculovirus específico para lagarta-do-cartucho. Aplicação aérea permitida.",
+     {"Milho":("SIM","Controle de Spodoptera frugiperda — lagarta-do-cartucho"),
+      "Soja":("SIM","Spodoptera cosmioides"), "Algodão":("SIM","Spodoptera"),
+      **{c: ("TALVEZ","Especificidade para Spodoptera") for c in
+         ["Trigo","Arroz","Cana-de-açúcar","Feijão","Café","Citros","Sorgo","Girassol","Pastagem"]}}),
+
+    ("DiPel WP (Bt kurstaki)",
+     "Bacillus thuringiensis var. kurstaki (140 BIU/kg)",
+     "Bioinsumo / Inseticida Biológico", "Certis", "BR09702019", "WP",
+     0.5, 2.0, "kg/ha", "Máscara PFF1, luva",
+     "SIM", "Bt kurstaki registrado para aplicação aérea. Controle de lepidópteros.",
+     {c: ("SIM", "Controle de lagartas — Bt kurstaki para aplicação aérea") for c in
+      ["Soja","Milho","Algodão","Cana-de-açúcar","Trigo","Arroz","Café",
+       "Feijão","Citros","Sorgo","Girassol","Pastagem"]}),
+
+    ("Trichoderma harzianum WP",
+     "Trichoderma harzianum", "Bioinsumo / Fungicida Biológico",
+     "Koppert / Itaforte", "BR—BIO—TRIC", "WP",
+     0.5, 2.0, "kg/ha", "Máscara PFF1, luva",
+     "SIM", "Trichoderma registrado para aplicação aérea como biofungicida.",
+     {c: ("SIM","Controle biológico de doenças fúngicas via aplicação aérea") for c in
+      ["Soja","Milho","Algodão","Cana-de-açúcar","Trigo","Arroz","Café",
+       "Feijão","Citros","Sorgo","Girassol","Pastagem"]}),
+
+    ("Rizos Pro (Bacillus subtilis)",
+     "Bacillus subtilis cepa QST 713", "Bioinsumo / Fungicida Biológico",
+     "Bayer / Agraquest", "BR—BIO—BSU", "WP",
+     0.5, 2.0, "L/ha", "Máscara PFF1, luva — baixíssimo risco",
+     "SIM", "Bacillus subtilis biofungicida registrado para aplicação aérea.",
+     {c: ("SIM","Controle biológico de fungos foliares") for c in
+      ["Soja","Milho","Algodão","Trigo","Café","Feijão","Citros","Sorgo","Girassol",
+       "Cana-de-açúcar","Arroz","Pastagem"]}),
+]
+
+
+def seed_produtos_novos():
+    """Adiciona produtos que ainda não existem no banco (roda a cada startup)."""
+    if not _NOVOS_PRODUTOS:
+        return
+
+    cult_map = {c.nome: c.id for c in Cultura.query.all()}
+    if not cult_map:
+        return
+
+    adicionados = 0
+    for row in _NOVOS_PRODUTOS:
+        (nome, ia, classe, fab, mapa, form, dmin, dmax, un,
+         epi, aerea, mot_aerea, compat) = row
+
+        if ProdutoAgricola.query.filter_by(nome_comercial=nome).first():
+            continue  # já existe
+
+        p = ProdutoAgricola(
+            nome_comercial=nome, ingrediente_ativo=ia,
+            classe_agronomica=classe, fabricante=fab,
+            registro_mapa=mapa, formulacao=form,
+            dose_min=float(dmin) if dmin else None,
+            dose_max=float(dmax) if dmax else None,
+            unidade=un, epi_obrigatorio=epi,
+            aplicacao_aerea=aerea, motivo_aerea=mot_aerea,
+            ativo=True,
+        )
+        db.session.add(p)
+        db.session.flush()
+
+        for cult_nome, val in compat.items():
+            if isinstance(val, tuple):
+                comp, motivo = val[0], val[1]
+            else:
+                comp, motivo = "SIM", ""
+            cid = cult_map.get(cult_nome)
+            if cid:
+                db.session.add(ProdutoCultura(
+                    produto_id=p.id, cultura_id=cid,
+                    compatibilidade=comp, motivo=motivo,
+                ))
+        adicionados += 1
+
+    if adicionados:
+        db.session.commit()

@@ -268,9 +268,11 @@ def create_app():
 
         # Seed Receituário Agronômico (culturas + produtos locais)
         try:
-            from app.models.receituario import seed_receituario, seed_produtos
+            from app.models.receituario import (seed_receituario, seed_produtos,
+                                                 seed_produtos_novos)
             seed_receituario()
             seed_produtos()
+            seed_produtos_novos()  # adiciona produtos novos sem apagar existentes
         except Exception as _se:
             pass
 
