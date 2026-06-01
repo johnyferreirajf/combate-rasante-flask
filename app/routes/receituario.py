@@ -237,7 +237,7 @@ def func_novo():
     clientes = User.query.filter_by(is_admin=False).order_by(User.name).all()
     return render_template("receituario_form.html", current_employee=emp,
                            current_user=get_current_user(),
-                           clientes=clientes, rec=None, culturas=culturas, produtos=[], clientes=[], modo="func")
+                           clientes=clientes, rec=None, culturas=culturas, produtos=[], modo="func")
 
 @receituario_bp.route("/func/receituario/<int:rid>")
 @_func_login_required
