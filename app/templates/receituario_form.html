@@ -231,10 +231,11 @@ textarea.rf-input{resize:vertical;min-height:72px;}
       <div class="rf-field" style="grid-column:span 2;">
         <label class="rf-label">Nome do Produtor *</label>
         {% if modo=='admin' and clientes %}
-        <select name="nome_produtor" id="clienteSelect" class="rf-input rf-select" onchange="preencherCliente(this)">
-          <option value="">— Selecionar ou digitar abaixo —</option>
-          {% for c in clientes %}<option value="{{ c.name }}">{{ c.name }}</option>{% endfor %}
+        <select id="clienteSelect" class="rf-input rf-select" onchange="preencherCliente(this)">
+          <option value="">— Selecionar cliente cadastrado —</option>
+          {% for c in clientes %}<option value="{{ c.id }}" data-nome="{{ c.name }}">{{ c.name }}</option>{% endfor %}
         </select>
+        <div id="clienteLoadingMsg" style="display:none;font-size:11px;color:#86efac;margin-top:4px;">⏳ Carregando dados...</div>
         <input class="rf-input" type="text" name="nome_produtor" id="nomeProdutorInput"
                placeholder="Nome completo do produtor" value="{{ rec.nome_produtor if rec else '' }}" required style="margin-top:6px;">
         {% else %}
@@ -497,6 +498,40 @@ let culturaAtual = { id: {{ (rec.cultura_id if rec and rec.cultura_id else 'null
 let produtosAdicionados = {};  
 let searchTimer = null;
 
+// ── Auto-preenchimento de cliente ─────────────────────────────────────────
+function preencherCliente(sel) {
+  var uid = sel.value;
+  if (!uid) return;
+  var nome = sel.options[sel.selectedIndex].getAttribute('data-nome') || '';
+  var nomeInp = document.getElementById('nomeProdutorInput');
+  if (nomeInp) nomeInp.value = nome;
+  var msg = document.getElementById('clienteLoadingMsg');
+  if (msg) msg.style.display = 'block';
+  fetch('/api/receituario/cliente/' + uid)
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      if (msg) msg.style.display = 'none';
+      function setV(nm, val) {
+        var el = document.querySelector('[name="' + nm + '"]');
+        if (el && val) el.value = val;
+      }
+      setV('nome_produtor',     d.nome_produtor);
+      setV('cpf_cnpj_produtor', d.cpf_cnpj);
+      setV('telefone_produtor', d.telefone);
+      setV('nome_propriedade',  d.nome_propriedade);
+      setV('municipio',         d.municipio);
+      setV('car',               d.car);
+      if (d.estado) {
+        var es = document.querySelector('[name="estado"]');
+        if (es) Array.from(es.options).forEach(function(o){ o.selected = o.value === d.estado; });
+      }
+      if (d.nome_produtor || d.cpf_cnpj)
+        showToast('Dados de ' + (d.nome_produtor || 'cliente') + ' preenchidos!', 'ok');
+    })
+    .catch(function(){ if (msg) msg.style.display = 'none'; });
+}
+
+// ── Inicialização ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   {% if rec and rec.itens %}
   {% for item in rec.itens %}

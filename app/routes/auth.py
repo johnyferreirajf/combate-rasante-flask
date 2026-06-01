@@ -277,8 +277,14 @@ def admin_cliente_editar(uid):
             if dup and dup.id != uid:
                 flash("Este e-mail já está em uso.", "error")
                 return redirect(url_for("auth.admin_cliente_editar", uid=uid))
-            user.name  = nome
-            user.email = email
+            user.name             = nome
+            user.email            = email
+            user.cpf_cnpj         = (request.form.get("cpf_cnpj")         or "").strip()
+            user.telefone         = (request.form.get("telefone")         or "").strip()
+            user.nome_propriedade = (request.form.get("nome_propriedade") or "").strip()
+            user.municipio        = (request.form.get("municipio")        or "").strip()
+            user.estado           = (request.form.get("estado")           or "").strip().upper()[:2]
+            user.car              = (request.form.get("car")              or "").strip()
             db.session.commit()
             flash("Dados atualizados!", "success")
 

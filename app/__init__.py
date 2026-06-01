@@ -44,6 +44,12 @@ def create_app():
                 _migrations = [
                     # ── Receituário Agronômico ──────────────────────────────
                     "ALTER TABLE employees ADD COLUMN IF NOT EXISTS pode_receituario BOOLEAN NOT NULL DEFAULT FALSE",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS cpf_cnpj VARCHAR(30)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS telefone VARCHAR(30)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS nome_propriedade VARCHAR(300)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS municipio VARCHAR(200)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS estado VARCHAR(2)",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS car VARCHAR(100)",
                     "ALTER TABLE produtos_agricolas ADD COLUMN IF NOT EXISTS aplicacao_aerea VARCHAR(12) DEFAULT 'VERIFICAR'",
                     "ALTER TABLE produtos_agricolas ADD COLUMN IF NOT EXISTS motivo_aerea TEXT",
                     """CREATE TABLE IF NOT EXISTS culturas (

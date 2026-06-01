@@ -17,6 +17,8 @@
     background:rgba(255,255,255,.10);color:#fff;font-size:13px;font-family:inherit;
     outline:none;transition:border-color .15s;box-sizing:border-box;}
 .ei::placeholder{color:var(--m);}
+.ei option{background:#0a2e1e;color:#e2f5e9;}
+.ei option:hover,.ei option:checked{background:#16a34a;color:#fff;}
 .ei:focus{border-color:var(--bh);}
 .er{display:flex;justify-content:flex-end;gap:8px;padding-top:4px;}
 .eb{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:10px;
@@ -37,21 +39,78 @@
     <a href="{{ url_for('auth.admin') }}" class="btn btn--ghost">← Voltar a Clientes</a>
   </div>
 
-  {# ── Dados ── #}
+  {# ── Dados de acesso ── #}
   <div class="eq-card">
-    <div class="eq-title">✏ Editar dados — {{ cliente.name }}</div>
+    <div class="eq-title">✏ Dados de acesso — {{ cliente.name }}</div>
     <form method="POST" class="ef">
       <input type="hidden" name="acao" value="dados">
       <div class="ef-row">
         <div>
-          <label class="el">Nome completo</label>
+          <label class="el">Nome completo *</label>
           <input class="ei" type="text" name="name" value="{{ cliente.name }}" required>
         </div>
         <div>
-          <label class="el">E-mail (login)</label>
+          <label class="el">E-mail (login) *</label>
           <input class="ei" type="email" name="email" value="{{ cliente.email }}" required>
         </div>
       </div>
+
+      {# ── Dados do Produtor para Receituário Agronômico ── #}
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12);">
+        <div style="font-size:12px;font-weight:900;color:#86efac;margin-bottom:12px;
+                    display:flex;align-items:center;gap:6px;">
+          🌿 Dados do Produtor
+          <span style="font-size:10px;font-weight:400;color:rgba(255,255,255,.5);">
+            — auto-preenchidos no Receituário Agronômico
+          </span>
+        </div>
+        <div class="ef-row">
+          <div>
+            <label class="el">CPF / CNPJ</label>
+            <input class="ei" type="text" name="cpf_cnpj"
+                   placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                   value="{{ cliente.cpf_cnpj or '' }}">
+          </div>
+          <div>
+            <label class="el">Telefone</label>
+            <input class="ei" type="text" name="telefone"
+                   placeholder="(64) 99900-0000"
+                   value="{{ cliente.telefone or '' }}">
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <label class="el">Nome da Propriedade / Fazenda</label>
+          <input class="ei" type="text" name="nome_propriedade"
+                 placeholder="Ex.: Fazenda Boa Vista"
+                 value="{{ cliente.nome_propriedade or '' }}">
+        </div>
+        <div class="ef-row" style="margin-top:10px;">
+          <div>
+            <label class="el">Município</label>
+            <input class="ei" type="text" name="municipio"
+                   placeholder="Vicentinópolis"
+                   value="{{ cliente.municipio or '' }}">
+          </div>
+          <div>
+            <label class="el">Estado (UF)</label>
+            <select class="ei" name="estado">
+              {% set ufs = ['','AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'] %}
+              {% for uf in ufs %}
+              <option value="{{ uf }}" {% if cliente.estado == uf %}selected{% endif %}>
+                {{ uf or '— UF —' }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <label class="el">CAR (Cadastro Ambiental Rural)</label>
+          <input class="ei" type="text" name="car"
+                 placeholder="GO-XXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXX"
+                 value="{{ cliente.car or '' }}">
+        </div>
+      </div>
+
       <div class="er">
         <a href="{{ url_for('auth.admin') }}" class="eb">Cancelar</a>
         <button class="eb p" type="submit">💾 Salvar dados</button>

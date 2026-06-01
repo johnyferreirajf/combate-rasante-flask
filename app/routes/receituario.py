@@ -465,6 +465,23 @@ def api_validar(pid):
         print(f"Erro Validação MAPA {pid}: {e}")
         return jsonify({"compatibilidade": "TALVEZ", "motivo": "Não foi possível conectar à bula online."})
 
+@receituario_bp.route("/api/receituario/cliente/<int:uid>")
+def api_cliente(uid):
+    """Retorna dados do produtor para auto-preenchimento no RA."""
+    from app.models.user import User
+    u = User.query.get_or_404(uid)
+    return jsonify({
+        "id":               u.id,
+        "nome_produtor":    u.name or "",
+        "cpf_cnpj":         u.cpf_cnpj or "",
+        "telefone":         u.telefone or "",
+        "nome_propriedade": u.nome_propriedade or "",
+        "municipio":        u.municipio or "",
+        "estado":           u.estado or "",
+        "car":              u.car or "",
+    })
+
+
 @receituario_bp.route("/api/receituario/culturas")
 def api_culturas():
     from app.models.receituario import Cultura

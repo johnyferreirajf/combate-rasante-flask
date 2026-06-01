@@ -16,6 +16,14 @@ class User(db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Dados do produtor para Receituário Agronômico
+    cpf_cnpj        = db.Column(db.String(30))
+    telefone        = db.Column(db.String(30))
+    nome_propriedade = db.Column(db.String(300))
+    municipio       = db.Column(db.String(200))
+    estado          = db.Column(db.String(2))
+    car             = db.Column(db.String(100))
+
     def __repr__(self):
         return f"<User {self.email}>"
 
