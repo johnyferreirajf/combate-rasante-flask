@@ -167,6 +167,43 @@ textarea.rf-input{resize:vertical;min-height:72px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .dose-rec{font-size:10px;color:#86efac;margin-top:2px;}
 
+/* ── Dropdown de cliente ── */
+.cliente-wrap{position:relative;width:100%;}
+.cliente-search-box{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-radius:10px;
+  border:1px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.10);
+  color:#fff;font-size:13px;cursor:pointer;
+  transition:border-color .15s;min-height:42px;
+  user-select:none;
+}
+.cliente-search-box:hover{border-color:rgba(34,197,94,.55);}
+.cliente-chevron{font-size:12px;color:rgba(255,255,255,.5);margin-left:8px;flex-shrink:0;}
+.cliente-dropdown{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:9000;
+  background:#0a2e1e;border:1.5px solid rgba(34,197,94,.4);
+  border-radius:12px;overflow:hidden;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.cliente-search-input{
+  width:100%;padding:10px 14px;border:none;outline:none;
+  background:#064e3b;color:#fff;font-size:13px;font-family:inherit;
+  border-bottom:1px solid rgba(255,255,255,.12);box-sizing:border-box;
+}
+.cliente-search-input::placeholder{color:rgba(255,255,255,.45);}
+.cliente-list{max-height:220px;overflow-y:auto;}
+.cliente-option{
+  padding:10px 14px;cursor:pointer;display:flex;
+  align-items:center;justify-content:space-between;gap:10px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  transition:background .12s;
+}
+.cliente-option:last-child{border-bottom:none;}
+.cliente-option:hover{background:rgba(34,197,94,.18);}
+.co-nome{font-size:13px;font-weight:700;color:#e2f5e9;}
+.co-info{font-size:10px;color:rgba(255,255,255,.45);white-space:nowrap;}
+
 /* ── Validação IA ── */
 .ia-btn{display:inline-flex;align-items:center;gap:7px;padding:11px 20px;
         border-radius:11px;background:linear-gradient(135deg,#4f46e5,#7c3aed);
@@ -228,18 +265,48 @@ textarea.rf-input{resize:vertical;min-height:72px;}
   <div class="rf-sec">
     <div class="rf-sec-title">📋 Identificação do Produtor e Propriedade</div>
     <div class="rf-grid">
+      {# ── Seleção do cliente ── #}
       <div class="rf-field" style="grid-column:span 2;">
-        <label class="rf-label">Nome do Produtor *</label>
-        {% if modo=='admin' and clientes %}
-        <select id="clienteSelect" class="rf-input rf-select" onchange="preencherCliente(this)">
-          <option value="">— Selecionar cliente cadastrado —</option>
-          {% for c in clientes %}<option value="{{ c.id }}" data-nome="{{ c.name }}">{{ c.name }}</option>{% endfor %}
-        </select>
-        <div id="clienteLoadingMsg" style="display:none;font-size:11px;color:#86efac;margin-top:4px;">⏳ Carregando dados...</div>
-        <input class="rf-input" type="text" name="nome_produtor" id="nomeProdutorInput"
-               placeholder="Nome completo do produtor" value="{{ rec.nome_produtor if rec else '' }}" required style="margin-top:6px;">
+        <label class="rf-label">Produtor / Cliente *</label>
+        {% if clientes %}
+        {# Dropdown de busca de clientes #}
+        <div class="cliente-wrap" id="clienteWrap">
+          <div class="cliente-search-box" id="clienteBox" onclick="abrirClienteDropdown()">
+            <span id="clienteNomeDisplay">
+              {%- if rec and rec.nome_produtor -%}
+                {{ rec.nome_produtor }}
+              {%- else -%}
+                <span style="color:rgba(255,255,255,.45);">🔍  Buscar cliente cadastrado...</span>
+              {%- endif -%}
+            </span>
+            <span class="cliente-chevron" id="clienteChevron">▾</span>
+          </div>
+          <div class="cliente-dropdown" id="clienteDropdown" style="display:none;">
+            <input class="cliente-search-input" id="clienteSearchInput" type="text"
+                   placeholder="Digite para filtrar..." oninput="filtrarClientes(this.value)"
+                   autocomplete="off">
+            <div class="cliente-list" id="clienteList">
+              {% for c in clientes %}
+              <div class="cliente-option" onclick="selecionarCliente({{ c.id }}, '{{ c.name | e }}')"
+                   data-nome="{{ c.name | lower }}">
+                <span class="co-nome">{{ c.name }}</span>
+                <span class="co-info">{{ c.cpf_cnpj or '' }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {# Hidden input que vai para o backend #}
+        <input type="hidden" name="nome_produtor" id="nomeProdutorInput"
+               value="{{ rec.nome_produtor if rec else '' }}" required>
+        <input type="hidden" name="cliente_uid"   id="clienteUidInput"   value="">
+        <div id="clienteLoadingMsg" style="display:none;margin-top:4px;font-size:11px;color:#86efac;">
+          ⏳ Carregando dados do produtor...
+        </div>
         {% else %}
-        <input class="rf-input" type="text" name="nome_produtor" placeholder="Nome completo do produtor" value="{{ rec.nome_produtor if rec else '' }}" required>
+        <input class="rf-input" type="text" name="nome_produtor"
+               placeholder="Nome completo do produtor"
+               value="{{ rec.nome_produtor if rec else '' }}" required>
         {% endif %}
       </div>
       <div class="rf-field">
@@ -498,24 +565,54 @@ let culturaAtual = { id: {{ (rec.cultura_id if rec and rec.cultura_id else 'null
 let produtosAdicionados = {};  
 let searchTimer = null;
 
-// ── Auto-preenchimento de cliente ─────────────────────────────────────────
-function preencherCliente(sel) {
-  var uid = sel.value;
-  if (!uid) return;
-  var nome = sel.options[sel.selectedIndex].getAttribute('data-nome') || '';
+// ── Dropdown de cliente com busca ─────────────────────────────────────────
+function abrirClienteDropdown() {
+  var dd = document.getElementById('clienteDropdown');
+  var inp = document.getElementById('clienteSearchInput');
+  var ch  = document.getElementById('clienteChevron');
+  if (!dd) return;
+  var open = dd.style.display !== 'none';
+  dd.style.display = open ? 'none' : 'block';
+  ch.textContent = open ? '▾' : '▴';
+  if (!open && inp) { inp.value = ''; filtrarClientes(''); inp.focus(); }
+}
+
+function filtrarClientes(q) {
+  var q2 = q.toLowerCase();
+  document.querySelectorAll('#clienteList .cliente-option').forEach(function(opt) {
+    var nome = opt.getAttribute('data-nome') || '';
+    opt.style.display = nome.includes(q2) ? '' : 'none';
+  });
+}
+
+function selecionarCliente(uid, nome) {
+  // Fechar dropdown
+  var dd = document.getElementById('clienteDropdown');
+  var ch = document.getElementById('clienteChevron');
+  if (dd) dd.style.display = 'none';
+  if (ch) ch.textContent = '▾';
+
+  // Atualizar display e hidden input
+  var display = document.getElementById('clienteNomeDisplay');
+  if (display) display.innerHTML = '<strong>' + nome + '</strong>';
   var nomeInp = document.getElementById('nomeProdutorInput');
   if (nomeInp) nomeInp.value = nome;
+  var uidInp = document.getElementById('clienteUidInput');
+  if (uidInp) uidInp.value = uid;
+
+  // Buscar dados via API e preencher os campos
   var msg = document.getElementById('clienteLoadingMsg');
   if (msg) msg.style.display = 'block';
+
   fetch('/api/receituario/cliente/' + uid)
-    .then(function(r){ return r.json(); })
+    .then(function(r) { return r.json(); })
     .then(function(d) {
       if (msg) msg.style.display = 'none';
       function setV(nm, val) {
+        if (!val) return;
         var el = document.querySelector('[name="' + nm + '"]');
-        if (el && val) el.value = val;
+        if (el) el.value = val;
       }
-      setV('nome_produtor',     d.nome_produtor);
       setV('cpf_cnpj_produtor', d.cpf_cnpj);
       setV('telefone_produtor', d.telefone);
       setV('nome_propriedade',  d.nome_propriedade);
@@ -523,13 +620,25 @@ function preencherCliente(sel) {
       setV('car',               d.car);
       if (d.estado) {
         var es = document.querySelector('[name="estado"]');
-        if (es) Array.from(es.options).forEach(function(o){ o.selected = o.value === d.estado; });
+        if (es) Array.from(es.options).forEach(function(o) {
+          o.selected = o.value === d.estado;
+        });
       }
-      if (d.nome_produtor || d.cpf_cnpj)
-        showToast('Dados de ' + (d.nome_produtor || 'cliente') + ' preenchidos!', 'ok');
+      showToast('✅ ' + nome + ' — dados preenchidos!', 'ok');
     })
-    .catch(function(){ if (msg) msg.style.display = 'none'; });
+    .catch(function() { if (msg) msg.style.display = 'none'; });
 }
+
+// Fechar dropdown ao clicar fora
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('clienteWrap');
+  var dd   = document.getElementById('clienteDropdown');
+  var ch   = document.getElementById('clienteChevron');
+  if (wrap && dd && !wrap.contains(e.target)) {
+    dd.style.display = 'none';
+    if (ch) ch.textContent = '▾';
+  }
+});
 
 // ── Inicialização ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {

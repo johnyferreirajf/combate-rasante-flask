@@ -233,8 +233,11 @@ def func_novo():
     if request.method == "POST":
         return _salvar_receituario(request.form, None, func_id=emp.id)
 
+    from app.models.user import User
+    clientes = User.query.filter_by(is_admin=False).order_by(User.name).all()
     return render_template("receituario_form.html", current_employee=emp,
-                           current_user=get_current_user(), rec=None, culturas=culturas, produtos=[], clientes=[], modo="func")
+                           current_user=get_current_user(),
+                           clientes=clientes, rec=None, culturas=culturas, produtos=[], clientes=[], modo="func")
 
 @receituario_bp.route("/func/receituario/<int:rid>")
 @_func_login_required
@@ -264,10 +267,12 @@ def func_editar(rid):
             db.session.flush()
         return _salvar_receituario(request.form, rec, func_id=emp.id)
 
+    from app.models.user import User
+    clientes = User.query.filter_by(is_admin=False).order_by(User.name).all()
     return render_template("receituario_form.html",
                            current_employee=emp,
                            current_user=get_current_user(),
-                           rec=rec, culturas=culturas, produtos=[], clientes=[],
+                           rec=rec, culturas=culturas, clientes=clientes,
                            modo="func")
 
 
