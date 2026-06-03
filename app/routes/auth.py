@@ -251,6 +251,109 @@ def sair_impersonation():
 
 # ─── Editar / Excluir Cliente ─────────────────────────────────
 
+# ── CARROSSEL DE IMAGENS ─────────────────────────────────────────────────────
+
+@auth_bp.route("/admin/carrossel")
+@login_required
+@admin_required
+def admin_carrossel():
+    from app.models.carrossel import CarrosselImagem, SECOES_CARROSSEL
+    imgs = {r.secao: r for r in CarrosselImagem.query.all()}
+    return render_template("admin_carrossel.html",
+                           current_user=get_current_user(),
+                           secoes=SECOES_CARROSSEL, imgs=imgs)
+
+
+@auth_bp.route("/admin/carrossel/upload/<secao>", methods=["POST"])
+@login_required
+@admin_required
+def admin_carrossel_upload(secao):
+    import cloudinary, cloudinary.uploader
+    from flask import current_app
+    from app.models.carrossel import CarrosselImagem, SECOES_CARROSSEL
+
+    if secao not in [s["slug"] for s in SECOES_CARROSSEL]:
+        flash("Seção inválida.", "error")
+        return redirect(url_for("auth.admin_carrossel"))
+
+    arquivo = request.files.get("imagem")
+    if not arquivo or not arquivo.filename:
+        flash("Selecione uma imagem.", "error")
+        return redirect(url_for("auth.admin_carrossel"))
+
+    ext = arquivo.filename.rsplit(".", 1)[-1].lower()
+    if ext not in {"jpg", "jpeg", "png", "webp", "gif"}:
+        flash("Formato inválido. Use JPG, PNG ou WEBP.", "error")
+        return redirect(url_for("auth.admin_carrossel"))
+
+    use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+    if not use_cloud:
+        flash("Cloudinary não configurado.", "error")
+        return redirect(url_for("auth.admin_carrossel"))
+
+    try:
+        cloudinary.config(
+            cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+            api_key=current_app.config["CLOUDINARY_API_KEY"],
+            api_secret=current_app.config["CLOUDINARY_API_SECRET"], secure=True,
+        )
+        registro = CarrosselImagem.query.filter_by(secao=secao).first()
+        if registro and registro.public_id:
+            try: cloudinary.uploader.destroy(registro.public_id, resource_type="image")
+            except Exception: pass
+
+        result = cloudinary.uploader.upload(
+            arquivo.stream,
+            folder="combaterasante/carrossel",
+            public_id="carrossel_" + secao,
+            resource_type="image", overwrite=True, access_mode="public",
+            transformation=[{"width": 1920, "height": 900, "crop": "fill", "quality": "auto:best"}],
+        )
+        url_final  = result["secure_url"]
+        pid        = result["public_id"]
+    except Exception as e:
+        flash("Erro no upload: " + str(e)[:120], "error")
+        return redirect(url_for("auth.admin_carrossel"))
+
+    if registro:
+        registro.url = url_final; registro.public_id = pid
+    else:
+        db.session.add(CarrosselImagem(secao=secao, url=url_final, public_id=pid))
+    db.session.commit()
+    flash("Imagem do carrossel atualizada! ✅", "success")
+    return redirect(url_for("auth.admin_carrossel"))
+
+
+@auth_bp.route("/admin/carrossel/remover/<secao>", methods=["POST"])
+@login_required
+@admin_required
+def admin_carrossel_remover(secao):
+    import cloudinary, cloudinary.uploader
+    from flask import current_app
+    from app.models.carrossel import CarrosselImagem
+
+    registro = CarrosselImagem.query.filter_by(secao=secao).first()
+    if registro:
+        use_cloud = current_app.config.get("USE_CLOUDINARY", False)
+        if use_cloud and registro.public_id:
+            try:
+                cloudinary.config(
+                    cloud_name=current_app.config["CLOUDINARY_CLOUD_NAME"],
+                    api_key=current_app.config["CLOUDINARY_API_KEY"],
+                    api_secret=current_app.config["CLOUDINARY_API_SECRET"], secure=True,
+                )
+                cloudinary.uploader.destroy(registro.public_id, resource_type="image")
+            except Exception: pass
+        db.session.delete(registro)
+        db.session.commit()
+        flash("Foto removida — voltou ao padrão. 🔄", "success")
+    else:
+        flash("Nenhuma foto personalizada nesta seção.", "info")
+    return redirect(url_for("auth.admin_carrossel"))
+
+
+# ── CLIENTES ─────────────────────────────────────────────────────────────────
+
 @auth_bp.route("/admin/clientes/editar/<int:uid>", methods=["GET", "POST"])
 @login_required
 @admin_required

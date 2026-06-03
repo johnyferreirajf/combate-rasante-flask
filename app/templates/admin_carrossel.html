@@ -1,0 +1,234 @@
+{% extends "layout.html" %}
+{% block title %}Carrossel de Imagens — Admin{% endblock %}
+
+{% block head_extra %}
+<style>
+:root{--green:#16a34a;--dark:#064e3b;--light:#f0fdf4;}
+.cr-page{max-width:1100px;margin:0 auto;padding:28px 16px 80px;}
+.cr-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;}
+.cr-back{padding:9px 16px;border-radius:10px;background:rgba(255,255,255,.12);
+         color:#fff;border:1px solid rgba(255,255,255,.2);text-decoration:none;
+         font-size:13px;font-weight:700;transition:.15s;}
+.cr-back:hover{background:rgba(255,255,255,.22);}
+.cr-title{font-size:22px;font-weight:900;color:#fff;display:flex;align-items:center;gap:10px;}
+.cr-sub{font-size:13px;color:rgba(255,255,255,.60);margin-top:2px;}
+
+/* ── Cards de seção ── */
+.cr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;}
+
+.cr-card{
+  background:rgba(255,255,255,.07);
+  border:1.5px solid rgba(255,255,255,.13);
+  border-radius:16px;overflow:hidden;
+  transition:transform .2s, border-color .2s;
+}
+.cr-card:hover{transform:translateY(-3px);border-color:rgba(34,197,94,.40);}
+
+/* Imagem preview */
+.cr-img-wrap{position:relative;height:180px;overflow:hidden;background:#000;}
+.cr-img-wrap img{width:100%;height:100%;object-fit:cover;transition:transform .3s;}
+.cr-card:hover .cr-img-wrap img{transform:scale(1.04);}
+.cr-img-overlay{
+  position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.7),transparent);
+  display:flex;align-items:flex-end;padding:12px 14px;
+}
+.cr-img-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px;border-radius:20px;font-size:11px;font-weight:800;
+  background:rgba(34,197,94,.25);color:#86efac;
+  border:1px solid rgba(34,197,94,.4);backdrop-filter:blur(4px);
+}
+.cr-img-badge.personalizado{background:rgba(234,88,12,.25);color:#fdba74;border-color:rgba(234,88,12,.4);}
+
+/* Corpo do card */
+.cr-body{padding:14px 16px 16px;}
+.cr-sec-name{font-size:17px;font-weight:900;color:#fff;margin-bottom:4px;}
+.cr-sec-desc{font-size:12px;color:rgba(255,255,255,.55);margin-bottom:14px;}
+
+/* Upload zone */
+.cr-upload-zone{
+  border:2px dashed rgba(255,255,255,.20);border-radius:10px;
+  padding:14px;text-align:center;cursor:pointer;
+  transition:border-color .15s,background .15s;
+  background:rgba(255,255,255,.03);
+  position:relative;
+}
+.cr-upload-zone:hover{border-color:rgba(34,197,94,.50);background:rgba(34,197,94,.06);}
+.cr-upload-zone input[type="file"]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;
+}
+.cr-upload-icon{font-size:22px;margin-bottom:4px;}
+.cr-upload-txt{font-size:11.5px;color:rgba(255,255,255,.60);}
+.cr-upload-txt strong{color:#86efac;}
+
+/* Botões */
+.cr-btn-row{display:flex;gap:8px;margin-top:10px;}
+.cr-btn{flex:1;padding:10px;border-radius:10px;font-size:12px;font-weight:800;
+        cursor:pointer;border:none;font-family:inherit;transition:.15s;}
+.cr-btn-upload{background:var(--green);color:#fff;}
+.cr-btn-upload:hover{background:#15803d;}
+.cr-btn-remove{background:rgba(239,68,68,.15);color:#fca5a5;
+               border:1px solid rgba(239,68,68,.30);}
+.cr-btn-remove:hover{background:rgba(239,68,68,.28);}
+
+/* Preview da imagem selecionada */
+.cr-preview-new{
+  display:none;margin-top:8px;border-radius:8px;overflow:hidden;
+  border:1px solid rgba(255,255,255,.15);
+}
+.cr-preview-new img{width:100%;height:90px;object-fit:cover;}
+
+/* Instrução integração */
+.cr-info{
+  margin-top:28px;background:rgba(234,88,12,.10);
+  border:1px solid rgba(234,88,12,.30);border-radius:12px;
+  padding:14px 18px;font-size:12.5px;color:#fed7aa;line-height:1.6;
+}
+.cr-info strong{color:#fb923c;}
+.cr-info code{background:rgba(0,0,0,.3);padding:1px 6px;border-radius:4px;font-size:11px;}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cr-page">
+
+  <div class="cr-header">
+    <a href="{{ url_for('auth.admin') }}" class="cr-back">← Painel Admin</a>
+    <div>
+      <div class="cr-title">🎠 Carrossel de Imagens</div>
+      <div class="cr-sub">Personalize as fotos de cada seção do site. Envie uma nova imagem e ela substitui a padrão automaticamente.</div>
+    </div>
+  </div>
+
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+    <div style="margin-bottom:14px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:700;
+         {% if cat=='success' %}background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.3);
+         {% elif cat=='error' %}background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.3);
+         {% else %}background:rgba(255,255,255,.08);color:#d1fae5;border:1px solid rgba(255,255,255,.15);{% endif %}">
+      {{ msg }}
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  <div class="cr-grid">
+    {% for sec in secoes %}
+    {% set reg = imgs.get(sec.slug) %}
+    {% set img_url = reg.url if reg else url_for('static', filename=sec.default) %}
+    {% set personalizado = reg is not none %}
+
+    <div class="cr-card">
+      {# Preview da imagem atual #}
+      <div class="cr-img-wrap">
+        <img src="{{ img_url }}" alt="{{ sec.label }}" id="imgPreview_{{ sec.slug }}">
+        <div class="cr-img-overlay">
+          <span class="cr-img-badge {{ 'personalizado' if personalizado else '' }}">
+            {{ '🟠 Foto personalizada' if personalizado else '⚪ Foto padrão' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="cr-body">
+        <div class="cr-sec-name">{{ sec.icon }} {{ sec.label }}</div>
+        <div class="cr-sec-desc">
+          {% if personalizado %}
+          Foto personalizada enviada via painel.
+          {% else %}
+          Usando foto padrão do sistema.
+          {% endif %}
+        </div>
+
+        {# Upload #}
+        <form method="POST"
+              action="{{ url_for('auth.admin_carrossel_upload', secao=sec.slug) }}"
+              enctype="multipart/form-data"
+              id="form_{{ sec.slug }}">
+          <div class="cr-upload-zone"
+               id="zone_{{ sec.slug }}"
+               ondragover="ev.preventDefault()"
+               ondrop="handleDrop('{{ sec.slug }}', event)">
+            <input type="file" name="imagem" accept="image/*"
+                   id="file_{{ sec.slug }}"
+                   onchange="previewImagem('{{ sec.slug }}', this)">
+            <div class="cr-upload-icon">🖼️</div>
+            <div class="cr-upload-txt">
+              Arraste ou <strong>clique para enviar</strong><br>
+              <span style="font-size:10px;">JPG, PNG, WEBP — máx. recomendado 5MB</span>
+            </div>
+          </div>
+
+          {# Preview da nova imagem antes de enviar #}
+          <div class="cr-preview-new" id="previewNew_{{ sec.slug }}">
+            <img id="previewNewImg_{{ sec.slug }}" src="" alt="">
+          </div>
+
+          <div class="cr-btn-row">
+            <button type="submit" class="cr-btn cr-btn-upload"
+                    id="btnUpload_{{ sec.slug }}" disabled>
+              ✈ Enviar imagem
+            </button>
+          </div>
+        </form>
+
+        {# Remover foto personalizada #}
+        {% if personalizado %}
+        <form method="POST"
+              action="{{ url_for('auth.admin_carrossel_remover', secao=sec.slug) }}"
+              onsubmit="return confirm('Remover foto personalizada de {{ sec.label }}? Voltará para a foto padrão.')">
+          <div class="cr-btn-row">
+            <button type="submit" class="cr-btn cr-btn-remove">
+              🗑 Restaurar foto padrão
+            </button>
+          </div>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {# Instrução de integração com o template #}
+  <div class="cr-info">
+    <strong>💡 Como integrar no template do site:</strong><br>
+    Nos templates Jinja2 que exibem as imagens do carrossel, substitua os caminhos estáticos pela variável injetada automaticamente:<br>
+    <br>
+    <strong>Antes:</strong> <code>url_for('static', filename='img/tiles/clientes.png')</code><br>
+    <strong>Depois:</strong> <code>carrossel_imgs.get('clientes') or url_for('static', filename='img/tiles/clientes.png')</code><br>
+    <br>
+    O context processor injeta <code>carrossel_imgs</code> em todos os templates automaticamente com as URLs do Cloudinary.
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewImagem(slug, input) {
+  var file = input.files[0];
+  var btn  = document.getElementById('btnUpload_' + slug);
+  var prev = document.getElementById('previewNew_' + slug);
+  var prevImg = document.getElementById('previewNewImg_' + slug);
+
+  if (!file) { btn.disabled = true; prev.style.display = 'none'; return; }
+
+  btn.disabled = false;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    prevImg.src = e.target.result;
+    prev.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleDrop(slug, event) {
+  event.preventDefault();
+  var file = event.dataTransfer.files[0];
+  if (!file) return;
+  var input = document.getElementById('file_' + slug);
+  var dt = new DataTransfer();
+  dt.items.add(file);
+  input.files = dt.files;
+  previewImagem(slug, input);
+}
+</script>
+{% endblock %}

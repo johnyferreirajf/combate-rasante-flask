@@ -50,6 +50,14 @@ def create_app():
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS municipio VARCHAR(200)",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS estado VARCHAR(2)",
                     "ALTER TABLE users ADD COLUMN IF NOT EXISTS car VARCHAR(100)",
+                    # Carrossel de imagens
+                    """CREATE TABLE IF NOT EXISTS carrossel_imagens (
+                        id SERIAL PRIMARY KEY,
+                        secao VARCHAR(50) UNIQUE NOT NULL,
+                        url TEXT NOT NULL,
+                        public_id VARCHAR(300),
+                        atualizado_em TIMESTAMP DEFAULT NOW()
+                    )""",
                     "ALTER TABLE produtos_agricolas ADD COLUMN IF NOT EXISTS aplicacao_aerea VARCHAR(12) DEFAULT 'VERIFICAR'",
                     "ALTER TABLE produtos_agricolas ADD COLUMN IF NOT EXISTS motivo_aerea TEXT",
                     """CREATE TABLE IF NOT EXISTS culturas (
@@ -271,6 +279,16 @@ def create_app():
             )
             db.session.add(admin_employee)
             db.session.commit()
+
+        # Context processor: injeta imagens do carrossel em todos os templates
+        @app.context_processor
+        def inject_carrossel():
+            try:
+                from app.models.carrossel import CarrosselImagem, SECOES_CARROSSEL
+                imgs = {r.secao: r.url for r in CarrosselImagem.query.all()}
+                return {"carrossel_imgs": imgs}
+            except Exception:
+                return {"carrossel_imgs": {}}
 
         # Seed Receituário Agronômico (culturas + produtos locais)
         try:
