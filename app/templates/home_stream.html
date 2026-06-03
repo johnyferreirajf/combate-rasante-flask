@@ -49,6 +49,16 @@ window.ULTIMO_POST = {% if ultimo_titulo %}{
   foto:   {% if ultimo_thumb %}{{ ultimo_thumb | tojson }}{% else %}null{% endif %}
 }{% else %}null{% endif %};
 </script>
+<script>
+/* Imagens do carrossel gerenciadas pelo painel admin */
+window.CARROSSEL_IMGS = {
+  atividades: {{ carrossel_imgs.get('atividades', '')|tojson }},
+  clientes:   {{ carrossel_imgs.get('clientes',   '')|tojson }},
+  parceria:   {{ carrossel_imgs.get('parceria',   '')|tojson }},
+  equipe:     {{ carrossel_imgs.get('equipe',     '')|tojson }},
+  eventos:    {{ carrossel_imgs.get('eventos',    '')|tojson }}
+};
+</script>
 <script src="{{ url_for('static', filename='js/home_stream.js') }}"></script>
 <script>
 (function () {

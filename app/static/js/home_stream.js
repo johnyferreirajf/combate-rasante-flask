@@ -15,7 +15,7 @@
       desc:  "Operações em campo",
       items: ["Pulverização de Soja", "Controle de Pragas", "Adubação Foliar"],
       url:   "/atividades",
-      bg:    "/static/img/tiles/atividades.png"
+      bg:    (window.CARROSSEL_IMGS && window.CARROSSEL_IMGS.atividades) || "/static/img/tiles/atividades.png"
     },
     {
       badge: "CLIENTES",
@@ -24,7 +24,7 @@
       desc:  "Atendimento e histórico",
       items: ["Painéis por safra", "Galeria de análises", "Relatórios organizados"],
       url:   "/clientes",
-      bg:    "/static/img/tiles/clientes.png"
+      bg:    (window.CARROSSEL_IMGS && window.CARROSSEL_IMGS.clientes) || "/static/img/tiles/clientes.png"
     },
     {
       badge: "NOVO",
@@ -33,7 +33,7 @@
       desc:  "Empresas e produtores",
       items: ["Acordos estratégicos", "Relacionamento", "Resultados compartilhados"],
       url:   "/parcerias",
-      bg:    "/static/img/tiles/parceria.png"
+      bg:    (window.CARROSSEL_IMGS && window.CARROSSEL_IMGS.parceria) || "/static/img/tiles/parceria.png"
     },
     {
       badge: "TIME",
@@ -42,7 +42,7 @@
       desc:  "Gestão e contatos",
       items: ["Responsáveis", "Escalas", "Comunicação interna"],
       url:   "/equipe",
-      bg:    "/static/img/tiles/equipe.png"
+      bg:    (window.CARROSSEL_IMGS && window.CARROSSEL_IMGS.equipe) || "/static/img/tiles/equipe.png"
     },
     {
       badge: "EVENTOS",
@@ -51,7 +51,7 @@
       desc:  "Agenda e novidades",
       items: ["Dias de campo", "Treinamentos", "Atualizações"],
       url:   "/eventos",
-      bg:    "/static/img/tiles/eventos.png"
+      bg:    (window.CARROSSEL_IMGS && window.CARROSSEL_IMGS.eventos) || "/static/img/tiles/eventos.png"
     }
   ];
 
