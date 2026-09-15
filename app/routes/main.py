@@ -58,6 +58,18 @@ def contato():
     return render_template("contato.html")
 
 
+@main_bp.route("/politica-de-privacidade")
+def politica_privacidade():
+    support_email = current_app.config.get("ADMIN_EMAIL") or "weikren@combateaviacao.com.br"
+    return render_template("politica_privacidade_app.html", support_email=support_email)
+
+
+@main_bp.route("/excluir-conta")
+def excluir_conta_app():
+    support_email = current_app.config.get("ADMIN_EMAIL") or "weikren@combateaviacao.com.br"
+    return render_template("excluir_conta_app.html", support_email=support_email)
+
+
 @main_bp.route("/solicitar-orcamento", methods=["POST"])
 def solicitar_orcamento():
     nome = (request.form.get("nome") or "").strip()

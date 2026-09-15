@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block title %}Excluir Conta — Combate Rasante{% endblock %}
+{% block meta_description %}Como excluir uma conta do aplicativo Combate Rasante.{% endblock %}
+{% block content %}
+<section style="padding:56px 18px 72px;background:#f6f8f7;min-height:70vh;">
+  <article style="max-width:820px;margin:0 auto;background:white;border:1px solid #eadede;border-radius:18px;padding:clamp(22px,4vw,46px);box-shadow:0 16px 40px rgba(0,0,0,.06);line-height:1.65;color:#342a2a;">
+    <h1 style="margin-top:0;color:#8b1e1e;">Exclusão de conta — Combate Rasante</h1>
+    <p>Você pode excluir sua conta diretamente no aplicativo:</p>
+    <ol>
+      <li>Entre na sua conta.</li>
+      <li>Abra <strong>Meu Perfil</strong>.</li>
+      <li>Acesse <strong>Segurança e Privacidade</strong>.</li>
+      <li>Toque em <strong>Excluir minha conta</strong>.</li>
+      <li>Confirme usando sua senha atual.</li>
+    </ol>
+
+    <h2>Sem acesso ao aplicativo?</h2>
+    <p>Envie uma solicitação para <a href="mailto:{{ support_email }}?subject=Solicita%C3%A7%C3%A3o%20de%20exclus%C3%A3o%20de%20conta%20-%20Combate%20Rasante">{{ support_email }}</a> com o assunto <strong>“Solicitação de exclusão de conta — Combate Rasante”</strong> e informe o e-mail da conta. Poderemos solicitar uma etapa de verificação de titularidade antes de concluir a exclusão.</p>
+
+    <h2>O que é removido</h2>
+    <p>A conta de autenticação e os dados locais do aplicativo associados à conta no aparelho são removidos pelo fluxo de exclusão dentro do app.</p>
+
+    <h2>Registro mínimo do teste gratuito</h2>
+    <p>Para impedir que a exclusão e recriação da conta gere sucessivos testes Premium de 7 dias, é mantido no servidor somente um identificador pseudonimizado derivado do e-mail e as datas do benefício já concedido. Esse registro não contém o e-mail em texto puro e não reinicia quando uma nova conta é criada com o mesmo endereço.</p>
+
+    <p>Veja também a <a href="{{ url_for('main.politica_privacidade') }}">Política de Privacidade do aplicativo</a>.</p>
+  </article>
+</section>
+{% endblock %}

@@ -9,3 +9,5 @@ from .sector_order import SectorOrder
 from .action_log import ActionLog
 from .post import Post, PostMidia
 from .talhao import Talhao, SolicitacaoAplicacao
+
+from .app_trial_claim import AppTrialClaim

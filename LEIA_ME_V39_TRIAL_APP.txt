@@ -1,0 +1,48 @@
+COMBATE RASANTE — SITE/RAILWAY — V39
+====================================
+
+Objetivo
+--------
+Impedir que o teste Premium de 7 dias seja reiniciado quando a conta Firebase é
+excluída e criada novamente com o mesmo e-mail.
+
+Como funciona
+-------------
+1. O app envia o Firebase ID Token para POST /api/app/trial/claim.
+2. O servidor valida o token diretamente no Firebase Authentication.
+3. O servidor usa o e-mail validado pelo Firebase, normaliza e gera um HMAC-SHA256.
+4. A tabela app_trial_claims guarda SOMENTE esse identificador e as datas do teste.
+5. Na primeira sincronização V38 -> V39, um trial local já existente pode ser
+   migrado com as datas originais, evitando reiniciar os 7 dias pela atualização.
+6. Se o mesmo e-mail voltar, o mesmo registro é retornado; os 7 dias não recomeçam.
+7. Se o período original ainda estiver ativo, a conta recriada recebe apenas o
+   tempo restante. Se já venceu, continua vencido.
+
+Banco
+-----
+A tabela app_trial_claims é criada automaticamente pelo db.create_all() no deploy.
+Não é necessário apagar/recriar o Postgres.
+
+Railway
+-------
+Nenhuma variável nova é obrigatória nesta versão. O projeto usa a SECRET_KEY já
+existente para o HMAC e possui a Firebase Web API Key pública como fallback.
+Opcionalmente, pode-se criar FIREBASE_WEB_API_KEY no Railway para sobrescrever o
+valor do código.
+
+IMPORTANTE: não troque a SECRET_KEY do Railway depois que houver trials em
+produção sem antes migrar os hashes. Trocar essa chave faria o servidor deixar de
+reconhecer os registros antigos.
+
+Páginas públicas adicionadas
+-----------------------------
+https://www.combaterasante.com.br/politica-de-privacidade
+https://www.combaterasante.com.br/excluir-conta
+
+Teste rápido após deploy
+------------------------
+Abra no navegador:
+https://www.combaterasante.com.br/api/app/health
+
+Resultado esperado:
+{"ok":true,"service":"combate-rasante-app-api"}

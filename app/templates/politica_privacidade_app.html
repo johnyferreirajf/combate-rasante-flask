@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block title %}Política de Privacidade — Combate Rasante{% endblock %}
+{% block meta_description %}Política de Privacidade do aplicativo Combate Rasante.{% endblock %}
+{% block content %}
+<section style="padding:56px 18px 72px;background:#f6f8f7;min-height:70vh;">
+  <article style="max-width:900px;margin:0 auto;background:white;border:1px solid #dfe7e3;border-radius:18px;padding:clamp(22px,4vw,46px);box-shadow:0 16px 40px rgba(0,0,0,.06);line-height:1.65;color:#24342e;">
+    <h1 style="margin-top:0;color:#174f3b;">Política de Privacidade — Aplicativo Combate Rasante</h1>
+    <p><strong>Última atualização:</strong> 15 de setembro de 2026.</p>
+    <p>O Combate Rasante é uma ferramenta GIS para apoio a pilotos e operações agrícolas. Esta política descreve os dados utilizados pelo aplicativo e os controles disponíveis ao usuário.</p>
+
+    <h2>Dados da conta</h2>
+    <p>Ao criar uma conta, utilizamos nome e endereço de e-mail. A autenticação e a senha são processadas pelo Firebase Authentication. O Combate Rasante não armazena a senha em texto legível.</p>
+
+    <h2>Dados opcionais do perfil</h2>
+    <p>O usuário pode informar CANAC, brevê, habilitações e respectivas validades, exame médico, foto de perfil e documento PDF da Habilitação ANAC. Na versão atual, esses dados adicionais ficam armazenados localmente no aparelho.</p>
+
+    <h2>Dados GIS e operacionais</h2>
+    <p>Fazendas, talhões, polígonos, waypoints, áreas de voo e demais informações operacionais criadas no aplicativo ficam armazenados localmente no dispositivo e associados à conta usada naquele aparelho.</p>
+
+    <h2>Localização</h2>
+    <p>Quando autorizada pelo usuário, a localização do dispositivo é utilizada para posicionamento no mapa e suporte às funções GIS. A permissão pode ser alterada nas configurações do aparelho.</p>
+
+    <h2>Teste Premium de 7 dias e prevenção de reutilização</h2>
+    <p>O teste Premium é concedido uma única vez por endereço de e-mail elegível. Para impedir que a exclusão e recriação da conta reinicie o benefício, o servidor mantém um registro mínimo com um identificador pseudonimizado derivado do e-mail por HMAC e as datas de início e término do teste. O e-mail em texto puro não é armazenado nessa tabela de controle.</p>
+    <p>Esse registro antifraude permanece separado dos demais dados da conta e é utilizado exclusivamente para reconhecer se o mesmo e-mail já recebeu o período promocional.</p>
+
+    <h2>Serviços de terceiros</h2>
+    <p>O aplicativo utiliza Firebase Authentication para autenticação e serviços de mapas para exibição cartográfica. Esses provedores podem tratar dados técnicos necessários à prestação dos respectivos serviços segundo suas próprias políticas.</p>
+
+    <h2>Exclusão da conta e dos dados</h2>
+    <p>No aplicativo, acesse <strong>Meu Perfil &gt; Segurança e Privacidade &gt; Excluir minha conta</strong>. Após a confirmação da senha, a conta de autenticação é excluída e os dados locais vinculados à conta naquele aparelho são removidos. O registro pseudonimizado de uso do teste Premium descrito acima é mantido para impedir nova concessão indevida do mesmo benefício.</p>
+    <p>Se você não tiver mais acesso ao aplicativo, consulte a página <a href="{{ url_for('main.excluir_conta_app') }}">Excluir conta</a>.</p>
+
+    <h2>Contato</h2>
+    <p>Dúvidas sobre privacidade ou exclusão podem ser encaminhadas para <a href="mailto:{{ support_email }}">{{ support_email }}</a>.</p>
+  </article>
+</section>
+{% endblock %}

@@ -307,6 +307,7 @@ def create_app():
     from app.routes.posts import posts_bp
     from app.routes.talhoes import talhoes_bp
     from app.routes.receituario import receituario_bp
+    from app.routes.mobile_api import mobile_api_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -314,6 +315,7 @@ def create_app():
     app.register_blueprint(posts_bp)
     app.register_blueprint(talhoes_bp)
     app.register_blueprint(receituario_bp)
+    app.register_blueprint(mobile_api_bp)
 
     # Context: current_user (cliente)
     from app.utils.security import get_current_user, get_current_employee
