@@ -52,6 +52,6 @@ class Config:
     ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "")
 
     # Firebase Authentication usado pelo aplicativo móvel.
-    # A API key do Firebase é um identificador público do projeto; pode ser
-    # sobrescrita no Railway por FIREBASE_WEB_API_KEY sem alterar o código.
-    FIREBASE_WEB_API_KEY = os.environ.get("FIREBASE_WEB_API_KEY") or "AIzaSyCRs6u78Rp6Bkd7QBt2ZECPd1UC1T6hlhE"
+    # Configure FIREBASE_WEB_API_KEY somente como variável de ambiente
+    # no Railway; não deixe a chave fixa neste repositório.
+    FIREBASE_WEB_API_KEY = os.environ.get("FIREBASE_WEB_API_KEY", "")
