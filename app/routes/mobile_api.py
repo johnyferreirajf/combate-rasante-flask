@@ -8,6 +8,7 @@ sem confiar em e-mail ou UID enviados pelo cliente.
 from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
+import os
 
 import requests
 from flask import Blueprint, current_app, jsonify, request
@@ -98,6 +99,25 @@ def _trial_email_hash(email: str) -> str:
     return hmac.new(secret, b"app-trial-v1:" + normalized, hashlib.sha256).hexdigest()
 
 
+def _is_play_review_email(email: str) -> bool:
+    """Retorna True apenas para contas explicitamente liberadas para revisão.
+
+    A lista vem do Railway por PLAY_REVIEW_EMAIL (ou, opcionalmente,
+    PLAY_REVIEW_EMAILS separado por vírgulas). O e-mail usado aqui vem do
+    Firebase ID Token já validado, portanto o cliente não consegue escolher
+    outro endereço para obter o benefício.
+    """
+    configured = []
+    single = (os.environ.get("PLAY_REVIEW_EMAIL") or "").strip()
+    multiple = (os.environ.get("PLAY_REVIEW_EMAILS") or "").strip()
+    if single:
+        configured.append(single)
+    if multiple:
+        configured.extend(part.strip() for part in multiple.split(","))
+    allowed = {item.lower() for item in configured if item}
+    return email.strip().lower() in allowed
+
+
 @mobile_api_bp.get("/health")
 def health():
     return jsonify({"ok": True, "service": "combate-rasante-app-api"})
@@ -119,8 +139,30 @@ def claim_trial():
     if error_response is not None:
         return error_response
 
-    email_hash = _trial_email_hash(identity["email"])
     now = datetime.utcnow()
+
+    # Conta(s) usada(s) exclusivamente pela equipe de revisão das lojas.
+    # O acesso é concedido apenas após o Firebase confirmar a identidade e o
+    # e-mail. Não altera nem renova o trial de usuários comuns e não depende do
+    # registro em app_trial_claims.
+    if _is_play_review_email(identity["email"]):
+        review_end = datetime(2099, 12, 31, 23, 59, 59)
+        remaining_seconds = max(0, int((review_end - now).total_seconds()))
+        return jsonify(
+            {
+                "ok": True,
+                "trialClaimed": True,
+                "trialActive": True,
+                "createdNow": False,
+                "startedAt": _utc_iso(now),
+                "endsAt": _utc_iso(review_end),
+                "serverNow": _utc_iso(now),
+                "remainingSeconds": remaining_seconds,
+                "reviewAccess": True,
+            }
+        )
+
+    email_hash = _trial_email_hash(identity["email"])
 
     claim = AppTrialClaim.query.filter_by(email_hash=email_hash).first()
     created_now = False
