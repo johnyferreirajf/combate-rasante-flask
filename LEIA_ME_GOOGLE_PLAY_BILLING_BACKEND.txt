@@ -1,0 +1,73 @@
+COMBATE RASANTE — BACKEND GOOGLE PLAY BILLING
+==============================================
+
+O que esta versão adiciona
+--------------------------
+1. POST /api/app/subscription/google/verify
+   - recebe purchaseToken do Flutter;
+   - valida o Firebase ID Token do usuário;
+   - consulta purchases.subscriptionsv2.get na Google Play Developer API;
+   - aceita somente o pacote/produto configurado no servidor;
+   - vincula o purchase token a uma única conta Firebase;
+   - concede premium somente quando o estado ainda dá direito ao conteúdo;
+   - confirma (acknowledge) a compra inicial no backend quando necessário.
+
+2. GET /api/app/subscription/google/status
+   - revalida na Google Play a assinatura já vinculada à conta;
+   - permite retirar o Premium quando a assinatura expirar/ficar sem direito.
+
+3. Tabela app_subscriptions
+   - criada automaticamente pelo db.create_all() no deploy;
+   - não exige apagar o PostgreSQL existente;
+   - armazena UID/e-mail somente como HMAC, nunca em texto puro;
+   - mantém o purchase token somente no servidor para revalidação.
+
+Variáveis Railway
+-----------------
+GOOGLE_PLAY_PACKAGE_NAME=br.com.combaterasante.app
+GOOGLE_PLAY_SUBSCRIPTION_ID=combate_rasante_premium
+GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64=<JSON da service account convertido em Base64>
+
+Também continuam obrigatórias as variáveis já usadas pelo projeto, como:
+SECRET_KEY
+DATABASE_URL
+FIREBASE_WEB_API_KEY
+PLAY_REVIEW_EMAIL / PLAY_REVIEW_EMAILS (se usados)
+
+IMPORTANTE
+----------
+Nunca coloque o arquivo JSON da service account dentro do Flutter, do GitHub ou
+em pasta pública do site. A credencial deve ficar somente nas Variables do Railway.
+
+Configuração Google necessária
+------------------------------
+1. Criar/selecionar um projeto no Google Cloud.
+2. Ativar a Google Play Android Developer API.
+3. Criar uma Service Account.
+4. No Google Play Console > Usuários e permissões, convidar o e-mail da Service Account.
+5. Conceder as permissões necessárias para Billing, incluindo visualizar dados
+   financeiros/pedidos e gerenciar pedidos/assinaturas.
+6. Gerar uma chave JSON da Service Account.
+7. Converter o conteúdo inteiro do JSON para Base64 e colocar somente no Railway
+   como GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64.
+
+Exemplo Windows PowerShell para converter o JSON em Base64
+----------------------------------------------------------
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\\caminho\\service-account.json"))
+
+Cole a saída inteira na variável GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64 do Railway.
+Depois de salvar, faça novo deploy.
+
+Teste de saúde existente
+------------------------
+GET https://www.combaterasante.com.br/api/app/health
+
+Retorno esperado:
+{"ok":true,"service":"combate-rasante-app-api"}
+
+Observação
+----------
+O Flutter ainda precisa ser alterado para, após PurchaseStatus.purchased/restored,
+enviar o purchaseToken para /api/app/subscription/google/verify e só então marcar
+a conta como Premium. Essa é a próxima etapa depois de o backend estar publicado
+e com a Service Account configurada.

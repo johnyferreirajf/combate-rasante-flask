@@ -55,3 +55,18 @@ class Config:
     # Configure FIREBASE_WEB_API_KEY somente como variável de ambiente
     # no Railway; não deixe a chave fixa neste repositório.
     FIREBASE_WEB_API_KEY = os.environ.get("FIREBASE_WEB_API_KEY", "")
+
+    # Google Play Developer API — usado apenas no backend para validar
+    # assinaturas do aplicativo Android. Nunca coloque a credencial no Flutter.
+    GOOGLE_PLAY_PACKAGE_NAME = os.environ.get(
+        "GOOGLE_PLAY_PACKAGE_NAME", "br.com.combaterasante.app"
+    )
+    GOOGLE_PLAY_SUBSCRIPTION_ID = os.environ.get(
+        "GOOGLE_PLAY_SUBSCRIPTION_ID", "combate_rasante_premium"
+    )
+    GOOGLE_PLAY_SERVICE_ACCOUNT_JSON = os.environ.get(
+        "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON", ""
+    )
+    GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64 = os.environ.get(
+        "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64", ""
+    )

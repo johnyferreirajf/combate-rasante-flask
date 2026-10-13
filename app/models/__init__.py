@@ -11,3 +11,4 @@ from .post import Post, PostMidia
 from .talhao import Talhao, SolicitacaoAplicacao
 
 from .app_trial_claim import AppTrialClaim
+from .app_subscription import AppSubscription
