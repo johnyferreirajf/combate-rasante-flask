@@ -1,3 +1,4 @@
+
 alembic==1.17.2
 blinker==1.9.0
 click==8.3.1
@@ -24,3 +25,6 @@ Pillow==10.4.0
 
 playwright>=1.40.0
 google-auth>=2.35.0,<3.0.0
+
+# Apple App Store Server API
+app-store-server-library==3.1.2
