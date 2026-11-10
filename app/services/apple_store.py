@@ -81,15 +81,20 @@ def make_signed_data_verifier(*, sandbox: bool = False) -> SignedDataVerifier:
     )
 
 
+def _validate_transaction_id(transaction_id: str) -> str:
+    tid = str(transaction_id or "").strip()
+    if not tid or len(tid) > 128 or not tid.isascii() or not tid.isdigit():
+        raise ValueError("Identificador de transação Apple inválido")
+    return tid
+
+
 def fetch_verified_transaction(transaction_id: str, *, sandbox: bool = False):
     """Consulta a Apple e verifica a assinatura da transação devolvida.
 
     NÃO implica assinatura ativa: a camada de negócio deve examinar
     productId, expiresDate, revocationDate e os demais campos de elegibilidade.
     """
-    tid = str(transaction_id or "").strip()
-    if not tid or len(tid) > 128 or not tid.isascii() or not tid.isdigit():
-        raise ValueError("Identificador de transação Apple inválido")
+    tid = _validate_transaction_id(transaction_id)
     client = make_api_client(sandbox=sandbox)
     response = client.get_transaction_info(tid)
     signed_transaction = response.signedTransactionInfo
@@ -97,3 +102,59 @@ def fetch_verified_transaction(transaction_id: str, *, sandbox: bool = False):
         raise ValueError("Apple não retornou transação assinada")
     verifier = make_signed_data_verifier(sandbox=sandbox)
     return verifier.verify_and_decode_signed_transaction(signed_transaction)
+
+
+def fetch_verified_subscription_status(transaction_id: str, *, sandbox: bool = False):
+    """Obtém estado atual e JWS verificados para a assinatura identificada.
+
+    Retorna (transação_consultada, itens_verificados), em que cada item é
+    (status_int, transação_decodificada, renovação_decodificada).
+
+    O estado é fornecido pela API autenticada da Apple; os dois JWS são
+    verificados criptograficamente. Somente itens que pertencem ao mesmo
+    originalTransactionId da transação consultada são retornados.
+
+    IMPORTANTE: não decide elegibilidade nem vincula a compra à conta Firebase.
+    """
+    tid = _validate_transaction_id(transaction_id)
+    client = make_api_client(sandbox=sandbox)
+    verifier = make_signed_data_verifier(sandbox=sandbox)
+
+    transaction_response = client.get_transaction_info(tid)
+    signed_initial = transaction_response.signedTransactionInfo
+    if not signed_initial:
+        raise ValueError("Apple não retornou transação assinada")
+    initial = verifier.verify_and_decode_signed_transaction(signed_initial)
+    original_id = str(getattr(initial, "originalTransactionId", "") or "")
+    if not original_id:
+        raise ValueError("Transação Apple sem originalTransactionId")
+
+    response = client.get_all_subscription_statuses(original_id)
+    if getattr(response, "bundleId", None) != _required_config("APPLE_BUNDLE_ID"):
+        raise ValueError("Resposta Apple pertence a outro aplicativo")
+    if getattr(response, "environment", None) != _environment(sandbox):
+        raise ValueError("Ambiente da resposta Apple não corresponde à consulta")
+    if not sandbox and getattr(response, "appAppleId", None) != int(_required_config("APPLE_APP_ID")):
+        raise ValueError("App Apple ID da resposta é diferente do esperado")
+
+    verified_items = []
+    for group in (getattr(response, "data", None) or []):
+        for item in (getattr(group, "lastTransactions", None) or []):
+            signed_transaction = getattr(item, "signedTransactionInfo", None)
+            signed_renewal = getattr(item, "signedRenewalInfo", None)
+            status = getattr(item, "rawStatus", None)
+            if not signed_transaction or not signed_renewal or type(status) is not int:
+                raise ValueError("Resposta Apple de assinatura incompleta")
+            transaction = verifier.verify_and_decode_signed_transaction(signed_transaction)
+            renewal = verifier.verify_and_decode_renewal_info(signed_renewal)
+            item_original = str(getattr(item, "originalTransactionId", "") or "")
+            tx_original = str(getattr(transaction, "originalTransactionId", "") or "")
+            renewal_original = str(getattr(renewal, "originalTransactionId", "") or "")
+            if not item_original or item_original != tx_original or item_original != renewal_original:
+                raise ValueError("Inconsistência nos identificadores da assinatura Apple")
+            if tx_original == original_id:
+                verified_items.append((status, transaction, renewal))
+
+    if not verified_items:
+        raise ValueError("Nenhum estado correspondente à assinatura consultada")
+    return initial, verified_items
