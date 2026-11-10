@@ -25,3 +25,9 @@ certificados_apple/
 # Arquivos temporários Python
 __pycache__/
 *.pyc
+
+# Bancos de dados locais
+instance/
+*.db
+*.sqlite
+*.sqlite3
