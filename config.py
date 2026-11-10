@@ -70,3 +70,18 @@ class Config:
     GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64 = os.environ.get(
         "GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_B64", ""
     )
+
+
+    # Apple App Store Server API - assinaturas iOS
+    # Credenciais fornecidas exclusivamente pelo ambiente do servidor.
+    APPLE_KEY_ID = os.environ.get("APPLE_KEY_ID", "")
+    APPLE_ISSUER_ID = os.environ.get("APPLE_ISSUER_ID", "")
+    APPLE_PRIVATE_KEY = os.environ.get("APPLE_PRIVATE_KEY", "")
+    APPLE_BUNDLE_ID = os.environ.get(
+        "APPLE_BUNDLE_ID", "br.com.combaterasante.app"
+    )
+    APPLE_APP_ID = os.environ.get("APPLE_APP_ID", "")
+    APPLE_ROOT_CERTIFICATES_DIR = os.environ.get(
+        "APPLE_ROOT_CERTIFICATES_DIR",
+        os.path.join(BASE_DIR, "certificados_apple")
+    )
