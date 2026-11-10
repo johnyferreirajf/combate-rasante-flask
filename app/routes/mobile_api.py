@@ -427,10 +427,11 @@ def google_subscription_status():
 
     records = (
         AppSubscription.query.filter(
+            AppSubscription.provider == "google_play",
             or_(
                 AppSubscription.account_hash == account_hash,
                 AppSubscription.email_hash == email_hash,
-            )
+            ),
         )
         .order_by(AppSubscription.updated_at.desc())
         .limit(5)
