@@ -4,11 +4,15 @@ from app import db
 
 
 class AppSubscription(db.Model):
-    """Vínculo de uma assinatura Google Play com a conta autenticada no app.
+    """Vínculo de assinaturas Google Play ou App Store com uma conta Firebase.
 
-    O e-mail e o Firebase UID não são salvos em texto puro. O purchase token é
-    mantido apenas no servidor porque ele é necessário para consultar novamente
-    o estado oficial da assinatura na Google Play.
+    Os hashes de conta/e-mail não armazenam os identificadores em texto puro.
+    O token Google Play permanece no servidor para revalidar o direito.
+    No caso da Apple, o originalTransactionId identifica a cadeia de renovações;
+    o tratamento de transações e seus dados assinados ocorre em serviço próprio.
+
+    ATENÇÃO: adicionar original_transaction_id ao modelo exige migração do
+    banco existente ANTES de implantar a versão atualizada do backend.
     """
 
     __tablename__ = "app_subscriptions"
@@ -17,8 +21,17 @@ class AppSubscription(db.Model):
     account_hash = db.Column(db.String(64), nullable=False, index=True)
     email_hash = db.Column(db.String(64), nullable=False, index=True)
 
+    # Mantidos para compatibilidade com assinaturas Google Play já existentes.
     purchase_token = db.Column(db.Text, nullable=False)
-    purchase_token_hash = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    purchase_token_hash = db.Column(
+        db.String(64), unique=True, nullable=False, index=True
+    )
+
+    # Apple: identificador estável entre renovações da mesma assinatura.
+    # NULL para registros existentes do Google Play.
+    original_transaction_id = db.Column(
+        db.String(128), nullable=True, unique=True, index=True
+    )
 
     provider = db.Column(db.String(30), nullable=False, default="google_play")
     product_id = db.Column(db.String(150), nullable=False)
@@ -37,7 +50,12 @@ class AppSubscription(db.Model):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
     )
-    last_verified_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    last_verified_at = db.Column(
+        db.DateTime, nullable=False, default=datetime.utcnow
+    )
 
     def __repr__(self):
-        return f"<AppSubscription {self.provider}:{self.product_id} {self.subscription_state}>"
+        return (
+            f"<AppSubscription {self.provider}:"
+            f"{self.product_id} {self.subscription_state}>"
+        )
