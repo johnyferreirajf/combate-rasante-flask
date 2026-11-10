@@ -8,3 +8,20 @@ __pycache__/
 __pycache__/
 *.pyc
 instance/
+
+# Ambiente Python local
+.venv/
+
+# Certificados locais
+certificados_apple/
+
+# Chaves privadas Apple
+*.p8
+
+# Configurações privadas
+.env
+.env.*
+
+# Arquivos temporários Python
+__pycache__/
+*.pyc
