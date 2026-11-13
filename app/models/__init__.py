@@ -12,3 +12,4 @@ from .talhao import Talhao, SolicitacaoAplicacao
 
 from .app_trial_claim import AppTrialClaim
 from .app_subscription import AppSubscription
+from .gis_sync_snapshot import GisSyncSnapshot
