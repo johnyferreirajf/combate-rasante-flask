@@ -316,7 +316,9 @@ def create_app():
     app.register_blueprint(posts_bp)
     app.register_blueprint(talhoes_bp)
     app.register_blueprint(receituario_bp)
+    from app.routes.gis_sync_api import gis_sync_bp
     app.register_blueprint(mobile_api_bp)
+    app.register_blueprint(gis_sync_bp)
     app.register_blueprint(apple_subscription_bp)
 
     # Context: current_user (cliente)
