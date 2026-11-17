@@ -1,2 +1,2 @@
 #!/bin/sh
-exec gunicorn wsgi:app --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120
+exec gunicorn --preload wsgi:app --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120
